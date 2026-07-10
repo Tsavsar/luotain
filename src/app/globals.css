@@ -1,26 +1,555 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────
+   KernUI Design Tokens → Luotain
+   Light & dark mode. Supports:
+   - System: @media (prefers-color-scheme: dark)
+   - Manual: [data-theme="dark"] on <html>
+───────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+
+  /* Backgrounds */
+  --bg-default:  #ffffff;
+  --bg-surface:  #f7f7f7;
+  --bg-layer:    #f5f5f5;
+  --bg-subtle:   #ebebeb;
+  --bg-muted:    #d1d1d1;
+  --bg-weak:     #1c1c1c;
+
+  /* Text */
+  --text-strong:   #171717;
+  --text-sub:      #5c5c5c;
+  --text-soft:     #a3a3a3;
+  --text-disabled: #d1d1d1;
+  --text-inverse:  #ffffff;
+  --text-accent:   #fa7319;
+
+  /* Strokes */
+  --stroke-soft:   rgba(0, 0, 0, 0.05);
+  --stroke-medium: rgba(0, 0, 0, 0.10);
+  --stroke-strong: rgba(0, 0, 0, 0.20);
+
+  /* ─── Primary (Orange) ─────────────────────────── */
+  --primary-dark:  #71330a;
+  --primary-base:  #fa7319;
+  --primary-faint: #ffd9c0;
+  --primary-mute:  #fff3eb;
+
+  /* Info (Blue) */
+  --info-dark:  #122368;
+  --info-base:  #335cff;
+  --info-faint: #c0d5ff;
+  --info-mute:  #ebf1ff;
+
+  /* Warning (Orange — alias of primary) */
+  --warning-dark:  var(--primary-dark);
+  --warning-base:  var(--primary-base);
+  --warning-faint: var(--primary-faint);
+  --warning-mute:  var(--primary-mute);
+
+  /* Error (Red) */
+  --error-dark:  #681219;
+  --error-base:  #fb3748;
+  --error-faint: #ffc0c5;
+  --error-mute:  #ffebec;
+
+  /* Success (Green) */
+  --success-dark:  #0b4627;
+  --success-base:  #1fc16b;
+  --success-faint: #c2f5da;
+  --success-mute:  #e0faec;
+
+  /* Feature (Purple) */
+  --feature-dark:  #351a75;
+  --feature-base:  #7d52f4;
+  --feature-faint: #cac0ff;
+  --feature-mute:  #efebff;
+
+  /* Verified (Sky) */
+  --verified-dark:  #124b68;
+  --verified-base:  #47c2ff;
+  --verified-faint: #c0eaff;
+  --verified-mute:  #ebf8ff;
+
+  /* Highlight (Pink) */
+  --highlight-dark:  #68123d;
+  --highlight-base:  #fb4ba3;
+  --highlight-faint: #ffc0df;
+  --highlight-mute:  #ffebf4;
+
+  /* ─── Focus Rings ──────────────────────────────── */
+  /* Pattern: 2px bg-default gap + 4px color ring     */
+  --focus-active:  0 0 0 2px var(--bg-default), 0 0 0 4px rgba(250, 115, 25, 0.24);
+  --focus-error:   0 0 0 2px var(--bg-default), 0 0 0 4px var(--error-faint);
+  --focus-success: 0 0 0 2px var(--bg-default), 0 0 0 4px rgba(31, 193, 107, 0.16);
+  --focus-grey:    0 0 0 2px var(--bg-default), 0 0 0 4px var(--bg-muted);
+
+  /* ─── Shadows ──────────────────────────────────── */
+  --shadow-xs:  0px 5px 13px -5px rgba(0,0,0,0.05), 0px 2px 4px -1px rgba(0,0,0,0.02);
+  --shadow-sm:  0px 10px 20px 3px rgba(0,0,0,0.04);
+  --shadow-md:  0px 16px 24px -4px rgba(0,0,0,0.08), 0px 4px 6px -2px rgba(0,0,0,0.03);
+  --shadow-lg:  0px 14px 22px -9px rgba(0,0,0,0.14), 0px 0px 3px -1px rgba(0,0,0,0.04);
+  --shadow-xl:  0px 24px 32px -4px rgba(0,0,0,0.08), 0px 8px 8px -4px rgba(0,0,0,0.03);
+  --shadow-xxl: 0px 32px 54px -12px rgba(0,0,0,0.18);
+
+  /* ─── Radius ───────────────────────────────────── */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;
+
+  /* ─── Typography ───────────────────────────────── */
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --text-xs:  12px;
+  --text-sm:  14px;
+  --text-md:  16px;
+  --text-lg:  20px;
+  --text-xl:  24px;
+  --text-2xl: 32px;
+
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* ─── Dark mode (system) ─────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg-default: #171717;
+    --bg-surface: #1c1c1c;
+    --bg-layer:   #292929;
+    --bg-subtle:  #333333;
+    --bg-muted:   #5c5c5c;
+    --bg-weak:    #f7f7f7;
+
+    --text-strong:   #ffffff;
+    --text-sub:      #a3a3a3;
+    --text-soft:     #7b7b7b;
+    --text-disabled: #5c5c5c;
+    --text-inverse:  #171717;
+
+    --stroke-soft:   rgba(255, 255, 255, 0.05);
+    --stroke-medium: rgba(255, 255, 255, 0.10);
+    --stroke-strong: rgba(255, 255, 255, 0.20);
+
+    --primary-dark:  #ffa468;
+    --primary-base:  #e16614;
+    --primary-faint: rgba(250, 115, 25, 0.24);
+    --primary-mute:  rgba(250, 115, 25, 0.16);
+
+    --info-dark:  #6895ff;
+    --info-base:  #335cff;
+    --info-faint: rgba(51, 92, 255, 0.24);
+    --info-mute:  rgba(51, 92, 255, 0.16);
+
+    --error-dark:  #ff6875;
+    --error-base:  #e93544;
+    --error-faint: rgba(251, 55, 72, 0.24);
+    --error-mute:  rgba(251, 55, 72, 0.16);
+
+    --success-dark:  #3ee089;
+    --success-base:  #1daf61;
+    --success-faint: rgba(31, 193, 107, 0.24);
+    --success-mute:  rgba(31, 193, 107, 0.16);
+
+    --feature-dark:  #8c71f6;
+    --feature-base:  #7d52f4;
+    --feature-faint: rgba(125, 82, 244, 0.24);
+    --feature-mute:  rgba(125, 82, 244, 0.16);
+
+    --verified-dark:  #68cdff;
+    --verified-base:  #35ade9;
+    --verified-faint: rgba(71, 194, 255, 0.24);
+    --verified-mute:  rgba(71, 194, 255, 0.16);
+
+    --highlight-dark:  #ff68b3;
+    --highlight-base:  #ff68b3;
+    --highlight-faint: rgba(251, 75, 163, 0.24);
+    --highlight-mute:  rgba(251, 75, 163, 0.16);
   }
 }
 
+/* ─── Dark mode (manual toggle) ─────────────────── */
+[data-theme="dark"] {
+  --bg-default: #171717;
+  --bg-surface: #1c1c1c;
+  --bg-layer:   #292929;
+  --bg-subtle:  #333333;
+  --bg-muted:   #5c5c5c;
+  --bg-weak:    #f7f7f7;
+
+  --text-strong:   #ffffff;
+  --text-sub:      #a3a3a3;
+  --text-soft:     #7b7b7b;
+  --text-disabled: #5c5c5c;
+  --text-inverse:  #171717;
+
+  --stroke-soft:   rgba(255, 255, 255, 0.05);
+  --stroke-medium: rgba(255, 255, 255, 0.10);
+  --stroke-strong: rgba(255, 255, 255, 0.20);
+
+  --primary-dark:  #ffa468;
+  --primary-base:  #e16614;
+  --primary-faint: rgba(250, 115, 25, 0.24);
+  --primary-mute:  rgba(250, 115, 25, 0.16);
+
+  --info-dark:  #6895ff;
+  --info-base:  #335cff;
+  --info-faint: rgba(51, 92, 255, 0.24);
+  --info-mute:  rgba(51, 92, 255, 0.16);
+
+  --error-dark:  #ff6875;
+  --error-base:  #e93544;
+  --error-faint: rgba(251, 55, 72, 0.24);
+  --error-mute:  rgba(251, 55, 72, 0.16);
+
+  --success-dark:  #3ee089;
+  --success-base:  #1daf61;
+  --success-faint: rgba(31, 193, 107, 0.24);
+  --success-mute:  rgba(31, 193, 107, 0.16);
+
+  --feature-dark:  #8c71f6;
+  --feature-base:  #7d52f4;
+  --feature-faint: rgba(125, 82, 244, 0.24);
+  --feature-mute:  rgba(125, 82, 244, 0.16);
+
+  --verified-dark:  #68cdff;
+  --verified-base:  #35ade9;
+  --verified-faint: rgba(71, 194, 255, 0.24);
+  --verified-mute:  rgba(71, 194, 255, 0.16);
+
+  --highlight-dark:  #ff68b3;
+  --highlight-base:  #ff68b3;
+  --highlight-faint: rgba(251, 75, 163, 0.24);
+  --highlight-mute:  rgba(251, 75, 163, 0.16);
+}
+
+/* ─── Base reset ─────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text-strong);
+  background-color: var(--bg-default);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Typography defaults ────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+
+p {
+  color: var(--text-sub);
+}
+
+a {
+  color: var(--primary-base);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code, pre {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* ─── Focus utility classes ──────────────────────── */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-active);
+}
+
+.focus-ring-error:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-error);
+}
+
+.focus-ring-success:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-success);
+}
+
+.focus-ring-grey:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-grey);
+}
+
+/* ─── Scrollbar ──────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--stroke-medium);
+  border-radius: var(--radius-full);
+}
+
+
+/* ═══════════════════════════════════════════════════
+   TYPOGRAPHY
+   5 categories, largest to smallest within each.
+   Usage: className="title-h1" / "label-lg" / etc.
+   
+   1. Title/Medium    — headings, 500 weight
+   2. Title/Regular   — headings, 400 weight
+   3. Label           — UI copy, 500 weight
+   4. Paragraph       — body copy, 400 weight
+   5. Subheading      — overlines, 500 + uppercase
+═══════════════════════════════════════════════════ */
+
+/* ─── 1. Title / Medium (weight: 500) ───────────── */
+
+.title-h1 {
+  font-family: var(--font-sans);
+  font-size: 72px;
+  font-weight: 500;
+  line-height: 86px;
+  letter-spacing: 0.01em;
+}
+
+.title-h2 {
+  font-family: var(--font-sans);
+  font-size: 60px;
+  font-weight: 500;
+  line-height: 72px;
+  letter-spacing: 0.01em;
+}
+
+.title-h3 {
+  font-family: var(--font-sans);
+  font-size: 48px;
+  font-weight: 500;
+  line-height: 58px;
+  letter-spacing: 0.01em;
+}
+
+.title-h4 {
+  font-family: var(--font-sans);
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 44px;
+  letter-spacing: 0.01em;
+}
+
+.title-h5 {
+  font-family: var(--font-sans);
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 38px;
+  letter-spacing: 0.01em;
+}
+
+.title-h6 {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 32px;
+  letter-spacing: 0.01em;
+}
+
+/* ─── 2. Title / Regular (weight: 400) ──────────── */
+
+.title-h1-regular {
+  font-family: var(--font-sans);
+  font-size: 72px;
+  font-weight: 400;
+  line-height: 86px;
+  letter-spacing: 0.01em;
+}
+
+.title-h2-regular {
+  font-family: var(--font-sans);
+  font-size: 60px;
+  font-weight: 400;
+  line-height: 72px;
+  letter-spacing: 0.01em;
+}
+
+.title-h3-regular {
+  font-family: var(--font-sans);
+  font-size: 48px;
+  font-weight: 400;
+  line-height: 58px;
+  letter-spacing: 0.01em;
+}
+
+.title-h4-regular {
+  font-family: var(--font-sans);
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 44px;
+  letter-spacing: 0.01em;
+}
+
+.title-h5-regular {
+  font-family: var(--font-sans);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 38px;
+  letter-spacing: 0.01em;
+}
+
+.title-h6-regular {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 32px;
+  letter-spacing: 0.01em;
+}
+
+/* ─── 3. Label (weight: 500) ─────────────────────── */
+
+.label-xl {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 32px;
+  letter-spacing: 0.02em;
+}
+
+.label-lg {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 26px;
+  letter-spacing: 0.02em;
+}
+
+.label-md {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: 0.02em;
+}
+
+.label-sm {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.02em;
+}
+
+.label-xs {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
+
+/* ─── 4. Paragraph (weight: 400) ────────────────── */
+
+.para-xl {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 32px;
+  letter-spacing: 0.02em;
+}
+
+.para-lg {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 26px;
+  letter-spacing: 0.02em;
+}
+
+.para-md {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: 0.02em;
+}
+
+.para-sm {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0.02em;
+}
+
+.para-xs {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
+
+/* ─── 5. Subheading (weight: 500, uppercase) ─────── */
+/* Wider letter-spacing + all caps — section labels, overlines */
+
+.subheading-lg {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 32px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.subheading-md {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.subheading-sm {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.subheading-xs {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.subheading-2xs {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
