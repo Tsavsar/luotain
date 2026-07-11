@@ -50,10 +50,9 @@ export default function Getstarted() {
         zIndex: 1,
         minHeight: '100vh',
         display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-start',
+        justifyContent: 'center',
         paddingTop: '160px',
-        alignItems: 'center',
+        alignItems: 'flex-start',
       }}
     >
       <div

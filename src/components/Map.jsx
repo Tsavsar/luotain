@@ -141,14 +141,14 @@ export default function Map() {
       className='map-container'
       style={{
         position: 'fixed',
-        bottom: 0,
+        bottom: 'calc(-50vh)',
         left: '50%',
         transform: 'translateX(-50%)',
         width: '1198px',
         maxWidth: '100%',
         overflow: 'hidden',
         pointerEvents: 'none',
-        zIndex: 0,
+        zIndex: -1,
       }}
     >
       <img
@@ -212,37 +212,6 @@ export default function Map() {
           </div>
         ))}
       </div>
-
-      {/* Terms */}
-      {/* <div
-        style={{
-          position: 'absolute',
-          bottom: '16px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          whiteSpace: 'nowrap',
-          fontSize: '12px',
-          color: 'var(--text-soft)',
-          fontFamily: 'var(--font-sans)',
-          pointerEvents: 'none',
-        }}
-      >
-        By continuing, you agree to our{' '}
-        <a
-          href='/terms'
-          style={{ color: 'var(--text-sub)', pointerEvents: 'auto' }}
-        >
-          Terms
-        </a>{' '}
-        and{' '}
-        <a
-          href='/privacy'
-          style={{ color: 'var(--text-sub)', pointerEvents: 'auto' }}
-        >
-          Privacy Policy
-        </a>
-        .
-      </div> */}
     </div>
   )
 }
