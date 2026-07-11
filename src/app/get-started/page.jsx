@@ -47,12 +47,12 @@ export default function Getstarted() {
     <main
       style={{
         position: 'relative',
-        zIndex: 1,
-        minHeight: '100vh',
+        zIndex: 2,
+        height: 'calc(100vh - var(--map-height))',
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
-        paddingTop: '160px',
-        alignItems: 'flex-start',
+        alignItems: 'center',
       }}
     >
       <div
@@ -265,29 +265,23 @@ export default function Getstarted() {
         {/* Terms */}
         <div
           style={{
-            position: 'absolute',
-            bottom: '16px',
+            position: 'fixed',
+            bottom: 'calc(var(--map-height) + 16px)',
             left: '50%',
             transform: 'translateX(-50%)',
             whiteSpace: 'nowrap',
             fontSize: '12px',
             color: 'var(--text-soft)',
             fontFamily: 'var(--font-sans)',
-            pointerEvents: 'none',
+            zIndex: 1,
           }}
         >
           By continuing, you agree to our{' '}
-          <a
-            href='/terms'
-            style={{ color: 'var(--text-sub)', pointerEvents: 'auto' }}
-          >
+          <a href='/terms' style={{ color: 'var(--text-sub)' }}>
             Terms
           </a>{' '}
           and{' '}
-          <a
-            href='/privacy'
-            style={{ color: 'var(--text-sub)', pointerEvents: 'auto' }}
-          >
+          <a href='/privacy' style={{ color: 'var(--text-sub)' }}>
             Privacy Policy
           </a>
           .

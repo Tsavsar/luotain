@@ -116,6 +116,8 @@
   --text-lg: 20px;
   --text-xl: 24px;
   --text-2xl: 32px;
+
+  --map-height: clamp(240px, 40vh, 460px);
 }
 
 /* ─── Dark mode (system) ─────────────────────────── */
@@ -682,6 +684,11 @@ input:focus-visible {
   }
 }
 
+@media (max-width: 768px) {
+  .map-container {
+    display: none;
+  }
+}
 /* 
 .auth-btn:hover {
   background: var(--bg-subtle) !important;

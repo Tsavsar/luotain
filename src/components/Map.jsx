@@ -52,13 +52,15 @@ const DOTS = [
 const FLAG_DOTS = DOTS.filter((d) => d.flag)
 const RADIUS = 18
 
+// Map's real aspect ratio from Figma: 1198 x 683
+const MAP_ASPECT = 1198 / 683
+
 export default function Map() {
   const [mousePos, setMousePos] = useState(null)
   const [isHovering, setIsHovering] = useState(false)
   const [visibleFlags, setVisibleFlags] = useState(new Set())
-  const containerRef = useRef(null)
+  const sizerRef = useRef(null) // tracks the FULL map box, not the clipped window
 
-  // stable per-dot animation values — initialised after mount to avoid SSR mismatch
   const [dotMeta, setDotMeta] = useState(() =>
     DOTS.map(() => ({ delay: 0, duration: 2.5 }))
   )
@@ -72,21 +74,21 @@ export default function Map() {
     )
   }, [])
 
-  // randomly show/hide flags every 2-4 seconds
   useEffect(() => {
     function randomiseFlags() {
       const shuffled = [...FLAG_DOTS].sort(() => Math.random() - 0.5)
-      const count = 2 + Math.floor(Math.random() * 2) // show 2-3 at a time
+      const count = 2 + Math.floor(Math.random() * 2)
       setVisibleFlags(new Set(shuffled.slice(0, count).map((d) => d.id)))
     }
-
     randomiseFlags()
     const id = setInterval(randomiseFlags, 3000)
     return () => clearInterval(id)
   }, [])
 
+  // mouse position measured against the SIZER (full map box),
+  // not the clipping window — this is what makes hover line up correctly
   const handleMouseMove = useCallback((e) => {
-    const rect = containerRef.current.getBoundingClientRect()
+    const rect = sizerRef.current.getBoundingClientRect()
     setMousePos({
       x: ((e.clientX - rect.left) / rect.width) * 100,
       y: ((e.clientY - rect.top) / rect.height) * 100,
@@ -102,7 +104,6 @@ export default function Map() {
   function getDotStyle(dot, index) {
     const { delay, duration } = dotMeta[index]
 
-    // proximity calculation
     if (mousePos) {
       const dx = dot.x - mousePos.x
       const dy = dot.y - mousePos.y
@@ -125,7 +126,6 @@ export default function Map() {
       }
     }
 
-    // hovering map but not near this dot — brighter ambient pulse
     if (isHovering) {
       return {
         ...base(dot, delay, duration),
@@ -137,38 +137,52 @@ export default function Map() {
   }
 
   return (
+    // OUTER WINDOW — this is the only thing that controls "how much shows"
+    // Height is driven by viewport height (vh), matching the Figma ratio
+    // (428px visible / 1024px design canvas = ~41.8vh)
     <div
       className='map-container'
       style={{
+        height: 'var(--map-height)',
         position: 'fixed',
-        bottom: 'calc(-50vh)',
+        bottom: 0,
         left: '50%',
         transform: 'translateX(-50%)',
-        width: '1198px',
-        maxWidth: '100%',
+        width: 'min(1198px, 100vw)',
+        height: 'clamp(240px, 40vh, 460px)',
         overflow: 'hidden',
         pointerEvents: 'none',
-        zIndex: -1,
+        zIndex: 0,
       }}
     >
-      <img
-        src='/assets/map.svg'
-        alt=''
-        style={{ width: '100%', display: 'block' }}
-      />
-
-      {/* Dot + flag layer */}
+      {/* SIZER — always keeps the map's true 1198:683 aspect ratio,
+          regardless of how much the outer window clips.
+          Dots and mouse-tracking are measured against THIS box,
+          so their % coordinates always mean the same thing. */}
       <div
-        ref={containerRef}
+        ref={sizerRef}
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         style={{
-          position: 'absolute',
-          inset: 0,
+          position: 'relative',
+          width: '100%',
+          aspectRatio: `${MAP_ASPECT}`,
           pointerEvents: 'auto',
         }}
       >
+        <img
+          src='/assets/map.svg'
+          alt=''
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            display: 'block',
+          }}
+        />
+
         {DOTS.map((dot, i) => (
           <div
             key={dot.id}
@@ -178,7 +192,6 @@ export default function Map() {
               top: `${dot.y}%`,
             }}
           >
-            {/* flag popup */}
             {dot.flag && (
               <div
                 style={{
@@ -200,7 +213,6 @@ export default function Map() {
               </div>
             )}
 
-            {/* dot */}
             <div
               style={{
                 ...getDotStyle(dot, i),
