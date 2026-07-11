@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import AuthButton from '@/components/secondarybutton'
 import Continuebutton from '@/components/continuebutton'
 import Inputfield from '@/components/input'
+import Map from '@/components/Map'
 
 export default function Getstarted() {
   const [email, setEmail] = useState('')
@@ -47,9 +48,10 @@ export default function Getstarted() {
       style={{
         minHeight: '100vh',
         display: 'flex',
-        justifyContent: 'center',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
         paddingTop: '160px',
-        alignItems: 'flex-start',
+        alignItems: 'center',
       }}
     >
       <div
@@ -230,6 +232,7 @@ export default function Getstarted() {
           )}
         </div>
       </div>
+      <Map />
     </main>
   )
 }
