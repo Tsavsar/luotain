@@ -685,8 +685,8 @@ input:focus-visible {
 }
 
 @media (max-width: 768px) {
-  .map-container {
-    display: none;
+  .topspace {
+    margin-top: 72px;
   }
 }
 /* 

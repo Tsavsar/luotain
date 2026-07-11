@@ -64,7 +64,10 @@ export default function Getstarted() {
         }}
       >
         {/*Logo and header texts*/}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div
+          className='topspace'
+          style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+        >
           <div className='luotain-logo'>
             <svg
               width='39'
