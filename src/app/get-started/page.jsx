@@ -274,6 +274,9 @@ export default function Getstarted() {
             color: 'var(--text-soft)',
             fontFamily: 'var(--font-sans)',
             zIndex: 1,
+            background: 'var(--bg-default)',
+            padding: '6px 12px',
+            borderRadius: 'var(--radius-full)',
           }}
         >
           By continuing, you agree to our{' '}
