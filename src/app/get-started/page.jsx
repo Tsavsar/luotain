@@ -88,7 +88,7 @@ export default function Getstarted() {
             className='header'
             style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}
           >
-            <p className='label-md' style={{ color: 'var(--text-strong)' }}>
+            <p className='label-lg' style={{ color: 'var(--text-strong)' }}>
               Create your free account
             </p>
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
