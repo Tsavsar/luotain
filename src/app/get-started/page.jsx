@@ -171,7 +171,11 @@ export default function Getstarted() {
           <Inputfield
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            onBlur={validateEmail}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                validateEmail()
+              }
+            }}
             error={emailError}
             placeholder='Email address'
             lefticon={

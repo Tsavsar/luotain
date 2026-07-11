@@ -9,7 +9,7 @@ export default function Inputfield({
   value,
   onChange,
   error,
-  onBlur,
+  onKeyDown,
 }) {
   const [focused, setFocused] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -67,11 +67,9 @@ export default function Inputfield({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
+        onKeyDown={onKeyDown}
         onFocus={() => setFocused(true)}
-        onBlur={() => {
-          setFocused(false)
-          onBlur?.()
-        }}
+        onBlur={() => setFocused(false)}
         style={{
           outline: 'none',
           flex: 1,
