@@ -22,7 +22,7 @@ export default function LoginPage() {
       >
         {/*Logo and header texts*/}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div className='luotain-logo'> 
+          <div className='luotain-logo'>
             <svg
               width='30'
               height='32'
@@ -122,7 +122,17 @@ export default function LoginPage() {
 
         {/*input field & button*/}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <Inputfield placeholder='Email address' />
+          <Inputfield
+            lefticon={
+              <img
+                src='/assets/mail.svg'
+                width={20}
+                height={20}
+                alt='Google'
+              />
+            }
+            placeholder='Email address'
+          />
           <AuthButton
             style={{ width: '100%' }}
 

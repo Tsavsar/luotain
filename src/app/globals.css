@@ -589,6 +589,10 @@ pre {
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
+
+input:focus-visible {
+  outline: none;
+}
 /* 
 .auth-btn:hover {
   background: var(--bg-subtle) !important;
