@@ -2,9 +2,15 @@
 
 import { useState } from 'react'
 
-export default function Inputfield({ lefticon, righticon, placeholder }) {
-  const [value, setValue] = useState('')
-
+export default function Inputfield({
+  lefticon,
+  righticon,
+  placeholder,
+  value,
+  onChange,
+  error,
+  onBlur,
+}) {
   const [focused, setFocused] = useState(false)
   const [hovered, setHovered] = useState(false)
 
@@ -18,12 +24,18 @@ export default function Inputfield({ lefticon, righticon, placeholder }) {
         boxShadow: 'var(--shadow-xs)',
         borderRadius: 'var(--radius-lg)',
         backgroundColor: 'var(--bg-default)',
-        border: focused
-          ? '1px solid var(--primary-base)'
-          : hovered
-            ? '1px solid var(--stroke-medium)'
-            : '1px solid var(--stroke-soft)',
-        boxShadow: focused ? 'var(--focus-active)' : 'var(--shadow-xs)',
+        border: error
+          ? '1px solid var(--error-base)'
+          : focused
+            ? '1px solid var(--primary-base)'
+            : hovered
+              ? '1px solid var(--stroke-medium)'
+              : '1px solid var(--stroke-soft)',
+        boxShadow: error
+          ? 'var(--focus-error)'
+          : focused
+            ? 'var(--focus-active)'
+            : 'var(--shadow-xs)',
         display: 'flex',
         alignItems: 'center',
         padding: '10px 8px 10px 14px',
@@ -38,13 +50,28 @@ export default function Inputfield({ lefticon, righticon, placeholder }) {
         transition: 'border 0.15s ease, box-shadow 0.15s ease',
       }}
     >
-      {lefticon}
+      <div
+        style={{
+          color:
+            focused || value.length > 0
+              ? 'var(--text-strong)'
+              : 'var(--text-soft)',
+          display: 'flex',
+          alignItems: 'center',
+          transition: 'color 0.15s ease',
+        }}
+      >
+        {lefticon}
+      </div>
       <input
         placeholder={placeholder}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={onChange}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onBlur={() => {
+          setFocused(false)
+          onBlur?.()
+        }}
         style={{
           outline: 'none',
           flex: 1,

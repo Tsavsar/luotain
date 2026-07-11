@@ -593,6 +593,25 @@ pre {
 input:focus-visible {
   outline: none;
 }
+
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.is-shaking {
+  animation: shake 0.3s ease;
+}
 /* 
 .auth-btn:hover {
   background: var(--bg-subtle) !important;

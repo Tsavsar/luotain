@@ -1,7 +1,46 @@
+'use client'
+
+import { useState, useRef } from 'react'
 import AuthButton from '@/components/secondarybutton'
+import Continuebutton from '@/components/continuebutton'
 import Inputfield from '@/components/input'
 
-export default function LoginPage() {
+export default function Getstarted() {
+  const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState(false) // ← add this
+  const [shaking, setShaking] = useState(false)
+  const [showToast, setShowToast] = useState(false)
+  const toastTimer = useRef(null)
+  const errorTimer = useRef(null)
+
+  function handleContinue() {
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    setTimeout(() => setEmailError(false), 2000)
+
+    clearTimeout(errorTimer.current)
+    setEmailError(true)
+    errorTimer.current = setTimeout(() => setEmailError(false), 2000)
+
+    if (!isValid) {
+      setEmailError(true)
+
+      // shake
+      setShaking(false)
+      setTimeout(() => setShaking(true), 10)
+      setTimeout(() => setShaking(false), 310)
+
+      // toast
+      clearTimeout(toastTimer.current)
+      setShowToast(true)
+      toastTimer.current = setTimeout(() => setShowToast(false), 3000)
+
+      return
+    }
+  }
+  function validateEmail() {
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    setEmailError(!isValid)
+  }
   return (
     <main
       style={{
@@ -123,23 +162,73 @@ export default function LoginPage() {
         {/*input field & button*/}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <Inputfield
-            lefticon={
-              <img
-                src='/assets/mail.svg'
-                width={20}
-                height={20}
-                alt='Google'
-              />
-            }
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={validateEmail}
+            error={emailError}
             placeholder='Email address'
+            lefticon={
+              <svg
+                width='20'
+                height='20'
+                viewBox='0 0 20 20'
+                fill='none'
+                xmlns='http://www.w3.org/2000/svg'
+              >
+                <path
+                  d='M9 17V15'
+                  stroke='currentColor'
+                  strokeWidth='1.5'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                />
+                <path
+                  d='M15 6C15 7.654 13.654 9 12 9C11.448 9 11 8.552 11 8C11 7.448 11.448 7 12 7C12.552 7 13 6.551 13 6V5.816C12.153 5.514 11.481 4.845 11.178 4H6C3.794 4 2 5.794 2 8V13.5C2 14.878 3.122 16 4.5 16H15.5C16.878 16 18 14.878 18 13.5V8C18 6.95 17.585 6 16.92 5.286C16.398 5.725 15.734 6 15 6ZM8 14H4.5C4.224 14 4 13.776 4 13.5V8C4 6.897 4.897 6 6 6C7.103 6 8 6.897 8 8V14Z'
+                  fill='currentColor'
+                />
+                <path
+                  d='M15 1H12C11.4477 1 11 1.44772 11 2V3C11 3.55228 11.4477 4 12 4H15C15.5523 4 16 3.55228 16 3V2C16 1.44772 15.5523 1 15 1Z'
+                  fill='currentColor'
+                />
+                <path
+                  d='M12 3V6'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                />
+              </svg>
+            }
           />
-          <AuthButton
-            style={{ width: '100%' }}
-
+          <Continuebutton
+            active={email.length > 0}
             label='Continue with email'
+            shaking={shaking}
+            onClick={handleContinue}
           />
         </div>
       </div>
+
+      {showToast && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '32px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'var(--bg-default)',
+            border: '1px solid var(--stroke-soft)',
+            boxShadow: 'var(--shadow-md)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '12px 20px',
+            fontSize: '14px',
+            color: 'var(--text-sub)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Invalid email, please enter a valid email to continue
+        </div>
+      )}
     </main>
   )
 }
