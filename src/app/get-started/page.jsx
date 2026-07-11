@@ -12,24 +12,22 @@ export default function Getstarted() {
   const [showToast, setShowToast] = useState(false)
   const toastTimer = useRef(null)
   const errorTimer = useRef(null)
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+
+  function validateEmail() {
+    setEmailError(!isEmailValid)
+  }
 
   function handleContinue() {
-    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    setTimeout(() => setEmailError(false), 2000)
-
-    clearTimeout(errorTimer.current)
-    setEmailError(true)
-    errorTimer.current = setTimeout(() => setEmailError(false), 2000)
-
-    if (!isValid) {
+    if (!isEmailValid) {
+      clearTimeout(errorTimer.current)
       setEmailError(true)
+      errorTimer.current = setTimeout(() => setEmailError(false), 2000)
 
-      // shake
       setShaking(false)
       setTimeout(() => setShaking(true), 10)
       setTimeout(() => setShaking(false), 310)
 
-      // toast
       clearTimeout(toastTimer.current)
       setShowToast(true)
       toastTimer.current = setTimeout(() => setShowToast(false), 3000)
@@ -200,35 +198,35 @@ export default function Getstarted() {
               </svg>
             }
           />
+
           <Continuebutton
-            active={email.length > 0}
+            active={isEmailValid}
             label='Continue with email'
             shaking={shaking}
             onClick={handleContinue}
           />
+          {showToast && (
+            <div
+              className='slide-up'
+              style={{
+                width: '100%',
+                borderRadius: '16px',
+                backgroundColor: 'var(--error-mute)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                padding: '16px',
+                boxSizing: 'border-box',
+                fontSize: '12px',
+                color: 'var(--error-base)',
+                fontFamily: 'var(--font-sans)',
+              }}
+            >
+              Invalid email, please enter a valid email to continue
+            </div>
+          )}
         </div>
       </div>
-
-      {showToast && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '32px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'var(--bg-default)',
-            border: '1px solid var(--stroke-soft)',
-            boxShadow: 'var(--shadow-md)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '12px 20px',
-            fontSize: '14px',
-            color: 'var(--text-sub)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Invalid email, please enter a valid email to continue
-        </div>
-      )}
     </main>
   )
 }

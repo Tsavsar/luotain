@@ -612,6 +612,36 @@ input:focus-visible {
 .is-shaking {
   animation: shake 0.3s ease;
 }
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.slide-down {
+  animation: slideDown 0.2s ease forwards;
+}
 /* 
 .auth-btn:hover {
   background: var(--bg-subtle) !important;
