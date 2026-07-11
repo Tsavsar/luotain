@@ -22,7 +22,7 @@ export default function LoginPage() {
       >
         {/*Logo and header texts*/}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div className='luotain-logo'>
+          <div className='luotain-logo'> 
             <svg
               width='30'
               height='32'
