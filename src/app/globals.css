@@ -679,6 +679,12 @@ input:focus-visible {
     pointer-events: none;
   }
 }
+
+@media (max-width: 768px) {
+  .map-container {
+    display: none;
+  }
+}
 /* 
 .auth-btn:hover {
   background: var(--bg-subtle) !important;

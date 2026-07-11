@@ -20,7 +20,7 @@ export default function Inputfield({
       onMouseLeave={() => setHovered(false)}
       style={{
         width: '100%',
-        height: '40px',
+        height: 'fit-content',
         boxShadow: 'var(--shadow-xs)',
         borderRadius: 'var(--radius-lg)',
         backgroundColor: 'var(--bg-default)',
