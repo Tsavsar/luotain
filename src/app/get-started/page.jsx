@@ -218,7 +218,7 @@ export default function Getstarted() {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'flex-start',
-                padding: '16px',
+                padding: '12px',
                 boxSizing: 'border-box',
                 fontSize: '12px',
                 color: 'var(--error-base)',
