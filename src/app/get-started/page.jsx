@@ -212,26 +212,54 @@ export default function Getstarted() {
             shaking={shaking}
             onClick={handleContinue}
           />
-          {toastState !== 'hidden' && (
-            <div
-              className={toastState === 'hiding' ? 'slide-down' : 'slide-up'}
+          <div
+            className={
+              toastState === 'visible'
+                ? 'slide-up'
+                : toastState === 'hiding'
+                  ? 'slide-down'
+                  : ''
+            }
+            style={{
+              width: '100%',
+              borderRadius: '16px',
+              backgroundColor: 'var(--error-mute)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              height: toastState !== 'hidden' ? '52px' : '0',
+              padding: toastState !== 'hidden' ? '16px' : '0 16px',
+              transition:
+                'height 0.35s ease, padding 0.35s ease, opacity 0.35s ease',
+              overflow: 'hidden',
+              opacity: toastState !== 'hidden' ? 1 : 0,
+              fontSize: '12px',
+              color: 'var(--error-base)',
+              fontFamily: 'var(--font-sans)',
+            }}
+          >
+            <p
               style={{
                 width: '100%',
-                borderRadius: '16px',
-                backgroundColor: 'var(--error-mute)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                padding: '12px',
-                boxSizing: 'border-box',
-                fontSize: '12px',
                 color: 'var(--error-base)',
                 fontFamily: 'var(--font-sans)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
               }}
             >
               Invalid email, please enter a valid email to continue
-            </div>
-          )}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
+            <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
+              Already have an account?
+            </p>
+            <p className='label-sm' style={{ color: 'var(--primary-base)' }}>
+              Login
+            </p>
+          </div>
         </div>
       </div>
       <div>

@@ -616,7 +616,7 @@ input:focus-visible {
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(-12px);
   }
   to {
     opacity: 1;
@@ -635,12 +635,12 @@ input:focus-visible {
   }
   to {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(-12px);
   }
 }
 
 .slide-down {
-  animation: slideDown 0.2s ease forwards;
+  animation: slideDown 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes dotPulse {
