@@ -120,9 +120,14 @@ export default function LoginPage() {
           ></div>
         </div>
 
-        {/*input field*/}
-        <div style={{/* wrapper styles */}}>
+        {/*input field & button*/}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <Inputfield placeholder='Email address' />
+          <AuthButton
+            style={{ width: '100%' }}
+
+            label='Continue with email'
+          />
         </div>
       </div>
     </main>

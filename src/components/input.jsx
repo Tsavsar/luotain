@@ -9,7 +9,7 @@ export default function Inputfield({ lefticon, righticon, placeholder }) {
   return (
     <div
       style={{
-        width: '380px',
+        width: '100%',
         height: '40px',
         boxShadow: 'var(--shadow-xs)',
         borderRadius: 'var(--radius-lg)',
