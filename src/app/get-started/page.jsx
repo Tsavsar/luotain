@@ -9,7 +9,7 @@ export default function Getstarted() {
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState(false) // ← add this
   const [shaking, setShaking] = useState(false)
-  const [showToast, setShowToast] = useState(false)
+  const [toastState, setToastState] = useState('hidden')
   const toastTimer = useRef(null)
   const errorTimer = useRef(null)
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -29,8 +29,11 @@ export default function Getstarted() {
       setTimeout(() => setShaking(false), 310)
 
       clearTimeout(toastTimer.current)
-      setShowToast(true)
-      toastTimer.current = setTimeout(() => setShowToast(false), 3000)
+      setToastState('visible')
+      toastTimer.current = setTimeout(() => {
+        setToastState('hiding')
+        setTimeout(() => setToastState('hidden'), 200)
+      }, 2000)
 
       return
     }
@@ -205,9 +208,9 @@ export default function Getstarted() {
             shaking={shaking}
             onClick={handleContinue}
           />
-          {showToast && (
+          {toastState !== 'hidden' && (
             <div
-              className='slide-up'
+              className={toastState === 'hiding' ? 'slide-down' : 'slide-up'}
               style={{
                 width: '100%',
                 borderRadius: '16px',
