@@ -266,7 +266,7 @@ export default function Getstarted() {
         <div
           style={{
             position: 'fixed',
-            bottom: 'calc(var(--map-height) + 16px)',
+            bottom: '16px',
             left: '50%',
             transform: 'translateX(-50%)',
             whiteSpace: 'nowrap',
