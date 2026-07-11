@@ -46,6 +46,8 @@ export default function Getstarted() {
   return (
     <main
       style={{
+        position: 'relative',
+        zIndex: 1,
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
@@ -232,7 +234,9 @@ export default function Getstarted() {
           )}
         </div>
       </div>
-      <Map />
+      <div>
+        <Map />
+      </div>
     </main>
   )
 }
