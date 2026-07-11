@@ -677,14 +677,11 @@ input:focus-visible {
   .map-container {
     opacity: 0.3;
     pointer-events: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .map-container {
+    bottom: -200px;
     display: none;
   }
 }
+
 /* 
 .auth-btn:hover {
   background: var(--bg-subtle) !important;

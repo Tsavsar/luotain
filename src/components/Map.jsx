@@ -214,7 +214,7 @@ export default function Map() {
       </div>
 
       {/* Terms */}
-      <div
+      {/* <div
         style={{
           position: 'absolute',
           bottom: '16px',
@@ -242,7 +242,7 @@ export default function Map() {
           Privacy Policy
         </a>
         .
-      </div>
+      </div> */}
     </div>
   )
 }

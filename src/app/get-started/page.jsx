@@ -91,7 +91,7 @@ export default function Getstarted() {
             <p className='label-lg' style={{ color: 'var(--text-strong)' }}>
               Create your free account
             </p>
-            <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
+            <p className='para-md' style={{ color: 'var(--text-sub)' }}>
               Shorten links, generate QR codes, and see exactly where every
               click and scan lands.
             </p>
@@ -232,6 +232,38 @@ export default function Getstarted() {
               Invalid email, please enter a valid email to continue
             </div>
           )}
+        </div>
+      </div>
+      <div>
+        {/* Terms */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '16px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            whiteSpace: 'nowrap',
+            fontSize: '12px',
+            color: 'var(--text-soft)',
+            fontFamily: 'var(--font-sans)',
+            pointerEvents: 'none',
+          }}
+        >
+          By continuing, you agree to our{' '}
+          <a
+            href='/terms'
+            style={{ color: 'var(--text-sub)', pointerEvents: 'auto' }}
+          >
+            Terms
+          </a>{' '}
+          and{' '}
+          <a
+            href='/privacy'
+            style={{ color: 'var(--text-sub)', pointerEvents: 'auto' }}
+          >
+            Privacy Policy
+          </a>
+          .
         </div>
       </div>
       <div>
