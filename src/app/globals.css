@@ -684,10 +684,20 @@ input:focus-visible {
   }
 }
 
+
+
 @media (max-width: 768px) {
   .topspace {
     margin-top: 72px;
   }
+}
+
+[data-theme='dark'] .map-container img {
+  filter: invert(1) brightness(0.4);
+}
+
+[data-theme='dark'] .map-container img {
+  opacity: 0.4;
 }
 /* 
 .auth-btn:hover {

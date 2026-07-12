@@ -5,6 +5,7 @@ import AuthButton from '@/components/secondarybutton'
 import Continuebutton from '@/components/continuebutton'
 import Inputfield from '@/components/input'
 import Map from '@/components/Map'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export default function Getstarted() {
   const [email, setEmail] = useState('')
@@ -63,6 +64,8 @@ export default function Getstarted() {
           gap: '18px',
         }}
       >
+        <ThemeToggle />
+
         {/*Logo and header texts*/}
         <div
           className='topspace'
@@ -124,12 +127,20 @@ export default function Getstarted() {
           <AuthButton
             style={{ width: '100%' }}
             icon={
-              <img
-                src='/assets/githublogo.svg'
-                width={20}
-                height={20}
-                alt='Github'
-              />
+              <svg
+                width='20'
+                height='20'
+                viewBox='0 0 20 20'
+                fill='none'
+                xmlns='http://www.w3.org/2000/svg'
+              >
+                <path
+                  fillRule='evenodd'
+                  clipRule='evenodd'
+                  d='M10 1.67A8.33 8.33 0 0 0 1.67 10c0 3.68 2.39 6.8 5.7 7.9.42.08.57-.18.57-.4v-1.4c-2.33.51-2.82-1.12-2.82-1.12-.38-.97-.93-1.22-.93-1.22-.76-.52.06-.51.06-.51.84.06 1.28.86 1.28.86.75 1.28 1.96.91 2.44.7.08-.54.29-.91.53-1.12-1.86-.21-3.82-.93-3.82-4.15 0-.92.33-1.67.86-2.26-.09-.21-.37-1.07.08-2.22 0 0 .7-.22 2.3.86a7.97 7.97 0 0 1 4.2 0c1.59-1.08 2.29-.86 2.29-.86.45 1.15.17 2 .08 2.22.54.59.86 1.34.86 2.26 0 3.23-1.97 3.94-3.84 4.15.3.26.57.77.57 1.55v2.3c0 .22.15.49.58.4A8.33 8.33 0 0 0 10 1.67z'
+                  fill='currentColor'
+                />
+              </svg>
             }
             label='Github'
           />
