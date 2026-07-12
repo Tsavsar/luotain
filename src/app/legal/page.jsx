@@ -131,17 +131,14 @@ export default function TermsPage() {
 
         <Section title='4. Acceptable Use'>
           You agree not to use Luotain to create or distribute links that:
-          <List
-            items={[
-              'Lead to phishing, malware, or fraudulent content',
-              'Violate any applicable law or regulation',
-              'Infringe on intellectual property rights',
-              'Contain spam or unsolicited bulk messaging',
-              'Impersonate any person or entity',
-            ]}
-          />
+          <br />
+          - Lead to phishing, malware, or fraudulent content <br />
+          - Violate any applicable law or regulation <br />
+          - Infringe on intellectual property rights <br />
+          - Contain spam or unsolicited bulk messaging <br />
+          - Impersonate any person or entity <br />
           We reserve the right to disable any link or account found in violation
-          of this policy, without notice.
+          of this policy, without notice. <br />
         </Section>
 
         <Section title='5. Subscriptions and Payments'>
@@ -211,25 +208,5 @@ function Section({ title, children }) {
         {children}
       </p>
     </div>
-  )
-}
-
-function List({ items }) {
-  return (
-    <ul
-      style={{
-        margin: '8px 0 0',
-        paddingLeft: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '4px',
-      }}
-    >
-      {items.map((item, i) => (
-        <li key={i} className='para-sm' style={{ color: 'var(--text-sub)' }}>
-          {item}
-        </li>
-      ))}
-    </ul>
   )
 }
