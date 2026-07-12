@@ -85,6 +85,7 @@ export default function TermsPage() {
               display: 'flex',
               flexDirection: 'row',
               justifyContent: 'space-between',
+              alignItems: 'flex-end',
             }}
           >
             <h1
@@ -99,7 +100,12 @@ export default function TermsPage() {
             </h1>
             <p
               className='para-sm'
-              style={{ width: '100%', color: 'var(--text-soft)' }}
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                color: 'var(--text-soft)',
+                width: '100%',
+              }}
             >
               Last updated: July 12, 2026
             </p>
