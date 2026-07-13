@@ -1,3 +1,5 @@
+import TermsSidebar from '@/components/termssidebar'
+
 // ─── Sidebar index items — id must match each Section's id below ───
 const SECTIONS = [
   { id: 'acceptance', title: 'Acceptance of Terms' },
@@ -17,137 +19,128 @@ export const metadata = {
   title: 'Terms of Service — Luotain',
 }
 
-// NOTE: no <main>, no header block — those now live in
-// src/app/(legal)/layout.jsx via <LegalHeader />. This page
-// only renders the two-column sidebar + content split.
 export default function TermsPage() {
   return (
     <div
-      style={{ width: '100%', maxWidth: '920px', display: 'flex', gap: '80px' }}
+      className='legal-scroll-area'
+      style={{
+        height: '100%',
+        overflowY: 'auto',
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '0 24px 120px',
+      }}
     >
-      {/* --- Sidebar index nav --- */}
-      <nav
-        className='terms-sidebar'
-        style={{
-          width: '180px',
-          flexShrink: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
-          position: 'sticky',
-          top: '80px',
-          height: 'fit-content',
-        }}
-      >
-        {SECTIONS.map((s) => (
-          <a
-            key={s.id}
-            href={`#${s.id}`}
-            className='para-xs'
-            style={{ color: 'var(--text-soft)', textDecoration: 'none' }}
-          >
-            {s.title}
-          </a>
-        ))}
-      </nav>
-
-      {/* --- Content column --- */}
       <div
         style={{
-          flex: 1,
-          maxWidth: '720px',
+          width: '100%',
+          maxWidth: '920px',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '44px',
+          gap: '80px',
         }}
       >
-        <Section id='acceptance' title='Acceptance of Terms'>
-          By creating an account or using Luotain, you agree to be bound by
-          these Terms of Service. If you do not agree, do not use the service.
-        </Section>
+        <TermsSidebar sections={SECTIONS} />
 
-        <Section id='description' title='Description of Service'>
-          Luotain provides link shortening and QR code generation, along with
-          click and scan analytics. We may add, modify, or discontinue features
-          at any time without prior notice.
-        </Section>
+        <div
+          style={{
+            flex: 1,
+            maxWidth: '720px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '44px',
+          }}
+        >
+          <Section id='acceptance' title='Acceptance of Terms'>
+            By creating an account or using Luotain, you agree to be bound by
+            these Terms of Service. If you do not agree, do not use the service.
+          </Section>
 
-        <Section id='account' title='Account Registration'>
-          You must provide accurate information when creating an account. You
-          are responsible for maintaining the security of your account
-          credentials and for all activity that occurs under your account.
-        </Section>
+          <Section id='description' title='Description of Service'>
+            Luotain provides link shortening and QR code generation, along with
+            click and scan analytics. We may add, modify, or discontinue
+            features at any time without prior notice.
+          </Section>
 
-        <Section id='acceptable-use' title='Acceptable Use'>
-          You agree not to use Luotain to create or distribute links that:
-          <List
-            items={[
-              'Lead to phishing, malware, or fraudulent content',
-              'Violate any applicable law or regulation',
-              'Infringe on intellectual property rights',
-              'Contain spam or unsolicited bulk messaging',
-              'Impersonate any person or entity',
-            ]}
-          />
-          We reserve the right to disable any link or account found in violation
-          of this policy, without notice.
-        </Section>
+          <Section id='account' title='Account Registration'>
+            You must provide accurate information when creating an account. You
+            are responsible for maintaining the security of your account
+            credentials and for all activity that occurs under your account.
+          </Section>
 
-        <Section id='subscriptions' title='Subscriptions and Payments'>
-          Luotain offers Free, Starter, and Pro plans. Paid subscriptions are
-          billed through our payment processor, Lemon Squeezy, and are subject
-          to their terms in addition to ours. Subscriptions renew automatically
-          unless cancelled prior to the renewal date. Fees are non-refundable
-          except where required by law.
-        </Section>
+          <Section id='acceptable-use' title='Acceptable Use'>
+            You agree not to use Luotain to create or distribute links that:
+            <List
+              items={[
+                'Lead to phishing, malware, or fraudulent content',
+                'Violate any applicable law or regulation',
+                'Infringe on intellectual property rights',
+                'Contain spam or unsolicited bulk messaging',
+                'Impersonate any person or entity',
+              ]}
+            />
+            We reserve the right to disable any link or account found in
+            violation of this policy, without notice.
+          </Section>
 
-        <Section id='ownership' title='Content and Link Ownership'>
-          You retain ownership of the destination URLs and content you link to
-          through Luotain. We claim no ownership over your links, but you grant
-          us a limited license to store and process them in order to provide the
-          service.
-        </Section>
+          <Section id='subscriptions' title='Subscriptions and Payments'>
+            Luotain offers Free, Starter, and Pro plans. Paid subscriptions are
+            billed through our payment processor, Lemon Squeezy, and are subject
+            to their terms in addition to ours. Subscriptions renew
+            automatically unless cancelled prior to the renewal date. Fees are
+            non-refundable except where required by law.
+          </Section>
 
-        <Section id='availability' title='Service Availability'>
-          We aim to keep Luotain available at all times but do not guarantee
-          uninterrupted access. We are not liable for any downtime, data loss,
-          or service interruption.
-        </Section>
+          <Section id='ownership' title='Content and Link Ownership'>
+            You retain ownership of the destination URLs and content you link to
+            through Luotain. We claim no ownership over your links, but you
+            grant us a limited license to store and process them in order to
+            provide the service.
+          </Section>
 
-        <Section id='termination' title='Termination'>
-          We may suspend or terminate your account at any time for violation of
-          these terms. You may cancel your account at any time from your account
-          settings.
-        </Section>
+          <Section id='availability' title='Service Availability'>
+            We aim to keep Luotain available at all times but do not guarantee
+            uninterrupted access. We are not liable for any downtime, data loss,
+            or service interruption.
+          </Section>
 
-        <Section id='liability' title='Disclaimer and Limitation of Liability'>
-          Luotain is provided "as is" without warranties of any kind. To the
-          maximum extent permitted by law, we are not liable for any indirect,
-          incidental, or consequential damages arising from your use of the
-          service.
-        </Section>
+          <Section id='termination' title='Termination'>
+            We may suspend or terminate your account at any time for violation
+            of these terms. You may cancel your account at any time from your
+            account settings.
+          </Section>
 
-        <Section id='changes' title='Changes to These Terms'>
-          We may update these Terms from time to time. Continued use of Luotain
-          after changes take effect constitutes acceptance of the revised terms.
-        </Section>
-
-        <Section id='contact' title='Contact'>
-          Questions about these Terms can be directed to{' '}
-          <a
-            href='mailto:legal@luotain.io'
-            style={{ color: 'var(--primary-base)' }}
+          <Section
+            id='liability'
+            title='Disclaimer and Limitation of Liability'
           >
-            legal@luotain.io
-          </a>
-          .
-        </Section>
+            Luotain is provided "as is" without warranties of any kind. To the
+            maximum extent permitted by law, we are not liable for any indirect,
+            incidental, or consequential damages arising from your use of the
+            service.
+          </Section>
+
+          <Section id='changes' title='Changes to These Terms'>
+            We may update these Terms from time to time. Continued use of
+            Luotain after changes take effect constitutes acceptance of the
+            revised terms.
+          </Section>
+
+          <Section id='contact' title='Contact'>
+            Questions about these Terms can be directed to{' '}
+            <a
+              href='mailto:legal@luotain.io'
+              style={{ color: 'var(--primary-base)' }}
+            >
+              legal@luotain.io
+            </a>
+            .
+          </Section>
+        </div>
       </div>
     </div>
   )
 }
 
-// ─── Reusable section wrapper: heading + body ───
 function Section({ id, title, children }) {
   return (
     <div
@@ -156,7 +149,7 @@ function Section({ id, title, children }) {
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
-        scrollMarginTop: '80px',
+        scrollMarginTop: '20px',
       }}
     >
       <h2 className='label-lg' style={{ color: 'var(--text-strong)' }}>
@@ -172,7 +165,6 @@ function Section({ id, title, children }) {
   )
 }
 
-// ─── Reusable bulleted list ───
 function List({ items }) {
   return (
     <ul

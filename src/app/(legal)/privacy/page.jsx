@@ -1,4 +1,5 @@
-// ─── Sidebar index items — id must match each Section's id below ───
+import TermsSidebar from '@/components/termssidebar'
+
 const SECTIONS = [
   { id: 'information-we-collect', title: 'Information We Collect' },
   { id: 'how-we-use', title: 'How We Use Information' },
@@ -16,120 +17,108 @@ export const metadata = {
   title: 'Privacy Policy — Luotain',
 }
 
-// NOTE: no <main>, no header block — those now live in
-// src/app/(legal)/layout.jsx via <LegalHeader />. This page
-// only renders the two-column sidebar + content split.
 export default function PrivacyPage() {
   return (
     <div
-      style={{ width: '100%', maxWidth: '920px', display: 'flex', gap: '80px' }}
+      className='legal-scroll-area'
+      style={{
+        height: '100%',
+        overflowY: 'auto',
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '0 24px 120px',
+      }}
     >
-      {/* --- Sidebar index nav --- */}
-      <nav
-        className='terms-sidebar'
-        style={{
-          width: '180px',
-          flexShrink: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
-          position: 'sticky',
-          top: '80px',
-          height: 'fit-content',
-        }}
-      >
-        {SECTIONS.map((s) => (
-          <a
-            key={s.id}
-            href={`#${s.id}`}
-            className='para-xs'
-            style={{ color: 'var(--text-soft)', textDecoration: 'none' }}
-          >
-            {s.title}
-          </a>
-        ))}
-      </nav>
-
-      {/* --- Content column --- */}
       <div
         style={{
-          flex: 1,
-          maxWidth: '720px',
+          width: '100%',
+          maxWidth: '920px',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '44px',
+          gap: '80px',
         }}
       >
-        <Section id='information-we-collect' title='Information We Collect'>
-          We collect information you provide directly, such as your email
-          address and account details, and information generated through your
-          use of the service, including link destinations, QR code data, click
-          and scan timestamps, approximate location, and referring source.
-        </Section>
+        <TermsSidebar sections={SECTIONS} />
 
-        <Section id='how-we-use' title='How We Use Information'>
-          We use collected information to provide and improve the service,
-          generate analytics for your links and QR codes, communicate with you
-          about your account, and process payments.
-        </Section>
+        <div
+          style={{
+            flex: 1,
+            maxWidth: '720px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '44px',
+          }}
+        >
+          <Section id='information-we-collect' title='Information We Collect'>
+            We collect information you provide directly, such as your email
+            address and account details, and information generated through your
+            use of the service, including link destinations, QR code data, click
+            and scan timestamps, approximate location, and referring source.
+          </Section>
 
-        <Section id='third-party' title='Third-Party Services'>
-          We use third-party providers to operate Luotain, including Lemon
-          Squeezy for payment processing and cloud infrastructure providers for
-          hosting. These providers process data on our behalf under their own
-          privacy policies.
-        </Section>
+          <Section id='how-we-use' title='How We Use Information'>
+            We use collected information to provide and improve the service,
+            generate analytics for your links and QR codes, communicate with you
+            about your account, and process payments.
+          </Section>
 
-        <Section id='cookies' title='Cookies'>
-          We use cookies and similar technologies to keep you signed in and to
-          understand how the service is used. You can control cookies through
-          your browser settings.
-        </Section>
+          <Section id='third-party' title='Third-Party Services'>
+            We use third-party providers to operate Luotain, including Lemon
+            Squeezy for payment processing and cloud infrastructure providers
+            for hosting. These providers process data on our behalf under their
+            own privacy policies.
+          </Section>
 
-        <Section id='retention' title='Data Retention'>
-          We retain account and link data for as long as your account remains
-          active. If you delete your account, associated data is removed within
-          30 days, except where retention is required by law.
-        </Section>
+          <Section id='cookies' title='Cookies'>
+            We use cookies and similar technologies to keep you signed in and to
+            understand how the service is used. You can control cookies through
+            your browser settings.
+          </Section>
 
-        <Section id='your-rights' title='Your Rights'>
-          Depending on your location, you may have the right to access, correct,
-          export, or delete your personal data. You can exercise these rights
-          from your account settings or by contacting us directly.
-        </Section>
+          <Section id='retention' title='Data Retention'>
+            We retain account and link data for as long as your account remains
+            active. If you delete your account, associated data is removed
+            within 30 days, except where retention is required by law.
+          </Section>
 
-        <Section id='security' title='Data Security'>
-          We take reasonable technical and organizational measures to protect
-          your data, but no method of transmission or storage is completely
-          secure.
-        </Section>
+          <Section id='your-rights' title='Your Rights'>
+            Depending on your location, you may have the right to access,
+            correct, export, or delete your personal data. You can exercise
+            these rights from your account settings or by contacting us
+            directly.
+          </Section>
 
-        <Section id='children' title="Children's Privacy">
-          Luotain is not directed at individuals under 16. We do not knowingly
-          collect data from children.
-        </Section>
+          <Section id='security' title='Data Security'>
+            We take reasonable technical and organizational measures to protect
+            your data, but no method of transmission or storage is completely
+            secure.
+          </Section>
 
-        <Section id='changes' title='Changes to This Policy'>
-          We may update this Privacy Policy periodically. Material changes will
-          be communicated via email or in-app notice.
-        </Section>
+          <Section id='children' title="Children's Privacy">
+            Luotain is not directed at individuals under 16. We do not knowingly
+            collect data from children.
+          </Section>
 
-        <Section id='contact' title='Contact'>
-          For privacy-related questions or requests, contact{' '}
-          <a
-            href='mailto:privacy@luotain.io'
-            style={{ color: 'var(--primary-base)' }}
-          >
-            privacy@luotain.io
-          </a>
-          .
-        </Section>
+          <Section id='changes' title='Changes to This Policy'>
+            We may update this Privacy Policy periodically. Material changes
+            will be communicated via email or in-app notice.
+          </Section>
+
+          <Section id='contact' title='Contact'>
+            For privacy-related questions or requests, contact{' '}
+            <a
+              href='mailto:privacy@luotain.io'
+              style={{ color: 'var(--primary-base)' }}
+            >
+              privacy@luotain.io
+            </a>
+            .
+          </Section>
+        </div>
       </div>
     </div>
   )
 }
 
-// ─── Reusable section wrapper: heading + body ───
 function Section({ id, title, children }) {
   return (
     <div
@@ -138,7 +127,7 @@ function Section({ id, title, children }) {
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
-        scrollMarginTop: '80px',
+        scrollMarginTop: '20px',
       }}
     >
       <h2 className='label-lg' style={{ color: 'var(--text-strong)' }}>
