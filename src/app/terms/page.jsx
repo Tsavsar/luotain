@@ -2,6 +2,8 @@ export const metadata = {
   title: 'Terms of Service — Luotain',
 }
 
+import BackButton from '@/components/backbutton'
+
 export default function TermsPage() {
   return (
     <main
@@ -47,36 +49,7 @@ export default function TermsPage() {
               gap: '8px',
             }}
           >
-            <svg
-              width='16'
-              height='16'
-              viewBox='0 0 16 16'
-              fill='none'
-              xmlns='http://www.w3.org/2000/svg'
-            >
-              <path
-                d='M2.40039 8.8H11.2004C12.526 8.8 13.6004 7.7256 13.6004 6.4V4'
-                stroke='var(--text-soft)'
-                strokeWidth='1.25'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-              />
-              <path
-                d='M5.60039 5.6001L2.40039 8.8001L5.60039 12.0001'
-                stroke='var(--text-soft)'
-                strokeWidth='1.25'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-              />
-            </svg>
-
-            <a
-              href='/'
-              className='label-sm'
-              style={{ color: 'var(--text-sub)', textDecoration: 'none' }}
-            >
-              Back
-            </a>
+            <BackButton />
           </div>
           <div
             style={{
