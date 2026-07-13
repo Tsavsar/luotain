@@ -704,13 +704,13 @@ html {
 
 @media (max-width: 768px) {
   .terms-sidebar {
-    display: none;
+    display: none !important;
   }
 
   .legal-title-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
   }
 }
 /* 

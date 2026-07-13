@@ -4,6 +4,7 @@ export const metadata = {
   title: 'Terms of Service — Luotain',
 }
 
+// ─── Sidebar index items — id must match each Section's id below ───
 const SECTIONS = [
   { id: 'acceptance', title: 'Acceptance of Terms' },
   { id: 'description', title: 'Description of Service' },
@@ -28,7 +29,11 @@ export default function TermsPage() {
         padding: '80px 24px 120px',
       }}
     >
-      {/* Full-width header block */}
+      {/* ═══════════════════════════════════════════════
+          HEADER BLOCK
+          Back button → Terms/Privacy tabs → logo + title + date
+          Full-width, sits above the two-column split
+      ═══════════════════════════════════════════════ */}
       <div
         style={{
           width: '100%',
@@ -39,10 +44,12 @@ export default function TermsPage() {
           marginBottom: '64px',
         }}
       >
+        {/* --- Back button --- */}
         <BackButton />
 
-        {/* Legal nav tabs */}
+        {/* --- Terms / Privacy tab switcher --- */}
         <div style={{ display: 'flex', gap: '8px' }}>
+          {/* Terms tab (active state — has bg-surface background) */}
           <a
             href='/terms'
             className='label-sm'
@@ -57,6 +64,7 @@ export default function TermsPage() {
               textDecoration: 'none',
             }}
           >
+            {/* law-shield icon */}
             <svg
               xmlns='http://www.w3.org/2000/svg'
               width='16'
@@ -70,6 +78,8 @@ export default function TermsPage() {
             </svg>
             Terms
           </a>
+
+          {/* Privacy tab (inactive state — no background) */}
           <a
             href='/privacy'
             className='label-sm'
@@ -83,6 +93,7 @@ export default function TermsPage() {
               textDecoration: 'none',
             }}
           >
+            {/* lock-circle icon */}
             <svg
               xmlns='http://www.w3.org/2000/svg'
               width='16'
@@ -106,14 +117,20 @@ export default function TermsPage() {
           </a>
         </div>
 
+        {/* --- Logo + divider + title, with date pushed to the right ---
+             className='legal-title-row' lets this stack into a column on mobile
+             (see globals.css @media max-width: 768px) */}
         <div
+          className='legal-title-row'
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
+          {/* left side: logo, divider line, page title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            {/* Luotain logo mark */}
             <svg
               width='24'
               height='26'
@@ -131,6 +148,7 @@ export default function TermsPage() {
               />
             </svg>
 
+            {/* vertical divider */}
             <div
               style={{
                 width: '1px',
@@ -144,13 +162,18 @@ export default function TermsPage() {
             </h1>
           </div>
 
+          {/* right side: last updated date */}
           <p className='para-sm' style={{ color: 'var(--text-soft)' }}>
             Last updated: July 12, 2026
           </p>
         </div>
       </div>
 
-      {/* Two-column split — sidebar aligns with first section */}
+      {/* ═══════════════════════════════════════════════
+          TWO-COLUMN SPLIT
+          Sidebar index (left) + content sections (right)
+          Sidebar hides on mobile via .terms-sidebar class
+      ═══════════════════════════════════════════════ */}
       <div
         style={{
           width: '100%',
@@ -159,7 +182,12 @@ export default function TermsPage() {
           gap: '80px',
         }}
       >
+        {/* --- Sidebar index nav ---
+             .terms-sidebar class targeted in globals.css to hide on mobile.
+             Active-state highlighting + smooth scroll handled by TermsSidebar
+             client component if you swap this static version out for it. */}
         <nav
+          className='terms-sidebar'
           style={{
             width: '180px',
             flexShrink: 0,
@@ -183,6 +211,7 @@ export default function TermsPage() {
           ))}
         </nav>
 
+        {/* --- Content column: all Section blocks --- */}
         <div
           style={{
             flex: 1,
@@ -209,6 +238,7 @@ export default function TermsPage() {
             credentials and for all activity that occurs under your account.
           </Section>
 
+          {/* --- section with a bulleted List inside --- */}
           <Section id='acceptable-use' title='Acceptable Use'>
             You agree not to use Luotain to create or distribute links that:
             <List
@@ -267,6 +297,7 @@ export default function TermsPage() {
             revised terms.
           </Section>
 
+          {/* --- section with a mailto link inside --- */}
           <Section id='contact' title='Contact'>
             Questions about these Terms can be directed to{' '}
             <a
@@ -283,6 +314,9 @@ export default function TermsPage() {
   )
 }
 
+// ─── Reusable section wrapper: heading + body ───
+// Uses <div> not <p> for the body since children can include a <ul> (List),
+// and <ul> is invalid inside <p> (causes hydration errors).
 function Section({ id, title, children }) {
   return (
     <div
@@ -307,6 +341,10 @@ function Section({ id, title, children }) {
   )
 }
 
+// ─── Reusable bulleted list ───
+// Bullets are drawn manually with a • span rather than relying on
+// native list-style, because display:flex on a <ul> suppresses
+// the browser's default bullet markers.
 function List({ items }) {
   return (
     <ul
@@ -339,9 +377,3 @@ function List({ items }) {
     </ul>
   )
 }
-
-/* ─── Add to globals.css, inside the html { } rule ───
-html {
-  scroll-behavior: smooth;
-}
-*/
