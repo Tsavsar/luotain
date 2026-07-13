@@ -185,11 +185,7 @@ export default function LegalHeader() {
               element whenever the route changes — that's what makes
               the .text-reveal animation replay on every navigation,
               not just on first page load */}
-          <h1
-            key={pathname}
-            className='title-h5 text-reveal'
-            style={{ color: 'var(--text-strong)' }}
-          >
+          <h1 className='title-h5' style={{ color: 'var(--text-strong)' }}>
             {isPrivacy ? 'Privacy Policy' : 'Terms of Service'}
           </h1>
         </div>
