@@ -701,6 +701,18 @@ input:focus-visible {
 html {
   scroll-behavior: smooth;
 }
+
+@media (max-width: 768px) {
+  .terms-sidebar {
+    display: none;
+  }
+
+  .legal-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
 /* 
 .auth-btn:hover {
   background: var(--bg-subtle) !important;
