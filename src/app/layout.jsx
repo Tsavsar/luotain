@@ -1,4 +1,5 @@
 import './globals.css'
+import { ViewTransitions } from 'next-view-transitions'
 
 export const metadata = {
   title: 'Luotain',
@@ -14,14 +15,16 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang='en' data-theme='light'>
-      <head>
-        <meta
-          name='viewport'
-          content='width=device-width, initial-scale=1, maximum-scale=1'
-        />
-      </head>
-      <body>{children}</body>
-    </html>
+    <ViewTransitions>
+      <html lang='en' data-theme='light'>
+        <head>
+          <meta
+            name='viewport'
+            content='width=device-width, initial-scale=1, maximum-scale=1'
+          />
+        </head>
+        <body>{children}</body>
+      </html>
+    </ViewTransitions>
   )
 }
