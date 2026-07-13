@@ -1,4 +1,3 @@
-// src/components/BackButton.jsx
 'use client'
 
 export default function BackButton() {
