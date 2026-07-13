@@ -684,8 +684,6 @@ input:focus-visible {
   }
 }
 
-
-
 @media (max-width: 768px) {
   .topspace {
     margin-top: 72px;
@@ -698,6 +696,10 @@ input:focus-visible {
 
 [data-theme='dark'] .map-container img {
   opacity: 0.4;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 /* 
 .auth-btn:hover {
