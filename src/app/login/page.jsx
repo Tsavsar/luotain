@@ -94,11 +94,10 @@ export default function Getstarted() {
             style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}
           >
             <p className='label-md' style={{ color: 'var(--text-strong)' }}>
-              Create your free account
+              Welcome back!
             </p>
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-              Shorten links, generate QR codes, and see exactly where every
-              click and scan lands.
+              Choose how you'd like to continue.
             </p>
           </div>
         </div>
@@ -271,14 +270,15 @@ export default function Getstarted() {
 
           <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-              Already have an account?
+              Don’t have an account?{' '}
             </p>
+
             <a
-              href='/login'
+              href='/get-started'
               className='label-sm'
               style={{ color: 'var(--primary-base)' }}
             >
-              login{' '}
+              Create a free account!
             </a>
           </div>
         </div>
