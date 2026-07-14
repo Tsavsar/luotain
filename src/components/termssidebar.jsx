@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
-// ─── Fixed-position sidebar — cannot scroll, ever ───
-// Previous versions used position:sticky, which is tied to its
-// containing block's height. That's why it kept detaching near the
-// end of the page. position:fixed has no such dependency — it's
-// anchored purely to the viewport, so it truly never moves.
+// ─── Sidebar index, scrolls with the page (position:sticky) ───
+// Reverted from position:fixed — fixed elements can visually "bob"
+// during scroll on mobile browsers due to how they handle dynamic
+// toolbars/momentum scrolling. Sticky avoids that entirely, and
+// works correctly here because top is anchored to the REAL measured
+// header height, not a guess.
 export default function TermsSidebar({ sections }) {
   const [activeId, setActiveId] = useState(sections[0]?.id)
+  const navRef = useRef(null)
 
   useEffect(() => {
     function getHeaderHeight() {
@@ -33,23 +35,12 @@ export default function TermsSidebar({ sections }) {
   }, [sections])
 
   return (
-    <>
-      {/* invisible spacer — reserves the sidebar's width in the flex
-          row so content doesn't shift left to fill the gap */}
-      <div
-        className='terms-sidebar'
-        style={{ width: '180px', flexShrink: 0 }}
-      />
-
-      {/* the real sidebar — fixed, positioned from measured values,
-          detached from document flow entirely */}
+    <div className='terms-sidebar' style={{ width: '180px', flexShrink: 0 }}>
       <nav
-        className='terms-sidebar'
+        ref={navRef}
         style={{
-          position: 'fixed',
-          left: 'var(--legal-content-left, 24px)',
+          position: 'sticky',
           top: 'calc(var(--legal-header-height, 280px) + 20px)',
-          width: '180px',
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',
@@ -72,6 +63,6 @@ export default function TermsSidebar({ sections }) {
           </a>
         ))}
       </nav>
-    </>
+    </div>
   )
 }

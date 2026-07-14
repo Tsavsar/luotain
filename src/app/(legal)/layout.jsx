@@ -41,7 +41,7 @@ export default function LegalLayout({ children }) {
           background: 'var(--bg-default)',
           display: 'flex',
           justifyContent: 'center',
-          paddingTop: '80px',
+          padding: '80px 24px 0',
         }}
       >
         <LegalHeader />
