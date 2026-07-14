@@ -124,7 +124,7 @@ export default function PrivacyPage() {
             .
           </Section>
 
-          <LegalBottomSpacer />
+          <LegalBottomSpacer lastSectionId={SECTIONS[SECTIONS.length - 1].id} />
         </div>
       </div>
     </div>
