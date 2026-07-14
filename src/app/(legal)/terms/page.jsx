@@ -36,7 +36,6 @@ export default function TermsPage() {
         }}
       >
         <TermsSidebar sections={SECTIONS} />
-        <LegalBottomSpacer lastSectionId={SECTIONS[SECTIONS.length - 1].id} />
 
         <div
           style={{
