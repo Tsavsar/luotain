@@ -123,14 +123,21 @@ export default function TermsPage() {
 
           <Section id='contact' title='Contact'>
             Questions about these Terms can be directed to{' '}
-            <a
-              href='mailto:legal@luotain.io'
-              style={{ color: 'var(--primary-base)' }}
-            >
-              legal@luotain.io
-            </a>
+            <span className='email-tooltip-wrapper'>
+              <a
+                href='mailto:legal@luotain.io'
+                style={{ color: 'var(--primary-base)' }}
+              >
+                legal@luotain.io
+              </a>
+              <span className='email-tooltip'>
+                Are we in trouble or something?
+              </span>
+            </span>
             .
           </Section>
+
+          <LegalBottomSpacer />
         </div>
       </div>
     </div>

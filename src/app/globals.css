@@ -761,6 +761,19 @@ html {
 
   /* style below this line — background, padding, border-radius,
      font-size, color, box-shadow, whatever you want */
+  color: var(--text-inverse);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--Strokes-stroke-mild, rgba(255, 255, 255, 0.1));
+  background: var(--Backgrounds-bg-default, #171717);
+
+  /* Shadows/shadow-sm */
+  box-shadow: 0 10px 20px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  width: fit-content;
+  padding: 8px 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 1px;
 }
 
 .email-tooltip-wrapper:hover .email-tooltip {
