@@ -1,52 +1,55 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 
-// ─── Sidebar index with scroll-based active state ───
+// ─── Fixed-position sidebar — cannot scroll, ever ───
+// Previous versions used position:sticky, which is tied to its
+// containing block's height. That's why it kept detaching near the
+// end of the page. position:fixed has no such dependency — it's
+// anchored purely to the viewport, so it truly never moves.
 export default function TermsSidebar({ sections }) {
   const [activeId, setActiveId] = useState(sections[0]?.id)
-  const navRef = useRef(null)
 
   useEffect(() => {
-    const scrollContainer = navRef.current?.closest('.legal-scroll-area')
-    if (!scrollContainer) return
-
+    function getHeaderHeight() {
+      const val = getComputedStyle(document.documentElement).getPropertyValue(
+        '--legal-header-height'
+      )
+      return parseFloat(val) || 280
+    }
     function handleScroll() {
-      const containerTop = scrollContainer.getBoundingClientRect().top
-      const scrollPos = scrollContainer.scrollTop + 40
-
+      const scrollPos = window.scrollY + getHeaderHeight() + 20
       for (let i = sections.length - 1; i >= 0; i--) {
         const el = document.getElementById(sections[i].id)
-        if (!el) continue
-        const elTop =
-          el.getBoundingClientRect().top -
-          containerTop +
-          scrollContainer.scrollTop
-        if (elTop <= scrollPos) {
+        if (el && el.offsetTop <= scrollPos) {
           setActiveId(sections[i].id)
           break
         }
       }
     }
-
-    scrollContainer.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll)
     handleScroll()
-    return () => scrollContainer.removeEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [sections])
 
   return (
-    // OUTER wrapper — deliberately has NO alignSelf override, so it
-    // stretches to match the content column's full height (flex row
-    // default behaviour). This tall box is what gives the short inner
-    // <nav> a "track" long enough to stay sticky for the ENTIRE scroll —
-    // without it, sticky only holds within the nav's own short height
-    // and then the sidebar disappears once you scroll past that point.
-    <div className='terms-sidebar' style={{ width: '180px', flexShrink: 0 }}>
+    <>
+      {/* invisible spacer — reserves the sidebar's width in the flex
+          row so content doesn't shift left to fill the gap */}
+      <div
+        className='terms-sidebar'
+        style={{ width: '180px', flexShrink: 0 }}
+      />
+
+      {/* the real sidebar — fixed, positioned from measured values,
+          detached from document flow entirely */}
       <nav
-        ref={navRef}
+        className='terms-sidebar'
         style={{
-          position: 'sticky',
-          top: '20px',
+          position: 'fixed',
+          left: 'var(--legal-content-left, 24px)',
+          top: 'calc(var(--legal-header-height, 280px) + 20px)',
+          width: '180px',
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',
@@ -69,6 +72,6 @@ export default function TermsSidebar({ sections }) {
           </a>
         ))}
       </nav>
-    </div>
+    </>
   )
 }

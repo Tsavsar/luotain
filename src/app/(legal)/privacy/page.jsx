@@ -1,4 +1,5 @@
 import TermsSidebar from '@/components/termssidebar'
+import LegalBottomSpacer from '@/components/legalbottomspacer'
 
 const SECTIONS = [
   { id: 'information-we-collect', title: 'Information We Collect' },
@@ -20,14 +21,7 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <div
-      className='legal-scroll-area'
-      style={{
-        height: '100%',
-        overflowY: 'auto',
-        display: 'flex',
-        justifyContent: 'center',
-        padding: '0 24px 120px',
-      }}
+      style={{ display: 'flex', justifyContent: 'center', padding: '0 24px' }}
     >
       <div
         style={{
@@ -38,6 +32,7 @@ export default function PrivacyPage() {
         }}
       >
         <TermsSidebar sections={SECTIONS} />
+        <LegalBottomSpacer lastSectionId={SECTIONS[SECTIONS.length - 1].id} />
 
         <div
           style={{
@@ -127,7 +122,7 @@ function Section({ id, title, children }) {
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
-        scrollMarginTop: '20px',
+        scrollMarginTop: 'calc(var(--legal-header-height, 280px) + 20px)',
       }}
     >
       <h2 className='label-lg' style={{ color: 'var(--text-strong)' }}>

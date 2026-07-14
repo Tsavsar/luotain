@@ -728,3 +728,11 @@ input:focus-visible {
     margin-top: 72px;
   }
 }
+
+:root {
+  --legal-header-height: 280px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
