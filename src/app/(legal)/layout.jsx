@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { Suspense, useRef } from 'react'
 import LegalHeader from '@/components/legalheader'
 import { LegalHeaderHeightProvider } from '@/components/legalcontext'
 
@@ -30,7 +30,9 @@ export default function LegalLayout({ children }) {
             padding: '80px var(--legal-side-padding) 0',
           }}
         >
-          <LegalHeader />
+          <Suspense fallback={null}>
+            <LegalHeader />
+          </Suspense>
         </div>
 
         <div style={{ width: '100%' }}>{children}</div>
