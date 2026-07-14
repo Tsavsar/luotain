@@ -869,3 +869,9 @@ html {
     transform: translate(-25%, -50%);
   }
 }
+
+.text-touch-area {
+  padding: 12px;
+  margin: -12px;
+  display: inline-block;
+}

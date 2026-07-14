@@ -48,12 +48,13 @@ export default function Getstarted() {
     <main
       style={{
         position: 'relative',
-        zIndex: 2,
+        zIndex: 1,
         height: 'calc(100vh - var(--map-height))',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         alignItems: 'center',
+        paddingTop: '120px',
       }}
     >
       <div
@@ -97,8 +98,7 @@ export default function Getstarted() {
               Create your free account
             </p>
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-              Shorten links, generate QR codes, and see exactly where every
-              click and scan lands.
+              Shorten links, generate QR codes, track every click.
             </p>
           </div>
         </div>
@@ -269,16 +269,16 @@ export default function Getstarted() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '4px' }}>
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
               Already have an account?
             </p>
             <a
               href='/login'
-              className='label-sm'
+              className='label-sm, text-touch-area'
               style={{ color: 'var(--primary-base)' }}
             >
-              Login{' '}
+              Login
             </a>
           </div>
         </div>
