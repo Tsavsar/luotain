@@ -18,6 +18,7 @@ export default function LegalLayout({ children }) {
       >
         <div
           ref={headerZoneRef}
+          className='legal-header-zone'
           style={{
             position: 'sticky',
             top: 0,
@@ -32,14 +33,7 @@ export default function LegalLayout({ children }) {
           <LegalHeader />
         </div>
 
-        <div
-          style={{
-            width: '100%',
-            paddingBottom: 'var(--legal-bottom-padding, 200px)',
-          }}
-        >
-          {children}
-        </div>
+        <div style={{ width: '100%' }}>{children}</div>
       </div>
     </LegalHeaderHeightProvider>
   )

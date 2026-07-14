@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import BackButton from '@/components/backbutton'
 
 function LawShieldIcon() {
@@ -47,7 +47,15 @@ function LockCircleIcon() {
 
 export default function LegalHeader() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const isPrivacy = pathname === '/privacy'
+
+  // Carry ?from= forward when switching tabs — without this, clicking
+  // Terms -> Privacy drops the param, and Back forgets which page
+  // (login, get-started, etc.) the person originally came from.
+  const from = searchParams.get('from')
+  const termsHref = from ? `/terms?from=${from}` : '/terms'
+  const privacyHref = from ? `/privacy?from=${from}` : '/privacy'
 
   const termsRef = useRef(null)
   const privacyRef = useRef(null)
@@ -75,75 +83,84 @@ export default function LegalHeader() {
         marginBottom: '40px',
       }}
     >
-      <BackButton />
-
-      {/* marginLeft cancels the tab's own left padding, via the SAME
-          --legal-tab-padding-x variable used in the padding itself —
-          one number, can't drift out of sync with itself. */}
+      {/* Back + tabs grouped together — stacked by default (matches
+          desktop), but a mobile media query in globals.css flips this
+          to a single row with tabs pushed to the right, freeing up
+          the vertical space the second stacked row used to take. */}
       <div
-        style={{
-          position: 'relative',
-          display: 'inline-flex',
-          gap: '8px',
-          marginLeft: 'calc(-1 * var(--legal-tab-padding-x))',
-        }}
+        className='legal-top-controls'
+        style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}
       >
+        <BackButton />
+
+        {/* marginLeft cancels the tab's own left padding, via the SAME
+            --legal-tab-padding-x variable used in the padding itself —
+            one number, can't drift out of sync with itself. */}
         <div
           style={{
-            position: 'absolute',
-            top: 0,
-            bottom: 0,
-            left: `${pillStyle.left}px`,
-            width: `${pillStyle.width}px`,
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--bg-surface)',
-            transition:
-              'left 0.35s cubic-bezier(0.4,0,0.2,1), width 0.35s cubic-bezier(0.4,0,0.2,1)',
-            zIndex: 0,
-          }}
-        />
-
-        <Link
-          ref={termsRef}
-          href='/terms'
-          className='label-sm'
-          style={{
             position: 'relative',
-            zIndex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '8px var(--legal-tab-padding-x)',
-            borderRadius: 'var(--radius-full)',
-            color: isPrivacy ? 'var(--text-sub)' : 'var(--text-strong)',
-            textDecoration: 'none',
-            transition: 'color 0.35s ease',
+            display: 'inline-flex',
+            gap: '8px',
+            marginLeft: 'calc(-1 * var(--legal-tab-padding-x))',
           }}
         >
-          <LawShieldIcon />
-          Terms
-        </Link>
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: `${pillStyle.left}px`,
+              width: `${pillStyle.width}px`,
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-surface)',
+              transition:
+                'left 0.35s cubic-bezier(0.4,0,0.2,1), width 0.35s cubic-bezier(0.4,0,0.2,1)',
+              zIndex: 0,
+            }}
+          />
 
-        <Link
-          ref={privacyRef}
-          href='/privacy'
-          className='label-sm'
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '8px var(--legal-tab-padding-x)',
-            borderRadius: 'var(--radius-full)',
-            color: isPrivacy ? 'var(--text-strong)' : 'var(--text-sub)',
-            textDecoration: 'none',
-            transition: 'color 0.35s ease',
-          }}
-        >
-          <LockCircleIcon />
-          Privacy
-        </Link>
+          <Link
+            ref={termsRef}
+            href={termsHref}
+            className='label-sm'
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px var(--legal-tab-padding-x)',
+              borderRadius: 'var(--radius-full)',
+              color: isPrivacy ? 'var(--text-sub)' : 'var(--text-strong)',
+              textDecoration: 'none',
+              transition: 'color 0.35s ease',
+            }}
+          >
+            <LawShieldIcon />
+            Terms
+          </Link>
+
+          <Link
+            ref={privacyRef}
+            href={privacyHref}
+            className='label-sm'
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px var(--legal-tab-padding-x)',
+              borderRadius: 'var(--radius-full)',
+              color: isPrivacy ? 'var(--text-strong)' : 'var(--text-sub)',
+              textDecoration: 'none',
+              transition: 'color 0.35s ease',
+            }}
+          >
+            <LockCircleIcon />
+            Privacy
+          </Link>
+        </div>
       </div>
 
       <div

@@ -779,3 +779,70 @@ html {
 .email-tooltip-wrapper:hover .email-tooltip {
   opacity: 1;
 }
+
+/* Add to your existing @media (max-width: 768px) block, or as a
+   new one near it */
+
+@media (max-width: 768px) {
+  /* Back + tabs share one row, tabs pushed to the right, instead of
+     stacking as two separate rows — frees up vertical space */
+  .legal-top-controls {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+
+  /* less top padding on mobile so the header (and page) sits higher */
+  .legal-header-zone {
+    padding-top: 40px !important;
+  }
+}
+
+/* Update .email-tooltip to lay out the gif + text side by side —
+   add display/align/gap alongside whatever positioning you already
+   set on it */
+.email-tooltip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── Suspicious side-eye, pure CSS ───
+   Each eye is a solid circle with a transparent crescent "cut" out
+   via mask (not a background-colored overlay) — so it works on top
+   of ANY tooltip background color, nothing to keep in sync.
+   Sized in em, so it scales with whatever font-size the tooltip text
+   uses — set height:1em on the wrapper to match text height exactly. */
+
+.suspicious-eyes {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+  height: 1em;
+  animation: eyesGlance 2.6s ease-in-out infinite;
+}
+
+.suspicious-eyes .eye {
+  width: 0.85em;
+  height: 0.85em;
+  flex-shrink: 0;
+  background: currentColor;
+  border-radius: 50%;
+  -webkit-mask: radial-gradient(
+    circle at 32% 35%,
+    transparent 0 54%,
+    black 55%
+  );
+  mask: radial-gradient(circle at 32% 35%, transparent 0 54%, black 55%);
+}
+
+@keyframes eyesGlance {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+}

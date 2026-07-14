@@ -110,6 +110,10 @@ export default function PrivacyPage() {
                 privacy@luotain.io
               </a>
               <span className='email-tooltip'>
+                <span className='suspicious-eyes'>
+                  <span className='eye' />
+                  <span className='eye' />
+                </span>
                 Are we in trouble or something?
               </span>
             </span>
