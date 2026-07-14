@@ -41,10 +41,9 @@ export default function TermsSidebar({ sections }) {
     // <nav> a "track" long enough to stay sticky for the ENTIRE scroll —
     // without it, sticky only holds within the nav's own short height
     // and then the sidebar disappears once you scroll past that point.
-    <div style={{ width: '180px', flexShrink: 0 }}>
+    <div className='terms-sidebar' style={{ width: '180px', flexShrink: 0 }}>
       <nav
         ref={navRef}
-        className='terms-sidebar'
         style={{
           position: 'sticky',
           top: '20px',
