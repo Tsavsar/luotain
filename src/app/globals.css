@@ -738,3 +738,31 @@ input:focus-visible {
 html {
   scroll-behavior: smooth;
 }
+
+/* ─── Contact email hover tooltip ───
+   Structure/positioning only — no background, padding, border, or
+   color set here. Add your own styling to .email-tooltip below. */
+
+.email-tooltip-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.email-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+
+  /* style below this line — background, padding, border-radius,
+     font-size, color, box-shadow, whatever you want */
+}
+
+.email-tooltip-wrapper:hover .email-tooltip {
+  opacity: 1;
+}

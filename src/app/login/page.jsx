@@ -64,7 +64,7 @@ export default function Getstarted() {
           gap: '18px',
         }}
       >
-        <ThemeToggle />
+        {/* <ThemeToggle /> */}
 
         {/*Logo and header texts*/}
         <div
@@ -302,11 +302,11 @@ export default function Getstarted() {
           }}
         >
           By continuing, you agree to our{' '}
-          <a href='/terms' style={{ color: 'var(--text-sub)' }}>
+          <a href='/terms?from=login' style={{ color: 'var(--text-sub)' }}>
             Terms
           </a>{' '}
           and{' '}
-          <a href='/privacy' style={{ color: 'var(--text-sub)' }}>
+          <a href='/privacy?from=login' style={{ color: 'var(--text-sub)' }}>
             Privacy Policy
           </a>
           .
