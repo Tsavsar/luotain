@@ -111,8 +111,12 @@ export default function PrivacyPage() {
               </a>
               <span className='email-tooltip'>
                 <span className='suspicious-eyes'>
-                  <span className='eye' />
-                  <span className='eye' />
+                  <span className='eye'>
+                    <span className='iris' />
+                  </span>
+                  <span className='eye'>
+                    <span className='iris' />
+                  </span>
                 </span>
                 Are we in trouble or something?
               </span>
