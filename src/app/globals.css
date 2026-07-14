@@ -730,7 +730,9 @@ input:focus-visible {
 }
 
 :root {
-  --legal-header-height: 280px;
+  /* Add these inside your existing :root { } block */
+  --legal-side-padding: 24px;
+  --legal-tab-padding-x: 16px;
 }
 
 html {

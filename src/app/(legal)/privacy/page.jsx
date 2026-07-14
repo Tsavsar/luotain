@@ -1,5 +1,6 @@
 import TermsSidebar from '@/components/termssidebar'
 import LegalBottomSpacer from '@/components/legalbottomspacer'
+import { Section } from '@/components/legalsection'
 
 const SECTIONS = [
   { id: 'information-we-collect', title: 'Information We Collect' },
@@ -14,14 +15,16 @@ const SECTIONS = [
   { id: 'contact', title: 'Contact' },
 ]
 
-export const metadata = {
-  title: 'Privacy Policy — Luotain',
-}
+export const metadata = { title: 'Privacy Policy — Luotain' }
 
 export default function PrivacyPage() {
   return (
     <div
-      style={{ display: 'flex', justifyContent: 'center', padding: '0 24px' }}
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '0 var(--legal-side-padding)',
+      }}
     >
       <div
         style={{
@@ -109,30 +112,6 @@ export default function PrivacyPage() {
             .
           </Section>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function Section({ id, title, children }) {
-  return (
-    <div
-      id={id}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        scrollMarginTop: 'calc(var(--legal-header-height, 280px) + 20px)',
-      }}
-    >
-      <h2 className='label-lg' style={{ color: 'var(--text-strong)' }}>
-        {title}
-      </h2>
-      <div
-        className='para-sm'
-        style={{ color: 'var(--text-sub)', lineHeight: '22px' }}
-      >
-        {children}
       </div>
     </div>
   )

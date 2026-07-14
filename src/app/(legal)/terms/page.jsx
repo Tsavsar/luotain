@@ -1,5 +1,6 @@
 import TermsSidebar from '@/components/termssidebar'
 import LegalBottomSpacer from '@/components/legalbottomspacer'
+import { Section, List } from '@/components/legalsection'
 
 const SECTIONS = [
   { id: 'acceptance', title: 'Acceptance of Terms' },
@@ -15,14 +16,16 @@ const SECTIONS = [
   { id: 'contact', title: 'Contact' },
 ]
 
-export const metadata = {
-  title: 'Terms of Service — Luotain',
-}
+export const metadata = { title: 'Terms of Service — Luotain' }
 
 export default function TermsPage() {
   return (
     <div
-      style={{ display: 'flex', justifyContent: 'center', padding: '0 24px' }}
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '0 var(--legal-side-padding)',
+      }}
     >
       <div
         style={{
@@ -132,62 +135,5 @@ export default function TermsPage() {
         </div>
       </div>
     </div>
-  )
-}
-
-function Section({ id, title, children }) {
-  return (
-    <div
-      id={id}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        scrollMarginTop: 'calc(var(--legal-header-height, 280px) + 20px)',
-      }}
-    >
-      <h2 className='label-lg' style={{ color: 'var(--text-strong)' }}>
-        {title}
-      </h2>
-      <div
-        className='para-sm'
-        style={{ color: 'var(--text-sub)', lineHeight: '22px' }}
-      >
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function List({ items }) {
-  return (
-    <ul
-      style={{
-        margin: '10px 0 0',
-        padding: 0,
-        listStyle: 'none',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-      }}
-    >
-      {items.map((item, i) => (
-        <li
-          key={i}
-          className='para-sm'
-          style={{
-            color: 'var(--text-sub)',
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'flex-start',
-          }}
-        >
-          <span style={{ color: 'var(--text-soft)', lineHeight: '20px' }}>
-            •
-          </span>
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
   )
 }

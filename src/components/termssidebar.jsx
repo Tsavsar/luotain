@@ -1,46 +1,37 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
+import { useLegalHeaderHeight } from '@/components/legalcontext'
 
-// ─── Sidebar index, scrolls with the page (position:sticky) ───
-// Reverted from position:fixed — fixed elements can visually "bob"
-// during scroll on mobile browsers due to how they handle dynamic
-// toolbars/momentum scrolling. Sticky avoids that entirely, and
-// works correctly here because top is anchored to the REAL measured
-// header height, not a guess.
 export default function TermsSidebar({ sections }) {
   const [activeId, setActiveId] = useState(sections[0]?.id)
-  const navRef = useRef(null)
+  const headerHeight = useLegalHeaderHeight()
 
   useEffect(() => {
-    function getHeaderHeight() {
-      const val = getComputedStyle(document.documentElement).getPropertyValue(
-        '--legal-header-height'
-      )
-      return parseFloat(val) || 280
-    }
-    function handleScroll() {
-      const scrollPos = window.scrollY + getHeaderHeight() + 20
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const el = document.getElementById(sections[i].id)
-        if (el && el.offsetTop <= scrollPos) {
-          setActiveId(sections[i].id)
-          break
-        }
-      }
-    }
-    window.addEventListener('scroll', handleScroll)
-    handleScroll()
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [sections])
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible.length > 0) setActiveId(visible[0].target.id)
+      },
+      { rootMargin: `-${headerHeight}px 0px -60% 0px`, threshold: 0 }
+    )
+
+    sections.forEach((s) => {
+      const el = document.getElementById(s.id)
+      if (el) observer.observe(el)
+    })
+
+    return () => observer.disconnect()
+  }, [sections, headerHeight])
 
   return (
     <div className='terms-sidebar' style={{ width: '180px', flexShrink: 0 }}>
       <nav
-        ref={navRef}
         style={{
           position: 'sticky',
-          top: 'calc(var(--legal-header-height, 280px) + 20px)',
+          top: `${headerHeight}px`,
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',

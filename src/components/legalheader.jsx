@@ -5,12 +5,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import BackButton from '@/components/backbutton'
 
-// ─── Persistent legal-pages header ───
-// Lives in (legal)/layout.jsx so it stays MOUNTED across
-// /terms <-> /privacy navigation. That's what makes the pill
-// actually slide — a transition can only animate a value change
-// on an element that survives the change, and this one does.
-
 function LawShieldIcon() {
   return (
     <svg
@@ -55,8 +49,6 @@ export default function LegalHeader() {
   const pathname = usePathname()
   const isPrivacy = pathname === '/privacy'
 
-  // --- Refs to the two tab links, used to measure their REAL
-  //     rendered width/position rather than guessing pixel values ---
   const termsRef = useRef(null)
   const privacyRef = useRef(null)
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0 })
@@ -64,12 +56,13 @@ export default function LegalHeader() {
   useEffect(() => {
     const activeEl = isPrivacy ? privacyRef.current : termsRef.current
     if (activeEl) {
-      setPillStyle({
-        left: activeEl.offsetLeft,
-        width: activeEl.offsetWidth,
-      })
+      setPillStyle({ left: activeEl.offsetLeft, width: activeEl.offsetWidth })
     }
   }, [isPrivacy])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [pathname])
 
   return (
     <div
@@ -79,15 +72,22 @@ export default function LegalHeader() {
         display: 'flex',
         flexDirection: 'column',
         gap: '28px',
-        marginBottom: '64px',
+        marginBottom: '40px',
       }}
     >
-      {/* --- Back button --- */}
       <BackButton />
 
-      {/* --- Terms / Privacy sliding tab switcher --- */}
-      <div style={{ position: 'relative', display: 'inline-flex', gap: '8px' }}>
-        {/* sliding pill — position/width measured live via refs above */}
+      {/* marginLeft cancels the tab's own left padding, via the SAME
+          --legal-tab-padding-x variable used in the padding itself —
+          one number, can't drift out of sync with itself. */}
+      <div
+        style={{
+          position: 'relative',
+          display: 'inline-flex',
+          gap: '8px',
+          marginLeft: 'calc(-1 * var(--legal-tab-padding-x))',
+        }}
+      >
         <div
           style={{
             position: 'absolute',
@@ -98,7 +98,7 @@ export default function LegalHeader() {
             borderRadius: 'var(--radius-full)',
             background: 'var(--bg-surface)',
             transition:
-              'left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+              'left 0.35s cubic-bezier(0.4,0,0.2,1), width 0.35s cubic-bezier(0.4,0,0.2,1)',
             zIndex: 0,
           }}
         />
@@ -113,7 +113,7 @@ export default function LegalHeader() {
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '8px 16px',
+            padding: '8px var(--legal-tab-padding-x)',
             borderRadius: 'var(--radius-full)',
             color: isPrivacy ? 'var(--text-sub)' : 'var(--text-strong)',
             textDecoration: 'none',
@@ -134,7 +134,7 @@ export default function LegalHeader() {
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '8px 16px',
+            padding: '8px var(--legal-tab-padding-x)',
             borderRadius: 'var(--radius-full)',
             color: isPrivacy ? 'var(--text-strong)' : 'var(--text-sub)',
             textDecoration: 'none',
@@ -146,7 +146,6 @@ export default function LegalHeader() {
         </Link>
       </div>
 
-      {/* --- Logo + divider + title (animated) + date --- */}
       <div
         className='legal-title-row'
         style={{
@@ -172,7 +171,6 @@ export default function LegalHeader() {
               fill='var(--primary-base)'
             />
           </svg>
-
           <div
             style={{
               width: '1px',
@@ -180,16 +178,10 @@ export default function LegalHeader() {
               background: 'var(--stroke-medium)',
             }}
           />
-
-          {/* key={pathname} forces React to treat this as a brand-new
-              element whenever the route changes — that's what makes
-              the .text-reveal animation replay on every navigation,
-              not just on first page load */}
           <h1 className='title-h5' style={{ color: 'var(--text-strong)' }}>
             {isPrivacy ? 'Privacy Policy' : 'Terms of Service'}
           </h1>
         </div>
-
         <p className='para-sm' style={{ color: 'var(--text-soft)' }}>
           Last updated: July 12, 2026
         </p>
