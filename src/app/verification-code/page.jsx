@@ -91,12 +91,8 @@ function VerifyContent() {
               Check your inbox
             </p>
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-              We sent a verification code to{' '}
-              <a style={{ color: 'var(--primary-base)' }}>
-                {' '}
-                {email || 'your email'}
-              </a>
-              . Enter the code to continue
+              We sent a verification code to <a> {email || 'your email'}</a>.
+              Enter the code to continue
             </p>
           </div>
         </div>
