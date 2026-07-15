@@ -1,16 +1,23 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { Suspense, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Map from '@/components/Map'
 import BackButton from '@/components/backbutton'
 import CodeInput from '@/components/codeinput'
 
-// NOTE: renamed from Getstarted() — this file is copy-pasted from the
-// get-started page but is actually the code-verification page. The
-// function name didn't affect routing (Next.js uses the file path,
-// not the function name) but it was misleading for future edits.
+// ─── Wrapper handles the Suspense boundary required for useSearchParams()
+//     to work during static prerendering at build time. Actual page
+//     content lives in VerifyContent below.
 export default function VerifyPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerifyContent />
+    </Suspense>
+  )
+}
+
+function VerifyContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const email = searchParams.get('email')
@@ -21,19 +28,14 @@ export default function VerifyPage() {
   const toastTimer = useRef(null)
   const errorTimer = useRef(null)
 
-  // Test code for now — only "99999" is treated as correct.
-  // Swap this for a real verification API call once that's ready.
   const CORRECT_CODE = '99999'
 
   function handleCodeComplete(fullCode) {
     if (fullCode === CORRECT_CODE) {
-      router.push('/') // placeholder destination until a dashboard exists
+      router.push('/')
       return
     }
 
-    // wrong code — CodeInput shakes on its own the moment codeError
-    // flips true (its .is-shaking class reacts to the error prop),
-    // so no separate shake timing needs managing here anymore.
     clearTimeout(errorTimer.current)
     clearTimeout(toastTimer.current)
 
@@ -45,8 +47,6 @@ export default function VerifyPage() {
       setTimeout(() => setToastState('hidden'), 200)
     }, 2000)
 
-    // clear the error AND the wrong digits after the same window,
-    // so the user gets a fresh set of empty cells to retry
     errorTimer.current = setTimeout(() => {
       setCodeError(false)
       setCode('')
@@ -78,7 +78,6 @@ export default function VerifyPage() {
           gap: '18px',
         }}
       >
-        {/* back + header text */}
         <div
           className='topspace'
           style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
@@ -92,20 +91,12 @@ export default function VerifyPage() {
               Check your inbox
             </p>
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-              {/* was {Inputfield.email} — that referenced the component
-                  itself, not an email value. Now reads from ?email= on
-                  the URL, same as we set up when routing here. */}
-              We sent a verification code to{' '}
-              <a style={{ color: 'var(--primary-base)' }} href=''>
-                {' '}
-                {email || 'your email'}
-              </a>
-              . Enter the code to continue.
+              We sent a verification link to {email || 'your email'}. Click it
+              to activate your account.
             </p>
           </div>
         </div>
 
-        {/* code field */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <CodeInput
             length={5}
@@ -115,7 +106,6 @@ export default function VerifyPage() {
             onComplete={handleCodeComplete}
           />
 
-          {/* error toast */}
           <div
             className={
               toastState === 'visible'
@@ -166,9 +156,6 @@ export default function VerifyPage() {
               <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
                 Didn't get it?
               </p>
-              {/* fixed: className had a comma in it ('label-sm, text-touch-area'),
-                  which tried to apply a class literally named "label-sm," —
-                  space-separated is correct */}
               <a
                 onClick={handleResend}
                 className='label-sm text-touch-area'
@@ -181,7 +168,6 @@ export default function VerifyPage() {
         </div>
       </div>
 
-      {/* Terms */}
       <div
         style={{
           position: 'fixed',
