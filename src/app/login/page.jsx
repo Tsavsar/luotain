@@ -5,6 +5,7 @@ import AuthButton from '@/components/secondarybutton'
 import Continuebutton from '@/components/continuebutton'
 import Inputfield from '@/components/input'
 import Map from '@/components/Map'
+import { useRouter } from 'next/navigation'
 import ThemeToggle from '@/components/ThemeToggle'
 
 export default function Getstarted() {
@@ -15,6 +16,7 @@ export default function Getstarted() {
   const toastTimer = useRef(null)
   const errorTimer = useRef(null)
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const router = useRouter()
 
   function validateEmail() {
     setEmailError(!isEmailValid)
@@ -39,6 +41,7 @@ export default function Getstarted() {
 
       return
     }
+    router.push(`/verification-code?email=${encodeURIComponent(email)}`)
   }
   function validateEmail() {
     const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -123,6 +126,7 @@ export default function Getstarted() {
               />
             }
             label='Google'
+            onClick={() => signIn('google', { callbackUrl: '/' })}
           />
           <AuthButton
             style={{ width: '100%' }}
@@ -143,6 +147,7 @@ export default function Getstarted() {
               </svg>
             }
             label='Github'
+            onClick={() => signIn('github', { callbackUrl: '/' })}
           />
         </div>
 
