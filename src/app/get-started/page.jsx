@@ -1,16 +1,17 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import AuthButton from '@/components/secondarybutton'
 import Continuebutton from '@/components/continuebutton'
 import Inputfield from '@/components/input'
 import Map from '@/components/Map'
-import ThemeToggle from '@/components/ThemeToggle'
 import { signIn } from 'next-auth/react'
 
 export default function Getstarted() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
-  const [emailError, setEmailError] = useState(false) // ← add this
+  const [emailError, setEmailError] = useState(false)
   const [shaking, setShaking] = useState(false)
   const [toastState, setToastState] = useState('hidden')
   const toastTimer = useRef(null)
@@ -40,10 +41,8 @@ export default function Getstarted() {
 
       return
     }
-  }
-  function validateEmail() {
-    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    setEmailError(!isValid)
+
+    router.push(`/verification-code?email=${encodeURIComponent(email)}`)
   }
   return (
     <main
@@ -66,8 +65,6 @@ export default function Getstarted() {
           gap: '18px',
         }}
       >
-        {/* <ThemeToggle /> */}
-
         {/*Logo and header texts*/}
         <div
           className='topspace'
@@ -168,7 +165,9 @@ export default function Getstarted() {
             }}
           ></div>
           <div>
-            <p className='para-sm text-sub'>or</p>
+            <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
+              or
+            </p>
           </div>
           <div
             style={{
@@ -278,7 +277,7 @@ export default function Getstarted() {
             </p>
             <a
               href='/login'
-              className='label-sm, text-touch-area'
+              className='label-sm text-touch-area'
               style={{ color: 'var(--primary-base)' }}
             >
               Login
