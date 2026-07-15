@@ -95,8 +95,12 @@ export default function VerifyPage() {
               {/* was {Inputfield.email} — that referenced the component
                   itself, not an email value. Now reads from ?email= on
                   the URL, same as we set up when routing here. */}
-              We sent a verification link to {email || 'your email'}. Click it
-              to activate your account.
+              We sent a verification code to{' '}
+              <a style={{ color: 'var(--primary-base)' }} href=''>
+                {' '}
+                {email || 'your email'}
+              </a>
+              . Enter the code to continue.
             </p>
           </div>
         </div>

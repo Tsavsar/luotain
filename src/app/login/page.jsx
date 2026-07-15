@@ -1,22 +1,25 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import AuthButton from '@/components/secondarybutton'
 import Continuebutton from '@/components/continuebutton'
 import Inputfield from '@/components/input'
 import Map from '@/components/Map'
-import { useRouter } from 'next/navigation'
-import ThemeToggle from '@/components/ThemeToggle'
 
-export default function Getstarted() {
+// NOTE: renamed from Getstarted() — this is the login page (copy-pasted
+// from get-started as a starting point). Function name didn't affect
+// routing, just made the file confusing to navigate later.
+export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
-  const [emailError, setEmailError] = useState(false) // ← add this
+  const [emailError, setEmailError] = useState(false)
   const [shaking, setShaking] = useState(false)
   const [toastState, setToastState] = useState('hidden')
   const toastTimer = useRef(null)
   const errorTimer = useRef(null)
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  const router = useRouter()
 
   function validateEmail() {
     setEmailError(!isEmailValid)
@@ -41,12 +44,10 @@ export default function Getstarted() {
 
       return
     }
+
     router.push(`/verification-code?email=${encodeURIComponent(email)}`)
   }
-  function validateEmail() {
-    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    setEmailError(!isValid)
-  }
+
   return (
     <main
       style={{
@@ -68,9 +69,7 @@ export default function Getstarted() {
           gap: '18px',
         }}
       >
-        {/* <ThemeToggle /> */}
-
-        {/*Logo and header texts*/}
+        {/* Logo and header text */}
         <div
           className='topspace'
           style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
@@ -106,7 +105,7 @@ export default function Getstarted() {
           </div>
         </div>
 
-        {/*Buttons*/}
+        {/* Buttons */}
         <div
           style={{
             display: 'flex',
@@ -151,13 +150,12 @@ export default function Getstarted() {
           />
         </div>
 
-        {/*Divider*/}
+        {/* Divider */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'row',
             gap: '10px',
-            justifyContent: 'center',
             alignItems: 'center',
           }}
         >
@@ -165,32 +163,28 @@ export default function Getstarted() {
             style={{
               height: '1px',
               width: '80px',
-              position: 'relative',
               backgroundColor: 'var(--bg-surface)',
             }}
-          ></div>
-          <div>
-            <p className='para-sm text-sub'>or</p>
-          </div>
+          />
+          <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
+            or
+          </p>
           <div
             style={{
               height: '1px',
               width: '80px',
-              position: 'relative',
               backgroundColor: 'var(--bg-surface)',
             }}
-          ></div>
+          />
         </div>
 
-        {/*input field & button*/}
+        {/* Input field & button */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <Inputfield
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                validateEmail()
-              }
+              if (e.key === 'Enter') validateEmail()
             }}
             error={emailError}
             placeholder='Email address'
@@ -234,6 +228,8 @@ export default function Getstarted() {
             shaking={shaking}
             onClick={handleContinue}
           />
+
+          {/* error toast */}
           <div
             className={
               toastState === 'visible'
@@ -276,12 +272,13 @@ export default function Getstarted() {
 
           <div style={{ display: 'flex', flexDirection: 'row', gap: '4px' }}>
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-              Don’t have an account?
+              Don't have an account?
             </p>
-
+            {/* fixed: className had a comma ('label-sm, text-touch-area'),
+                which tried to apply a class literally named "label-sm," */}
             <a
               href='/get-started'
-              className='label-sm, text-touch-area'
+              className='label-sm text-touch-area'
               style={{ color: 'var(--primary-base)' }}
             >
               Create a free account!
@@ -289,38 +286,36 @@ export default function Getstarted() {
           </div>
         </div>
       </div>
-      <div>
-        {/* Terms */}
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '16px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            whiteSpace: 'nowrap',
-            fontSize: '12px',
-            color: 'var(--text-soft)',
-            fontFamily: 'var(--font-sans)',
-            zIndex: 1,
-            background: 'var(--bg-default)',
-            padding: '6px 12px',
-            borderRadius: 'var(--radius-full)',
-          }}
-        >
-          By continuing, you agree to our{' '}
-          <a href='/terms?from=login' style={{ color: 'var(--text-sub)' }}>
-            Terms
-          </a>{' '}
-          and{' '}
-          <a href='/privacy?from=login' style={{ color: 'var(--text-sub)' }}>
-            Privacy Policy
-          </a>
-          .
-        </div>
+
+      {/* Terms */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: '16px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          whiteSpace: 'nowrap',
+          fontSize: '12px',
+          color: 'var(--text-soft)',
+          fontFamily: 'var(--font-sans)',
+          zIndex: 1,
+          background: 'var(--bg-default)',
+          padding: '6px 12px',
+          borderRadius: 'var(--radius-full)',
+        }}
+      >
+        By continuing, you agree to our{' '}
+        <a href='/terms?from=login' style={{ color: 'var(--text-sub)' }}>
+          Terms
+        </a>{' '}
+        and{' '}
+        <a href='/privacy?from=login' style={{ color: 'var(--text-sub)' }}>
+          Privacy Policy
+        </a>
+        .
       </div>
-      <div>
-        <Map />
-      </div>
+
+      <Map />
     </main>
   )
 }
