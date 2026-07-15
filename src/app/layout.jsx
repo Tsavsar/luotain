@@ -1,3 +1,4 @@
+import AuthProvider from '@/components/authprovider'
 import './globals.css'
 
 export const metadata = {
@@ -21,7 +22,9 @@ export default function RootLayout({ children }) {
           content='width=device-width, initial-scale=1, maximum-scale=1'
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   )
 }

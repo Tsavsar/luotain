@@ -6,6 +6,7 @@ import Continuebutton from '@/components/continuebutton'
 import Inputfield from '@/components/input'
 import Map from '@/components/Map'
 import ThemeToggle from '@/components/ThemeToggle'
+import { signIn } from 'next-auth/react'
 
 export default function Getstarted() {
   const [email, setEmail] = useState('')
@@ -123,6 +124,7 @@ export default function Getstarted() {
               />
             }
             label='Google'
+            onClick={() => signIn('google', { callbackUrl: '/' })}
           />
           <AuthButton
             style={{ width: '100%' }}
@@ -143,6 +145,7 @@ export default function Getstarted() {
               </svg>
             }
             label='Github'
+            onClick={() => signIn('github', { callbackUrl: '/' })}
           />
         </div>
 
