@@ -73,7 +73,7 @@ export default function Getstarted() {
         justifyContent: 'flex-start',
         alignItems: 'center',
         paddingTop: '120px', 
-        
+
       }}
     >
       <div
