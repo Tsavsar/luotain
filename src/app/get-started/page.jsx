@@ -22,7 +22,7 @@ export default function Getstarted() {
     setEmailError(!isEmailValid)
   }
 
-  function handleContinue() {
+  async function handleContinue() {
     if (!isEmailValid) {
       clearTimeout(errorTimer.current)
       setEmailError(true)
@@ -42,7 +42,25 @@ export default function Getstarted() {
       return
     }
 
-    router.push(`/verification-code?email=${encodeURIComponent(email)}`)
+    try {
+      const res = await fetch('/api/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+
+      if (!res.ok) throw new Error('Failed to send code')
+
+      router.push(`/verification-code?email=${encodeURIComponent(email)}`)
+    } catch (err) {
+      // reuse your existing error toast/shake for this too
+      clearTimeout(errorTimer.current)
+      setEmailError(true)
+      errorTimer.current = setTimeout(() => setEmailError(false), 2000)
+      setShaking(false)
+      setTimeout(() => setShaking(true), 10)
+      setTimeout(() => setShaking(false), 310)
+    }
   }
   return (
     <main
@@ -54,7 +72,8 @@ export default function Getstarted() {
         flexDirection: 'column',
         justifyContent: 'flex-start',
         alignItems: 'center',
-        paddingTop: '120px',
+        paddingTop: '120px', 
+        
       }}
     >
       <div

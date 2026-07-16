@@ -118,6 +118,8 @@
   /* --- Layout: shared with Map.jsx height + page padding so they
          can never drift out of sync — see Map.jsx comments --- */
   --map-height: clamp(240px, 40vh, 460px);
+  --legal-side-padding: 24px;
+  --legal-tab-padding-x: 16px;
 }
 
 /* ─── Dark mode (follows OS setting) ─────────────── */
@@ -593,22 +595,30 @@ input:focus-visible {
   }
 }
 .is-shaking {
-  animation: shake 0.3s ease;
+  animation: shake 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- Toast enter/exit (error banner on get-started page) --- */
-@keyframes slideUp {
+/* --- Toast enter/exit (error banner) ---
+   Origin-aware: scales up anchored to its TOP edge (transform-origin),
+   so it reads as growing out of the input field sitting directly
+   above it — like a speech bubble popping up from its source, not
+   an element sliding in independently.
+   The overshoot "pop" comes from the easing curve itself
+   (cubic-bezier's y-value goes above 1, so scale naturally overshoots
+   past 1.0 and settles back — no manual multi-stage keyframes needed).
+   Opacity is deliberately left out here — it's already owned by the
+   inline height/padding transition in the page component. */
+@keyframes bubblePop {
   from {
-    opacity: 0;
-    transform: translateY(-12px);
+    transform: scale(0.4);
   }
   to {
-    opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 }
 .slide-up {
-  animation: slideUp 0.2s ease;
+  animation: bubblePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: top center;
 }
 
 @keyframes slideDown {
@@ -622,7 +632,7 @@ input:focus-visible {
   }
 }
 .slide-down {
-  animation: slideDown 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: slideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* --- Map dots: ambient + hover pulse (Map.jsx) --- */
@@ -644,23 +654,6 @@ input:focus-visible {
   50% {
     opacity: 0.9;
   }
-}
-
-/* --- Legal page title reveal: clips in from top, fades + drops into place --- */
-@keyframes textRevealDown {
-  from {
-    opacity: 0;
-    transform: translateY(-14px);
-    clip-path: inset(0 0 100% 0);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    clip-path: inset(0 0 0% 0);
-  }
-}
-.text-reveal {
-  animation: textRevealDown 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* --- Legal page content fade: replaces the hard instant swap when
@@ -697,16 +690,6 @@ input:focus-visible {
   .map-container {
     display: none;
   }
-}
-
-/* --- Legal pages: sidebar + content scroll area (terms/privacy) ---
-   .legal-scroll-area is the ONLY thing that scrolls on these pages —
-   the header lives outside it in (legal)/layout.jsx and never moves.
-   scroll-behavior here is scoped to this container specifically,
-   since setting it on <html> only affects whole-document scrolling,
-   not scrolling inside a nested overflow:auto element. */
-.legal-scroll-area {
-  scroll-behavior: smooth;
 }
 
 /* --- Legal pages: mobile responsiveness ---
@@ -759,21 +742,23 @@ html {
   pointer-events: none;
   transition: opacity 0.15s ease;
 
-  /* style below this line — background, padding, border-radius,
-     font-size, color, box-shadow, whatever you want */
+  /* Intentionally always-dark, not theme-adaptive — the referenced
+     custom properties here (--Strokes-stroke-mild, --Backgrounds-bg-default)
+     don't exist in this token system, so this was silently falling
+     through to its fallback values the whole time anyway. Written
+     as plain values now to match what was actually rendering. */
   color: var(--text-inverse);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--Strokes-stroke-mild, rgba(255, 255, 255, 0.1));
-  background: var(--Backgrounds-bg-default, #171717);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #171717;
 
-  /* Shadows/shadow-sm */
   box-shadow: 0 10px 20px 3px rgba(0, 0, 0, 0.04);
   display: flex;
+  align-items: center;
   width: fit-content;
   padding: 8px 10px;
   justify-content: center;
-  align-items: center;
-  gap: 1px;
+  gap: 6px;
 }
 
 .email-tooltip-wrapper:hover .email-tooltip {
@@ -799,31 +784,7 @@ html {
   }
 }
 
-/* Update .email-tooltip to lay out the gif + text side by side —
-   add display/align/gap alongside whatever positioning you already
-   set on it */
-.email-tooltip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 /* ─── Suspicious side-eye, pure CSS ───
-   Each eye is a solid circle with a transparent crescent "cut" out
-   via mask (not a background-colored overlay) — so it works on top
-   of ANY tooltip background color, nothing to keep in sync.
-   Sized in em, so it scales with whatever font-size the tooltip text
-   uses — set height:1em on the wrapper to match text height exactly. */
-
-.suspicious-eyes {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15em;
-  height: 1em;
-  animation: eyesGlance 2.6s ease-in-out infinite;
-}
-
-/* ─── Suspicious side-eye, pure CSS (v2) ───
    Two-layer structure: a static white "eye" circle that never moves,
    with a smaller black "iris" positioned inside it that animates —
    only the iris shifts side to side, the eye whites stay put.
@@ -874,4 +835,42 @@ html {
   padding: 12px;
   margin: -12px;
   display: inline-block;
+}
+
+/* ═══════════════════════════════════════════════════
+   REDUCED MOTION
+   Reduced motion doesn't mean zero feedback — it means
+   gentler, non-positional feedback. This collapses every
+   animation/transition to near-instant globally (this
+   correctly reaches inline-style-driven animations too,
+   like the map dots, since an !important stylesheet rule
+   overrides a plain inline style), then restores a brief
+   opacity-only flash for the shake specifically, so
+   invalid-form feedback isn't silently lost entirely.
+═══════════════════════════════════════════════════ */
+
+@keyframes shakeReduced {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .is-shaking {
+    animation: shakeReduced 200ms ease !important;
+    animation-iteration-count: 1 !important;
+  }
 }
