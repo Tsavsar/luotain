@@ -12,6 +12,8 @@ export default function Getstarted() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState(false)
+  const [sendError, setSendError] = useState(false) // NEW — separate from emailError
+  const [emailExists, setEmailExists] = useState(false) // NEW — non-blocking hint
   const [shaking, setShaking] = useState(false)
   const [toastState, setToastState] = useState('hidden')
   const toastTimer = useRef(null)
@@ -22,23 +24,52 @@ export default function Getstarted() {
     setEmailError(!isEmailValid)
   }
 
+  // NEW — fires on blur, quietly checks if this email already has an
+  // account. Non-blocking: just shows an inline hint with a Login
+  // link, never stops the person from continuing if they ignore it.
+  async function checkEmailExists() {
+    if (!isEmailValid) {
+      setEmailExists(false)
+      return
+    }
+    try {
+      const res = await fetch('/api/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      setEmailExists(!!data.exists)
+    } catch (err) {
+      // silent failure here is fine — this is a soft hint, not a
+      // required check, so we don't want a failed lookup to itself
+      // become a disruptive error state
+      setEmailExists(false)
+    }
+  }
+
+  function triggerShake() {
+    setShaking(false)
+    setTimeout(() => setShaking(true), 10)
+    setTimeout(() => setShaking(false), 310)
+  }
+
+  function triggerToast(duration = 2000) {
+    clearTimeout(toastTimer.current)
+    setToastState('visible')
+    toastTimer.current = setTimeout(() => {
+      setToastState('hiding')
+      setTimeout(() => setToastState('hidden'), 200)
+    }, duration)
+  }
+
   async function handleContinue() {
     if (!isEmailValid) {
       clearTimeout(errorTimer.current)
       setEmailError(true)
       errorTimer.current = setTimeout(() => setEmailError(false), 2000)
-
-      setShaking(false)
-      setTimeout(() => setShaking(true), 10)
-      setTimeout(() => setShaking(false), 310)
-
-      clearTimeout(toastTimer.current)
-      setToastState('visible')
-      toastTimer.current = setTimeout(() => {
-        setToastState('hiding')
-        setTimeout(() => setToastState('hidden'), 200)
-      }, 2000)
-
+      triggerShake()
+      triggerToast()
       return
     }
 
@@ -49,19 +80,24 @@ export default function Getstarted() {
         body: JSON.stringify({ email }),
       })
 
-      if (!res.ok) throw new Error('Failed to send code')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        console.error('send-code failed:', data)
+        throw new Error(data.error || 'Failed to send code')
+      }
 
       router.push(`/verification-code?email=${encodeURIComponent(email)}`)
     } catch (err) {
-      // reuse your existing error toast/shake for this too
+      // NOW uses its own state + toast copy — no longer confused
+      // with the invalid-email branch above
       clearTimeout(errorTimer.current)
-      setEmailError(true)
-      errorTimer.current = setTimeout(() => setEmailError(false), 2000)
-      setShaking(false)
-      setTimeout(() => setShaking(true), 10)
-      setTimeout(() => setShaking(false), 310)
+      setSendError(true)
+      errorTimer.current = setTimeout(() => setSendError(false), 3000)
+      triggerShake()
+      triggerToast(3000)
     }
   }
+
   return (
     <main
       style={{
@@ -72,8 +108,7 @@ export default function Getstarted() {
         flexDirection: 'column',
         justifyContent: 'flex-start',
         alignItems: 'center',
-        paddingTop: '120px', 
-
+        paddingTop: '120px',
       }}
     >
       <div
@@ -202,13 +237,17 @@ export default function Getstarted() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <Inputfield
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              setEmailExists(false) // clear the hint while they're editing
+            }}
+            onBlur={checkEmailExists}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 validateEmail()
               }
             }}
-            error={emailError}
+            error={emailError || sendError}
             placeholder='Email address'
             lefticon={
               <svg
@@ -243,6 +282,27 @@ export default function Getstarted() {
               </svg>
             }
           />
+
+          {/* NEW — non-blocking "you already have an account" hint.
+              Sits quietly under the input, doesn't stop handleContinue
+              from firing if they ignore it and click Continue anyway. */}
+          {emailExists && (
+            <div
+              className='fade-in-hint'
+              style={{ display: 'flex', flexDirection: 'row', gap: '4px' }}
+            >
+              <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
+                Looks like you already have an account —
+              </p>
+              <a
+                href='/login'
+                className='label-sm text-touch-area'
+                style={{ color: 'var(--primary-base)' }}
+              >
+                log in instead
+              </a>
+            </div>
+          )}
 
           <Continuebutton
             active={isEmailValid}
@@ -286,7 +346,10 @@ export default function Getstarted() {
                 alignItems: 'center',
               }}
             >
-              Invalid email, please enter a valid email to continue
+              {/* NEW — distinct copy depending on which error actually fired */}
+              {sendError
+                ? "Couldn't send your code, please try again"
+                : 'Invalid email, please enter a valid email to continue'}
             </p>
           </div>
 

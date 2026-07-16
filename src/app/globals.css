@@ -874,3 +874,22 @@ html {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* --- Get-started page: "already have an account" hint fade-in ---
+   Plays once on mount, since this only appears/disappears in response
+   to a real state change (blurring the email field), not something
+   that happens dozens of times a second — matches the same
+   restraint principle as everything else in this file. */
+@keyframes fadeInHint {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in-hint {
+  animation: fadeInHint 0.2s ease-out;
+}
