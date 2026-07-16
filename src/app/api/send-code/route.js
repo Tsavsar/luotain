@@ -2,9 +2,9 @@ import { Resend } from 'resend'
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function POST(request) {
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
   const { email } = await request.json()
 
   if (!email) {
