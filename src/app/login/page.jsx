@@ -371,7 +371,7 @@ export default function LoginPage() {
         <a href='/terms?from=login' style={{ color: 'var(--text-sub)' }}>
           Terms
         </a>{' '}
-        and{' '}
+        {' '}
         <a href='/privacy?from=login' style={{ color: 'var(--text-sub)' }}>
           Privacy Policy
         </a>
