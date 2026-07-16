@@ -2,6 +2,8 @@ import { Resend } from 'resend'
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 
+const COOLDOWN_SECONDS = 300 // 5 minutes
+
 export async function POST(request) {
   const resend = new Resend(process.env.RESEND_API_KEY)
   const { email } = await request.json()
@@ -10,13 +12,39 @@ export async function POST(request) {
     return Response.json({ error: 'Email is required' }, { status: 400 })
   }
 
+  const cookieStore = await cookies()
+
+  // Server-side rate limit — this is the part that actually matters,
+  // since a client-side-only countdown can be bypassed by just
+  // calling the endpoint directly. Reuses the existing
+  // verification-token cookie's own `iat` (issued-at) claim, which
+  // jsonwebtoken adds automatically — no separate cooldown-tracking
+  // storage needed.
+  const existingToken = cookieStore.get('verification-token')?.value
+  if (existingToken) {
+    try {
+      const decoded = jwt.verify(existingToken, process.env.NEXTAUTH_SECRET)
+      const secondsSinceIssued = Math.floor(Date.now() / 1000) - decoded.iat
+      if (secondsSinceIssued < COOLDOWN_SECONDS) {
+        return Response.json(
+          {
+            error: 'Please wait before requesting another code',
+            retryAfter: COOLDOWN_SECONDS - secondsSinceIssued,
+          },
+          { status: 429 }
+        )
+      }
+    } catch (err) {
+      // expired or invalid — fine, just proceed to issue a fresh one
+    }
+  }
+
   const code = Math.floor(10000 + Math.random() * 90000).toString()
 
   const token = jwt.sign({ email, code }, process.env.NEXTAUTH_SECRET, {
     expiresIn: '10m',
   })
 
-  const cookieStore = await cookies()
   cookieStore.set('verification-token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -24,10 +52,6 @@ export async function POST(request) {
     path: '/',
   })
 
-  // try/catch handles genuine THROWN exceptions (network failures,
-  // Resend's API being unreachable, etc.) — the { error } check
-  // separately handles Resend returning a normal, non-thrown error
-  // response (bad template ID, etc). Need BOTH — that was the gap.
   try {
     const { data, error } = await resend.emails.send({
       from: 'onboarding@resend.dev',
