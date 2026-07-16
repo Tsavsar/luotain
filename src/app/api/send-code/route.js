@@ -32,12 +32,14 @@ export async function POST(request) {
     await resend.emails.send({
       from: 'onboarding@resend.dev',
       to: email,
-      subject: 'Your Luotain verification code',
-      html: `<p>Your verification code is <strong>${code}</strong>. It expires in 10 minutes.</p>`,
+      template: {
+        id: 'a6cf23e8-73bb-4f9d-ac9e-3520f1db44c8',
+        variables: {
+          CODE: code,
+        },
+      },
     })
   } catch (err) {
     return Response.json({ error: 'Failed to send email' }, { status: 500 })
   }
-
-  return Response.json({ success: true })
 }
