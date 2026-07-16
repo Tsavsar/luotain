@@ -3,10 +3,10 @@ import { cookies } from 'next/headers'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-const prisma = new PrismaClient({ adapter })
-
 export async function POST(request) {
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+  const prisma = new PrismaClient({ adapter })
+
   const { code } = await request.json()
 
   if (!code) {
@@ -37,11 +37,6 @@ export async function POST(request) {
     return Response.json({ error: 'Incorrect code' }, { status: 400 })
   }
 
-  // Correct code — create the account if this is a first-time signup,
-  // or just confirm it if they already exist (login reuses this same
-  // endpoint, since verifying a code is the same action either way).
-  // name/image stay empty here — those only get populated by the
-  // OAuth adapter when someone signs in with Google/GitHub instead.
   await prisma.user.upsert({
     where: { email: decoded.email },
     update: {},
