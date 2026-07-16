@@ -251,7 +251,7 @@ function VerifyContent() {
             style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
           >
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-              The link expires in 24 hours.
+              The code expires in 24 hours.
             </p>
             <div style={{ display: 'flex', flexDirection: 'row', gap: '4px' }}>
               <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
