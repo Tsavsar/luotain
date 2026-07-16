@@ -35,7 +35,7 @@ export async function POST(request) {
       subject: 'Your Luotain verification code',
       template: {
         id: 'a6cf23e8-73bb-4f9d-ac9e-3520f1db44c8',
-        variables: { code: code },
+        variables: { code: Number(code) },
       },
     })
 
