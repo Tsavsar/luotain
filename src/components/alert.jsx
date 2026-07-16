@@ -15,7 +15,7 @@ export default function Alert({ icon, message }) {
         padding: '8px 10px',
         alignItems: 'center',
         gap: '6px',
-        borderRadius: 'var(--radius-md)',
+        borderRadius: 'var(--radius-lg)',
         border: '1px solid var(--stroke-soft)',
         background: 'var(--bg-default)',
         boxShadow: 'var(--shadow-xs)',

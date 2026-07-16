@@ -24,19 +24,18 @@ function formatCooldown(seconds) {
 function CheckIcon() {
   return (
     <svg
+      xmlns='http://www.w3.org/2000/svg'
       width='20'
       height='20'
       viewBox='0 0 20 20'
-      fill='none'
-      xmlns='http://www.w3.org/2000/svg'
     >
-      <path
-        d='M16.6667 5L7.5 14.1667L3.33334 10'
-        stroke='var(--success-base)'
-        strokeWidth='1.67'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
+      <g fill='var(--success-base)'>
+        <path
+          d='m10,2C5.589,2,2,5.589,2,10s3.589,8,8,8,8-3.589,8-8S14.411,2,10,2Zm4.284,5.621l-4.75,6c-.183.231-.458.37-.753.379-.01,0-.021,0-.031,0-.283,0-.554-.12-.743-.331l-2.25-2.5c-.369-.411-.336-1.043.074-1.412.41-.37,1.042-.336,1.412.074l1.458,1.62,4.015-5.071c.343-.432.971-.506,1.405-.164.433.343.506.972.163,1.405Z'
+          strokeWidth='0'
+          fill='var(--success-base)'
+        />
+      </g>
     </svg>
   )
 }
@@ -228,10 +227,10 @@ function VerifyContent() {
                   : ''
             }
             style={{
-              height: resendToastState !== 'hidden' ? '36px' : '0',
-              overflow: 'hidden',
+              maxHeight: resendToastState !== 'hidden' ? '100px' : '0',
+              overflow: 'visible',
               opacity: resendToastState !== 'hidden' ? 1 : 0,
-              transition: 'height 0.35s ease, opacity 0.35s ease',
+              transition: 'max-height 0.35s ease, opacity 0.35s ease',
             }}
           >
             <Alert icon={<CheckIcon />} message='New code has been sent' />
@@ -296,6 +295,62 @@ function VerifyContent() {
       </div>
 
       <Map />
+
+      {/* TEMPORARY — testing controls for the Alert preview. Remove
+          once you've confirmed the design, same as ThemeToggle
+          earlier tonight. Reuses the real resendToastState/
+          resendToastTimer so it goes through the exact same
+          slide-up/slide-down animation as the real resend flow —
+          just without the automatic 2.5s auto-hide, so it stays
+          visible until you dismiss it yourself. */}
+      <div
+        style={{
+          position: 'fixed',
+          top: '16px',
+          right: '16px',
+          zIndex: 999,
+          display: 'flex',
+          gap: '8px',
+        }}
+      >
+        <button
+          onClick={() => {
+            clearTimeout(resendToastTimer.current)
+            setResendToastState('visible')
+          }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-full)',
+            border: '1px solid var(--stroke-medium)',
+            background: 'var(--bg-default)',
+            boxShadow: 'var(--shadow-md)',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontFamily: 'var(--font-sans)',
+          }}
+        >
+          Show Alert
+        </button>
+        <button
+          onClick={() => {
+            clearTimeout(resendToastTimer.current)
+            setResendToastState('hiding')
+            setTimeout(() => setResendToastState('hidden'), 200)
+          }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-full)',
+            border: '1px solid var(--stroke-medium)',
+            background: 'var(--bg-default)',
+            boxShadow: 'var(--shadow-md)',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontFamily: 'var(--font-sans)',
+          }}
+        >
+          Hide Alert
+        </button>
+      </div>
     </main>
   )
 }
