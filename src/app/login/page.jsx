@@ -7,14 +7,15 @@ import AuthButton from '@/components/secondarybutton'
 import Continuebutton from '@/components/continuebutton'
 import Inputfield from '@/components/input'
 import Map from '@/components/Map'
+import BackButton from '@/components/backbutton'
 
-// NOTE: renamed from Getstarted() — this is the login page (copy-pasted
-// from get-started as a starting point). Function name didn't affect
-// routing, just made the file confusing to navigate later.
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
-  const [emailError, setEmailError] = useState(false)
+  const [errorType, setErrorType] = useState(null) // null | 'invalid' | 'send'
+  // Mirror of get-started's emailExists, but INVERTED — here we're
+  // checking whether an account does NOT exist, since this is login.
+  const [noAccount, setNoAccount] = useState(false)
   const [shaking, setShaking] = useState(false)
   const [toastState, setToastState] = useState('hidden')
   const toastTimer = useRef(null)
@@ -22,30 +23,73 @@ export default function LoginPage() {
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
   function validateEmail() {
-    setEmailError(!isEmailValid)
+    if (!isEmailValid) setErrorType('invalid')
   }
 
-  function handleContinue() {
+  async function checkAccountExists() {
+    if (!isEmailValid) {
+      setNoAccount(false)
+      return
+    }
+    try {
+      const res = await fetch('/api/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      setNoAccount(!data.exists) // inverted from get-started
+    } catch (err) {
+      setNoAccount(false)
+    }
+  }
+
+  function triggerShake() {
+    setShaking(false)
+    setTimeout(() => setShaking(true), 10)
+    setTimeout(() => setShaking(false), 310)
+  }
+
+  function triggerToast(duration = 2000) {
+    clearTimeout(toastTimer.current)
+    setToastState('visible')
+    toastTimer.current = setTimeout(() => {
+      setToastState('hiding')
+      setTimeout(() => setToastState('hidden'), 200)
+    }, duration)
+  }
+
+  async function handleContinue() {
     if (!isEmailValid) {
       clearTimeout(errorTimer.current)
-      setEmailError(true)
-      errorTimer.current = setTimeout(() => setEmailError(false), 2000)
-
-      setShaking(false)
-      setTimeout(() => setShaking(true), 10)
-      setTimeout(() => setShaking(false), 310)
-
-      clearTimeout(toastTimer.current)
-      setToastState('visible')
-      toastTimer.current = setTimeout(() => {
-        setToastState('hiding')
-        setTimeout(() => setToastState('hidden'), 200)
-      }, 2000)
-
+      setErrorType('invalid')
+      errorTimer.current = setTimeout(() => setErrorType(null), 2000)
+      triggerShake()
+      triggerToast(2000)
       return
     }
 
-    router.push(`/verification-code?email=${encodeURIComponent(email)}`)
+    try {
+      const res = await fetch('/api/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        console.error('send-code failed:', data)
+        throw new Error(data.error || 'Failed to send code')
+      }
+
+      router.push(`/verification-code?email=${encodeURIComponent(email)}`)
+    } catch (err) {
+      clearTimeout(errorTimer.current)
+      setErrorType('send')
+      errorTimer.current = setTimeout(() => setErrorType(null), 3000)
+      triggerShake()
+      triggerToast(3000)
+    }
   }
 
   return (
@@ -69,7 +113,6 @@ export default function LoginPage() {
           gap: '18px',
         }}
       >
-        {/* Logo and header text */}
         <div
           className='topspace'
           style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
@@ -105,7 +148,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Buttons */}
         <div
           style={{
             display: 'flex',
@@ -150,7 +192,6 @@ export default function LoginPage() {
           />
         </div>
 
-        {/* Divider */}
         <div
           style={{
             display: 'flex',
@@ -178,15 +219,18 @@ export default function LoginPage() {
           />
         </div>
 
-        {/* Input field & button */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <Inputfield
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              setNoAccount(false)
+            }}
+            onBlur={checkAccountExists}
             onKeyDown={(e) => {
               if (e.key === 'Enter') validateEmail()
             }}
-            error={emailError}
+            error={errorType === 'invalid'}
             placeholder='Email address'
             lefticon={
               <svg
@@ -222,6 +266,25 @@ export default function LoginPage() {
             }
           />
 
+          {/* Mirror of get-started's hint — inverted direction */}
+          {noAccount && (
+            <div
+              className='fade-in-hint'
+              style={{ display: 'flex', flexDirection: 'row', gap: '4px' }}
+            >
+              <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
+                No account found for this email —
+              </p>
+              <a
+                href='/get-started'
+                className='label-sm text-touch-area'
+                style={{ color: 'var(--primary-base)' }}
+              >
+                sign up instead
+              </a>
+            </div>
+          )}
+
           <Continuebutton
             active={isEmailValid}
             label='Continue with email'
@@ -229,7 +292,6 @@ export default function LoginPage() {
             onClick={handleContinue}
           />
 
-          {/* error toast */}
           <div
             className={
               toastState === 'visible'
@@ -266,7 +328,11 @@ export default function LoginPage() {
                 alignItems: 'center',
               }}
             >
-              Invalid email, please enter a valid email to continue
+              {errorType === 'send'
+                ? "Couldn't send your code, please try again"
+                : errorType === 'invalid'
+                  ? 'Invalid email, please enter a valid email to continue'
+                  : ''}
             </p>
           </div>
 
@@ -274,8 +340,6 @@ export default function LoginPage() {
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
               Don't have an account?
             </p>
-            {/* fixed: className had a comma ('label-sm, text-touch-area'),
-                which tried to apply a class literally named "label-sm," */}
             <a
               href='/get-started'
               className='label-sm text-touch-area'
@@ -287,7 +351,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Terms */}
       <div
         style={{
           position: 'fixed',

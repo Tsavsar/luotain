@@ -11,9 +11,13 @@ import { signIn } from 'next-auth/react'
 export default function Getstarted() {
   const router = useRouter()
   const [email, setEmail] = useState('')
-  const [emailError, setEmailError] = useState(false)
-  const [sendError, setSendError] = useState(false) // NEW — separate from emailError
-  const [emailExists, setEmailExists] = useState(false) // NEW — non-blocking hint
+  // Replaced emailError + sendError (two independently-timed booleans)
+  // with ONE source of truth. That's the actual fix for the toast
+  // text-flash bug — with two separate booleans, one could clear
+  // before the other finished animating, causing the ternary to fall
+  // through to the WRONG message while the box was still visible.
+  const [errorType, setErrorType] = useState(null) // null | 'invalid' | 'send'
+  const [emailExists, setEmailExists] = useState(false)
   const [shaking, setShaking] = useState(false)
   const [toastState, setToastState] = useState('hidden')
   const toastTimer = useRef(null)
@@ -21,12 +25,9 @@ export default function Getstarted() {
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
   function validateEmail() {
-    setEmailError(!isEmailValid)
+    if (!isEmailValid) setErrorType('invalid')
   }
 
-  // NEW — fires on blur, quietly checks if this email already has an
-  // account. Non-blocking: just shows an inline hint with a Login
-  // link, never stops the person from continuing if they ignore it.
   async function checkEmailExists() {
     if (!isEmailValid) {
       setEmailExists(false)
@@ -41,9 +42,6 @@ export default function Getstarted() {
       const data = await res.json()
       setEmailExists(!!data.exists)
     } catch (err) {
-      // silent failure here is fine — this is a soft hint, not a
-      // required check, so we don't want a failed lookup to itself
-      // become a disruptive error state
       setEmailExists(false)
     }
   }
@@ -66,10 +64,10 @@ export default function Getstarted() {
   async function handleContinue() {
     if (!isEmailValid) {
       clearTimeout(errorTimer.current)
-      setEmailError(true)
-      errorTimer.current = setTimeout(() => setEmailError(false), 2000)
+      setErrorType('invalid')
+      errorTimer.current = setTimeout(() => setErrorType(null), 2000)
       triggerShake()
-      triggerToast()
+      triggerToast(2000)
       return
     }
 
@@ -88,11 +86,9 @@ export default function Getstarted() {
 
       router.push(`/verification-code?email=${encodeURIComponent(email)}`)
     } catch (err) {
-      // NOW uses its own state + toast copy — no longer confused
-      // with the invalid-email branch above
       clearTimeout(errorTimer.current)
-      setSendError(true)
-      errorTimer.current = setTimeout(() => setSendError(false), 3000)
+      setErrorType('send')
+      errorTimer.current = setTimeout(() => setErrorType(null), 3000)
       triggerShake()
       triggerToast(3000)
     }
@@ -119,7 +115,6 @@ export default function Getstarted() {
           gap: '18px',
         }}
       >
-        {/*Logo and header texts*/}
         <div
           className='topspace'
           style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
@@ -155,7 +150,6 @@ export default function Getstarted() {
           </div>
         </div>
 
-        {/*Buttons*/}
         <div
           style={{
             display: 'flex',
@@ -200,7 +194,6 @@ export default function Getstarted() {
           />
         </div>
 
-        {/*Divider*/}
         <div
           style={{
             display: 'flex',
@@ -214,7 +207,6 @@ export default function Getstarted() {
             style={{
               height: '1px',
               width: '80px',
-              position: 'relative',
               backgroundColor: 'var(--bg-surface)',
             }}
           ></div>
@@ -227,27 +219,23 @@ export default function Getstarted() {
             style={{
               height: '1px',
               width: '80px',
-              position: 'relative',
               backgroundColor: 'var(--bg-surface)',
             }}
           ></div>
         </div>
 
-        {/*input field & button*/}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <Inputfield
             value={email}
             onChange={(e) => {
               setEmail(e.target.value)
-              setEmailExists(false) // clear the hint while they're editing
+              setEmailExists(false)
             }}
             onBlur={checkEmailExists}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                validateEmail()
-              }
+              if (e.key === 'Enter') validateEmail()
             }}
-            error={emailError || sendError}
+            error={errorType === 'invalid'}
             placeholder='Email address'
             lefticon={
               <svg
@@ -283,9 +271,6 @@ export default function Getstarted() {
             }
           />
 
-          {/* NEW — non-blocking "you already have an account" hint.
-              Sits quietly under the input, doesn't stop handleContinue
-              from firing if they ignore it and click Continue anyway. */}
           {emailExists && (
             <div
               className='fade-in-hint'
@@ -310,6 +295,7 @@ export default function Getstarted() {
             shaking={shaking}
             onClick={handleContinue}
           />
+
           <div
             className={
               toastState === 'visible'
@@ -346,10 +332,16 @@ export default function Getstarted() {
                 alignItems: 'center',
               }}
             >
-              {/* NEW — distinct copy depending on which error actually fired */}
-              {sendError
+              {/* Falls back to '' instead of a wrong default message —
+                  this is the actual fix. Previously this always showed
+                  SOMETHING (defaulting to "Invalid email..."), even
+                  when errorType had already cleared and no error was
+                  actually active — that's what caused the flash. */}
+              {errorType === 'send'
                 ? "Couldn't send your code, please try again"
-                : 'Invalid email, please enter a valid email to continue'}
+                : errorType === 'invalid'
+                  ? 'Invalid email, please enter a valid email to continue'
+                  : ''}
             </p>
           </div>
 
@@ -368,7 +360,6 @@ export default function Getstarted() {
         </div>
       </div>
       <div>
-        {/* Terms */}
         <div
           style={{
             position: 'fixed',
