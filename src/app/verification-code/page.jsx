@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Map from '@/components/Map'
 import BackButton from '@/components/backbutton'
 import CodeInput from '@/components/codeinput'
+import Alert from '@/components/alert'
 
 export default function VerifyPage() {
   return (
@@ -20,6 +21,26 @@ function formatCooldown(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
+function CheckIcon() {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 20 20'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <path
+        d='M16.6667 5L7.5 14.1667L3.33334 10'
+        stroke='var(--success-base)'
+        strokeWidth='1.67'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
 function VerifyContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -31,14 +52,10 @@ function VerifyContent() {
   const toastTimer = useRef(null)
   const errorTimer = useRef(null)
 
-  // NEW — resend cooldown, starts at 5:00 on page load too, since a
-  // code was already just sent by the previous page moments ago
   const [resendCooldown, setResendCooldown] = useState(300)
   const [resendToastState, setResendToastState] = useState('hidden')
   const resendToastTimer = useRef(null)
 
-  // countdown ticker — recursive setTimeout, stops on its own once
-  // resendCooldown hits 0
   useEffect(() => {
     if (resendCooldown <= 0) return
     const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000)
@@ -54,9 +71,6 @@ function VerifyContent() {
     }, 2500)
   }
 
-  // Real verification now — replaces the old hardcoded '99999' check.
-  // Calls the server, which checks the signed cookie AND creates the
-  // user record on success.
   async function handleCodeComplete(fullCode) {
     try {
       const res = await fetch('/api/verify-code', {
@@ -88,7 +102,7 @@ function VerifyContent() {
   }
 
   async function handleResend() {
-    if (resendCooldown > 0) return // extra guard — server is the real enforcement
+    if (resendCooldown > 0) return
 
     try {
       const res = await fetch('/api/send-code', {
@@ -99,15 +113,14 @@ function VerifyContent() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        if (data.retryAfter) setResendCooldown(data.retryAfter) // sync with server's real value
+        if (data.retryAfter) setResendCooldown(data.retryAfter)
         return
       }
 
       setResendCooldown(300)
       showResendToast()
     } catch (err) {
-      // silent — resend failing quietly is preferable to another
-      // disruptive error state on top of everything else here
+      // silent
     }
   }
 
@@ -201,10 +214,11 @@ function VerifyContent() {
             </p>
           </div>
 
-          {/* NEW — resend confirmation toast. Same shape/animation as
-              the error one, but white background + colored stroke
-              instead of a filled color, using success tokens since
-              this is a positive confirmation, not an error. */}
+          {/* Resend confirmation — now the real Figma-spec Alert
+              component (node 308:851). Outer div still owns the
+              height-collapse animation, recalibrated to 36px to match
+              Alert's tighter 8px padding (vs the error toast's 52px
+              at 16px padding). Alert itself owns all visual styling. */}
           <div
             className={
               resendToastState === 'visible'
@@ -214,37 +228,13 @@ function VerifyContent() {
                   : ''
             }
             style={{
-              width: '100%',
-              borderRadius: '16px',
-              backgroundColor: 'var(--bg-default)',
-              border: '1px solid var(--success-base)',
-              boxShadow: 'var(--shadow-xs)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              height: resendToastState !== 'hidden' ? '52px' : '0',
-              padding: resendToastState !== 'hidden' ? '16px' : '0 16px',
-              transition:
-                'height 0.35s ease, padding 0.35s ease, opacity 0.35s ease',
+              height: resendToastState !== 'hidden' ? '36px' : '0',
               overflow: 'hidden',
               opacity: resendToastState !== 'hidden' ? 1 : 0,
-              fontSize: '12px',
-              color: 'var(--success-base)',
-              fontFamily: 'var(--font-sans)',
+              transition: 'height 0.35s ease, opacity 0.35s ease',
             }}
           >
-            <p
-              style={{
-                width: '100%',
-                color: 'var(--success-base)',
-                fontFamily: 'var(--font-sans)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              New code has been sent
-            </p>
+            <Alert icon={<CheckIcon />} message='New code has been sent' />
           </div>
 
           <div
