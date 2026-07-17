@@ -1,39 +1,96 @@
 'use client'
 
-import { Suspense } from 'react'
-import BackButton from '@/components/backbutton'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import DashboardMenu from '@/components/dashboardmenu'
 
-// BackButton uses useSearchParams() internally (the ?from= routing
-// logic from the legal pages), which requires a Suspense boundary
-// for static prerendering to succeed — same fix as verification-code
-// and the legal pages layout earlier tonight.
 export default function DashboardPage() {
-  return (
-    <Suspense fallback={null}>
-      <DashboardContent />
-    </Suspense>
-  )
-}
+  const router = useRouter()
+  const [checking, setChecking] = useState(true)
+  const [orgName, setOrgName] = useState('')
+  const [userImage, setUserImage] = useState(null)
 
-function DashboardContent() {
+  // Same guard pattern as onboarding/page.jsx — reuses check-membership
+  // rather than building a separate check. No session -> /login.
+  // Session but no org yet (never finished onboarding) -> /onboarding.
+  // Only a fully set-up account gets to see the dashboard itself.
+  useEffect(() => {
+    async function guard() {
+      try {
+        const res = await fetch('/api/check-membership')
+        const data = await res.json()
+
+        if (!data.loggedIn) {
+          router.replace('/login')
+          return
+        }
+
+        if (!data.hasOrg) {
+          router.replace('/onboarding')
+          return
+        }
+
+        setChecking(false)
+      } catch (err) {
+        router.replace('/login')
+      }
+    }
+    guard()
+  }, [router])
+
+  useEffect(() => {
+    if (checking) return
+
+    async function loadInfo() {
+      try {
+        const res = await fetch('/api/dashboard-info')
+        const data = await res.json()
+        setOrgName(data.orgName)
+        setUserImage(data.userImage)
+      } catch (err) {
+        setOrgName('Your Organization')
+      }
+    }
+    loadInfo()
+  }, [checking])
+
+  // Brief blank beat while the guard resolves — avoids a flash of
+  // dashboard content for someone about to get redirected away from it
+  if (checking) return null
+
   return (
     <main
       style={{
         position: 'relative',
-        height: '100vh',
+        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
       }}
     >
-      <div style={{ position: 'fixed', top: '24px', left: '24px' }}>
-        <BackButton />
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '24px',
+        }}
+      >
+        <DashboardMenu orgName={orgName} userImage={userImage} />
       </div>
 
-      <p className='title-h4' style={{ color: 'var(--text-strong)' }}>
-        Dashboard
-      </p>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <p className='title-h4' style={{ color: 'var(--text-strong)' }}>
+          Dashboard
+        </p>
+      </div>
     </main>
   )
 }
