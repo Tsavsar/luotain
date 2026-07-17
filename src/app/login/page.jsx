@@ -167,7 +167,7 @@ export default function LoginPage() {
               />
             }
             label='Google'
-            onClick={() => signIn('google', { callbackUrl: '/' })}
+            onClick={() => signIn('google', { callbackUrl: '/onboarding' })}
           />
           <AuthButton
             style={{ width: '100%' }}
@@ -188,7 +188,7 @@ export default function LoginPage() {
               </svg>
             }
             label='Github'
-            onClick={() => signIn('github', { callbackUrl: '/' })}
+            onClick={() => signIn('github', { callbackUrl: '/onboarding' })}
           />
         </div>
 
@@ -371,7 +371,6 @@ export default function LoginPage() {
         <a href='/terms?from=login' style={{ color: 'var(--text-sub)' }}>
           Terms
         </a>{' '}
-        {' '}
         <a href='/privacy?from=login' style={{ color: 'var(--text-sub)' }}>
           Privacy Policy
         </a>

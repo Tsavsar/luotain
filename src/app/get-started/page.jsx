@@ -169,7 +169,7 @@ export default function Getstarted() {
               />
             }
             label='Google'
-            onClick={() => signIn('google', { callbackUrl: '/' })}
+            onClick={() => signIn('google', { callbackUrl: '/onboarding' })}
           />
           <AuthButton
             style={{ width: '100%' }}
@@ -190,7 +190,7 @@ export default function Getstarted() {
               </svg>
             }
             label='Github'
-            onClick={() => signIn('github', { callbackUrl: '/' })}
+            onClick={() => signIn('github', { callbackUrl: '/onboarding' })}
           />
         </div>
 

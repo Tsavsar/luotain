@@ -21,5 +21,9 @@ export async function GET() {
     where: { userId: user.id },
   })
 
-  return Response.json({ hasOrg: !!membership, loggedIn: true })
+  return Response.json({
+    hasOrg: !!membership,
+    loggedIn: true,
+    name: user.name || '', // populated already for OAuth users, empty for email-code
+  })
 }

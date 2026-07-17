@@ -34,6 +34,10 @@ export default function OnboardingPage() {
           return
         }
 
+        // OAuth already gave us a name — pre-fill instead of making
+        // them retype something we already know. Still editable.
+        if (data.name) setFullName(data.name)
+
         setChecking(false)
       } catch (err) {
         setChecking(false)
