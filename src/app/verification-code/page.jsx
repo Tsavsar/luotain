@@ -310,7 +310,7 @@ function VerifyContent() {
           slide-up/slide-down animation as the real resend flow —
           just without the automatic 2.5s auto-hide, so it stays
           visible until you dismiss it yourself. */}
-      <div
+      {/* <div
         style={{
           position: 'fixed',
           top: '16px',
@@ -358,7 +358,7 @@ function VerifyContent() {
         >
           Hide Alert
         </button>
-      </div>
+      </div> */}
     </main>
   )
 }
