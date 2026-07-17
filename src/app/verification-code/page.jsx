@@ -48,6 +48,9 @@ function VerifyContent() {
 
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState(false)
+  const [errorMessage, setErrorMessage] = useState(
+    'Wrong code entered, please check and try again'
+  )
   const [toastState, setToastState] = useState('hidden')
   const toastTimer = useRef(null)
   const errorTimer = useRef(null)
@@ -81,15 +84,19 @@ function VerifyContent() {
         body: JSON.stringify({ code: fullCode }),
       })
 
-      if (!res.ok) throw new Error('Invalid code')
-
       const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Invalid code')
+      }
+
       router.push(data.hasOrg ? '/dashboard' : '/onboarding')
     } catch (err) {
       clearTimeout(errorTimer.current)
       clearTimeout(toastTimer.current)
 
       setCodeError(true)
+      setErrorMessage(err.message)
       setToastState('visible')
 
       toastTimer.current = setTimeout(() => {
@@ -213,7 +220,7 @@ function VerifyContent() {
                 alignItems: 'center',
               }}
             >
-              Wrong code entered, please check and try again
+              {errorMessage}
             </p>
           </div>
 
