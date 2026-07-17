@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
+import { setAppSession } from '@/lib/session'
 
 export async function POST(request) {
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
@@ -37,13 +38,23 @@ export async function POST(request) {
     return Response.json({ error: 'Incorrect code' }, { status: 400 })
   }
 
-  await prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { email: decoded.email },
     update: {},
     create: { email: decoded.email },
   })
 
+  // NEW — check membership so the client can route straight to
+  // /dashboard or /onboarding without a second round trip
+  const membership = await prisma.membership.findFirst({
+    where: { userId: user.id },
+  })
+
+  // NEW — establish the shared app session, same cookie OAuth's
+  // signIn event sets, so "logged in" is consistent either way
+  await setAppSession(decoded.email)
+
   cookieStore.delete('verification-token')
 
-  return Response.json({ success: true })
+  return Response.json({ success: true, hasOrg: !!membership })
 }

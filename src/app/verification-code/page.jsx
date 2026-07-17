@@ -83,7 +83,8 @@ function VerifyContent() {
 
       if (!res.ok) throw new Error('Invalid code')
 
-      router.push('/')
+      const data = await res.json()
+      router.push(data.hasOrg ? '/dashboard' : '/onboarding')
     } catch (err) {
       clearTimeout(errorTimer.current)
       clearTimeout(toastTimer.current)
