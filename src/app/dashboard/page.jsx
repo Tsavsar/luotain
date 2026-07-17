@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardMenu from '@/components/dashboardmenu'
+import DashboardNav from '@/components/dashboardnav'
+import StatsSegment from '@/components/statssegment'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -10,10 +12,6 @@ export default function DashboardPage() {
   const [orgName, setOrgName] = useState('')
   const [userImage, setUserImage] = useState(null)
 
-  // Same guard pattern as onboarding/page.jsx — reuses check-membership
-  // rather than building a separate check. No session -> /login.
-  // Session but no org yet (never finished onboarding) -> /onboarding.
-  // Only a fully set-up account gets to see the dashboard itself.
   useEffect(() => {
     async function guard() {
       try {
@@ -54,8 +52,6 @@ export default function DashboardPage() {
     loadInfo()
   }, [checking])
 
-  // Brief blank beat while the guard resolves — avoids a flash of
-  // dashboard content for someone about to get redirected away from it
   if (checking) return null
 
   return (
@@ -73,10 +69,32 @@ export default function DashboardPage() {
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          padding: '24px',
+          padding: '36px 24px 24px 24px',
         }}
       >
         <DashboardMenu orgName={orgName} userImage={userImage} />
+      </div>
+
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '12px 24px 24px 24px',
+        }}
+      >
+        <DashboardNav />
+      </div>
+
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '0 24px 24px',
+        }}
+      >
+        <StatsSegment />
       </div>
 
       <div
