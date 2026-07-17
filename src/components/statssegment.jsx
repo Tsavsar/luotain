@@ -13,18 +13,25 @@
 function ChevronIcon() {
   return (
     <svg
+      xmlns='http://www.w3.org/2000/svg'
       width='20'
       height='20'
       viewBox='0 0 20 20'
       fill='none'
-      xmlns='http://www.w3.org/2000/svg'
     >
       <path
-        d='M5 7.5L10 12.5L15 7.5'
-        stroke='var(--text-soft)'
-        strokeWidth='1.5'
-        strokeLinecap='round'
-        strokeLinejoin='round'
+        d='M13 7L10 4L7 7'
+        stroke='#A3A3A3'
+        stroke-width='1.5'
+        stroke-linecap='round'
+        stroke-linejoin='round'
+      />
+      <path
+        d='M13 13L10 16L7 13'
+        stroke='#A3A3A3'
+        stroke-width='1.5'
+        stroke-linecap='round'
+        stroke-linejoin='round'
       />
     </svg>
   )
