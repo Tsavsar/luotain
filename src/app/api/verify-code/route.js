@@ -5,9 +5,6 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import { setAppSession } from '@/lib/session'
 
 export async function POST(request) {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
-
   const { code } = await request.json()
 
   if (!code) {
@@ -38,23 +35,40 @@ export async function POST(request) {
     return Response.json({ error: 'Incorrect code' }, { status: 400 })
   }
 
-  const user = await prisma.user.upsert({
-    where: { email: decoded.email },
-    update: {},
-    create: { email: decoded.email },
-  })
+  // Everything past this point is a genuinely CORRECT code — wrapped
+  // in try/catch so a database failure here reports as an actual
+  // server error, not something that looks like "wrong code" to the
+  // person, even though their code was right.
+  try {
+    const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+    const prisma = new PrismaClient({ adapter })
 
-  // NEW — check membership so the client can route straight to
-  // /dashboard or /onboarding without a second round trip
-  const membership = await prisma.membership.findFirst({
-    where: { userId: user.id },
-  })
+    const user = await prisma.user.upsert({
+      where: { email: decoded.email },
+      update: {},
+      create: { email: decoded.email },
+    })
 
-  // NEW — establish the shared app session, same cookie OAuth's
-  // signIn event sets, so "logged in" is consistent either way
-  await setAppSession(decoded.email)
+    const membership = await prisma.membership.findFirst({
+      where: { userId: user.id },
+    })
 
-  cookieStore.delete('verification-token')
+    await setAppSession(decoded.email)
 
-  return Response.json({ success: true, hasOrg: !!membership })
+    cookieStore.delete('verification-token')
+
+    return Response.json({ success: true, hasOrg: !!membership })
+  } catch (err) {
+    console.error(
+      'verify-code: correct code, but post-verification step failed:',
+      err
+    )
+    return Response.json(
+      {
+        error:
+          'Code was correct, but something went wrong finishing sign-in. Please try again.',
+      },
+      { status: 500 }
+    )
+  }
 }
