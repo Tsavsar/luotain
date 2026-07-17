@@ -579,60 +579,141 @@ input:focus-visible {
    ANIMATIONS
 ═══════════════════════════════════════════════════ */
 
+/* --- Check reveal: Alert component's confirmation icon ---
+   Fade + slight rotate + rise. Works on any icon (filled or
+   stroked) since it only animates the wrapper, not the path
+   itself — if you switch Alert's icon back to a stroked path
+   later, a stroke-draw effect can layer on top of this. */
+@keyframes checkFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes checkRotate {
+  from {
+    transform: rotate(45deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+@keyframes checkRise {
+  from {
+    translate: 0 8px;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+.check-reveal {
+  display: inline-block;
+  transform-origin: center;
+  opacity: 0;
+  animation:
+    checkFade 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    checkRotate 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    checkRise 0.4s cubic-bezier(0.34, 1.35, 0.64, 1) forwards;
+}
+.check-reveal svg {
+  display: block;
+  overflow: visible;
+}
+/* Stroke-draw setup — 19 matches the real length of the checkmark
+   path in CheckIcon (M16.6667 5L7.5 14.1667L3.33334 10), calculated
+   from its two segments rather than guessed. Round linecaps hide any
+   sub-pixel rounding. Only fires on a stroked path with no fill —
+   this works specifically because CheckIcon uses stroke, not fill. */
+.check-reveal svg path {
+  stroke-dasharray: 19;
+  stroke-dashoffset: 19;
+  animation: checkDraw 0.4s cubic-bezier(0.22, 1, 0.36, 1) 80ms forwards;
+}
+@keyframes checkDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 /* --- Shake: invalid form submission (input + button) --- */
 @keyframes shake {
   0% {
     transform: translateX(0);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  25% {
-    transform: translateX(-6px);
-  }
-  75% {
+  28.57% {
     transform: translateX(6px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  57.14% {
+    transform: translateX(-6px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  78.57% {
+    transform: translateX(4px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
   100% {
     transform: translateX(0);
   }
 }
 .is-shaking {
-  animation: shake 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: shake 0.28s linear;
 }
 
-/* --- Toast enter/exit (error banner) ---
-   Origin-aware: scales up anchored to its TOP edge (transform-origin),
-   so it reads as growing out of the input field sitting directly
-   above it — like a speech bubble popping up from its source, not
-   an element sliding in independently.
-   The overshoot "pop" comes from the easing curve itself
-   (cubic-bezier's y-value goes above 1, so scale naturally overshoots
-   past 1.0 and settles back — no manual multi-stage keyframes needed).
-   Opacity is deliberately left out here — it's already owned by the
-   inline height/padding transition in the page component. */
-@keyframes bubblePop {
+/* --- Toast enter/exit (error banner, resend Alert) ---
+   Replaces the earlier bubblePop/slideDown pair. This version owns
+   opacity itself (blur+scale+opacity move together as one motion),
+   which is different from before — the old slide-up/slide-down
+   deliberately left opacity out to avoid fighting the inline
+   height/padding/opacity transition in each toast's page component.
+   IMPORTANT: wherever this is used, remove the toast's own inline
+   opacity transition/style — otherwise you'll recreate that same
+   conflict. Exit uses a sharper ease-in curve than enter, since
+   leaving content should get out of the way quickly rather than
+   easing out gently. */
+:root {
+  --toast-open-dur: 0.5s;
+  --toast-close-dur: 0.2s; /* matches the existing 200ms setTimeout in each page's JS — mismatch was causing the stutter */
+  --toast-distance: 10px;
+  --toast-blur: 3px;
+  --toast-scale: 0.97;
+}
+
+@keyframes toastIn {
   from {
-    transform: scale(0.4);
+    opacity: 0;
+    transform: translateY(calc(var(--toast-distance) * -1))
+      scale(var(--toast-scale));
+    filter: blur(var(--toast-blur));
   }
   to {
-    transform: scale(1);
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 .slide-up {
-  animation: bubblePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transform-origin: top center;
+  animation: toastIn var(--toast-open-dur) cubic-bezier(0.4, 1, 0.1, 1) forwards;
 }
 
-@keyframes slideDown {
+@keyframes toastOut {
   from {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
   to {
     opacity: 0;
-    transform: translateY(-12px);
+    transform: translateY(calc(var(--toast-distance) * -1))
+      scale(var(--toast-scale));
+    filter: blur(var(--toast-blur));
   }
 }
 .slide-down {
-  animation: slideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: toastOut var(--toast-close-dur) cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 /* --- Map dots: ambient + hover pulse (Map.jsx) --- */

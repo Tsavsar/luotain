@@ -24,18 +24,19 @@ function formatCooldown(seconds) {
 function CheckIcon() {
   return (
     <svg
-      xmlns='http://www.w3.org/2000/svg'
       width='20'
       height='20'
       viewBox='0 0 20 20'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
     >
-      <g fill='var(--success-base)'>
-        <path
-          d='m10,2C5.589,2,2,5.589,2,10s3.589,8,8,8,8-3.589,8-8S14.411,2,10,2Zm4.284,5.621l-4.75,6c-.183.231-.458.37-.753.379-.01,0-.021,0-.031,0-.283,0-.554-.12-.743-.331l-2.25-2.5c-.369-.411-.336-1.043.074-1.412.41-.37,1.042-.336,1.412.074l1.458,1.62,4.015-5.071c.343-.432.971-.506,1.405-.164.433.343.506.972.163,1.405Z'
-          strokeWidth='0'
-          fill='var(--success-base)'
-        />
-      </g>
+      <path
+        d='M16.6667 5L7.5 14.1667L3.33334 10'
+        stroke='var(--success-base)'
+        strokeWidth='1.67'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
     </svg>
   )
 }
@@ -53,6 +54,7 @@ function VerifyContent() {
 
   const [resendCooldown, setResendCooldown] = useState(300)
   const [resendToastState, setResendToastState] = useState('hidden')
+  const [checkKey, setCheckKey] = useState(0) // bumped on each real "show" — forces Alert to remount so .check-reveal replays instead of only running once on initial page load
   const resendToastTimer = useRef(null)
 
   useEffect(() => {
@@ -62,6 +64,7 @@ function VerifyContent() {
   }, [resendCooldown])
 
   function showResendToast() {
+    setCheckKey((k) => k + 1)
     clearTimeout(resendToastTimer.current)
     setResendToastState('visible')
     resendToastTimer.current = setTimeout(() => {
@@ -228,12 +231,16 @@ function VerifyContent() {
             }
             style={{
               maxHeight: resendToastState !== 'hidden' ? '100px' : '0',
-              overflow: 'visible',
+              overflow: 'hidden',
               opacity: resendToastState !== 'hidden' ? 1 : 0,
               transition: 'max-height 0.35s ease, opacity 0.35s ease',
             }}
           >
-            <Alert icon={<CheckIcon />} message='New code has been sent' />
+            <Alert
+              key={checkKey}
+              icon={<CheckIcon />}
+              message='New code has been sent'
+            />
           </div>
 
           <div
@@ -315,6 +322,7 @@ function VerifyContent() {
       >
         <button
           onClick={() => {
+            setCheckKey((k) => k + 1)
             clearTimeout(resendToastTimer.current)
             setResendToastState('visible')
           }}

@@ -30,7 +30,10 @@ export default function Alert({ icon, message }) {
           minWidth: 0,
         }}
       >
-        <div style={{ flexShrink: 0, width: '20px', height: '20px' }}>
+        <div
+          style={{ flexShrink: 0, width: '20px', height: '20px' }}
+          className='check-reveal'
+        >
           {icon}
         </div>
         <p
