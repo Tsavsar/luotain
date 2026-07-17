@@ -1,5 +1,4 @@
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { prisma } from '@/lib/prisma'
 import { getCurrentUserEmail } from '@/lib/session'
 
 export async function GET() {
@@ -8,9 +7,6 @@ export async function GET() {
   if (!email) {
     return Response.json({ hasOrg: false, loggedIn: false })
   }
-
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
 
   const user = await prisma.user.findUnique({ where: { email } })
   if (!user) {
@@ -24,6 +20,6 @@ export async function GET() {
   return Response.json({
     hasOrg: !!membership,
     loggedIn: true,
-    name: user.name || '', // populated already for OAuth users, empty for email-code
+    name: user.name || '',
   })
 }

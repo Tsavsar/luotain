@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { prisma } from '@/lib/prisma'
 import { setAppSession } from '@/lib/session'
 
 export async function POST(request) {
@@ -35,14 +34,7 @@ export async function POST(request) {
     return Response.json({ error: 'Incorrect code' }, { status: 400 })
   }
 
-  // Everything past this point is a genuinely CORRECT code — wrapped
-  // in try/catch so a database failure here reports as an actual
-  // server error, not something that looks like "wrong code" to the
-  // person, even though their code was right.
   try {
-    const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-    const prisma = new PrismaClient({ adapter })
-
     const user = await prisma.user.upsert({
       where: { email: decoded.email },
       update: {},
