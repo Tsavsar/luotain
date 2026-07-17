@@ -37,8 +37,8 @@ export async function POST(request) {
   try {
     const user = await prisma.user.upsert({
       where: { email: decoded.email },
-      update: {},
-      create: { email: decoded.email },
+      update: { emailVerified: new Date() },
+      create: { email: decoded.email, emailVerified: new Date() },
     })
 
     const membership = await prisma.membership.findFirst({
