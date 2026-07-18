@@ -1067,11 +1067,14 @@ html {
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
-.dropdown-item:not(.is-selected):hover {
+.dropdown-item:not(.is-selected):not(.is-danger):hover {
   background: var(--bg-surface);
 }
 .dropdown-item.is-selected {
   background: var(--bg-surface);
+}
+.dropdown-item.is-danger:hover {
+  background: var(--error-mute);
 }
 
 @keyframes dropdownIn {

@@ -199,7 +199,9 @@ function ProfileDropdown({ userImage }) {
         <DropdownOption onClick={() => router.push('/dashboard/contact')}>
           Contact
         </DropdownOption>
-        <DropdownOption onClick={handleLogout}>Log out</DropdownOption>
+        <DropdownOption onClick={handleLogout} danger>
+          Log out
+        </DropdownOption>{' '}
       </div>
     </Dropdown>
   )

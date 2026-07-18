@@ -81,10 +81,10 @@ export function DropdownMenu({ children, width = '220px', close }) {
   )
 }
 
-export function DropdownOption({ children, selected, onClick, close }) {
+export function DropdownOption({ children, selected, danger, onClick, close }) {
   return (
     <div
-      className={`dropdown-item${selected ? ' is-selected' : ''}`}
+      className={`dropdown-item${selected ? ' is-selected' : ''}${danger ? ' is-danger' : ''}`}
       onClick={() => {
         onClick?.()
         close?.()
@@ -100,7 +100,7 @@ export function DropdownOption({ children, selected, onClick, close }) {
         className='para-xs'
         style={{
           flex: 1,
-          color: 'var(--text-strong)',
+          color: danger ? 'var(--error-base)' : 'var(--text-strong)',
           margin: 0,
         }}
       >
