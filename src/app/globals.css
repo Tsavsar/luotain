@@ -1090,3 +1090,25 @@ html {
 .dropdown-panel {
   animation: dropdownIn 0.15s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* --- Page loader: logo cycling through three grays --- */
+@keyframes logoLoaderPulse {
+  0% {
+    fill: var(--bg-surface);
+  }
+  33% {
+    fill: var(--bg-layer);
+  }
+  66% {
+    fill: var(--bg-subtle);
+  }
+  100% {
+    fill: var(--bg-surface);
+  }
+}
+.logo-loader-path {
+  animation: logoLoaderPulse 1.8s ease-in-out infinite;
+}
+.logo-loader-path-2 {
+  animation-delay: -0.6s;
+}
