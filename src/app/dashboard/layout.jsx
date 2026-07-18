@@ -4,12 +4,15 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardMenu from '@/components/dashboardmenu'
 import DashboardNav from '@/components/dashboardnav'
-import StatsSegment from '@/components/statssegment'
-import ChartContainer from '@/components/chartcontainer'
-import DashboardCards from '@/components/cardcontainer'
 import DashboardSkeleton from '@/components/dashboardskeleton'
 
-export default function DashboardPage() {
+// ─── DashboardLayout ───
+// The guard, menu, and nav are shared chrome across all three tabs —
+// living here means they mount ONCE and persist across tab switches,
+// instead of re-checking auth and re-fetching org info every time you
+// click a different tab. {children} is whichever tab's page.jsx is
+// currently active.
+export default function DashboardLayout({ children }) {
   const router = useRouter()
   const [checking, setChecking] = useState(true)
   const [orgName, setOrgName] = useState('')
@@ -55,7 +58,6 @@ export default function DashboardPage() {
     loadInfo()
   }, [checking])
 
-  // Skeleton instead of a blank flash while the guard/data resolves
   if (checking) return <DashboardSkeleton />
 
   return (
@@ -92,41 +94,7 @@ export default function DashboardPage() {
         <DashboardNav />
       </div>
 
-      <div
-        className='dashboard-section dashboard-section-3'
-        style={{
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          padding: '0 24px 24px',
-        }}
-      >
-        <StatsSegment />
-      </div>
-
-      <div
-        className='dashboard-section dashboard-section-4'
-        style={{
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          padding: '0 24px 24px',
-        }}
-      >
-        <ChartContainer />
-      </div>
-
-      <div
-        className='dashboard-section dashboard-section-5'
-        style={{
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          padding: '0 24px 24px',
-        }}
-      >
-        <DashboardCards />
-      </div>
+      {children}
     </main>
   )
 }

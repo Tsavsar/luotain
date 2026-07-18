@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useRef, useLayoutEffect } from 'react'
+import { useRef, useState, useLayoutEffect } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
-// ─── Tab icons — simple, original, currentColor-based so they follow
-//     whatever color the wrapping element sets (active/inactive share
-//     one color declaration rather than each icon managing its own) ───
 function AnalyticsIcon() {
   return (
     <svg
@@ -117,20 +116,31 @@ function QrIcon() {
 }
 
 const TABS = [
-  { id: 'analytics', label: 'Analytics', icon: AnalyticsIcon },
-  { id: 'links', label: 'Links', icon: LinksIcon },
-  { id: 'qrcodes', label: 'QR codes', icon: QrIcon },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    icon: AnalyticsIcon,
+    href: '/dashboard/analytics',
+  },
+  { id: 'links', label: 'Links', icon: LinksIcon, href: '/dashboard/links' },
+  {
+    id: 'qrcodes',
+    label: 'QR codes',
+    icon: QrIcon,
+    href: '/dashboard/qrcodes',
+  },
 ]
 
 // ─── DashboardNav ───
-// Matches Figma node 73:939. Sliding-pill tabs on the left, "Create
-// new" pill on the right (inert for now — linking it is a later step).
-// Local component state only for now, not synced to routing — there's
-// no separate Analytics/Links/QR-codes VIEW to switch between yet,
-// so this is the visual shell, same "build the shell, wire it up
-// later" approach as the navbar's dropdown/avatar.
+// Now driven by the real URL via usePathname() instead of local
+// click-state — active tab is derived from wherever you actually are,
+// and clicking a tab is real navigation (Link), not a state toggle.
+// The sliding-pill measurement logic is otherwise unchanged.
 export default function DashboardNav() {
-  const [activeTab, setActiveTab] = useState('analytics')
+  const pathname = usePathname()
+  const activeTab =
+    TABS.find((t) => pathname?.startsWith(t.href))?.id || 'analytics'
+
   const tabRefs = useRef({})
   const [pillStyle, setPillStyle] = useState({
     left: 0,
@@ -138,12 +148,6 @@ export default function DashboardNav() {
     ready: false,
   })
 
-  // useLayoutEffect runs synchronously before the browser paints —
-  // this IS the React-idiomatic version of "measure, suspend
-  // transition, force reflow, restore" that vanilla JS needs. Since
-  // this measurement happens before anything is ever visually
-  // painted at the wrong position, there's no rogue slide-in to
-  // suppress in the first place.
   useLayoutEffect(() => {
     const el = tabRefs.current[activeTab]
     if (el) {
@@ -161,7 +165,6 @@ export default function DashboardNav() {
         justifyContent: 'space-between',
       }}
     >
-      {/* Sliding tabs */}
       <div
         style={{
           position: 'relative',
@@ -191,10 +194,10 @@ export default function DashboardNav() {
           const Icon = tab.icon
 
           return (
-            <button
+            <Link
               key={tab.id}
+              href={tab.href}
               ref={(el) => (tabRefs.current[tab.id] = el)}
-              onClick={() => setActiveTab(tab.id)}
               style={{
                 position: 'relative',
                 zIndex: 1,
@@ -202,10 +205,8 @@ export default function DashboardNav() {
                 alignItems: 'center',
                 gap: '8px',
                 padding: '8px 14px 8px 12px',
-                border: 'none',
-                background: 'transparent',
                 borderRadius: 'var(--radius-lg)',
-                cursor: 'pointer',
+                textDecoration: 'none',
                 color: isActive ? 'var(--text-strong)' : 'var(--text-soft)',
                 transition: 'color 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
               }}
@@ -223,12 +224,11 @@ export default function DashboardNav() {
               >
                 {tab.label}
               </span>
-            </button>
+            </Link>
           )
         })}
       </div>
 
-      {/* Create new — inert for now, linking it is a later step */}
       <button
         style={{
           display: 'flex',
