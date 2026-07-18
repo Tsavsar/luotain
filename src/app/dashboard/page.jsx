@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import DashboardMenu from '@/components/dashboardmenu'
 import DashboardNav from '@/components/dashboardnav'
 import StatsSegment from '@/components/statssegment'
-import Grid from '@/components/grid'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -106,7 +105,6 @@ export default function DashboardPage() {
           justifyContent: 'center',
         }}
       >
-        <Grid empty />
         <p className='title-h4' style={{ color: 'var(--text-strong)' }}>
           Dashboard
         </p>
