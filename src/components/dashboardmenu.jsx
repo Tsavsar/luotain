@@ -54,16 +54,29 @@ function PlusIcon() {
 }
 
 // ─── OrgDropdown ───
-// Matches Figma node 72:1957. Current org shown highlighted at top.
-// "New organisation" routes to a real page — same visual pattern as
-// onboarding's org-creation step, but org-name only, since the
-// user's own name is already set from their first time through.
-// NOTE: this doesn't yet handle a user with MULTIPLE orgs (switching
-// between them) — that's real follow-up work once org-switching
-// context exists; right now dashboard-info just shows whichever
-// membership comes first.
-function OrgDropdown({ orgName }) {
+// Matches Figma node 72:1957, now with real multi-org support. Lists
+// every org the user belongs to, active one highlighted. Switching
+// hits /api/switch-org (which re-verifies membership server-side —
+// never trusts the client), then does a full reload so every piece
+// of dashboard data reflects the newly active org consistently,
+// rather than trying to selectively refetch each piece.
+function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
   const router = useRouter()
+
+  async function handleSwitch(orgId) {
+    if (orgId === activeOrgId) return
+    try {
+      const res = await fetch('/api/switch-org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgId }),
+      })
+      if (!res.ok) return
+      window.location.reload()
+    } catch (err) {
+      // silent
+    }
+  }
 
   return (
     <Dropdown
@@ -96,24 +109,30 @@ function OrgDropdown({ orgName }) {
           width: '260px',
         }}
       >
-        <div
-          style={{
-            background: 'var(--bg-layer)',
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'center',
-            padding: '10px',
-            borderRadius: 'var(--radius-md)',
-          }}
-        >
-          <GeneratedAvatar name={orgName} size={20} />
-          <p
-            className='para-sm'
-            style={{ color: 'var(--text-strong)', margin: 0, flex: 1 }}
+        {allOrgs.map((org) => (
+          <div
+            key={org.id}
+            onClick={() => handleSwitch(org.id)}
+            className='dropdown-item'
+            style={{
+              background:
+                org.id === activeOrgId ? 'var(--bg-layer)' : 'transparent',
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center',
+              padding: '10px',
+              borderRadius: 'var(--radius-md)',
+            }}
           >
-            {orgName}
-          </p>
-        </div>
+            <GeneratedAvatar name={org.name} size={20} />
+            <p
+              className='para-sm'
+              style={{ color: 'var(--text-strong)', margin: 0, flex: 1 }}
+            >
+              {org.name}
+            </p>
+          </div>
+        ))}
 
         <button
           onClick={() => router.push('/new-org?from=dashboard')}
@@ -207,7 +226,12 @@ function ProfileDropdown({ userImage }) {
   )
 }
 
-export default function DashboardMenu({ orgName, userImage }) {
+export default function DashboardMenu({
+  orgName,
+  allOrgs,
+  activeOrgId,
+  userImage,
+}) {
   return (
     <div
       style={{
@@ -248,7 +272,11 @@ export default function DashboardMenu({ orgName, userImage }) {
           }}
         />
 
-        <OrgDropdown orgName={orgName} />
+        <OrgDropdown
+          orgName={orgName}
+          allOrgs={allOrgs}
+          activeOrgId={activeOrgId}
+        />
       </div>
 
       <ProfileDropdown userImage={userImage} />

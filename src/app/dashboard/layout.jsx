@@ -6,16 +6,12 @@ import DashboardMenu from '@/components/dashboardmenu'
 import DashboardNav from '@/components/dashboardnav'
 import DashboardSkeleton from '@/components/dashboardskeleton'
 
-// ─── DashboardLayout ───
-// The guard, menu, and nav are shared chrome across all three tabs —
-// living here means they mount ONCE and persist across tab switches,
-// instead of re-checking auth and re-fetching org info every time you
-// click a different tab. {children} is whichever tab's page.jsx is
-// currently active.
 export default function DashboardLayout({ children }) {
   const router = useRouter()
   const [checking, setChecking] = useState(true)
   const [orgName, setOrgName] = useState('')
+  const [allOrgs, setAllOrgs] = useState([])
+  const [activeOrgId, setActiveOrgId] = useState(null)
   const [userImage, setUserImage] = useState(null)
 
   useEffect(() => {
@@ -50,6 +46,8 @@ export default function DashboardLayout({ children }) {
         const res = await fetch('/api/dashboard-info')
         const data = await res.json()
         setOrgName(data.orgName)
+        setAllOrgs(data.allOrgs || [])
+        setActiveOrgId(data.activeOrgId)
         setUserImage(data.userImage)
       } catch (err) {
         setOrgName('Your Organization')
@@ -79,7 +77,12 @@ export default function DashboardLayout({ children }) {
           padding: '36px 24px 24px 24px',
         }}
       >
-        <DashboardMenu orgName={orgName} userImage={userImage} />
+        <DashboardMenu
+          orgName={orgName}
+          allOrgs={allOrgs}
+          activeOrgId={activeOrgId}
+          userImage={userImage}
+        />
       </div>
 
       <div
