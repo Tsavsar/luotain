@@ -1,11 +1,12 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import GeneratedAvatar from './generatedavatar'
 import { Dropdown, DropdownOption } from './dropdown'
-import { createClient } from '@/utils/supabase/client'
 
-function ChevronIcon() {
+function OrgChevronIcon() {
   return (
     <svg
       width='20'
@@ -16,17 +17,17 @@ function ChevronIcon() {
     >
       <path
         d='M13 7L10 4L7 7'
-        stroke='#A3A3A3'
-        stroke-width='1.5'
-        stroke-linecap='round'
-        stroke-linejoin='round'
+        stroke='var(--text-soft)'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
       />
       <path
         d='M13 13L10 16L7 13'
-        stroke='#A3A3A3'
-        stroke-width='1.5'
-        stroke-linecap='round'
-        stroke-linejoin='round'
+        stroke='var(--text-soft)'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
       />
     </svg>
   )
@@ -77,7 +78,7 @@ function OrgDropdown({ orgName }) {
               {orgName}
             </p>
           </div>
-          <ChevronIcon />
+          <OrgChevronIcon />
         </div>
       }
     >
@@ -115,7 +116,7 @@ function OrgDropdown({ orgName }) {
         </div>
 
         <button
-          onClick={() => router.push('/dashboard/new-org')}
+          onClick={() => router.push('/new-org?from=dashboard')}
           className='dropdown-item'
           style={{
             width: '100%',
@@ -143,17 +144,14 @@ function OrgDropdown({ orgName }) {
 // ─── ProfileDropdown ─── matches Figma node 87:2323
 function ProfileDropdown({ userImage }) {
   const router = useRouter()
-  const supabase = createClient()
 
+  // Clears BOTH possible sessions — the custom app-session cookie
+  // (email-code logins) and NextAuth's own session (OAuth logins).
+  // A user could be signed in either way, and this doesn't track
+  // which, so both get cleared every time to be safe.
   async function handleLogout() {
-    const { error } = await supabase.auth.signOut()
-
-    if (error) {
-      console.error('Logout failed:', error)
-      return
-    }
-
-    window.location.href = 'https://luotain.vercel.app/get-started'
+    await fetch('/api/logout', { method: 'POST' })
+    await signOut({ callbackUrl: '/login' })
   }
 
   return (
@@ -174,11 +172,7 @@ function ProfileDropdown({ userImage }) {
             <img
               src={userImage}
               alt=''
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           )}
         </div>
@@ -199,15 +193,12 @@ function ProfileDropdown({ userImage }) {
         <DropdownOption onClick={() => router.push('/dashboard/settings')}>
           Settings
         </DropdownOption>
-
         <DropdownOption onClick={() => router.push('/dashboard/billing')}>
           Upgrade plan
         </DropdownOption>
-
         <DropdownOption onClick={() => router.push('/dashboard/contact')}>
           Contact
         </DropdownOption>
-
         <DropdownOption onClick={handleLogout}>Log out</DropdownOption>
       </div>
     </Dropdown>
@@ -219,7 +210,7 @@ export default function DashboardMenu({ orgName, userImage }) {
     <div
       style={{
         width: '100%',
-        zIndex: '8',
+        zIndex: 8,
         maxWidth: '720px',
         display: 'flex',
         alignItems: 'center',
