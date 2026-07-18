@@ -27,31 +27,26 @@ function formatHour(h) {
 
 function NoDataIcon() {
   return (
-    <svg
-      width='32'
-      height='32'
-      viewBox='0 0 32 32'
-      fill='none'
-      xmlns='http://www.w3.org/2000/svg'
+    <div
+      className='check-reveal'
+      style={{
+        width: '32px',
+        height: '32px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
     >
-      <rect
-        x='4'
-        y='4'
-        width='24'
-        height='24'
-        rx='6'
-        stroke='var(--stroke-medium)'
-        strokeWidth='1.5'
+      <div
+        style={{
+          width: '24px',
+          height: '21.85px',
+          left: '4px',
+          top: '5.27px',
+          position: 'absolute',
+          background: 'var(--text-soft)',
+        }}
       />
-      <path
-        d='M10 20L14 16L18 19L22 12'
-        stroke='var(--text-soft)'
-        strokeWidth='1.5'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-        strokeDasharray='3 3'
-      />
-    </svg>
+    </div>
   )
 }
 
@@ -113,14 +108,7 @@ export default function ChartContainer() {
                 />
               )}
 
-              <div
-                style={{
-                  flex: 1,
-                  width: '1px',
-                  background: 'var(--bg-subtle)',
-                  zIndex: 1,
-                }}
-              />
+              <div style={{ flex: 1 }} />
 
               {isStart || isEnd ? (
                 <p
@@ -186,9 +174,7 @@ export default function ChartContainer() {
           zIndex: 2,
         }}
       >
-        <div className='check-reveal'>
-          <NoDataIcon />
-        </div>
+        <NoDataIcon />
         <p className='para-sm' style={{ color: 'var(--text-soft)', margin: 0 }}>
           No data available
         </p>
