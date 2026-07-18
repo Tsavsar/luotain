@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import DashboardMenu from '@/components/dashboardmenu'
 import DashboardNav from '@/components/dashboardnav'
 import StatsSegment from '@/components/statssegment'
+import ChartContainer from '@/components/chartcontainer'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -99,15 +100,13 @@ export default function DashboardPage() {
 
       <div
         style={{
-          flex: 1,
+          width: '100%',
           display: 'flex',
-          alignItems: 'center',
           justifyContent: 'center',
+          padding: '0 24px 24px',
         }}
       >
-        <p className='title-h4' style={{ color: 'var(--text-strong)' }}>
-          Dashboard
-        </p>
+        <ChartContainer />
       </div>
     </main>
   )
