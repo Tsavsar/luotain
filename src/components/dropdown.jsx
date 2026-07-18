@@ -49,8 +49,7 @@ export function Dropdown({
           style={{
             position: 'absolute',
             top: `calc(100% + ${offsetY}px)`,
-            [align === 'right' ? 'right' : 'left']: `${sideOffset}px`,
-            transform: `translateX(${offsetX}px)`,
+            [align === 'right' ? 'right' : 'left']: `${sideOffset + offsetX}px`,
             zIndex: 50,
             transformOrigin: align === 'right' ? 'top right' : 'top left',
           }}
