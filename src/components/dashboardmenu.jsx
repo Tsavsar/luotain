@@ -146,7 +146,6 @@ function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
             width: '100%',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
             gap: '6px',
             height: '36px',
             padding: '6px 8px 6px 12px',
@@ -154,6 +153,7 @@ function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
             borderRadius: 'var(--radius-md)',
             background: 'var(--bg-default)',
             color: 'var(--text-strong)',
+            justifyContent: 'center',
           }}
         >
           <PlusIcon />
