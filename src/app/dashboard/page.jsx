@@ -7,6 +7,7 @@ import DashboardNav from '@/components/dashboardnav'
 import StatsSegment from '@/components/statssegment'
 import ChartContainer from '@/components/chartcontainer'
 import DashboardCards from '@/components/cardcontainer'
+import DashboardSkeleton from '@/components/dashboardskeleton'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -54,7 +55,8 @@ export default function DashboardPage() {
     loadInfo()
   }, [checking])
 
-  if (checking) return null
+  // Skeleton instead of a blank flash while the guard/data resolves
+  if (checking) return <DashboardSkeleton />
 
   return (
     <main
@@ -67,6 +69,7 @@ export default function DashboardPage() {
       }}
     >
       <div
+        className='dashboard-section dashboard-section-1'
         style={{
           width: '100%',
           display: 'flex',
@@ -78,6 +81,7 @@ export default function DashboardPage() {
       </div>
 
       <div
+        className='dashboard-section dashboard-section-2'
         style={{
           width: '100%',
           display: 'flex',
@@ -89,6 +93,7 @@ export default function DashboardPage() {
       </div>
 
       <div
+        className='dashboard-section dashboard-section-3'
         style={{
           width: '100%',
           display: 'flex',
@@ -100,6 +105,7 @@ export default function DashboardPage() {
       </div>
 
       <div
+        className='dashboard-section dashboard-section-4'
         style={{
           width: '100%',
           display: 'flex',
@@ -111,6 +117,7 @@ export default function DashboardPage() {
       </div>
 
       <div
+        className='dashboard-section dashboard-section-5'
         style={{
           width: '100%',
           display: 'flex',

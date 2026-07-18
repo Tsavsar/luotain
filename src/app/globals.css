@@ -1009,3 +1009,55 @@ html {
     flex-direction: column;
   }
 }
+
+/* --- Dashboard loading state ---
+   Pulse is a simple opacity loop, not a moving-gradient shimmer —
+   restrained on purpose, matching "a professional dashboard should
+   be crisp and fast" rather than something more decorative. 1.4s
+   cycle is the standard range for skeleton pulses: fast enough to
+   read as "actively loading", slow enough not to feel frantic. */
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.skeleton-pulse {
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+/* Staggered entrance for the real dashboard content once loading
+   finishes. Strong ease-out curve (not a default CSS easing — those
+   are too weak to feel intentional), short duration, small stagger
+   delay between sections so they cascade rather than pop in at once. */
+@keyframes dashboardSectionIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.dashboard-section {
+  animation: dashboardSectionIn 300ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.dashboard-section-1 {
+  animation-delay: 0ms;
+}
+.dashboard-section-2 {
+  animation-delay: 50ms;
+}
+.dashboard-section-3 {
+  animation-delay: 100ms;
+}
+.dashboard-section-4 {
+  animation-delay: 150ms;
+}
+.dashboard-section-5 {
+  animation-delay: 200ms;
+}
