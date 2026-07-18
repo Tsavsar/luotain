@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import {
+  useState,
+  useRef,
+  useEffect,
+  cloneElement,
+  isValidElement,
+} from 'react'
 
-// ─── Dropdown ───
-// Shared positioning/open-close/click-outside logic for every
-// dropdown in the app. `trigger` is whatever's already clickable
-// (the org name, the column-header text, etc.) — this just wraps it
-// and manages showing/hiding the panel.
 export function Dropdown({ trigger, children, align = 'left' }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -17,15 +18,24 @@ export function Dropdown({ trigger, children, align = 'left' }) {
         setOpen(false)
       }
     }
-    if (open) document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
   }, [open])
+
+  const close = () => setOpen(false)
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <div onClick={() => setOpen((o) => !o)} style={{ cursor: 'pointer' }}>
         {trigger}
       </div>
+
       {open && (
         <div
           className='dropdown-panel'
@@ -37,15 +47,16 @@ export function Dropdown({ trigger, children, align = 'left' }) {
             transformOrigin: align === 'right' ? 'top right' : 'top left',
           }}
         >
-          {children}
+          {isValidElement(children)
+            ? cloneElement(children, { close })
+            : children}
         </div>
       )}
     </div>
   )
 }
 
-// ─── DropdownMenu ─── the visual shell every dropdown panel sits in
-export function DropdownMenu({ children, width = '220px' }) {
+export function DropdownMenu({ children, width = '220px', close }) {
   return (
     <div
       style={{
@@ -59,19 +70,25 @@ export function DropdownMenu({ children, width = '220px' }) {
         width,
       }}
     >
-      {children}
+      {Array.isArray(children)
+        ? children.map((child) =>
+            isValidElement(child) ? cloneElement(child, { close }) : child
+          )
+        : isValidElement(children)
+          ? cloneElement(children, { close })
+          : children}
     </div>
   )
 }
 
-// ─── DropdownOption ── individual selectable row. Hover and selected
-// states are handled via CSS classes (globals.css) since inline
-// styles can't express :hover.
-export function DropdownOption({ children, selected, onClick }) {
+export function DropdownOption({ children, selected, onClick, close }) {
   return (
     <div
       className={`dropdown-item${selected ? ' is-selected' : ''}`}
-      onClick={onClick}
+      onClick={() => {
+        onClick?.()
+        close?.()
+      }}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -81,7 +98,11 @@ export function DropdownOption({ children, selected, onClick }) {
     >
       <p
         className='para-xs'
-        style={{ flex: 1, color: 'var(--text-strong)', margin: 0 }}
+        style={{
+          flex: 1,
+          color: 'var(--text-strong)',
+          margin: 0,
+        }}
       >
         {children}
       </p>
