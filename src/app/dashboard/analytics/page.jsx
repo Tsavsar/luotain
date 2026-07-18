@@ -37,7 +37,7 @@ export default function AnalyticsPage() {
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          padding: '0 24px 24px',
+          padding: '0 24px 36px 24px',
         }}
       >
         <DashboardCards />
