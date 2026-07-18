@@ -1,16 +1,10 @@
+'use client'
+
+import { useState } from 'react'
 import EmptyStateIcon from './emptystateicon'
+import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 
-// ─── DashboardCards ───
-// Matches Figma nodes 73:1086 (single card) and 73:1084 (the 2x2
-// container). All four cards share one shell — Card below — differing
-// only in title, column-label text, and whether the dropdown chevron
-// shows (Sources doesn't have one). Empty-state body is identical
-// across all four, reusing the same icon as the chart above it.
-// .card-row (in globals.css) handles the column-on-mobile behavior,
-// reusing the same 768px breakpoint already established for the
-// legal pages elsewhere in this project.
-
-function DropdownChevron() {
+function ChevronIcon() {
   return (
     <svg
       width='14'
@@ -30,7 +24,9 @@ function DropdownChevron() {
   )
 }
 
-function Card({ title, columnLabel, showDropdown = true }) {
+function Card({ title, columnOptions, showDropdown = true }) {
+  const [selected, setSelected] = useState(columnOptions?.[0])
+
   return (
     <div
       style={{
@@ -62,7 +58,41 @@ function Card({ title, columnLabel, showDropdown = true }) {
         >
           {title}
         </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+
+        {showDropdown ? (
+          <Dropdown
+            align='right'
+            trigger={
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <p
+                  className='para-xs'
+                  style={{
+                    color: 'var(--text-soft)',
+                    margin: 0,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {selected}
+                </p>
+                <ChevronIcon />
+              </div>
+            }
+          >
+            <DropdownMenu width='140px'>
+              {columnOptions.map((option) => (
+                <DropdownOption
+                  key={option}
+                  selected={option === selected}
+                  onClick={() => setSelected(option)}
+                >
+                  {option}
+                </DropdownOption>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
+        ) : (
           <p
             className='para-xs'
             style={{
@@ -71,10 +101,9 @@ function Card({ title, columnLabel, showDropdown = true }) {
               whiteSpace: 'nowrap',
             }}
           >
-            {columnLabel}
+            {columnOptions[0]}
           </p>
-          {showDropdown && <DropdownChevron />}
-        </div>
+        )}
       </div>
 
       <div
@@ -109,12 +138,19 @@ export default function DashboardCards() {
       }}
     >
       <div className='card-row'>
-        <Card title='Clicks' columnLabel='Short links' />
-        <Card title='Sources' columnLabel='Visitors' showDropdown={false} />
+        <Card title='Clicks' columnOptions={['Short links', 'QR codes']} />
+        <Card
+          title='Sources'
+          columnOptions={['Visitors']}
+          showDropdown={false}
+        />
       </div>
       <div className='card-row'>
-        <Card title='Geography' columnLabel='Countries' />
-        <Card title='Devices' columnLabel='Type' />
+        <Card
+          title='Geography'
+          columnOptions={['Countries', 'Regions', 'Cities']}
+        />
+        <Card title='Devices' columnOptions={['Type', 'Browser']} />
       </div>
     </div>
   )

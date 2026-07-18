@@ -1,37 +1,32 @@
-// ─── StatsSegment ───
-// Matches Figma node 73:971. This is deliberately the EMPTY state —
-// every value is "-" and no trend badges render, matching what the
-// Figma file itself shows (the badges exist in the design but are
-// set to opacity:0 there too — this is the intended first-run look,
-// not a placeholder standing in for something unfinished).
-//
-// Metric accepts an optional `trend` prop so real analytics data can
-// be wired in later without rebuilding this component — for now
-// every call site below just omits it, which is what correctly
-// produces the dash-only empty state.
+'use client'
+
+import { useState } from 'react'
+import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
+
+const DATE_OPTIONS = [
+  'Today',
+  'Yesterday',
+  'Last 7 days',
+  'Last 30 days',
+  'Last 90 days',
+  'Custom',
+]
 
 function ChevronIcon() {
   return (
     <svg
-      xmlns='http://www.w3.org/2000/svg'
       width='20'
       height='20'
       viewBox='0 0 20 20'
       fill='none'
+      xmlns='http://www.w3.org/2000/svg'
     >
       <path
-        d='M13 7L10 4L7 7'
-        stroke='#A3A3A3'
-        stroke-width='1.5'
-        stroke-linecap='round'
-        stroke-linejoin='round'
-      />
-      <path
-        d='M13 13L10 16L7 13'
-        stroke='#A3A3A3'
-        stroke-width='1.5'
-        stroke-linecap='round'
-        stroke-linejoin='round'
+        d='M5 7.5L10 12.5L15 7.5'
+        stroke='var(--text-soft)'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
       />
     </svg>
   )
@@ -65,10 +60,6 @@ function Metric({ label, value, trend, width }) {
         >
           {value || '-'}
         </p>
-
-        {/* Trend badge — only renders once real trend data exists.
-            This is what stays invisible in the empty state, matching
-            Figma's own opacity:0 treatment for the same element. */}
         {trend && (
           <div
             style={{
@@ -111,6 +102,8 @@ function Metric({ label, value, trend, width }) {
 }
 
 export default function StatsSegment() {
+  const [selectedRange, setSelectedRange] = useState('Last 7 days')
+
   return (
     <div
       style={{
@@ -128,26 +121,40 @@ export default function StatsSegment() {
         <Metric label='Top country' />
       </div>
 
-      {/* Date filter — inert for now, same "shell first, wire up
-          later" pattern as the nav dropdown/avatar */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '4px',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '10px 0',
-          borderRadius: 'var(--radius-lg)',
-        }}
+      <Dropdown
+        align='right'
+        trigger={
+          <div
+            style={{
+              display: 'flex',
+              gap: '4px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '10px 0',
+            }}
+          >
+            <p
+              className='para-sm'
+              style={{ color: 'var(--text-strong)', margin: 0 }}
+            >
+              {selectedRange}
+            </p>
+            <ChevronIcon />
+          </div>
+        }
       >
-        <p
-          className='para-sm'
-          style={{ color: 'var(--text-strong)', margin: 0 }}
-        >
-          Last 7 days
-        </p>
-        <ChevronIcon />
-      </div>
+        <DropdownMenu width='160px'>
+          {DATE_OPTIONS.map((option) => (
+            <DropdownOption
+              key={option}
+              selected={option === selectedRange}
+              onClick={() => setSelectedRange(option)}
+            >
+              {option}
+            </DropdownOption>
+          ))}
+        </DropdownMenu>
+      </Dropdown>
     </div>
   )
 }

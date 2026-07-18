@@ -1,10 +1,196 @@
-import GeneratedAvatar from './generatedavatar'
+'use client'
 
-// ─── DashboardMenu ───
-// Matches Figma node 73:925. Left to right: Luotain logo (32px),
-// divider, org avatar (24px, generated) + org name + dropdown
-// chevron (inert for now — wired up later), then the user avatar
-// on the far right (also inert for now).
+import { useRouter } from 'next/navigation'
+import GeneratedAvatar from './generatedavatar'
+import { Dropdown, DropdownOption } from './dropdown'
+
+function ChevronIcon() {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 20 20'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <path
+        d='M5 7.5L10 12.5L15 7.5'
+        stroke='var(--text-soft)'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
+function PlusIcon() {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 20 20'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <path
+        d='M10 4V16M4 10H16'
+        stroke='currentColor'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
+// ─── OrgDropdown ───
+// Matches Figma node 72:1957. Current org shown highlighted at top.
+// "New organisation" routes to a real page — same visual pattern as
+// onboarding's org-creation step, but org-name only, since the
+// user's own name is already set from their first time through.
+// NOTE: this doesn't yet handle a user with MULTIPLE orgs (switching
+// between them) — that's real follow-up work once org-switching
+// context exists; right now dashboard-info just shows whichever
+// membership comes first.
+function OrgDropdown({ orgName }) {
+  const router = useRouter()
+
+  return (
+    <Dropdown
+      trigger={
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <GeneratedAvatar name={orgName} size={24} />
+            <p
+              className='label-md'
+              style={{ color: 'var(--text-strong)', margin: 0 }}
+            >
+              {orgName}
+            </p>
+          </div>
+          <ChevronIcon />
+        </div>
+      }
+    >
+      <div
+        style={{
+          background: 'var(--bg-default)',
+          border: '1px solid var(--stroke-soft)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow:
+            '0 5px 13px -5px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02)',
+          padding: '4px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          width: '260px',
+        }}
+      >
+        <div
+          style={{
+            background: 'var(--bg-layer)',
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center',
+            padding: '10px',
+            borderRadius: 'var(--radius-md)',
+          }}
+        >
+          <GeneratedAvatar name={orgName} size={20} />
+          <p
+            className='para-sm'
+            style={{ color: 'var(--text-strong)', margin: 0, flex: 1 }}
+          >
+            {orgName}
+          </p>
+        </div>
+
+        <button
+          onClick={() => router.push('/dashboard/new-org')}
+          className='dropdown-item'
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            height: '36px',
+            padding: '6px 8px 6px 12px',
+            border: '1px solid var(--stroke-soft)',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--bg-default)',
+            color: 'var(--text-strong)',
+          }}
+        >
+          <PlusIcon />
+          <span className='para-sm' style={{ color: 'inherit' }}>
+            New organisation
+          </span>
+        </button>
+      </div>
+    </Dropdown>
+  )
+}
+
+// ─── ProfileDropdown ─── matches Figma node 87:2323
+function ProfileDropdown({ userImage }) {
+  const router = useRouter()
+
+  async function handleLogout() {
+    // stub — wire this to your actual sign-out logic
+  }
+
+  return (
+    <Dropdown
+      align='right'
+      trigger={
+        <div
+          style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: 'var(--radius-full)',
+            overflow: 'hidden',
+            flexShrink: 0,
+            background: 'var(--bg-subtle)',
+          }}
+        >
+          {userImage && (
+            <img
+              src={userImage}
+              alt=''
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          )}
+        </div>
+      }
+    >
+      <div
+        style={{
+          background: 'var(--bg-default)',
+          border: '1px solid var(--stroke-soft)',
+          borderRadius: '14px',
+          boxShadow: '0 10px 10px rgba(0, 0, 0, 0.04)',
+          padding: '4px',
+          display: 'flex',
+          flexDirection: 'column',
+          width: '180px',
+        }}
+      >
+        <DropdownOption onClick={() => router.push('/dashboard/settings')}>
+          Settings
+        </DropdownOption>
+        <DropdownOption onClick={() => router.push('/dashboard/billing')}>
+          Upgrade plan
+        </DropdownOption>
+        <DropdownOption onClick={() => router.push('/dashboard/contact')}>
+          Contact
+        </DropdownOption>
+        <DropdownOption onClick={handleLogout}>Log out</DropdownOption>
+      </div>
+    </Dropdown>
+  )
+}
+
 export default function DashboardMenu({ orgName, userImage }) {
   return (
     <div
@@ -17,7 +203,6 @@ export default function DashboardMenu({ orgName, userImage }) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* Luotain logo */}
         <svg
           width='32'
           height='32'
@@ -35,7 +220,6 @@ export default function DashboardMenu({ orgName, userImage }) {
           />
         </svg>
 
-        {/* Divider */}
         <div
           style={{
             width: '1.5px',
@@ -45,63 +229,10 @@ export default function DashboardMenu({ orgName, userImage }) {
           }}
         />
 
-        {/* Org switcher */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <GeneratedAvatar name={orgName} size={24} />
-            <p
-              className='label-md'
-              style={{ color: 'var(--text-strong)', margin: 0 }}
-            >
-              {orgName}
-            </p>
-          </div>
-
-          {/* Dropdown chevron — inert, wired up later */}
-          <svg
-            xmlns='http://www.w3.org/2000/svg'
-            width='20'
-            height='20'
-            viewBox='0 0 20 20'
-            fill='none'
-          >
-            <path
-              d='M13 7L10 4L7 7'
-              stroke='#A3A3A3'
-              stroke-width='1.5'
-              stroke-linecap='round'
-              stroke-linejoin='round'
-            />
-            <path
-              d='M13 13L10 16L7 13'
-              stroke='#A3A3A3'
-              stroke-width='1.5'
-              stroke-linecap='round'
-              stroke-linejoin='round'
-            />
-          </svg>
-        </div>
+        <OrgDropdown orgName={orgName} />
       </div>
 
-      {/* User avatar — inert, wired up later */}
-      <div
-        style={{
-          width: '32px',
-          height: '32px',
-          borderRadius: 'var(--radius-full)',
-          overflow: 'hidden',
-          flexShrink: 0,
-          background: 'var(--bg-subtle)',
-        }}
-      >
-        {userImage && (
-          <img
-            src={userImage}
-            alt=''
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        )}
-      </div>
+      <ProfileDropdown userImage={userImage} />
     </div>
   )
 }
