@@ -1,14 +1,6 @@
 export default function EmptyStateIcon() {
   return (
-    <div
-      className='check-reveal'
-      style={{
-        width: '32px',
-        height: '32px',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
+    <div className='check-reveal'>
       <div
         style={{
           width: '100%',
