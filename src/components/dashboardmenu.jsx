@@ -196,6 +196,7 @@ export default function DashboardMenu({ orgName, userImage }) {
     <div
       style={{
         width: '100%',
+        zIndex: '8',
         maxWidth: '720px',
         display: 'flex',
         alignItems: 'center',
