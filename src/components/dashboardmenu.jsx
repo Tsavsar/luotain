@@ -72,7 +72,10 @@ function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
         body: JSON.stringify({ orgId }),
       })
       if (!res.ok) return
-      window.location.reload()
+      // Full navigation (not just a reload) — lands on the org's
+      // main dashboard every time, a predictable spot rather than
+      // wherever you happened to be standing when you switched.
+      window.location.href = '/dashboard/analytics'
     } catch (err) {
       // silent
     }
@@ -120,7 +123,7 @@ function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
               display: 'flex',
               gap: '8px',
               alignItems: 'center',
-              padding: '10px',
+              padding: '10px 10px 10px 0',
               borderRadius: 'var(--radius-md)',
             }}
           >
