@@ -1,32 +1,31 @@
 'use client'
 
-import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
-
-// ─── Back button, routes to wherever the person actually came from ───
-// Reads a ?from= query param (set by whichever page linked here —
-// login, get-started, etc.) and routes back to that specific page.
-// Falls back to '/' if the param is missing or unrecognized, so this
-// still works fine even from a direct link with no ?from= at all.
-const DESTINATIONS = {
-  login: '/login',
-  'get-started': '/get-started',
-}
+import { useRouter } from 'next/navigation'
 
 export default function BackButton() {
-  const searchParams = useSearchParams()
-  const from = searchParams.get('from')
-  const backHref = DESTINATIONS[from] || '/'
+  const router = useRouter()
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/dashboard/analytics')
+    }
+  }
 
   return (
-    <Link
-      href={backHref}
+    <button
+      type='button'
+      onClick={handleBack}
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        textDecoration: 'none',
         width: 'fit-content',
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        cursor: 'pointer',
       }}
     >
       <svg
@@ -51,9 +50,10 @@ export default function BackButton() {
           strokeLinejoin='round'
         />
       </svg>
+
       <span className='label-sm' style={{ color: 'var(--text-sub)' }}>
         Back
       </span>
-    </Link>
+    </button>
   )
 }
