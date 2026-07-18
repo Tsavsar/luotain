@@ -83,7 +83,7 @@ function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
 
   return (
     <Dropdown
-      align='center'
+      offsetX={8}
       trigger={
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

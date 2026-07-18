@@ -1,14 +1,14 @@
-'use client'
+// In dropdown.jsx — add offsetX/offsetY props, both default to 0/6
+// so every EXISTING dropdown call (Date, Profile, card filters) keeps
+// behaving exactly as it does now, unchanged.
 
-import {
-  useState,
-  useRef,
-  useEffect,
-  cloneElement,
-  isValidElement,
-} from 'react'
-
-export function Dropdown({ trigger, children, align = 'left' }) {
+export function Dropdown({
+  trigger,
+  children,
+  align = 'left',
+  offsetX = 0,
+  offsetY = 6,
+}) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -41,8 +41,9 @@ export function Dropdown({ trigger, children, align = 'left' }) {
           className='dropdown-panel'
           style={{
             position: 'absolute',
-            top: 'calc(100% + 6px)',
+            top: `calc(100% + ${offsetY}px)`,
             [align === 'right' ? 'right' : 'left']: 0,
+            transform: `translateX(${offsetX}px)`,
             zIndex: 50,
             transformOrigin: align === 'right' ? 'top right' : 'top left',
           }}
@@ -52,60 +53,6 @@ export function Dropdown({ trigger, children, align = 'left' }) {
             : children}
         </div>
       )}
-    </div>
-  )
-}
-
-export function DropdownMenu({ children, width = '220px', close }) {
-  return (
-    <div
-      style={{
-        background: 'var(--bg-default)',
-        border: '1px solid var(--stroke-soft)',
-        borderRadius: '14px',
-        boxShadow: '0 10px 20px 3px rgba(0, 0, 0, 0.04)',
-        padding: '4px',
-        display: 'flex',
-        flexDirection: 'column',
-        width,
-      }}
-    >
-      {Array.isArray(children)
-        ? children.map((child) =>
-            isValidElement(child) ? cloneElement(child, { close }) : child
-          )
-        : isValidElement(children)
-          ? cloneElement(children, { close })
-          : children}
-    </div>
-  )
-}
-
-export function DropdownOption({ children, selected, danger, onClick, close }) {
-  return (
-    <div
-      className={`dropdown-item${selected ? ' is-selected' : ''}${danger ? ' is-danger' : ''}`}
-      onClick={() => {
-        onClick?.()
-        close?.()
-      }}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: '6px 14px 6px 12px',
-        borderRadius: 'var(--radius-lg)',
-      }}
-    >
-      <p
-        className='para-xs'
-        style={{
-          flex: 1,
-          color: danger ? 'var(--error-base)' : 'var(--text-strong)',
-          margin: 0,
-        }}
-      >
-        {children}
-      </p>
     </div>
   )
 }
