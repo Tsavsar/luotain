@@ -14,6 +14,7 @@ export function Dropdown({
   align = 'left',
   offsetX = 0,
   offsetY = 6,
+  sideOffset = 0,
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -48,7 +49,7 @@ export function Dropdown({
           style={{
             position: 'absolute',
             top: `calc(100% + ${offsetY}px)`,
-            [align === 'right' ? 'right' : 'left']: 0,
+            [align === 'right' ? 'right' : 'left']: `${sideOffset}px`,
             transform: `translateX(${offsetX}px)`,
             zIndex: 50,
             transformOrigin: align === 'right' ? 'top right' : 'top left',
