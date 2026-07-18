@@ -212,6 +212,7 @@ export default function DashboardMenu({ orgName, userImage }) {
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <svg
+          href='https://luotain.vercel.app/dashboard/analytics'
           width='32'
           height='32'
           viewBox='0 0 30 32'
