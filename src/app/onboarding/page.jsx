@@ -30,7 +30,7 @@ export default function OnboardingPage() {
         }
 
         if (data.hasOrg) {
-          router.replace('/dashboard')
+          router.replace('/dashboard/analytics')
           return
         }
 
@@ -59,7 +59,7 @@ export default function OnboardingPage() {
 
       if (!res.ok) throw new Error('Failed to create organization')
 
-      router.push('/dashboard')
+      router.push('/dashboard/analytics')
     } catch (err) {
       setSubmitting(false)
     }
