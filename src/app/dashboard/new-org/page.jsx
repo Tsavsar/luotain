@@ -1,3 +1,5 @@
+'use client'
+
 import { Suspense, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BackButton from '@/components/backbutton'
