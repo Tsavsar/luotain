@@ -16,6 +16,6 @@
     "jsx": "preserve",
     "types": ["next"]
   },
-  "include": ["**/*.js", "**/*.jsx", ".next/types/**/*.ts", "src/app/api/switch-org-route"],
+  "include": ["**/*.js", "**/*.jsx", ".next/types/**/*.ts", "src/app/api/switch-org"],
   "exclude": ["node_modules"]
 }
