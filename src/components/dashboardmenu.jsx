@@ -120,7 +120,7 @@ function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
               display: 'flex',
               gap: '8px',
               alignItems: 'center',
-              padding: '10px',
+              padding: '10px 10px 10px 0',
               borderRadius: 'var(--radius-md)',
             }}
           >
