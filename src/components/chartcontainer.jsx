@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import EmptyStateIcon from './emptystateicon'
 
 // ─── ChartContainer ───
 // Matches Figma node 73:1007, extended per feedback: only three real
@@ -23,31 +24,6 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
 function formatHour(h) {
   return `${h.toString().padStart(2, '0')}:00`
-}
-
-function NoDataIcon() {
-  return (
-    <div
-      className='check-reveal'
-      style={{
-        width: '32px',
-        height: '32px',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        style={{
-          width: '24px',
-          height: '21.85px',
-          left: '4px',
-          top: '5.27px',
-          position: 'absolute',
-          background: 'var(--text-soft)',
-        }}
-      />
-    </div>
-  )
 }
 
 export default function ChartContainer() {
@@ -174,7 +150,7 @@ export default function ChartContainer() {
           zIndex: 2,
         }}
       >
-        <NoDataIcon />
+        <EmptyStateIcon />
         <p className='para-sm' style={{ color: 'var(--text-soft)', margin: 0 }}>
           No data available
         </p>

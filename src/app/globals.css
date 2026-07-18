@@ -994,3 +994,18 @@ html {
 .icon-pop {
   animation: iconPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* --- Dashboard card grid: 2x2 -> single column on mobile ---
+   Reuses the same 768px breakpoint already established for the
+   legal pages' sidebar collapse, for consistency across the app
+   rather than introducing a new breakpoint value. */
+.card-row {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+@media (max-width: 768px) {
+  .card-row {
+    flex-direction: column;
+  }
+}

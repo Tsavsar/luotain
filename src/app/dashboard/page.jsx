@@ -6,6 +6,7 @@ import DashboardMenu from '@/components/dashboardmenu'
 import DashboardNav from '@/components/dashboardnav'
 import StatsSegment from '@/components/statssegment'
 import ChartContainer from '@/components/chartcontainer'
+import DashboardCards from '@/components/cardcontainer'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -107,6 +108,17 @@ export default function DashboardPage() {
         }}
       >
         <ChartContainer />
+      </div>
+
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '0 24px 24px',
+        }}
+      >
+        <DashboardCards />
       </div>
     </main>
   )
