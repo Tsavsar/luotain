@@ -1,14 +1,23 @@
-'use client'
-
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import BackButton from '@/components/backbutton'
 import Continuebutton from '@/components/continuebutton'
 import Inputfield from '@/components/input'
 import Map from '@/components/Map'
 
-// Same visual pattern as onboarding — org-name only this time, since
-// the person's own name is already set from their first time through.
+// Moved from src/app/dashboard/new-org — living under dashboard/*
+// meant it inherited the dashboard layout's menu/nav chrome, which
+// this page was never meant to have. It's a standalone flow, same
+// as onboarding, not a dashboard tab.
 export default function NewOrgPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewOrgContent />
+    </Suspense>
+  )
+}
+
+function NewOrgContent() {
   const router = useRouter()
   const [orgName, setOrgName] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -59,6 +68,8 @@ export default function NewOrgPage() {
           className='topspace'
           style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
         >
+          <BackButton />
+
           <div className='luotain-logo'>
             <svg
               width='39'
@@ -77,6 +88,7 @@ export default function NewOrgPage() {
               />
             </svg>
           </div>
+
           <div
             className='header'
             style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}
