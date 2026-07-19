@@ -15,6 +15,7 @@ export function Dropdown({
   offsetX = 0,
   offsetY = 6,
   sideOffset = 0,
+  triggerHover = false,
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -39,7 +40,13 @@ export function Dropdown({
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <div onClick={() => setOpen((o) => !o)} style={{ cursor: 'pointer' }}>
+      <div
+        onClick={() => setOpen((o) => !o)}
+        className={
+          triggerHover ? `dropdown-trigger${open ? ' is-open' : ''}` : ''
+        }
+        style={{ cursor: 'pointer' }}
+      >
         {trigger}
       </div>
 

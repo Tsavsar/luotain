@@ -1112,3 +1112,64 @@ html {
 .logo-loader-path-2 {
   animation-delay: -0.6s;
 }
+
+/* --- Dashboard nav: Create New drops below tabs on narrow screens --- */
+.dashboard-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+@media (max-width: 768px) {
+  .dashboard-nav-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+.create-new-button {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* --- Stats segment: filter stacks ABOVE stats on narrow screens ---
+   column-reverse flips visual order without touching JSX order —
+   the filter is the second element in the markup but needs to
+   render first once stacked. */
+.stats-segment-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+}
+@media (max-width: 768px) {
+  .stats-segment-row {
+    flex-direction: column-reverse;
+    gap: 16px;
+  }
+}
+.stats-metrics-row {
+  display: flex;
+  gap: 42px;
+  align-items: flex-start;
+  overflow-x: auto;
+}
+
+/* --- Org dropdown trigger: hover + active(open) state ---
+   Matches Figma node 72:1373. Opt-in via the Dropdown component's
+   triggerHover prop — only the org trigger uses this; other
+   dropdowns (Profile's avatar, Date filter) aren't wrapped in a
+   padded box, so they don't get this treatment. */
+.dropdown-trigger {
+  padding: 8px;
+  border-radius: 12px;
+  transition: background-color 0.15s ease;
+}
+.dropdown-trigger:hover {
+  background: var(--bg-surface);
+}
+.dropdown-trigger.is-open {
+  background: var(--bg-surface);
+}
