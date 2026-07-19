@@ -90,7 +90,7 @@ function VerifyContent() {
         throw new Error(data.error || 'Invalid code')
       }
 
-      router.push(data.hasOrg ? '/dashboard' : '/onboarding')
+      router.push(data.hasOrg ? '/dashboard/analytics' : '/onboarding')
     } catch (err) {
       clearTimeout(errorTimer.current)
       clearTimeout(toastTimer.current)
