@@ -31,8 +31,6 @@ export default function HomePage() {
           flexDirection: 'column',
           width: '360px',
           gap: '24px',
-          alignItems: 'center',
-          textAlign: 'center',
         }}
       >
         <div className='luotain-logo'>
@@ -59,7 +57,8 @@ export default function HomePage() {
             Luotain
           </p>
           <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-            Shorten links, generate QR codes, track every click.
+            Shorten links, generate QR codes, and track every click and scan —
+            built for teams, not just individuals.
           </p>
         </div>
 
