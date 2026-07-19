@@ -1173,3 +1173,18 @@ html {
 .dropdown-trigger.is-open {
   background: var(--bg-surface);
 }
+
+/* --- Org dropdown list rows: hover + active state, both bg-layer ---
+   Switched from inline background (which always beat CSS :hover due
+   to specificity) to class-based, so both states can actually work
+   without one blocking the other. */
+.org-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.org-row:not(.is-active):hover {
+  background: var(--bg-layer);
+}
+.org-row.is-active {
+  background: var(--bg-layer);
+}

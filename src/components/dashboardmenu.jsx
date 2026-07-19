@@ -118,14 +118,12 @@ function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
           <div
             key={org.id}
             onClick={() => handleSwitch(org.id)}
-            className='dropdown-item'
+            className={`org-row${org.id === activeOrgId ? ' is-active' : ''}`}
             style={{
-              background:
-                org.id === activeOrgId ? 'var(--bg-layer)' : 'transparent',
               display: 'flex',
               gap: '8px',
               alignItems: 'center',
-              padding: '10px 10px 10px 10px',
+              padding: '10px 10px 10px 0',
               borderRadius: 'var(--radius-md)',
             }}
           >
