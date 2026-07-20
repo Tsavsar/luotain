@@ -25,7 +25,7 @@ export default function AnalyticsPage() {
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          padding: '0 24px 24px',
+          padding: '64px 24px 64px',
         }}
       >
         <ChartContainer />
