@@ -14,6 +14,10 @@ export default function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false)
   const [shakingFullName, setShakingFullName] = useState(false)
   const [shakingOrgName, setShakingOrgName] = useState(false)
+  const [errorFullName, setErrorFullName] = useState(false)
+  const [errorOrgName, setErrorOrgName] = useState(false)
+  const errorTimerFullName = useRef(null)
+  const errorTimerOrgName = useRef(null)
 
   const isValid = fullName.trim().length > 0 && orgName.trim().length > 0
 
@@ -58,8 +62,24 @@ export default function OnboardingPage() {
     // Bounces back per-field — only the empty one(s) shake, not the
     // whole form. Same idea as the email field's error state.
     if (fullNameEmpty || orgNameEmpty) {
-      if (fullNameEmpty) triggerShake(setShakingFullName)
-      if (orgNameEmpty) triggerShake(setShakingOrgName)
+      if (fullNameEmpty) {
+        clearTimeout(errorTimerFullName.current)
+        setErrorFullName(true)
+        errorTimerFullName.current = setTimeout(
+          () => setErrorFullName(false),
+          2000
+        )
+        triggerShake(setShakingFullName)
+      }
+      if (orgNameEmpty) {
+        clearTimeout(errorTimerOrgName.current)
+        setErrorOrgName(true)
+        errorTimerOrgName.current = setTimeout(
+          () => setErrorOrgName(false),
+          2000
+        )
+        triggerShake(setShakingOrgName)
+      }
       return
     }
 
@@ -143,6 +163,7 @@ export default function OnboardingPage() {
             onChange={(e) => setFullName(e.target.value)}
             placeholder='Full name'
             shaking={shakingFullName}
+            error={errorFullName}
             lefticon={
               <svg
                 width='20'
@@ -176,6 +197,7 @@ export default function OnboardingPage() {
             onChange={(e) => setOrgName(e.target.value)}
             placeholder='Organization name'
             shaking={shakingOrgName}
+            error={errorOrgName}
             lefticon={
               <svg
                 width='20'
