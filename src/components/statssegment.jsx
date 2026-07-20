@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
+import CountryFlag from './countryflag'
 
 const DATE_OPTIONS = [
   'Today',
@@ -36,57 +37,6 @@ function ChevronIcon() {
         strokeLinejoin='round'
       />
     </svg>
-  )
-}
-
-// ─── Flag slug mapping ───
-// Most names auto-convert cleanly (lowercase, spaces -> hyphens), but
-// a few files have genuine quirks — a typo, non-standard groupings —
-// that a naive conversion would get wrong. Add more here as they turn
-// up; this isn't meant to be exhaustive from one screenshot of the
-// folder, just correct for the cases already confirmed.
-const FLAG_SLUG_OVERRIDES = {
-  'northern ireland': 'northen-ireland', // typo in the actual filename — must match exactly, not "corrected"
-  'democratic republic of the congo': 'democratic-republic-of-congo',
-  'united states virgin islands': 'united-states-virgin-islands',
-  'åland islands': 'aaland-islands',
-  eswatini: 'eswatini',
-}
-
-function slugifyCountry(name) {
-  const key = name.toLowerCase().trim()
-  if (FLAG_SLUG_OVERRIDES[key]) return FLAG_SLUG_OVERRIDES[key]
-  return key.replace(/\s+/g, '-')
-}
-
-// Fixed 20x20 box, image cropped to fill it (object-fit: cover) since
-// the source SVGs are naturally rectangular flag shapes, not square —
-// matches the Figma spec's clipped container rather than showing each
-// flag at its native aspect ratio.
-function CountryFlag({ country, size = 20 }) {
-  if (!country) return null
-  const slug = slugifyCountry(country)
-
-  return (
-    <div
-      style={{
-        width: `${size}px`,
-        height: `${size}px`,
-        overflow: 'hidden',
-        flexShrink: 0,
-      }}
-    >
-      <img
-        src={`/assets/flags/${slug}.svg`}
-        alt=''
-        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        onError={(e) => {
-          // Graceful fallback if a name doesn't match a real file,
-          // rather than showing a broken image icon
-          e.currentTarget.style.display = 'none'
-        }}
-      />
-    </div>
   )
 }
 
@@ -162,9 +112,6 @@ function Metric({ label, value, icon, trend, width }) {
   )
 }
 
-// StatsSegment now accepts optional real data — defaults to empty
-// state (matching current behavior) until the click-tracking pipeline
-// actually exists to feed it real numbers.
 export default function StatsSegment({ stats }) {
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
 
@@ -197,7 +144,11 @@ export default function StatsSegment({ stats }) {
         <Metric
           label='Top country'
           value={stats?.topCountry?.name}
-          icon={<CountryFlag country={stats?.topCountry?.name} />}
+          icon={
+            stats?.topCountry ? (
+              <CountryFlag country={stats.topCountry.name} />
+            ) : null
+          }
           trend={
             stats?.topCountry
               ? {

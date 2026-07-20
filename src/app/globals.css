@@ -1245,3 +1245,24 @@ html {
     flex: 0 0 16.6667%; /* 6 of 24 hours visible at once = 25% of the timeline */
   }
 }
+
+/* --- Chart v2: fixed-width scrollable columns on ALL screens ---
+   The timeline is deliberately wider than the viewport everywhere,
+   so the active hour can be auto-scrolled to the 2/3 focus position
+   instead of late hours being pinned at the far edge. The trailing
+   spacer is what lets hour 23 physically reach 2/3 — without it,
+   scroll clamps and 11pm sits at the right edge again. */
+.chart-scroll-wrapper {
+  --chart-col: 80px;
+}
+@media (max-width: 768px) {
+  .chart-scroll-wrapper {
+    --chart-col: 16.667vw; /* 6 of 24 hours visible = 25% of timeline */
+  }
+}
+.chart-hour-column-v2 {
+  flex: 0 0 var(--chart-col);
+}
+.chart-trailing-spacer {
+  flex: 0 0 34vw;
+}

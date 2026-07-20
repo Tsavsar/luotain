@@ -1,9 +1,7 @@
 // ─── Mock analytics dataset ───
 // Dev-only test data for previewing the populated dashboard state
-// before the real click-tracking pipeline exists. Numbers match the
-// Figma reference where known (stats card values, Norway/34%); chart
-// hours are hand-shaped to a plausible daily wave rather than random
-// noise, so it actually looks like real traffic instead of jitter.
+// before the real click-tracking pipeline exists. Values mirror the
+// Figma reference designs where they're specified.
 
 export const mockStats = {
   totalClicks: 142,
@@ -27,8 +25,6 @@ export const mockStats = {
   topCountry: { name: 'Norway', percentage: 34 },
 }
 
-// Rough daily wave: quiet overnight, rising through the morning, a
-// midday dip, an afternoon/evening peak — 24 entries, index = hour.
 const HOURLY_CLICKS = [
   2, 1, 1, 0, 0, 1, 3, 6, 10, 14, 18, 16, 12, 15, 22, 26, 20, 24, 32, 28, 19,
   12, 7, 4,
@@ -50,14 +46,16 @@ export const mockChartData = HOURLY_CLICKS.map((totalClicks, hour) => ({
       : 0,
 }))
 
-// Placeholder for DashboardCards — not Figma-matched, just enough to
-// make the toggle show a consistent, non-broken-looking page.
+// Card rows — labels in Sources are DOMAINS (they drive the favicon
+// lookup); labels in Geography are country names (they drive the flag
+// lookup from /public/assets/flags/).
 export const mockCardData = {
   clicks: {
     'Short links': [
-      { label: 'luo.io/swift-otter', value: 57 },
-      { label: 'luo.io/quick-fox', value: 36 },
-      { label: 'luo.io/calm-river', value: 21 },
+      { label: 'luo.io/swift-otter', value: 15 },
+      { label: 'luo.io/quick-fox', value: 11 },
+      { label: 'luo.io/summer-sale', value: 8 },
+      { label: 'luo.io/3xK9fL2', value: 1 },
     ],
     'QR codes': [
       { label: 'Store window QR', value: 18 },
@@ -66,16 +64,18 @@ export const mockCardData = {
   },
   sources: {
     Visitors: [
-      { label: 'Direct', value: 44 },
-      { label: 'Twitter / X', value: 19 },
-      { label: 'Google', value: 9 },
+      { label: 't.co', value: 15 },
+      { label: 'i.instagram.com', value: 11 },
+      { label: 'linkedin.com', value: 8 },
+      { label: 'direct', value: 1 },
     ],
   },
   geography: {
     Countries: [
-      { label: 'Norway', value: 34 },
-      { label: 'United States', value: 22 },
-      { label: 'Germany', value: 11 },
+      { label: 'Norway', value: 15 },
+      { label: 'United States', value: 11 },
+      { label: 'United Kingdom', value: 8 },
+      { label: 'Singapore', value: 1 },
     ],
     Regions: [
       { label: 'Oslo', value: 20 },
@@ -88,9 +88,9 @@ export const mockCardData = {
   },
   devices: {
     Type: [
-      { label: 'Mobile', value: 61 },
-      { label: 'Desktop', value: 32 },
-      { label: 'Tablet', value: 7 },
+      { label: 'Desktop', value: 15 },
+      { label: 'Mobile', value: 11 },
+      { label: 'Tablet', value: 8 },
     ],
     Browser: [
       { label: 'Chrome', value: 48 },

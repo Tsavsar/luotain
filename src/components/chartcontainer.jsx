@@ -4,15 +4,14 @@ import { useState, useEffect, useRef } from 'react'
 import EmptyStateIcon from './emptystateicon'
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
+const CURVE_TOP = 40 // px from top of chart to top of curve area
+const CURVE_HEIGHT = 220 // px height of the curve drawing area
+const AXIS_BASELINE = 302 // px from top — where the solid marker line ends
 
 function formatHour(h) {
   return `${String(h).padStart(2, '0')}:00`
 }
 
-// Smooths a set of {x, y} points into an SVG path using midpoint
-// quadratic curves between consecutive points — lighter than full
-// Catmull-Rom smoothing, but avoids the harsh look of a raw straight
-// polyline between hourly values.
 function smoothPath(points) {
   if (points.length < 2) return ''
   let d = `M ${points[0].x} ${points[0].y}`
@@ -27,63 +26,83 @@ function smoothPath(points) {
   return d
 }
 
-// ─── ChartContainer ───
-// `data`, if provided, is an array of 24 objects (one per hour):
-//   { totalClicks, topLinks: [{ url, clicks }], othersClicks, date }
-// With no data (today's reality — no click pipeline exists yet), this
-// renders exactly the existing empty state.
+// ─── ChartContainer v2 ───
+// Fixed-width columns on every screen size — the timeline is wider
+// than the viewport by design, auto-scrolled so the CURRENT hour sits
+// at 2/3 across the visible window. Auto-scroll deliberately follows
+// only the current time, never hover: re-scrolling under the cursor
+// mid-hover would make the chart slide away from what you're
+// pointing at.
 export default function ChartContainer({ data }) {
   const [hoveredHour, setHoveredHour] = useState(null)
-  const [now, setNow] = useState(null)
+  const [lastHovered, setLastHovered] = useState(null)
+  const [nowDate, setNowDate] = useState(null)
   const scrollRef = useRef(null)
+  const firstColRef = useRef(null)
 
   useEffect(() => {
-    setNow(new Date().getHours())
+    setNowDate(new Date())
   }, [])
 
+  const now = nowDate?.getHours() ?? null
   const hasData = Array.isArray(data) && data.length === 24
   const activeHour = hoveredHour !== null ? hoveredHour : now
 
-  const chartHeight = 100 // SVG viewBox units, not pixels — see viewBox note below
   const maxClicks = hasData ? Math.max(...data.map((d) => d.totalClicks), 1) : 1
-
-  // x runs 0-24 (hour position), y runs 0-100 (percentage of chart
-  // height) — deliberately unit-based rather than pixel-based, so the
-  // curve stretches correctly regardless of whether columns are
-  // flex-stretched (desktop) or fixed-percentage (mobile scroll).
   const points = hasData
     ? data.map((d, i) => ({
         x: i + 0.5,
-        y: chartHeight - (d.totalClicks / maxClicks) * chartHeight,
+        y: 100 - (d.totalClicks / maxClicks) * 100,
       }))
     : []
-  const pathD = smoothPath(points)
 
-  // Auto-scrolls so the active hour sits at 2/3 across the visible
-  // window rather than dead center — recalculates whenever the active
-  // hour changes (hover, or the initial "now" on mount). On desktop,
-  // where all 24 hours already fit, this is a harmless no-op since
-  // there's nothing to scroll.
+  const strokePath = smoothPath(points)
+  const fillPath = hasData ? `${strokePath} L 23.5 100 L 0.5 100 Z` : ''
+
+  // Where the dot sits (px from chart top) for the active hour
+  const activeDotTop =
+    hasData && activeHour !== null
+      ? CURVE_TOP + (points[activeHour].y / 100) * CURVE_HEIGHT
+      : null
+
+  // Auto-scroll: current time at 2/3 of the visible window.
+  // Runs on mount and whenever `now` changes — NOT on hover.
   useEffect(() => {
-    if (!scrollRef.current || activeHour === null) return
+    if (!scrollRef.current || now === null) return
     const container = scrollRef.current
-    const columnWidth = container.scrollWidth / 24
-    const targetX = activeHour * columnWidth + columnWidth / 2
-    const visibleWidth = container.clientWidth
-    const scrollTarget = targetX - visibleWidth * (2 / 3)
+    const colWidth = firstColRef.current?.offsetWidth || 80
+    const targetX = now * colWidth + colWidth / 2
+    const scrollTarget = targetX - container.clientWidth * (2 / 3)
     container.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' })
-  }, [activeHour])
+  }, [now, hasData])
 
-  const hoveredData = hoveredHour !== null && hasData ? data[hoveredHour] : null
+  const tooltipHour = hoveredHour ?? lastHovered
+  const tooltipData = tooltipHour !== null && hasData ? data[tooltipHour] : null
 
   return (
     <div style={{ width: '100%', height: '328px', position: 'relative' }}>
       <div
         ref={scrollRef}
         className='chart-scroll-wrapper'
-        style={{ width: '100%', height: '100%' }}
+        style={{
+          width: '100%',
+          height: '100%',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+        onMouseLeave={() => setHoveredHour(null)}
       >
-        <div style={{ position: 'relative', height: '100%', minWidth: '100%' }}>
+        <div
+          style={{
+            position: 'relative',
+            height: '100%',
+            minWidth: '100%',
+            display: 'flex',
+          }}
+        >
+          {/* Curve — gradient fill + stroke, sized to exactly the 24
+              columns (spacer excluded), unit-based viewBox so it
+              scales with whatever --chart-col resolves to */}
           {hasData && (
             <svg
               viewBox='0 0 24 100'
@@ -91,17 +110,38 @@ export default function ChartContainer({ data }) {
               style={{
                 position: 'absolute',
                 left: 0,
-                top: '85px',
-                width: '100%',
-                height: '158px',
+                top: `${CURVE_TOP}px`,
+                width: 'calc(var(--chart-col) * 24)',
+                height: `${CURVE_HEIGHT}px`,
                 pointerEvents: 'none',
               }}
             >
+              <defs>
+                <linearGradient
+                  id='chartFillGradient'
+                  x1='0'
+                  y1='0'
+                  x2='0'
+                  y2='1'
+                >
+                  <stop
+                    offset='0%'
+                    stopColor='var(--primary-base)'
+                    stopOpacity='0.22'
+                  />
+                  <stop
+                    offset='100%'
+                    stopColor='var(--primary-base)'
+                    stopOpacity='0'
+                  />
+                </linearGradient>
+              </defs>
+              <path d={fillPath} fill='url(#chartFillGradient)' stroke='none' />
               <path
-                d={pathD}
+                d={strokePath}
                 fill='none'
                 stroke='var(--primary-base)'
-                strokeWidth='2'
+                strokeWidth='1.5'
                 strokeLinecap='round'
                 strokeLinejoin='round'
                 vectorEffect='non-scaling-stroke'
@@ -109,165 +149,243 @@ export default function ChartContainer({ data }) {
             </svg>
           )}
 
-          <div style={{ display: 'flex', height: '100%' }}>
-            {HOURS.map((hour) => {
-              const isActive = hour === activeHour
-              const isDimmed = hoveredHour !== null && hour !== hoveredHour
-              const isNow = hour === now
-
-              return (
-                <div
-                  key={hour}
-                  className='chart-hour-column'
-                  onMouseEnter={() => setHoveredHour(hour)}
-                  onMouseLeave={() => setHoveredHour(null)}
-                  style={{
-                    position: 'relative',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    opacity: isDimmed ? 0.35 : 1,
-                    transition: 'opacity 0.15s ease',
-                    cursor: hasData ? 'pointer' : 'default',
-                  }}
-                >
-                  {isActive && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: '24px',
-                        width: '2px',
-                        height: isNow ? '158px' : '144px',
-                        background: 'var(--primary-base)',
-                        opacity: isNow ? 1 : 0.4,
-                      }}
-                    />
-                  )}
-
-                  {isActive && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: '20px',
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: 'var(--radius-full)',
-                        background: 'var(--primary-base)',
-                      }}
-                    />
-                  )}
-
-                  {isNow ? (
-                    <p
-                      className='para-xs'
-                      style={{ color: 'var(--text-strong)', margin: '0 0 8px' }}
-                    >
-                      {formatHour(hour)}
-                    </p>
-                  ) : hour === 0 || hour === 23 ? (
-                    <p
-                      className='para-xs'
-                      style={{ color: 'var(--bg-subtle)', margin: '0 0 8px' }}
-                    >
-                      {formatHour(hour)}
-                    </p>
-                  ) : (
-                    <div
-                      style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: 'var(--radius-full)',
-                        background: 'var(--bg-subtle)',
-                        marginBottom: '13px',
-                      }}
-                    />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      {hoveredData && (
-        <div
-          style={{
-            position: 'absolute',
-            left: `${Math.min((hoveredHour / 24) * 100, 68)}%`,
-            top: '20px',
-            background: '#171717',
-            border: '1.5px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: 'var(--radius-xl)',
-            padding: '14px 18px',
-            width: '245px',
-            boxShadow:
-              '0px 16px 24px -4px rgba(0, 0, 0, 0.14), 0px 4px 6px -2px rgba(0, 0, 0, 0.08)',
-            pointerEvents: 'none',
-            zIndex: 10,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              marginBottom: '8px',
-            }}
-          >
-            <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
-              {hoveredData.date || 'Today'}
-            </span>
+          {/* Single gliding marker for the active hour — dashed above
+              the dot, dot ON the curve, solid orange below to the
+              axis. One element with left/top transitions = the smooth
+              glide, instead of per-column jumping. */}
+          {hasData && activeHour !== null && activeDotTop !== null && (
             <div
               style={{
-                width: '4px',
-                height: '4px',
-                borderRadius: 'var(--radius-full)',
-                background: 'var(--text-disabled)',
+                position: 'absolute',
+                left: `calc(var(--chart-col) * ${activeHour})`,
+                width: 'var(--chart-col)',
+                top: 0,
+                bottom: 0,
+                pointerEvents: 'none',
+                transition: 'left 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                zIndex: 1,
               }}
-            />
-            <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
-              {formatHour(hoveredHour)}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span className='label-sm' style={{ color: 'white' }}>
-                Total clicks
-              </span>
-              <span className='label-sm' style={{ color: 'white' }}>
-                {hoveredData.totalClicks}
-              </span>
-            </div>
-
-            {hoveredData.topLinks?.map((link) => (
+            >
               <div
-                key={link.url}
-                style={{ display: 'flex', justifyContent: 'space-between' }}
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: 0,
+                  height: `${activeDotTop - 4}px`,
+                  borderLeft: '1px dashed var(--bg-subtle)',
+                  transition: 'height 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 'calc(50% - 3px)',
+                  top: `${activeDotTop - 3}px`,
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: 'var(--radius-full)',
+                  background: 'var(--primary-base)',
+                  transition: 'top 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: `${activeDotTop + 4}px`,
+                  height: `${AXIS_BASELINE - activeDotTop - 4}px`,
+                  borderLeft: '1.5px solid var(--primary-base)',
+                  transition:
+                    'top 0.3s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              />
+            </div>
+          )}
+
+          {/* Hour columns */}
+          {HOURS.map((hour) => {
+            const isActive = hour === activeHour
+            const isDimmed = hoveredHour !== null && hour !== hoveredHour
+            const isNow = hour === now
+            const showLabel = isActive || hour === 0 || hour === 23
+
+            return (
+              <div
+                key={hour}
+                ref={hour === 0 ? firstColRef : null}
+                className='chart-hour-column-v2'
+                onMouseEnter={() => {
+                  setHoveredHour(hour)
+                  setLastHovered(hour)
+                }}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  opacity: isDimmed ? 0.35 : 1,
+                  transition: 'opacity 0.3s ease',
+                  cursor: hasData ? 'pointer' : 'default',
+                  zIndex: 2,
+                }}
+              >
+                {/* Empty-state now marker: simple solid line, old style */}
+                {!hasData && isNow && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '26px',
+                      left: '50%',
+                      width: '1px',
+                      height: '158px',
+                      background: 'var(--primary-base)',
+                    }}
+                  />
+                )}
+
+                {showLabel ? (
+                  <p
+                    className={isActive ? 'label-sm' : 'para-xs'}
+                    style={{
+                      color: isActive
+                        ? 'var(--text-strong)'
+                        : 'var(--bg-subtle)',
+                      margin: '0 0 8px',
+                      whiteSpace: 'nowrap',
+                      animation: isActive ? 'fadeInHint 0.2s ease-out' : 'none',
+                      zIndex: 2,
+                    }}
+                  >
+                    {isNow && isActive && nowDate
+                      ? `${String(nowDate.getHours()).padStart(2, '0')}:${String(nowDate.getMinutes()).padStart(2, '0')}`
+                      : formatHour(hour)}
+                  </p>
+                ) : (
+                  <div
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: 'var(--radius-full)',
+                      background: 'var(--bg-subtle)',
+                      marginBottom: '13px',
+                    }}
+                  />
+                )}
+              </div>
+            )
+          })}
+
+          {/* Trailing space so late hours can physically reach the
+              2/3 position — without this, scroll clamps and 23:00
+              pins to the right edge again */}
+          <div className='chart-trailing-spacer' aria-hidden='true' />
+
+          {/* Tooltip — anchored inside the scroll content so it stays
+              glued to its hour while scrolling; glides between hours
+              via left transition instead of teleporting */}
+          {hasData && tooltipData && (
+            <div
+              style={{
+                position: 'absolute',
+                left: `clamp(8px, calc(var(--chart-col) * ${tooltipHour} - 80px), calc(var(--chart-col) * 24 - 253px))`,
+                top: '20px',
+                background: '#171717',
+                border: '1.5px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: 'var(--radius-xl)',
+                padding: '14px 18px',
+                width: '245px',
+                boxShadow:
+                  '0px 16px 24px -4px rgba(0, 0, 0, 0.14), 0px 4px 6px -2px rgba(0, 0, 0, 0.08)',
+                pointerEvents: 'none',
+                zIndex: 10,
+                opacity: hoveredHour !== null ? 1 : 0,
+                visibility: hoveredHour !== null ? 'visible' : 'hidden',
+                transition:
+                  'left 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease, visibility 0.2s',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginBottom: '8px',
+                }}
               >
                 <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
-                  {link.url}
+                  {tooltipData.date || 'Today'}
                 </span>
+                <div
+                  style={{
+                    width: '4px',
+                    height: '4px',
+                    borderRadius: 'var(--radius-full)',
+                    background: 'var(--text-disabled)',
+                  }}
+                />
                 <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
-                  {link.clicks}
+                  {formatHour(tooltipHour)}
                 </span>
               </div>
-            ))}
 
-            {hoveredData.othersClicks > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
-                  Others
-                </span>
-                <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
-                  {hoveredData.othersClicks}
-                </span>
+              <div
+                style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}
+              >
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between' }}
+                >
+                  <span className='label-sm' style={{ color: 'white' }}>
+                    Total clicks
+                  </span>
+                  <span className='label-sm' style={{ color: 'white' }}>
+                    {tooltipData.totalClicks}
+                  </span>
+                </div>
+
+                {tooltipData.topLinks?.map((link) => (
+                  <div
+                    key={link.url}
+                    style={{ display: 'flex', justifyContent: 'space-between' }}
+                  >
+                    <span
+                      className='para-xs'
+                      style={{ color: 'var(--text-sub)' }}
+                    >
+                      {link.url}
+                    </span>
+                    <span
+                      className='para-xs'
+                      style={{ color: 'var(--text-sub)' }}
+                    >
+                      {link.clicks}
+                    </span>
+                  </div>
+                ))}
+
+                {tooltipData.othersClicks > 0 && (
+                  <div
+                    style={{ display: 'flex', justifyContent: 'space-between' }}
+                  >
+                    <span
+                      className='para-xs'
+                      style={{ color: 'var(--text-sub)' }}
+                    >
+                      Others
+                    </span>
+                    <span
+                      className='para-xs'
+                      style={{ color: 'var(--text-sub)' }}
+                    >
+                      {tooltipData.othersClicks}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {!hasData && (
         <div
@@ -280,6 +398,7 @@ export default function ChartContainer({ data }) {
             justifyContent: 'center',
             gap: '10px',
             zIndex: 2,
+            pointerEvents: 'none',
           }}
         >
           <EmptyStateIcon />
