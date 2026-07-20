@@ -4,14 +4,13 @@ import { useState } from 'react'
 import StatsSegment from '@/components/statssegment'
 import ChartContainer from '@/components/chartcontainer'
 import DashboardCards from '@/components/cardcontainer'
-import { mockStats, mockChartData, mockCardData } from '@/lib/mockAnalytics'
+import { getMockAnalytics } from '@/lib/mockAnalytics'
 
 export default function AnalyticsPage() {
-  // Dev-only toggle — flips between the real empty state and the mock
-  // dataset, so the populated look can be previewed/iterated on before
-  // the actual click-tracking pipeline exists. Remove this (and the
-  // toggle UI below) once real data replaces it for good.
   const [useMockData, setUseMockData] = useState(false)
+  const [selectedRange, setSelectedRange] = useState('Last 7 days')
+
+  const mock = useMockData ? getMockAnalytics(selectedRange) : null
 
   return (
     <>
@@ -24,7 +23,11 @@ export default function AnalyticsPage() {
           padding: '0 24px 24px',
         }}
       >
-        <StatsSegment stats={useMockData ? mockStats : undefined} />
+        <StatsSegment
+          stats={mock?.stats}
+          selectedRange={selectedRange}
+          onRangeChange={setSelectedRange}
+        />
       </div>
 
       <div
@@ -36,7 +39,7 @@ export default function AnalyticsPage() {
           padding: '64px 24px 64px',
         }}
       >
-        <ChartContainer data={useMockData ? mockChartData : undefined} />
+        <ChartContainer data={mock?.chartData} />
       </div>
 
       <div
@@ -49,7 +52,7 @@ export default function AnalyticsPage() {
           zIndex: 8,
         }}
       >
-        <DashboardCards data={useMockData ? mockCardData : undefined} />
+        <DashboardCards data={mock?.cardData} />
       </div>
 
       <button

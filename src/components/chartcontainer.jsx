@@ -48,20 +48,29 @@ export default function ChartContainer({ data }) {
   const hasData = Array.isArray(data) && data.length === 24
   const activeHour = hoveredHour !== null ? hoveredHour : now
 
-  const maxClicks = hasData ? Math.max(...data.map((d) => d.totalClicks), 1) : 1
-  const points = hasData
-    ? data.map((d, i) => ({
-        x: i + 0.5,
-        y: 100 - (d.totalClicks / maxClicks) * 100,
-      }))
-    : []
+  // Only draw hours that have actually happened — a fresh day starts
+  // with a short curve at the left, growing rightward as the day
+  // goes on, ending exactly at the current hour's dot. Future hours
+  // stay empty (matching the Figma: nothing drawn past "now").
+  const visibleCount = now !== null ? Math.min(now + 1, 24) : 24
+  const visibleData = hasData ? data.slice(0, visibleCount) : []
+
+  const maxClicks = visibleData.length
+    ? Math.max(...visibleData.map((d) => d.totalClicks), 1)
+    : 1
+  const points = visibleData.map((d, i) => ({
+    x: i + 0.5,
+    y: 100 - (d.totalClicks / maxClicks) * 100,
+  }))
 
   const strokePath = smoothPath(points)
-  const fillPath = hasData ? `${strokePath} L 23.5 100 L 0.5 100 Z` : ''
+  const lastX = points.length ? points[points.length - 1].x : 0.5
+  const fillPath =
+    points.length >= 2 ? `${strokePath} L ${lastX} 100 L 0.5 100 Z` : ''
 
   // Where the dot sits (px from chart top) for the active hour
   const activeDotTop =
-    hasData && activeHour !== null
+    hasData && activeHour !== null && points[activeHour]
       ? CURVE_TOP + (points[activeHour].y / 100) * CURVE_HEIGHT
       : null
 
@@ -215,6 +224,8 @@ export default function ChartContainer({ data }) {
                 ref={hour === 0 ? firstColRef : null}
                 className='chart-hour-column-v2'
                 onMouseEnter={() => {
+                  // Future hours have nothing to show yet
+                  if (now !== null && hour > now) return
                   setHoveredHour(hour)
                   setLastHovered(hour)
                 }}
@@ -226,7 +237,10 @@ export default function ChartContainer({ data }) {
                   justifyContent: 'flex-end',
                   opacity: isDimmed ? 0.35 : 1,
                   transition: 'opacity 0.3s ease',
-                  cursor: hasData ? 'pointer' : 'default',
+                  cursor:
+                    hasData && (now === null || hour <= now)
+                      ? 'pointer'
+                      : 'default',
                   zIndex: 2,
                 }}
               >

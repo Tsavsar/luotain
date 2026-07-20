@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import CountryFlag from './countryflag'
+import AnimatedNumber from './animatednumber'
 
 const DATE_OPTIONS = [
   'Today',
@@ -41,6 +42,8 @@ function ChevronIcon() {
 }
 
 function Metric({ label, value, icon, trend, width }) {
+  const isNumeric = typeof value === 'number'
+
   return (
     <div
       style={{
@@ -68,7 +71,13 @@ function Metric({ label, value, icon, trend, width }) {
             className='label-lg'
             style={{ color: 'var(--text-strong)', margin: 0 }}
           >
-            {value || '-'}
+            {value === undefined || value === null ? (
+              '-'
+            ) : isNumeric ? (
+              <AnimatedNumber value={value} />
+            ) : (
+              value
+            )}
           </p>
         </div>
         {trend && (
@@ -94,15 +103,7 @@ function Metric({ label, value, icon, trend, width }) {
                 }}
               />
             )}
-            <span
-              style={{
-                fontSize: '10px',
-                fontWeight: 500,
-                letterSpacing: '0.02em',
-                lineHeight: 1,
-                color: trend.color,
-              }}
-            >
+            <span className='label-2xs' style={{ color: trend.color }}>
               {trend.label}
             </span>
           </div>
@@ -112,8 +113,13 @@ function Metric({ label, value, icon, trend, width }) {
   )
 }
 
-export default function StatsSegment({ stats }) {
-  const [selectedRange, setSelectedRange] = useState('Last 7 days')
+// selectedRange/onRangeChange make the filter controllable from the
+// page (so it can actually drive the data). Uncontrolled fallback
+// keeps the component working standalone.
+export default function StatsSegment({ stats, selectedRange, onRangeChange }) {
+  const [internalRange, setInternalRange] = useState('Last 7 days')
+  const range = selectedRange ?? internalRange
+  const setRange = onRangeChange ?? setInternalRange
 
   return (
     <div
@@ -176,7 +182,7 @@ export default function StatsSegment({ stats }) {
               className='para-sm'
               style={{ color: 'var(--text-strong)', margin: 0 }}
             >
-              {selectedRange}
+              {range}
             </p>
             <ChevronIcon />
           </div>
@@ -186,8 +192,8 @@ export default function StatsSegment({ stats }) {
           {DATE_OPTIONS.map((option) => (
             <DropdownOption
               key={option}
-              selected={option === selectedRange}
-              onClick={() => setSelectedRange(option)}
+              selected={option === range}
+              onClick={() => setRange(option)}
             >
               {option}
             </DropdownOption>
