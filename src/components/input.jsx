@@ -9,6 +9,7 @@ export default function Inputfield({
   value,
   onChange,
   error,
+  shaking,
   onKeyDown,
 }) {
   const [focused, setFocused] = useState(false)
@@ -18,10 +19,10 @@ export default function Inputfield({
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className={shaking ? 'is-shaking' : ''}
       style={{
         width: '100%',
         height: 'fit-content',
-        boxShadow: 'var(--shadow-xs)',
         borderRadius: 'var(--radius-lg)',
         backgroundColor: 'var(--bg-default)',
         border: error
@@ -41,11 +42,7 @@ export default function Inputfield({
         padding: '10px 8px 10px 14px',
         gap: '8px',
         fontSize: '14px',
-        color: focused
-          ? 'var(--text-strong)'
-          : hovered
-            ? 'var(--text-strong)'
-            : 'var(--text-strong)',
+        color: 'var(--text-strong)',
         fontFamily: 'var(--font-sans)',
         transition: 'border 0.15s ease, box-shadow 0.15s ease',
       }}
