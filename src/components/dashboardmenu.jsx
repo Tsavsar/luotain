@@ -60,7 +60,7 @@ function PlusIcon() {
 // never trusts the client), then does a full reload so every piece
 // of dashboard data reflects the newly active org consistently,
 // rather than trying to selectively refetch each piece.
-function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
+function OrgDropdown({ orgName, allOrgs = [], activeOrgId }) {
   const router = useRouter()
 
   async function handleSwitch(orgId) {
