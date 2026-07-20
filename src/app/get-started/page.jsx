@@ -11,11 +11,6 @@ import { signIn } from 'next-auth/react'
 export default function Getstarted() {
   const router = useRouter()
   const [email, setEmail] = useState('')
-  // Replaced emailError + sendError (two independently-timed booleans)
-  // with ONE source of truth. That's the actual fix for the toast
-  // text-flash bug — with two separate booleans, one could clear
-  // before the other finished animating, causing the ternary to fall
-  // through to the WRONG message while the box was still visible.
   const [errorType, setErrorType] = useState(null) // null | 'invalid' | 'send'
   const [emailExists, setEmailExists] = useState(false)
   const [shaking, setShaking] = useState(false)
@@ -236,6 +231,7 @@ export default function Getstarted() {
               if (e.key === 'Enter') validateEmail()
             }}
             error={errorType === 'invalid'}
+            shaking={shaking}
             placeholder='Email address'
             lefticon={
               <svg
@@ -292,7 +288,6 @@ export default function Getstarted() {
           <Continuebutton
             active={isEmailValid}
             label='Continue with email'
-            shaking={shaking}
             onClick={handleContinue}
           />
 
@@ -332,11 +327,6 @@ export default function Getstarted() {
                 alignItems: 'center',
               }}
             >
-              {/* Falls back to '' instead of a wrong default message —
-                  this is the actual fix. Previously this always showed
-                  SOMETHING (defaulting to "Invalid email..."), even
-                  when errorType had already cleared and no error was
-                  actually active — that's what caused the flash. */}
               {errorType === 'send'
                 ? "Couldn't send your code, please try again"
                 : errorType === 'invalid'

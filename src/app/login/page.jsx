@@ -13,8 +13,6 @@ export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [errorType, setErrorType] = useState(null) // null | 'invalid' | 'send'
-  // Mirror of get-started's emailExists, but INVERTED — here we're
-  // checking whether an account does NOT exist, since this is login.
   const [noAccount, setNoAccount] = useState(false)
   const [shaking, setShaking] = useState(false)
   const [toastState, setToastState] = useState('hidden')
@@ -38,7 +36,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email }),
       })
       const data = await res.json()
-      setNoAccount(!data.exists) // inverted from get-started
+      setNoAccount(!data.exists)
     } catch (err) {
       setNoAccount(false)
     }
@@ -231,6 +229,7 @@ export default function LoginPage() {
               if (e.key === 'Enter') validateEmail()
             }}
             error={errorType === 'invalid'}
+            shaking={shaking}
             placeholder='Email address'
             lefticon={
               <svg
@@ -266,7 +265,6 @@ export default function LoginPage() {
             }
           />
 
-          {/* Mirror of get-started's hint — inverted direction */}
           {noAccount && (
             <div
               className='fade-in-hint'
@@ -288,7 +286,6 @@ export default function LoginPage() {
           <Continuebutton
             active={isEmailValid}
             label='Continue with email'
-            shaking={shaking}
             onClick={handleContinue}
           />
 
