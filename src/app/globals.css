@@ -1227,3 +1227,21 @@ html {
     display: none;
   }
 }
+
+/* --- Chart: responsive column sizing + scroll --- */
+.chart-scroll-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.chart-scroll-wrapper::-webkit-scrollbar {
+  display: none;
+}
+.chart-hour-column {
+  flex: 1;
+}
+@media (max-width: 768px) {
+  .chart-hour-column {
+    flex: 0 0 16.6667%; /* 6 of 24 hours visible at once = 25% of the timeline */
+  }
+}

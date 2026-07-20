@@ -24,11 +24,18 @@ function ChevronIcon() {
   )
 }
 
-// columnOptions now defaults to an empty array — same defensive
-// pattern as the allOrgs fix, since this prop had no fallback at all
-// before and would crash identically if ever missing on a call site.
-function Card({ title, columnOptions = [], showDropdown = true }) {
+// dataByColumn: optional — { [columnOptionLabel]: [{ label, value }] }
+// Falls back to the existing empty state when not provided, or when
+// the currently selected column has no rows.
+function Card({
+  title,
+  columnOptions = [],
+  showDropdown = true,
+  dataByColumn,
+}) {
   const [selected, setSelected] = useState(columnOptions[0])
+  const rows = dataByColumn?.[selected]
+  const hasRows = Array.isArray(rows) && rows.length > 0
 
   return (
     <div
@@ -38,8 +45,7 @@ function Card({ title, columnOptions = [], showDropdown = true }) {
         borderRadius: '14px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '18px',
-        alignItems: 'center',
+        gap: '12px',
         flex: '1 0 0',
         minWidth: 0,
         height: '250px',
@@ -109,27 +115,68 @@ function Card({ title, columnOptions = [], showDropdown = true }) {
         )}
       </div>
 
-      <div
-        style={{
-          flex: 1,
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '10px',
-        }}
-      >
-        <EmptyStateIcon />
-        <p className='para-sm' style={{ color: 'var(--text-soft)', margin: 0 }}>
-          No data available
-        </p>
-      </div>
+      {hasRows ? (
+        <div
+          style={{
+            flex: 1,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            padding: '4px 8px',
+            overflowY: 'auto',
+          }}
+        >
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <p
+                className='para-sm'
+                style={{ color: 'var(--text-strong)', margin: 0 }}
+              >
+                {row.label}
+              </p>
+              <p
+                className='para-sm'
+                style={{ color: 'var(--text-soft)', margin: 0 }}
+              >
+                {row.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          style={{
+            flex: 1,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+          }}
+        >
+          <EmptyStateIcon />
+          <p
+            className='para-sm'
+            style={{ color: 'var(--text-soft)', margin: 0 }}
+          >
+            No data available
+          </p>
+        </div>
+      )}
     </div>
   )
 }
 
-export default function DashboardCards() {
+export default function DashboardCards({ data }) {
   return (
     <div
       style={{
@@ -141,19 +188,29 @@ export default function DashboardCards() {
       }}
     >
       <div className='card-row'>
-        <Card title='Clicks' columnOptions={['Short links', 'QR codes']} />
+        <Card
+          title='Clicks'
+          columnOptions={['Short links', 'QR codes']}
+          dataByColumn={data?.clicks}
+        />
         <Card
           title='Sources'
           columnOptions={['Visitors']}
           showDropdown={false}
+          dataByColumn={data?.sources}
         />
       </div>
       <div className='card-row'>
         <Card
           title='Geography'
           columnOptions={['Countries', 'Regions', 'Cities']}
+          dataByColumn={data?.geography}
         />
-        <Card title='Devices' columnOptions={['Type', 'Browser']} />
+        <Card
+          title='Devices'
+          columnOptions={['Type', 'Browser']}
+          dataByColumn={data?.devices}
+        />
       </div>
     </div>
   )
