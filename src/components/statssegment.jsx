@@ -39,7 +39,58 @@ function ChevronIcon() {
   )
 }
 
-function Metric({ label, value, trend, width }) {
+// ─── Flag slug mapping ───
+// Most names auto-convert cleanly (lowercase, spaces -> hyphens), but
+// a few files have genuine quirks — a typo, non-standard groupings —
+// that a naive conversion would get wrong. Add more here as they turn
+// up; this isn't meant to be exhaustive from one screenshot of the
+// folder, just correct for the cases already confirmed.
+const FLAG_SLUG_OVERRIDES = {
+  'northern ireland': 'northen-ireland', // typo in the actual filename — must match exactly, not "corrected"
+  'democratic republic of the congo': 'democratic-republic-of-congo',
+  'united states virgin islands': 'united-states-virgin-islands',
+  'åland islands': 'aaland-islands',
+  eswatini: 'eswatini',
+}
+
+function slugifyCountry(name) {
+  const key = name.toLowerCase().trim()
+  if (FLAG_SLUG_OVERRIDES[key]) return FLAG_SLUG_OVERRIDES[key]
+  return key.replace(/\s+/g, '-')
+}
+
+// Fixed 20x20 box, image cropped to fill it (object-fit: cover) since
+// the source SVGs are naturally rectangular flag shapes, not square —
+// matches the Figma spec's clipped container rather than showing each
+// flag at its native aspect ratio.
+function CountryFlag({ country, size = 20 }) {
+  if (!country) return null
+  const slug = slugifyCountry(country)
+
+  return (
+    <div
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    >
+      <img
+        src={`/assets/flags/${slug}.svg`}
+        alt=''
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        onError={(e) => {
+          // Graceful fallback if a name doesn't match a real file,
+          // rather than showing a broken image icon
+          e.currentTarget.style.display = 'none'
+        }}
+      />
+    </div>
+  )
+}
+
+function Metric({ label, value, icon, trend, width }) {
   return (
     <div
       style={{
@@ -61,12 +112,15 @@ function Metric({ label, value, trend, width }) {
           alignItems: 'flex-start',
         }}
       >
-        <p
-          className='label-lg'
-          style={{ color: 'var(--text-strong)', margin: 0 }}
-        >
-          {value || '-'}
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {icon}
+          <p
+            className='label-lg'
+            style={{ color: 'var(--text-strong)', margin: 0 }}
+          >
+            {value || '-'}
+          </p>
+        </div>
         {trend && (
           <div
             style={{
@@ -108,7 +162,10 @@ function Metric({ label, value, trend, width }) {
   )
 }
 
-export default function StatsSegment() {
+// StatsSegment now accepts optional real data — defaults to empty
+// state (matching current behavior) until the click-tracking pipeline
+// actually exists to feed it real numbers.
+export default function StatsSegment({ stats }) {
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
 
   return (
@@ -121,10 +178,35 @@ export default function StatsSegment() {
       }}
     >
       <div className='stats-metrics-row'>
-        <Metric label='Total clicks' width='76px' />
-        <Metric label='Total scans' />
-        <Metric label='Unique visitors' />
-        <Metric label='Top country' />
+        <Metric
+          label='Total clicks'
+          width='76px'
+          value={stats?.totalClicks}
+          trend={stats?.clicksTrend}
+        />
+        <Metric
+          label='Total scans'
+          value={stats?.totalScans}
+          trend={stats?.scansTrend}
+        />
+        <Metric
+          label='Unique visitors'
+          value={stats?.uniqueVisitors}
+          trend={stats?.visitorsTrend}
+        />
+        <Metric
+          label='Top country'
+          value={stats?.topCountry?.name}
+          icon={<CountryFlag country={stats?.topCountry?.name} />}
+          trend={
+            stats?.topCountry
+              ? {
+                  label: `${stats.topCountry.percentage}%`,
+                  color: 'var(--text-sub)',
+                }
+              : null
+          }
+        />
       </div>
 
       <Dropdown
