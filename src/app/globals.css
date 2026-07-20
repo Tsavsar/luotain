@@ -1201,3 +1201,29 @@ html {
 .btn-spinner {
   animation: btnSpin 0.6s linear infinite;
 }
+
+/* --- Dashboard top chrome: mobile restructure ---
+   Create New renders in BOTH DashboardNav and DashboardMenu — CSS
+   decides which one shows, avoiding JS-based screen detection (which
+   risks hydration mismatches). Org name text hides on mobile, keeping
+   just the avatar + chevron in the compact top row. */
+.create-new-desktop {
+  display: flex;
+}
+.create-new-mobile {
+  display: none;
+}
+.org-name-text {
+  display: block;
+}
+@media (max-width: 768px) {
+  .create-new-desktop {
+    display: none;
+  }
+  .create-new-mobile {
+    display: flex;
+  }
+  .org-name-text {
+    display: none;
+  }
+}

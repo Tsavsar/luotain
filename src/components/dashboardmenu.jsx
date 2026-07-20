@@ -72,9 +72,6 @@ function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
         body: JSON.stringify({ orgId }),
       })
       if (!res.ok) return
-      // Full navigation (not just a reload) — lands on the org's
-      // main dashboard every time, a predictable spot rather than
-      // wherever you happened to be standing when you switched.
       window.location.href = '/dashboard/analytics'
     } catch (err) {
       // silent
@@ -90,8 +87,10 @@ function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <GeneratedAvatar name={orgName} size={24} />
+            {/* Hidden on mobile via CSS — keeps just the avatar +
+                chevron in the compact top row */}
             <p
-              className='label-md'
+              className='label-md org-name-text'
               style={{ color: 'var(--text-strong)', margin: 0 }}
             >
               {orgName}
@@ -169,10 +168,6 @@ function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
 function ProfileDropdown({ userImage }) {
   const router = useRouter()
 
-  // Clears BOTH possible sessions — the custom app-session cookie
-  // (email-code logins) and NextAuth's own session (OAuth logins).
-  // A user could be signed in either way, and this doesn't track
-  // which, so both get cleared every time to be safe.
   async function handleLogout() {
     await fetch('/api/logout', { method: 'POST' })
     await signOut({ callbackUrl: '/login' })
@@ -225,7 +220,7 @@ function ProfileDropdown({ userImage }) {
         </DropdownOption>
         <DropdownOption onClick={handleLogout} danger>
           Log out
-        </DropdownOption>{' '}
+        </DropdownOption>
       </div>
     </Dropdown>
   )
@@ -284,7 +279,30 @@ export default function DashboardMenu({
         />
       </div>
 
-      <ProfileDropdown userImage={userImage} />
+      {/* Right side: on mobile, Create New sits before the pfp too —
+          hidden on desktop since DashboardNav already has its own
+          copy there */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button
+          className='create-new-mobile'
+          style={{
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '8px 16px',
+            background: 'var(--text-strong)',
+            color: 'var(--bg-default)',
+            border: 'none',
+            borderRadius: 'var(--radius-full)',
+            cursor: 'pointer',
+          }}
+        >
+          <span className='para-sm' style={{ color: 'inherit' }}>
+            Create new
+          </span>
+        </button>
+
+        <ProfileDropdown userImage={userImage} />
+      </div>
     </div>
   )
 }
