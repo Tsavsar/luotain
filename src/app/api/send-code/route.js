@@ -54,7 +54,7 @@ export async function POST(request) {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'noreply@luotain.app',
       to: email,
       subject: 'Your Luotain verification code',
       template: {
