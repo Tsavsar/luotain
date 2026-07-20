@@ -1165,7 +1165,7 @@ html {
 .dropdown-trigger {
   padding: 8px;
   border-radius: 12px;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.16s ease;
 }
 .dropdown-trigger:hover {
   background: var(--bg-surface);
