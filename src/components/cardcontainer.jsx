@@ -24,8 +24,11 @@ function ChevronIcon() {
   )
 }
 
-function Card({ title, columnOptions, showDropdown = true }) {
-  const [selected, setSelected] = useState(columnOptions?.[0])
+// columnOptions now defaults to an empty array — same defensive
+// pattern as the allOrgs fix, since this prop had no fallback at all
+// before and would crash identically if ever missing on a call site.
+function Card({ title, columnOptions = [], showDropdown = true }) {
+  const [selected, setSelected] = useState(columnOptions[0])
 
   return (
     <div
