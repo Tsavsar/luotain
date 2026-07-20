@@ -5,42 +5,42 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 const DOTS = [
   // North America
   { id: 1, x: 10, y: 35, flag: '/assets/flags/panama.svg' },
-  { id: 2, x: 15, y: 42, flag: null },
+  { id: 2, x: 15, y: 42, flag: '/assets/flags/bahamas.svg' },
   { id: 3, x: 20, y: 38, flag: '/assets/flags/puerto-rico.svg' },
   { id: 4, x: 8, y: 50, flag: null },
   { id: 5, x: 23, y: 55, flag: '/assets/flags/mexico.svg' },
-  { id: 6, x: 18, y: 28, flag: null },
+  { id: 6, x: 18, y: 28, flag: '/assets/flags/greenland.svg' },
   // South America
   { id: 7, x: 24, y: 65, flag: '/assets/flags/liberia.svg' },
-  { id: 8, x: 27, y: 75, flag: null },
-  { id: 9, x: 22, y: 72, flag: null },
+  { id: 8, x: 27, y: 75, flag: '/assets/flags/argentina.svg' },
+  { id: 9, x: 22, y: 72, flag: '/assets/flags/curacao.svg' },
   // Europe
   { id: 10, x: 45, y: 22, flag: '/assets/flags/wales.svg' },
-  { id: 11, x: 48, y: 28, flag: null },
+  { id: 11, x: 48, y: 28, flag: '/assets/flags/northen-ireland.svg' },
   { id: 12, x: 52, y: 20, flag: null },
   { id: 13, x: 50, y: 32, flag: null },
   { id: 14, x: 43, y: 30, flag: null },
   // Africa
   { id: 15, x: 47, y: 48, flag: '/assets/flags/spain.svg' },
-  { id: 16, x: 50, y: 58, flag: null },
-  { id: 17, x: 45, y: 62, flag: null },
+  { id: 16, x: 50, y: 58, flag: '/assets/flags/nigeria.svg' },
+  { id: 17, x: 45, y: 62, flag: '/assets/flags/botswana.svg' },
   { id: 18, x: 53, y: 52, flag: null },
   // Middle East
   { id: 19, x: 57, y: 36, flag: '/assets/flags/kurdistan.svg' },
-  { id: 20, x: 60, y: 40, flag: null },
+  { id: 20, x: 60, y: 40, flag: '/assets/flags/armenia.svg' },
   // Asia
   { id: 21, x: 65, y: 26, flag: '/assets/flags/japan.svg' },
   { id: 22, x: 72, y: 20, flag: null },
   { id: 23, x: 78, y: 28, flag: '/assets/flags/iran.svg' },
-  { id: 24, x: 75, y: 36, flag: null },
+  { id: 24, x: 75, y: 36, flag: '/assets/flags/macau.svg' },
   { id: 25, x: 68, y: 40, flag: null },
   { id: 26, x: 82, y: 22, flag: '/assets/flags/sri-lanka.svg' },
   { id: 27, x: 85, y: 32, flag: null },
   // Southeast Asia
-  { id: 28, x: 78, y: 50, flag: null },
+  { id: 28, x: 78, y: 50, flag: '/assets/flags/vanuatu.svg' },
   { id: 29, x: 82, y: 46, flag: null },
-  // Australia
-  { id: 30, x: 83, y: 65, flag: null },
+  // Australia / Pacific
+  { id: 30, x: 83, y: 65, flag: '/assets/flags/cook-islands.svg' },
   { id: 31, x: 87, y: 60, flag: null },
   // Scattered
   { id: 32, x: 35, y: 35, flag: null },
@@ -77,7 +77,7 @@ export default function Map() {
   useEffect(() => {
     function randomiseFlags() {
       const shuffled = [...FLAG_DOTS].sort(() => Math.random() - 0.5)
-      const count = 2 + Math.floor(Math.random() * 2)
+      const count = 3 + Math.floor(Math.random() * 3)
       setVisibleFlags(new Set(shuffled.slice(0, count).map((d) => d.id)))
     }
     randomiseFlags()
@@ -209,7 +209,17 @@ export default function Map() {
                   lineHeight: 0,
                 }}
               >
-                <img src={dot.flag} width={24} height={24} alt='' />
+                <img
+                  src={dot.flag}
+                  width={24}
+                  height={24}
+                  alt=''
+                  onError={(e) => {
+                    // Missing/renamed file: hide the whole popup
+                    // rather than showing a broken image box
+                    e.currentTarget.parentElement.style.display = 'none'
+                  }}
+                />
               </div>
             )}
 

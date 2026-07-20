@@ -399,8 +399,12 @@ export default function ChartContainer({ data }) {
             <div
               style={{
                 position: 'absolute',
-                left: `clamp(8px, calc(var(--chart-col) * ${tooltipIdx} - 80px), calc(var(--chart-col) * ${N} - 253px))`,
-                top: '20px',
+                // Sits to the RIGHT of the hovered column and lower
+                // down, so it never covers the top of the curve.
+                // The clamp flips it inside bounds near the right
+                // edge of the timeline.
+                left: `clamp(8px, calc(var(--chart-col) * ${tooltipIdx + 1} + 10px), calc(var(--chart-col) * ${N} - 253px))`,
+                top: '104px',
                 background: '#171717',
                 border: '1.5px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: 'var(--radius-xl)',

@@ -274,6 +274,12 @@
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  /* The custom ::-webkit-scrollbar styling below forces classic
+     (space-taking) scrollbars even on macOS overlay mode — so when
+     navigating from a tall page (analytics) to a short one (links),
+     the scrollbar vanishing shifted the whole layout ~6px. This
+     reserves the gutter permanently so tab switches don't jump. */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -540,7 +546,9 @@ input:focus-visible {
    in components. */
 .label-2xs {
   font-family: var(--font-sans);
-  font-size: 10px;
+  /* Fluid: 10px on small screens up to 13px on large monitors —
+     10px reads fine on a laptop but far too tiny on a 27" display */
+  font-size: clamp(10px, 0.45vw + 4px, 13px);
   font-weight: 500;
   line-height: 1.2;
   letter-spacing: 0.02em;
