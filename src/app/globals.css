@@ -284,6 +284,9 @@ body {
   background-color: var(--bg-default);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* If a weight/style of Inter ever fails to load, fail visibly
+     instead of letting the browser render a mushy synthesized fake */
+  font-synthesis: none;
 }
 
 h1,
@@ -321,6 +324,18 @@ pre {
    inline box-shadow in Inputfield.jsx */
 input:focus-visible {
   outline: none;
+}
+
+/* iOS Safari zooms the whole page when focusing an input whose text
+   is under 16px. Components set 14px inline for desktop, so this
+   needs !important to win on small viewports — scoped tightly to
+   form fields only. */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 /* ─── Focus ring utility classes ─────────────────── */
@@ -371,48 +386,58 @@ input:focus-visible {
    5. Subheading      — overlines, 500 + uppercase
 ═══════════════════════════════════════════════════ */
 
-/* --- 1. Title / Medium (weight: 500) --- */
+/* --- 1. Title / Medium (weight: 500) ---
+   Line-heights are unitless (scale-safe if a size ever changes);
+   ratios preserve the original px values exactly. Tracking is
+   negative on display sizes — large text sets tighter — easing to
+   0 by 24px. text-wrap: balance evens out multi-line headings. */
 .title-h1 {
   font-family: var(--font-sans);
   font-size: 72px;
   font-weight: 500;
-  line-height: 86px;
-  letter-spacing: 0.01em;
+  line-height: 1.19;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 .title-h2 {
   font-family: var(--font-sans);
   font-size: 60px;
   font-weight: 500;
-  line-height: 72px;
-  letter-spacing: 0.01em;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 .title-h3 {
   font-family: var(--font-sans);
   font-size: 48px;
   font-weight: 500;
-  line-height: 58px;
-  letter-spacing: 0.01em;
+  line-height: 1.21;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 .title-h4 {
   font-family: var(--font-sans);
   font-size: 36px;
   font-weight: 500;
-  line-height: 44px;
-  letter-spacing: 0.01em;
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 .title-h5 {
   font-family: var(--font-sans);
   font-size: 30px;
   font-weight: 500;
-  line-height: 38px;
-  letter-spacing: 0.01em;
+  line-height: 1.27;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 .title-h6 {
   font-family: var(--font-sans);
   font-size: 24px;
   font-weight: 500;
-  line-height: 32px;
-  letter-spacing: 0.01em;
+  line-height: 1.33;
+  letter-spacing: 0em;
+  text-wrap: balance;
 }
 
 /* --- 2. Title / Regular (weight: 400) --- */
@@ -420,125 +445,159 @@ input:focus-visible {
   font-family: var(--font-sans);
   font-size: 72px;
   font-weight: 400;
-  line-height: 86px;
-  letter-spacing: 0.01em;
+  line-height: 1.19;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 .title-h2-regular {
   font-family: var(--font-sans);
   font-size: 60px;
   font-weight: 400;
-  line-height: 72px;
-  letter-spacing: 0.01em;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 .title-h3-regular {
   font-family: var(--font-sans);
   font-size: 48px;
   font-weight: 400;
-  line-height: 58px;
-  letter-spacing: 0.01em;
+  line-height: 1.21;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 .title-h4-regular {
   font-family: var(--font-sans);
   font-size: 36px;
   font-weight: 400;
-  line-height: 44px;
-  letter-spacing: 0.01em;
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 .title-h5-regular {
   font-family: var(--font-sans);
   font-size: 30px;
   font-weight: 400;
-  line-height: 38px;
-  letter-spacing: 0.01em;
+  line-height: 1.27;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 .title-h6-regular {
   font-family: var(--font-sans);
   font-size: 24px;
   font-weight: 400;
-  line-height: 32px;
-  letter-spacing: 0.01em;
+  line-height: 1.33;
+  letter-spacing: 0em;
+  text-wrap: balance;
 }
 
-/* --- 3. Label (weight: 500) --- */
+/* --- 3. Label (weight: 500) ---
+   tabular-nums on all labels: these wrap the dashboard's changing
+   values (stats, counts, tooltip numbers), and proportional digits
+   shift layout every time a number ticks over. */
 .label-xl {
   font-family: var(--font-sans);
   font-size: 24px;
   font-weight: 500;
-  line-height: 32px;
+  line-height: 1.33;
   letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 .label-lg {
   font-family: var(--font-sans);
   font-size: 18px;
   font-weight: 500;
-  line-height: 26px;
+  line-height: 1.44;
   letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 .label-md {
   font-family: var(--font-sans);
   font-size: 16px;
   font-weight: 500;
-  line-height: 24px;
+  line-height: 1.5;
   letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 .label-sm {
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 500;
-  line-height: 20px;
+  line-height: 1.43;
   letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 .label-xs {
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 500;
-  line-height: 16px;
+  line-height: 1.33;
   letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+/* Micro badge size — deliberately below the 12px floor, reserved
+   for glanceable secondary tags (trend badges) only, never running
+   text. Tokenized here so it stops living as a magic inline number
+   in components. */
+.label-2xs {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
-/* --- 4. Paragraph (weight: 400) --- */
+/* --- 4. Paragraph (weight: 400) ---
+   text-wrap: pretty avoids a lone word stranded on the last line
+   of short descriptions. */
 .para-xl {
   font-family: var(--font-sans);
   font-size: 24px;
   font-weight: 400;
-  line-height: 32px;
+  line-height: 1.33;
   letter-spacing: 0.02em;
+  text-wrap: pretty;
 }
 .para-lg {
   font-family: var(--font-sans);
   font-size: 18px;
   font-weight: 400;
-  line-height: 26px;
+  line-height: 1.44;
   letter-spacing: 0.02em;
+  text-wrap: pretty;
 }
 .para-md {
   font-family: var(--font-sans);
   font-size: 16px;
   font-weight: 400;
-  line-height: 24px;
+  line-height: 1.5;
   letter-spacing: 0.02em;
+  text-wrap: pretty;
 }
 .para-sm {
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 400;
-  line-height: 20px;
+  line-height: 1.43;
   letter-spacing: 0.02em;
+  text-wrap: pretty;
 }
 .para-xs {
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 400;
-  line-height: 16px;
+  line-height: 1.33;
   letter-spacing: 0.02em;
+  text-wrap: pretty;
 }
 
-/* --- 5. Subheading (weight: 500, uppercase, wide tracking) --- */
+/* --- 5. Subheading (weight: 500, uppercase, wide tracking) ---
+   Positive tracking on small uppercase is correct — keep. */
 .subheading-lg {
   font-family: var(--font-sans);
   font-size: 20px;
   font-weight: 500;
-  line-height: 32px;
+  line-height: 1.6;
   letter-spacing: 0.24em;
   text-transform: uppercase;
 }
@@ -546,7 +605,7 @@ input:focus-visible {
   font-family: var(--font-sans);
   font-size: 16px;
   font-weight: 500;
-  line-height: 24px;
+  line-height: 1.5;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -554,7 +613,7 @@ input:focus-visible {
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 500;
-  line-height: 20px;
+  line-height: 1.43;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
