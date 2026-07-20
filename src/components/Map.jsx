@@ -4,37 +4,37 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 
 const DOTS = [
   // North America
-  { id: 1, x: 10, y: 35, flag: '/assets/flags/98.svg' },
+  { id: 1, x: 10, y: 35, flag: '/assets/flags/panama.svg' },
   { id: 2, x: 15, y: 42, flag: null },
-  { id: 3, x: 20, y: 38, flag: '/assets/flags/106.svg' },
+  { id: 3, x: 20, y: 38, flag: '/assets/flags/puerto-rico.svg' },
   { id: 4, x: 8, y: 50, flag: null },
-  { id: 5, x: 23, y: 55, flag: '/assets/flags/107.svg' },
+  { id: 5, x: 23, y: 55, flag: '/assets/flags/mexico.svg' },
   { id: 6, x: 18, y: 28, flag: null },
   // South America
-  { id: 7, x: 24, y: 65, flag: '/assets/flags/108.svg' },
+  { id: 7, x: 24, y: 65, flag: '/assets/flags/liberia.svg' },
   { id: 8, x: 27, y: 75, flag: null },
   { id: 9, x: 22, y: 72, flag: null },
   // Europe
-  { id: 10, x: 45, y: 22, flag: '/assets/flags/172.svg' },
+  { id: 10, x: 45, y: 22, flag: '/assets/flags/wales.svg' },
   { id: 11, x: 48, y: 28, flag: null },
   { id: 12, x: 52, y: 20, flag: null },
   { id: 13, x: 50, y: 32, flag: null },
   { id: 14, x: 43, y: 30, flag: null },
   // Africa
-  { id: 15, x: 47, y: 48, flag: '/assets/flags/218.svg' },
+  { id: 15, x: 47, y: 48, flag: '/assets/flags/spain.svg' },
   { id: 16, x: 50, y: 58, flag: null },
   { id: 17, x: 45, y: 62, flag: null },
   { id: 18, x: 53, y: 52, flag: null },
   // Middle East
-  { id: 19, x: 57, y: 36, flag: '/assets/flags/229.svg' },
+  { id: 19, x: 57, y: 36, flag: '/assets/flags/kurdistan.svg' },
   { id: 20, x: 60, y: 40, flag: null },
   // Asia
-  { id: 21, x: 65, y: 26, flag: '/assets/flags/250.svg' },
+  { id: 21, x: 65, y: 26, flag: '/assets/flags/japan.svg' },
   { id: 22, x: 72, y: 20, flag: null },
-  { id: 23, x: 78, y: 28, flag: '/assets/flags/256.svg' },
+  { id: 23, x: 78, y: 28, flag: '/assets/flags/iran.svg' },
   { id: 24, x: 75, y: 36, flag: null },
   { id: 25, x: 68, y: 40, flag: null },
-  { id: 26, x: 82, y: 22, flag: '/assets/flags/278.svg' },
+  { id: 26, x: 82, y: 22, flag: '/assets/flags/sri-lanka.svg' },
   { id: 27, x: 85, y: 32, flag: null },
   // Southeast Asia
   { id: 28, x: 78, y: 50, flag: null },

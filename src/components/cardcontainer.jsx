@@ -120,7 +120,14 @@ function DataRow({ label, value, maxValue, iconType, country }) {
           <CountryFlag country={country || label} size={18} />
         )}
         {iconType === 'favicon' && <SourceIcon domain={label} />}
-        <p className='para-sm' style={{ color: 'var(--text-sub)', margin: 0 }}>
+        {/* whiteSpace inline: the typography pass added text-wrap:
+            pretty to .para-*, which re-enables wrapping despite the
+            pill's nowrap (text-wrap and white-space share a
+            longhand). Inline wins, so labels never wrap mid-pill. */}
+        <p
+          className='para-sm'
+          style={{ color: 'var(--text-sub)', margin: 0, whiteSpace: 'nowrap' }}
+        >
           {label}
         </p>
       </div>

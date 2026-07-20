@@ -3,14 +3,9 @@
 import { useState, useEffect, useRef } from 'react'
 import EmptyStateIcon from './emptystateicon'
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i)
-const CURVE_TOP = 40 // px from top of chart to top of curve area
-const CURVE_HEIGHT = 220 // px height of the curve drawing area
-const AXIS_BASELINE = 302 // px from top — where the solid marker line ends
-
-function formatHour(h) {
-  return `${String(h).padStart(2, '0')}:00`
-}
+const CURVE_TOP = 40
+const CURVE_HEIGHT = 220
+const AXIS_BASELINE = 302
 
 function smoothPath(points) {
   if (points.length < 2) return ''
@@ -21,20 +16,20 @@ function smoothPath(points) {
     const midY = (points[i].y + points[i + 1].y) / 2
     d += ` Q ${points[i].x} ${points[i].y} ${midX} ${midY}`
   }
-  // Final segment curves through the last two points
   d += ` Q ${points[i].x} ${points[i].y} ${points[i + 1].x} ${points[i + 1].y}`
   return d
 }
 
-// ─── ChartContainer v2 ───
-// Fixed-width columns on every screen size — the timeline is wider
-// than the viewport by design, auto-scrolled so the CURRENT hour sits
-// at 2/3 across the visible window. Auto-scroll deliberately follows
-// only the current time, never hover: re-scrolling under the cursor
-// mid-hover would make the chart slide away from what you're
-// pointing at.
+// ─── ChartContainer (slot-based) ───
+// `data` is an array of slots — hourly for Today (a rolling window
+// reaching back into yesterday, "now" anchored at 2/3), daily for
+// week/month ranges. Each slot:
+//   { key, label, date, timeLabel, totalClicks, topLinks,
+//     othersClicks, isNow, isFuture }
+// Future slots draw nothing and aren't hoverable. No data at all =
+// the original empty state (24h axis + live now line).
 export default function ChartContainer({ data }) {
-  const [hoveredHour, setHoveredHour] = useState(null)
+  const [hoveredIdx, setHoveredIdx] = useState(null)
   const [lastHovered, setLastHovered] = useState(null)
   const [nowDate, setNowDate] = useState(null)
   const scrollRef = useRef(null)
@@ -44,49 +39,58 @@ export default function ChartContainer({ data }) {
     setNowDate(new Date())
   }, [])
 
-  const now = nowDate?.getHours() ?? null
-  const hasData = Array.isArray(data) && data.length === 24
-  const activeHour = hoveredHour !== null ? hoveredHour : now
+  const hasData = Array.isArray(data) && data.length >= 2
+  const slots = hasData ? data : []
+  const N = slots.length
 
-  // Only draw hours that have actually happened — a fresh day starts
-  // with a short curve at the left, growing rightward as the day
-  // goes on, ending exactly at the current hour's dot. Future hours
-  // stay empty (matching the Figma: nothing drawn past "now").
-  const visibleCount = now !== null ? Math.min(now + 1, 24) : 24
-  const visibleData = hasData ? data.slice(0, visibleCount) : []
+  const nowIdx = slots.findIndex((s) => s.isNow)
+  const activeIdx =
+    hoveredIdx !== null ? hoveredIdx : nowIdx !== -1 ? nowIdx : null
 
-  const maxClicks = visibleData.length
-    ? Math.max(...visibleData.map((d) => d.totalClicks), 1)
+  // Curve covers only slots that have actually happened
+  const lastRealIdx = (() => {
+    let last = -1
+    slots.forEach((s, i) => {
+      if (!s.isFuture) last = i
+    })
+    return last
+  })()
+  const realSlots = slots.slice(0, lastRealIdx + 1)
+  const maxClicks = realSlots.length
+    ? Math.max(...realSlots.map((s) => s.totalClicks), 1)
     : 1
-  const points = visibleData.map((d, i) => ({
+  const points = realSlots.map((s, i) => ({
     x: i + 0.5,
-    y: 100 - (d.totalClicks / maxClicks) * 100,
+    y: 100 - (s.totalClicks / maxClicks) * 100,
   }))
-
   const strokePath = smoothPath(points)
   const lastX = points.length ? points[points.length - 1].x : 0.5
   const fillPath =
     points.length >= 2 ? `${strokePath} L ${lastX} 100 L 0.5 100 Z` : ''
 
-  // Where the dot sits (px from chart top) for the active hour
   const activeDotTop =
-    hasData && activeHour !== null && points[activeHour]
-      ? CURVE_TOP + (points[activeHour].y / 100) * CURVE_HEIGHT
+    hasData && activeIdx !== null && points[activeIdx]
+      ? CURVE_TOP + (points[activeIdx].y / 100) * CURVE_HEIGHT
       : null
 
-  // Auto-scroll: current time at 2/3 of the visible window.
-  // Runs on mount and whenever `now` changes — NOT on hover.
+  // Auto-scroll the now-slot (or the newest slot) to 2/3 of the
+  // visible window. Follows data changes, never hover.
   useEffect(() => {
-    if (!scrollRef.current || now === null) return
+    if (!scrollRef.current || !hasData) return
+    const anchor = nowIdx !== -1 ? nowIdx : N - 1
     const container = scrollRef.current
     const colWidth = firstColRef.current?.offsetWidth || 80
-    const targetX = now * colWidth + colWidth / 2
+    const targetX = anchor * colWidth + colWidth / 2
     const scrollTarget = targetX - container.clientWidth * (2 / 3)
     container.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' })
-  }, [now, hasData])
+  }, [hasData, nowIdx, N])
 
-  const tooltipHour = hoveredHour ?? lastHovered
-  const tooltipData = tooltipHour !== null && hasData ? data[tooltipHour] : null
+  const tooltipIdx = hoveredIdx ?? lastHovered
+  const tooltipSlot = tooltipIdx !== null && hasData ? slots[tooltipIdx] : null
+
+  // Legacy empty state: 24-hour axis with the live now line
+  const legacyHours = Array.from({ length: 24 }, (_, i) => i)
+  const legacyNow = nowDate?.getHours() ?? null
 
   return (
     <div style={{ width: '100%', height: '328px', position: 'relative' }}>
@@ -99,7 +103,7 @@ export default function ChartContainer({ data }) {
           overflowX: 'auto',
           overflowY: 'hidden',
         }}
-        onMouseLeave={() => setHoveredHour(null)}
+        onMouseLeave={() => setHoveredIdx(null)}
       >
         <div
           style={{
@@ -109,18 +113,15 @@ export default function ChartContainer({ data }) {
             display: 'flex',
           }}
         >
-          {/* Curve — gradient fill + stroke, sized to exactly the 24
-              columns (spacer excluded), unit-based viewBox so it
-              scales with whatever --chart-col resolves to */}
-          {hasData && (
+          {hasData && points.length >= 2 && (
             <svg
-              viewBox='0 0 24 100'
+              viewBox={`0 0 ${N} 100`}
               preserveAspectRatio='none'
               style={{
                 position: 'absolute',
                 left: 0,
                 top: `${CURVE_TOP}px`,
-                width: 'calc(var(--chart-col) * 24)',
+                width: `calc(var(--chart-col) * ${N})`,
                 height: `${CURVE_HEIGHT}px`,
                 pointerEvents: 'none',
               }}
@@ -144,29 +145,94 @@ export default function ChartContainer({ data }) {
                     stopOpacity='0'
                   />
                 </linearGradient>
+                <linearGradient
+                  id='chartFillGradientMuted'
+                  x1='0'
+                  y1='0'
+                  x2='0'
+                  y2='1'
+                >
+                  <stop
+                    offset='0%'
+                    stopColor='var(--bg-subtle)'
+                    stopOpacity='0.4'
+                  />
+                  <stop
+                    offset='100%'
+                    stopColor='var(--bg-subtle)'
+                    stopOpacity='0'
+                  />
+                </linearGradient>
+                {/* Clip window for the orange layer: full-width at
+                    rest, collapses to just the hovered column on
+                    hover — x/width transitions give the glide */}
+                <clipPath id='chartHoverClip'>
+                  <rect
+                    y='0'
+                    height='100'
+                    x={hoveredIdx !== null ? hoveredIdx : 0}
+                    width={hoveredIdx !== null ? 1 : N}
+                    style={{
+                      transition:
+                        'x 0.3s cubic-bezier(0.22, 1, 0.36, 1), width 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                    }}
+                  />
+                </clipPath>
               </defs>
-              <path d={fillPath} fill='url(#chartFillGradient)' stroke='none' />
-              <path
-                d={strokePath}
-                fill='none'
-                stroke='var(--primary-base)'
-                strokeWidth='1.5'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                vectorEffect='non-scaling-stroke'
-              />
+
+              {/* Muted base layer — the whole curve as light gray
+                  dashes + faint gray fill, visible only on hover
+                  (the Figma luminosity treatment) */}
+              <g
+                style={{
+                  opacity: hoveredIdx !== null ? 1 : 0,
+                  transition: 'opacity 0.25s ease',
+                }}
+              >
+                <path
+                  d={fillPath}
+                  fill='url(#chartFillGradientMuted)'
+                  stroke='none'
+                />
+                <path
+                  d={strokePath}
+                  fill='none'
+                  stroke='var(--bg-subtle)'
+                  strokeWidth='1.5'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeDasharray='0.12 0.1'
+                  vectorEffect='non-scaling-stroke'
+                />
+              </g>
+
+              {/* Orange layer — full curve at rest; on hover, clipped
+                  down to just the hovered column's slice */}
+              <g clipPath='url(#chartHoverClip)'>
+                <path
+                  d={fillPath}
+                  fill='url(#chartFillGradient)'
+                  stroke='none'
+                />
+                <path
+                  d={strokePath}
+                  fill='none'
+                  stroke='var(--primary-base)'
+                  strokeWidth='1.5'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  vectorEffect='non-scaling-stroke'
+                />
+              </g>
             </svg>
           )}
 
-          {/* Single gliding marker for the active hour — dashed above
-              the dot, dot ON the curve, solid orange below to the
-              axis. One element with left/top transitions = the smooth
-              glide, instead of per-column jumping. */}
-          {hasData && activeHour !== null && activeDotTop !== null && (
+          {/* Gliding marker on the active slot */}
+          {hasData && activeIdx !== null && activeDotTop !== null && (
             <div
               style={{
                 position: 'absolute',
-                left: `calc(var(--chart-col) * ${activeHour})`,
+                left: `calc(var(--chart-col) * ${activeIdx})`,
                 width: 'var(--chart-col)',
                 top: 0,
                 bottom: 0,
@@ -211,98 +277,129 @@ export default function ChartContainer({ data }) {
             </div>
           )}
 
-          {/* Hour columns */}
-          {HOURS.map((hour) => {
-            const isActive = hour === activeHour
-            const isDimmed = hoveredHour !== null && hour !== hoveredHour
-            const isNow = hour === now
-            const showLabel = isActive || hour === 0 || hour === 23
+          {/* Slot columns */}
+          {hasData
+            ? slots.map((slot, idx) => {
+                const isActive = idx === activeIdx
+                const showLabel = isActive || idx === 0 || idx === N - 1
 
-            return (
-              <div
-                key={hour}
-                ref={hour === 0 ? firstColRef : null}
-                className='chart-hour-column-v2'
-                onMouseEnter={() => {
-                  // Future hours have nothing to show yet
-                  if (now !== null && hour > now) return
-                  setHoveredHour(hour)
-                  setLastHovered(hour)
-                }}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  opacity: isDimmed ? 0.35 : 1,
-                  transition: 'opacity 0.3s ease',
-                  cursor:
-                    hasData && (now === null || hour <= now)
-                      ? 'pointer'
-                      : 'default',
-                  zIndex: 2,
-                }}
-              >
-                {/* Empty-state now marker: simple solid line, old style */}
-                {!hasData && isNow && (
+                return (
                   <div
-                    style={{
-                      position: 'absolute',
-                      bottom: '26px',
-                      left: '50%',
-                      width: '1px',
-                      height: '158px',
-                      background: 'var(--primary-base)',
+                    key={slot.key}
+                    ref={idx === 0 ? firstColRef : null}
+                    className='chart-hour-column-v2'
+                    onMouseEnter={() => {
+                      if (slot.isFuture) return
+                      setHoveredIdx(idx)
+                      setLastHovered(idx)
                     }}
-                  />
-                )}
-
-                {showLabel ? (
-                  <p
-                    className={isActive ? 'label-sm' : 'para-xs'}
                     style={{
-                      color: isActive
-                        ? 'var(--text-strong)'
-                        : 'var(--bg-subtle)',
-                      margin: '0 0 8px',
-                      whiteSpace: 'nowrap',
-                      animation: isActive ? 'fadeInHint 0.2s ease-out' : 'none',
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      cursor: slot.isFuture ? 'default' : 'pointer',
                       zIndex: 2,
                     }}
                   >
-                    {isNow && isActive && nowDate
-                      ? `${String(nowDate.getHours()).padStart(2, '0')}:${String(nowDate.getMinutes()).padStart(2, '0')}`
-                      : formatHour(hour)}
-                  </p>
-                ) : (
+                    {showLabel ? (
+                      <p
+                        className={isActive ? 'label-sm' : 'para-xs'}
+                        style={{
+                          color: isActive
+                            ? 'var(--text-strong)'
+                            : 'var(--bg-subtle)',
+                          margin: '0 0 8px',
+                          whiteSpace: 'nowrap',
+                          animation: isActive
+                            ? 'fadeInHint 0.2s ease-out'
+                            : 'none',
+                          zIndex: 2,
+                        }}
+                      >
+                        {slot.label}
+                      </p>
+                    ) : (
+                      <div
+                        style={{
+                          width: '6px',
+                          height: '6px',
+                          borderRadius: 'var(--radius-full)',
+                          background: 'var(--bg-subtle)',
+                          marginBottom: '13px',
+                        }}
+                      />
+                    )}
+                  </div>
+                )
+              })
+            : legacyHours.map((hour) => {
+                const isNow = hour === legacyNow
+                return (
                   <div
+                    key={hour}
+                    ref={hour === 0 ? firstColRef : null}
+                    className='chart-hour-column-v2'
                     style={{
-                      width: '6px',
-                      height: '6px',
-                      borderRadius: 'var(--radius-full)',
-                      background: 'var(--bg-subtle)',
-                      marginBottom: '13px',
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
                     }}
-                  />
-                )}
-              </div>
-            )
-          })}
+                  >
+                    {isNow && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: '26px',
+                          left: '50%',
+                          width: '1px',
+                          height: '158px',
+                          background: 'var(--primary-base)',
+                        }}
+                      />
+                    )}
+                    {isNow && nowDate ? (
+                      <p
+                        className='para-xs'
+                        style={{
+                          color: 'var(--text-strong)',
+                          margin: '0 0 8px',
+                        }}
+                      >
+                        {`${String(nowDate.getHours()).padStart(2, '0')}:${String(nowDate.getMinutes()).padStart(2, '0')}`}
+                      </p>
+                    ) : hour === 0 || hour === 23 ? (
+                      <p
+                        className='para-xs'
+                        style={{ color: 'var(--bg-subtle)', margin: '0 0 8px' }}
+                      >
+                        {`${String(hour).padStart(2, '0')}:00`}
+                      </p>
+                    ) : (
+                      <div
+                        style={{
+                          width: '6px',
+                          height: '6px',
+                          borderRadius: 'var(--radius-full)',
+                          background: 'var(--bg-subtle)',
+                          marginBottom: '13px',
+                        }}
+                      />
+                    )}
+                  </div>
+                )
+              })}
 
-          {/* Trailing space so late hours can physically reach the
-              2/3 position — without this, scroll clamps and 23:00
-              pins to the right edge again */}
           <div className='chart-trailing-spacer' aria-hidden='true' />
 
-          {/* Tooltip — anchored inside the scroll content so it stays
-              glued to its hour while scrolling; glides between hours
-              via left transition instead of teleporting */}
-          {hasData && tooltipData && (
+          {hasData && tooltipSlot && (
             <div
               style={{
                 position: 'absolute',
-                left: `clamp(8px, calc(var(--chart-col) * ${tooltipHour} - 80px), calc(var(--chart-col) * 24 - 253px))`,
+                left: `clamp(8px, calc(var(--chart-col) * ${tooltipIdx} - 80px), calc(var(--chart-col) * ${N} - 253px))`,
                 top: '20px',
                 background: '#171717',
                 border: '1.5px solid rgba(255, 255, 255, 0.1)',
@@ -313,8 +410,8 @@ export default function ChartContainer({ data }) {
                   '0px 16px 24px -4px rgba(0, 0, 0, 0.14), 0px 4px 6px -2px rgba(0, 0, 0, 0.08)',
                 pointerEvents: 'none',
                 zIndex: 10,
-                opacity: hoveredHour !== null ? 1 : 0,
-                visibility: hoveredHour !== null ? 'visible' : 'hidden',
+                opacity: hoveredIdx !== null ? 1 : 0,
+                visibility: hoveredIdx !== null ? 'visible' : 'hidden',
                 transition:
                   'left 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease, visibility 0.2s',
               }}
@@ -328,19 +425,26 @@ export default function ChartContainer({ data }) {
                 }}
               >
                 <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
-                  {tooltipData.date || 'Today'}
+                  {tooltipSlot.date}
                 </span>
-                <div
-                  style={{
-                    width: '4px',
-                    height: '4px',
-                    borderRadius: 'var(--radius-full)',
-                    background: 'var(--text-disabled)',
-                  }}
-                />
-                <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
-                  {formatHour(tooltipHour)}
-                </span>
+                {tooltipSlot.timeLabel && (
+                  <>
+                    <div
+                      style={{
+                        width: '4px',
+                        height: '4px',
+                        borderRadius: 'var(--radius-full)',
+                        background: 'var(--text-disabled)',
+                      }}
+                    />
+                    <span
+                      className='para-xs'
+                      style={{ color: 'var(--text-sub)' }}
+                    >
+                      {tooltipSlot.timeLabel}
+                    </span>
+                  </>
+                )}
               </div>
 
               <div
@@ -353,11 +457,11 @@ export default function ChartContainer({ data }) {
                     Total clicks
                   </span>
                   <span className='label-sm' style={{ color: 'white' }}>
-                    {tooltipData.totalClicks}
+                    {tooltipSlot.totalClicks}
                   </span>
                 </div>
 
-                {tooltipData.topLinks?.map((link) => (
+                {tooltipSlot.topLinks?.map((link) => (
                   <div
                     key={link.url}
                     style={{ display: 'flex', justifyContent: 'space-between' }}
@@ -377,7 +481,7 @@ export default function ChartContainer({ data }) {
                   </div>
                 ))}
 
-                {tooltipData.othersClicks > 0 && (
+                {tooltipSlot.othersClicks > 0 && (
                   <div
                     style={{ display: 'flex', justifyContent: 'space-between' }}
                   >
@@ -391,7 +495,7 @@ export default function ChartContainer({ data }) {
                       className='para-xs'
                       style={{ color: 'var(--text-sub)' }}
                     >
-                      {tooltipData.othersClicks}
+                      {tooltipSlot.othersClicks}
                     </span>
                   </div>
                 )}
