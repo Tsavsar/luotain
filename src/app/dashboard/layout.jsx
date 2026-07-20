@@ -91,7 +91,7 @@ export default function DashboardLayout({ children }) {
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          padding: '12px 24px 24px 24px',
+          padding: '12px 24px 40px 24px',
         }}
       >
         <DashboardNav />

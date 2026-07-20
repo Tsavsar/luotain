@@ -87,7 +87,7 @@ function SourceIcon({ domain }) {
 // overflow past a short bar (per the Figma spec — see the 41px pill
 // with a full-length link in it), so text stays readable even when
 // the value is tiny.
-function DataRow({ label, value, maxValue, iconType }) {
+function DataRow({ label, value, maxValue, iconType, country }) {
   const pct = maxValue > 0 ? value / maxValue : 0
 
   return (
@@ -113,7 +113,12 @@ function DataRow({ label, value, maxValue, iconType }) {
           transition: 'width 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
         }}
       >
-        {iconType === 'flag' && <CountryFlag country={label} size={18} />}
+        {/* For country rows the label IS the country; for region/city
+            rows the flag comes from the row's explicit `country`
+            field — a city name alone can't identify a flag */}
+        {iconType === 'flag' && (
+          <CountryFlag country={country || label} size={18} />
+        )}
         {iconType === 'favicon' && <SourceIcon domain={label} />}
         <p className='para-sm' style={{ color: 'var(--text-sub)', margin: 0 }}>
           {label}
@@ -237,6 +242,7 @@ function Card({
               value={row.value}
               maxValue={maxValue}
               iconType={iconType}
+              country={row.country}
             />
           ))}
         </div>

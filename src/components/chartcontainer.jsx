@@ -15,14 +15,14 @@ function formatHour(h) {
 function smoothPath(points) {
   if (points.length < 2) return ''
   let d = `M ${points[0].x} ${points[0].y}`
-  for (let i = 0; i < points.length - 1; i++) {
-    const curr = points[i]
-    const next = points[i + 1]
-    const midX = (curr.x + next.x) / 2
-    const midY = (curr.y + next.y) / 2
-    d += ` Q ${curr.x} ${curr.y} ${midX} ${midY}`
-    d += ` Q ${midX} ${midY} ${next.x} ${next.y}`
+  let i
+  for (i = 1; i < points.length - 2; i++) {
+    const midX = (points[i].x + points[i + 1].x) / 2
+    const midY = (points[i].y + points[i + 1].y) / 2
+    d += ` Q ${points[i].x} ${points[i].y} ${midX} ${midY}`
   }
+  // Final segment curves through the last two points
+  d += ` Q ${points[i].x} ${points[i].y} ${points[i + 1].x} ${points[i + 1].y}`
   return d
 }
 

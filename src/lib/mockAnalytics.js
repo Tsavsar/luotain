@@ -78,12 +78,12 @@ export const mockCardData = {
       { label: 'Singapore', value: 1 },
     ],
     Regions: [
-      { label: 'Oslo', value: 20 },
-      { label: 'Bergen', value: 8 },
+      { label: 'Oslo', value: 20, country: 'Norway' },
+      { label: 'Bergen', value: 8, country: 'Norway' },
     ],
     Cities: [
-      { label: 'Oslo', value: 20 },
-      { label: 'Berlin', value: 6 },
+      { label: 'Oslo', value: 20, country: 'Norway' },
+      { label: 'Berlin', value: 6, country: 'Germany' },
     ],
   },
   devices: {
