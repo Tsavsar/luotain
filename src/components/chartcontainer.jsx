@@ -77,12 +77,22 @@ export default function ChartContainer({ data }) {
   // visible window. Follows data changes, never hover.
   useEffect(() => {
     if (!scrollRef.current || !hasData) return
-    const anchor = nowIdx !== -1 ? nowIdx : N - 1
     const container = scrollRef.current
     const colWidth = firstColRef.current?.offsetWidth || 80
-    const targetX = anchor * colWidth + colWidth / 2
-    const scrollTarget = targetX - container.clientWidth * (2 / 3)
-    container.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' })
+    if (nowIdx !== -1) {
+      // Live range: anchor "now" at 2/3 with space ahead of it
+      const targetX = nowIdx * colWidth + colWidth / 2
+      const scrollTarget = targetX - container.clientWidth * (2 / 3)
+      container.scrollTo({
+        left: Math.max(0, scrollTarget),
+        behavior: 'smooth',
+      })
+    } else {
+      // Completed range (Yesterday): there's no "now" to anchor, so
+      // 2/3 positioning just strands dead space on the right — rest
+      // at the end of the timeline instead
+      container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' })
+    }
   }, [hasData, nowIdx, N])
 
   const tooltipIdx = hoveredIdx ?? lastHovered
@@ -393,7 +403,11 @@ export default function ChartContainer({ data }) {
                 )
               })}
 
-          <div className='chart-trailing-spacer' aria-hidden='true' />
+          {/* Spacer only when a live "now" needs room to sit at 2/3 —
+              completed ranges end flush, no dead space */}
+          {(!hasData || nowIdx !== -1) && (
+            <div className='chart-trailing-spacer' aria-hidden='true' />
+          )}
 
           {hasData && tooltipSlot && (
             <div
