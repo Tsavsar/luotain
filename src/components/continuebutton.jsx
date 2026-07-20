@@ -31,11 +31,19 @@ export default function Continuebutton({ active, label, shaking, onClick }) {
 
   async function handleClick() {
     if (loading || !onClick) return
+
+    // Only show loading when the button is actually ready to proceed.
+    // If active is false (required fields empty, etc.), just call
+    // onClick directly — the parent's own validation/shake logic runs
+    // without an unnecessary loading flash for an action that's just
+    // going to bounce back.
+    if (!active) {
+      onClick()
+      return
+    }
+
     setLoading(true)
 
-    // Enforces a minimum visible duration — even a click handler that
-    // resolves instantly still shows a brief, deliberate flash, so
-    // clicking never feels like it did nothing.
     const minDelay = new Promise((resolve) => setTimeout(resolve, 400))
     await Promise.all([onClick(), minDelay])
 
