@@ -84,7 +84,8 @@ function OrgDropdown({ orgName, allOrgs, activeOrgId }) {
   return (
     <Dropdown
       sideOffset={-20}
-      offsetX={8}
+      offsetX={16}
+      triggerHover
       trigger={
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
