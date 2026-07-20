@@ -1165,7 +1165,7 @@ html {
 .dropdown-trigger {
   padding: 8px;
   border-radius: 12px;
-  transition: background-color 0.16s ease;
+  transition: background-color 0.15s ease;
 }
 .dropdown-trigger:hover {
   background: var(--bg-surface);
@@ -1187,4 +1187,17 @@ html {
 }
 .org-row.is-active {
   background: var(--bg-layer);
+}
+
+/* --- Button loading spinner --- */
+@keyframes btnSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.btn-spinner {
+  animation: btnSpin 0.6s linear infinite;
 }

@@ -2,32 +2,74 @@
 
 import { useState } from 'react'
 
-export default function AuthButton({ icon, label, onClick }) {
-  const [hovered, setHovered] = useState(false)
+function Spinner() {
+  return (
+    <svg
+      width='16'
+      height='16'
+      viewBox='0 0 16 16'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+      className='btn-spinner'
+    >
+      <circle
+        cx='8'
+        cy='8'
+        r='6'
+        stroke='currentColor'
+        strokeWidth='2'
+        strokeLinecap='round'
+        strokeDasharray='28'
+        strokeDashoffset='21'
+      />
+    </svg>
+  )
+}
+
+export default function Continuebutton({ active, label, shaking, onClick }) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleClick() {
+    if (loading || !onClick) return
+    setLoading(true)
+
+    // Enforces a minimum visible duration — even a click handler that
+    // resolves instantly still shows a brief, deliberate flash, so
+    // clicking never feels like it did nothing.
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 400))
+    await Promise.all([onClick(), minDelay])
+
+    setLoading(false)
+  }
 
   return (
     <button
-      className='auth-btn'
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={onClick}
+      onClick={handleClick}
+      className={shaking ? 'is-shaking' : ''}
       style={{
-        flex: 1,
+        width: '100%',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '10px',
+        gap: '8px',
         padding: '10px',
-        background: hovered ? 'var(--bg-subtle)' : 'var(--bg-surface)',
-        color: hovered ? 'var(--text-strong)' : 'var(--text-sub)',
+        background: loading
+          ? 'var(--bg-surface)'
+          : active
+            ? 'var(--primary-base)'
+            : 'var(--bg-surface)',
+        color: loading
+          ? 'var(--text-sub)'
+          : active
+            ? 'var(--text-inverse)'
+            : 'var(--text-sub)',
         border: 'none',
         borderRadius: 'var(--radius-lg)',
-        cursor: 'pointer',
+        cursor: loading ? 'default' : 'pointer',
         transition: 'background 0.15s ease, color 0.15s ease',
       }}
     >
-      {icon}
-      <span className='para-md'>{label}</span>
+      {loading ? <Spinner /> : <span className='para-md'>{label}</span>}
     </button>
   )
 }
