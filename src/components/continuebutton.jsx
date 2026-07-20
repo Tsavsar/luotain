@@ -69,7 +69,20 @@ export default function Continuebutton({ active, label, shaking, onClick }) {
         transition: 'background 0.15s ease, color 0.15s ease',
       }}
     >
-      {loading ? <Spinner /> : <span className='para-md'>{label}</span>}
+      {loading ? (
+        <div
+          style={{
+            height: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Spinner />
+        </div>
+      ) : (
+        <span className='para-md'>{label}</span>
+      )}
     </button>
   )
 }

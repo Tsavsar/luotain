@@ -26,16 +26,14 @@ function Spinner() {
   )
 }
 
-export default function Continuebutton({ active, label, shaking, onClick }) {
+export default function AuthButton({ icon, label, onClick }) {
+  const [hovered, setHovered] = useState(false)
   const [loading, setLoading] = useState(false)
 
   async function handleClick() {
     if (loading || !onClick) return
     setLoading(true)
 
-    // Enforces a minimum visible duration — even a click handler that
-    // resolves instantly still shows a brief, deliberate flash, so
-    // clicking never feels like it did nothing.
     const minDelay = new Promise((resolve) => setTimeout(resolve, 400))
     await Promise.all([onClick(), minDelay])
 
@@ -44,24 +42,26 @@ export default function Continuebutton({ active, label, shaking, onClick }) {
 
   return (
     <button
+      className='auth-btn'
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       onClick={handleClick}
-      className={shaking ? 'is-shaking' : ''}
       style={{
-        width: '100%',
+        flex: 1,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '8px',
+        gap: '10px',
         padding: '10px',
         background: loading
           ? 'var(--bg-surface)'
-          : active
-            ? 'var(--primary-base)'
+          : hovered
+            ? 'var(--bg-subtle)'
             : 'var(--bg-surface)',
         color: loading
           ? 'var(--text-sub)'
-          : active
-            ? 'var(--text-inverse)'
+          : hovered
+            ? 'var(--text-strong)'
             : 'var(--text-sub)',
         border: 'none',
         borderRadius: 'var(--radius-lg)',
@@ -69,7 +69,23 @@ export default function Continuebutton({ active, label, shaking, onClick }) {
         transition: 'background 0.15s ease, color 0.15s ease',
       }}
     >
-      {loading ? <Spinner /> : <span className='para-md'>{label}</span>}
+      {loading ? (
+        <div
+          style={{
+            height: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Spinner />
+        </div>
+      ) : (
+        <>
+          {icon}
+          <span className='para-md'>{label}</span>
+        </>
+      )}
     </button>
   )
 }
