@@ -94,7 +94,7 @@ export default function ChartContainer({ data }) {
     if (nowIdx !== -1) {
       // Live range: anchor "now" at 2/3 with space ahead of it
       const targetX = nowIdx * colWidth + colWidth / 2
-      const scrollTarget = targetX - container.clientWidth * (2 / 3)
+      const scrollTarget = targetX - container.clientWidth * 0.75
       container.scrollTo({
         left: Math.max(0, scrollTarget),
         behavior: 'smooth',
@@ -129,6 +129,12 @@ export default function ChartContainer({ data }) {
           height: '100%',
           overflowX: 'auto',
           overflowY: 'visible',
+          // Column width scales with slot count: few slots (7 days)
+          // stretch so today lands at ~75% of the visible width
+          // without scroll; many slots (24h, 30/90 days) hit the
+          // floor width and scroll, with auto-scroll doing the 75%
+          // anchoring instead.
+          '--chart-col': `clamp(var(--chart-col-min, 80px), calc(75cqw / ${Math.max((hasData ? N : 24) - 0.5, 1)}), 220px)`,
         }}
         onMouseLeave={() => setHoveredIdx(null)}
       >
@@ -321,6 +327,20 @@ export default function ChartContainer({ data }) {
                       setHoveredIdx(idx)
                       setLastHovered(idx)
                     }}
+                    onClick={() => {
+                      if (slot.isFuture) return
+                      // No hover on touch devices — tap pins the
+                      // marker/tooltip, tapping the same column again
+                      // dismisses it
+                      const isTouch =
+                        window.matchMedia?.('(hover: none)').matches
+                      if (isTouch && hoveredIdx === idx) {
+                        setHoveredIdx(null)
+                        return
+                      }
+                      setHoveredIdx(idx)
+                      setLastHovered(idx)
+                    }}
                     style={{
                       position: 'relative',
                       display: 'flex',
@@ -434,15 +454,17 @@ export default function ChartContainer({ data }) {
                 // Right of the marker normally; flips to its left
                 // near the end of the timeline so it keeps following
                 // the cursor instead of stopping at a capped position
-                left: tooltipFlipped
-                  ? `calc(var(--chart-col) * ${tooltipIdx} - 255px)`
-                  : `calc(var(--chart-col) * ${tooltipIdx + 1} + 10px)`,
+                left: `clamp(8px, ${
+                  tooltipFlipped
+                    ? `calc(var(--chart-col) * ${tooltipIdx} - 255px)`
+                    : `calc(var(--chart-col) * ${tooltipIdx + 1} + 10px)`
+                }, calc(var(--chart-col) * ${N} - 253px))`,
                 top: '104px',
                 background: '#171717',
                 border: '1.5px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: 'var(--radius-xl)',
                 padding: '14px 18px',
-                width: '245px',
+                width: 'min(245px, calc(100cqw - 24px))',
                 boxShadow:
                   '0px 16px 24px -4px rgba(0, 0, 0, 0.14), 0px 4px 6px -2px rgba(0, 0, 0, 0.08)',
                 pointerEvents: 'none',

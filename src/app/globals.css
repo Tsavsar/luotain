@@ -1320,11 +1320,18 @@ html {
    spacer is what lets hour 23 physically reach 2/3 — without it,
    scroll clamps and 11pm sits at the right edge again. */
 .chart-scroll-wrapper {
+  /* Columns are sized by the component per-range (via an inline
+     --chart-col using container units), so few-slot ranges like
+     "Last 7 days" stretch to place today at the 75% eye-level mark
+     instead of clustering at the left. These are the floor + fallback. */
+  container-type: inline-size;
+  --chart-col-min: 80px;
   --chart-col: 80px;
 }
 @media (max-width: 768px) {
   .chart-scroll-wrapper {
-    --chart-col: 16.667vw; /* 6 of 24 hours visible = 25% of timeline */
+    --chart-col-min: 56px; /* comfortable touch-target width */
+    --chart-col: 16.667vw;
   }
 }
 .chart-hour-column-v2 {
