@@ -7,16 +7,28 @@ const CURVE_TOP = 40
 const CURVE_HEIGHT = 220
 const AXIS_BASELINE = 302
 
+// Catmull-Rom -> cubic Bezier. Unlike the previous midpoint-quadratic
+// version, this passes THROUGH every data point rather than being
+// merely pulled toward it — so a value's marker dot always lands
+// exactly on the drawn curve, including at peaks, instead of floating
+// above an undershot line.
 function smoothPath(points) {
   if (points.length < 2) return ''
-  let d = `M ${points[0].x} ${points[0].y}`
-  let i
-  for (i = 1; i < points.length - 2; i++) {
-    const midX = (points[i].x + points[i + 1].x) / 2
-    const midY = (points[i].y + points[i + 1].y) / 2
-    d += ` Q ${points[i].x} ${points[i].y} ${midX} ${midY}`
+  if (points.length === 2) {
+    return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`
   }
-  d += ` Q ${points[i].x} ${points[i].y} ${points[i + 1].x} ${points[i + 1].y}`
+  let d = `M ${points[0].x} ${points[0].y}`
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] || points[i]
+    const p1 = points[i]
+    const p2 = points[i + 1]
+    const p3 = points[i + 2] || p2
+    const cp1x = p1.x + (p2.x - p0.x) / 6
+    const cp1y = p1.y + (p2.y - p0.y) / 6
+    const cp2x = p2.x - (p3.x - p1.x) / 6
+    const cp2y = p2.y - (p3.y - p1.y) / 6
+    d += ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${p2.x} ${p2.y}`
+  }
   return d
 }
 
@@ -97,6 +109,11 @@ export default function ChartContainer({ data }) {
 
   const tooltipIdx = hoveredIdx ?? lastHovered
   const tooltipSlot = tooltipIdx !== null && hasData ? slots[tooltipIdx] : null
+  // Flip the tooltip to the marker's LEFT once there isn't room on
+  // the right — replaces clamping, which capped the tooltip at a
+  // fixed spot near the edge instead of actually following the
+  // cursor the rest of the way across the timeline.
+  const tooltipFlipped = tooltipIdx !== null && N - tooltipIdx <= 3
 
   // Legacy empty state: 24-hour axis with the live now line
   const legacyHours = Array.from({ length: 24 }, (_, i) => i)
@@ -413,11 +430,12 @@ export default function ChartContainer({ data }) {
             <div
               style={{
                 position: 'absolute',
-                // Sits to the RIGHT of the hovered column and lower
-                // down, so it never covers the top of the curve.
-                // The clamp flips it inside bounds near the right
-                // edge of the timeline.
-                left: `clamp(8px, calc(var(--chart-col) * ${tooltipIdx + 1} + 10px), calc(var(--chart-col) * ${N} - 253px))`,
+                // Right of the marker normally; flips to its left
+                // near the end of the timeline so it keeps following
+                // the cursor instead of stopping at a capped position
+                left: tooltipFlipped
+                  ? `calc(var(--chart-col) * ${tooltipIdx} - 255px)`
+                  : `calc(var(--chart-col) * ${tooltipIdx + 1} + 10px)`,
                 top: '104px',
                 background: '#171717',
                 border: '1.5px solid rgba(255, 255, 255, 0.1)',
