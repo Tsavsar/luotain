@@ -151,6 +151,7 @@ export default function ChartContainer({ data }) {
                 width: `calc(var(--chart-col) * ${N})`,
                 height: `${CURVE_HEIGHT}px`,
                 pointerEvents: 'none',
+                overflow: 'visible', // SVGs clip their own content by default — this was shaving the stroke off at high peaks near the top
               }}
             >
               <defs>
