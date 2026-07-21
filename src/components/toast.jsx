@@ -95,6 +95,7 @@ export function ToastStack() {
   return (
     <SonnerToaster
       position='bottom-right'
+      gap={8}
       icons={{
         success: <SuccessIcon />,
         error: <ErrorIcon />,
