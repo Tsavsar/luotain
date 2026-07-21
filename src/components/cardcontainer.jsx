@@ -250,15 +250,9 @@ function DataRow({
           alignItems: 'center',
           justifyContent: 'space-between',
           whiteSpace: 'nowrap',
-          // Expands to fill the row on hover/filtered — otherwise a
-          // low-value row stays narrow and the action icons end up
-          // cramped against the text instead of sitting at the end
-          width:
-            hovered || isFiltered
-              ? '100%'
-              : `max(38px, calc(${pct} * (100% - 48px)))`,
+          width: `max(38px, calc(${pct} * (100% - 48px)))`,
           transition:
-            'width 0.3s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
+            'width 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
         }}
       >
         <div
@@ -512,29 +506,41 @@ function Card({
             }
           >
             <DropdownMenu width='200px'>
-              {(rows || []).map((row) => {
-                const picked = ownFilters.some((f) => f.label === row.label)
-                return (
-                  <DropdownOption
-                    key={row.label}
-                    onClick={() =>
-                      onToggleFilter?.({ type: filterType, label: row.label })
-                    }
-                  >
+              {/* Plain rows, not DropdownOption — DropdownOption
+                  always closes the menu after a click, which breaks
+                  picking multiple links in one open session. This
+                  stays open across selections; only clicking outside
+                  or the plus icon again closes it. */}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {(rows || []).map((row) => {
+                  const picked = ownFilters.some((f) => f.label === row.label)
+                  return (
                     <div
+                      key={row.label}
+                      onClick={() =>
+                        onToggleFilter?.({ type: filterType, label: row.label })
+                      }
+                      className={`dropdown-item${picked ? ' is-selected' : ''}`}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        width: '100%',
+                        padding: '6px 14px 6px 12px',
+                        borderRadius: 'var(--radius-lg)',
+                        cursor: 'pointer',
                       }}
                     >
-                      <span>{row.label}</span>
+                      <p
+                        className='para-xs'
+                        style={{ margin: 0, color: 'var(--text-strong)' }}
+                      >
+                        {row.label}
+                      </p>
                       {picked && <CheckIcon />}
                     </div>
-                  </DropdownOption>
-                )
-              })}
+                  )
+                })}
+              </div>
             </DropdownMenu>
           </Dropdown>
         </div>

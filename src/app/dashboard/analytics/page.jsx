@@ -87,7 +87,7 @@ export default function AnalyticsPage() {
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          padding: '0 24px 24px 24px',
+          padding: '0 24px 36px 24px',
           zIndex: 8,
         }}
       >
@@ -97,23 +97,6 @@ export default function AnalyticsPage() {
           onToggleFilter={toggleFilter}
         />
       </div>
-
-      {/* Same pill again at the bottom — visible after scrolling past
-          the cards without needing to scroll back up to clear it */}
-      {activeFilters.length > 0 && (
-        <div
-          style={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            padding: '0 24px 36px',
-          }}
-        >
-          <div style={{ width: '100%', maxWidth: '720px' }}>
-            <FilterPill filters={activeFilters} onRemove={removeFilter} />
-          </div>
-        </div>
-      )}
 
       <button
         onClick={() => setUseMockData((v) => !v)}

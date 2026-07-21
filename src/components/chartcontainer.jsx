@@ -196,8 +196,8 @@ export default function ChartContainer({ data }) {
                     hover — x/width transitions give the glide */}
                 <clipPath id='chartHoverClip'>
                   <rect
-                    y='0'
-                    height='100'
+                    y='-15'
+                    height='130'
                     x={hoveredIdx !== null ? hoveredIdx : 0}
                     width={hoveredIdx !== null ? 1 : N}
                     style={{
