@@ -101,19 +101,41 @@ function DestinationIcon({ domain }) {
 // this column isn't the one currently sorted) — colors whichever
 // arrow matches the active direction black, the other stays the
 // default gray, instead of rotating a single arrow.
+// Exact SVG as given. direction is 'asc' | 'desc' | null (null =
+// this column isn't the one currently sorted). Three color states,
+// not two: neutral gray on both arrows when nothing's active here,
+// black on whichever arrow matches the active direction, and once a
+// column IS active, the OTHER arrow drops to an even lighter gray —
+// more contrast against the black one than the neutral gray gave.
 function SortIcon({ direction }) {
+  const isActive = direction !== null
+  const NEUTRAL = '#A3A3A3'
+  const INACTIVE_WHILE_SORTING = 'var(--text-disabled)'
+  const upColor =
+    direction === 'asc'
+      ? 'var(--text-strong)'
+      : isActive
+        ? INACTIVE_WHILE_SORTING
+        : NEUTRAL
+  const downColor =
+    direction === 'desc'
+      ? 'var(--text-strong)'
+      : isActive
+        ? INACTIVE_WHILE_SORTING
+        : NEUTRAL
+
   return (
     <svg width='16' height='16' viewBox='0 0 16 16' fill='none'>
       <path
         d='M10.3996 5.60019L7.99961 3.2002L5.59961 5.60019'
-        stroke={direction === 'asc' ? 'var(--text-strong)' : '#A3A3A3'}
+        stroke={upColor}
         strokeWidth='1.25'
         strokeLinecap='round'
         strokeLinejoin='round'
       />
       <path
         d='M10.3996 10.4004L7.99961 12.8004L5.59961 10.4004'
-        stroke={direction === 'desc' ? 'var(--text-strong)' : '#A3A3A3'}
+        stroke={downColor}
         strokeWidth='1.25'
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -298,6 +320,12 @@ function LinkRow({ link, onEdit, onDelete }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         position: 'relative',
+        // Rows after this one in the list are later in paint order,
+        // so without this, an opened dropdown here has nothing
+        // stopping the next rows' text from painting over top of
+        // it — that's what was showing "Edit"/"Delete" tangled up
+        // with the following rows' dates.
+        zIndex: showMore ? 10 : 'auto',
         display: 'flex',
         gap: '6px',
         width: '100%',
@@ -441,12 +469,17 @@ export default function LinksTable({ links, onEdit, onDelete }) {
   const [sortBy, setSortBy] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
 
+  // Three clicks, not two: desc -> asc -> back to unsorted, then the
+  // cycle repeats. Previously the second state just toggled forever
+  // between desc/asc with no way back to the original order.
   function handleSort(col) {
-    if (sortBy === col) {
-      setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))
-    } else {
+    if (sortBy !== col) {
       setSortBy(col)
       setSortDir('desc')
+    } else if (sortDir === 'desc') {
+      setSortDir('asc')
+    } else {
+      setSortBy(null)
     }
   }
 
