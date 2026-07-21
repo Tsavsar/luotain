@@ -43,12 +43,13 @@ export default function AnalyticsPage() {
   return (
     <>
       <div
-        className='dashboard-section dashboard-section-3'
+        className='dashboard-section dashboard-section-3 dashboard-page-padding'
         style={{
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          padding: '0 24px 24px',
+          paddingTop: 0,
+          paddingBottom: '24px',
         }}
       >
         <StatsSegment
@@ -60,11 +61,11 @@ export default function AnalyticsPage() {
 
       {activeFilters.length > 0 && (
         <div
+          className='dashboard-page-padding'
           style={{
             width: '100%',
             display: 'flex',
             justifyContent: 'center',
-            padding: '0 24px',
           }}
         >
           <div style={{ width: '100%', maxWidth: '720px' }}>
@@ -78,26 +79,31 @@ export default function AnalyticsPage() {
       )}
 
       <div
-        className='dashboard-section dashboard-section-4'
+        className='dashboard-section dashboard-section-4 dashboard-page-padding'
         style={{
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          padding: '64px 24px 64px',
+          paddingTop: '64px',
+          paddingBottom: '64px',
         }}
       >
         <div className='chart-full-bleed' style={{ width: '100%' }}>
-          <ChartContainer data={mock?.chartData} />
+          <ChartContainer
+            data={mock?.chartData}
+            compareSeries={mock?.chartCompareSeries}
+          />
         </div>
       </div>
 
       <div
-        className='dashboard-section dashboard-section-5'
+        className='dashboard-section dashboard-section-5 dashboard-page-padding'
         style={{
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          padding: '0 24px 36px 24px',
+          paddingTop: 0,
+          paddingBottom: '36px',
           zIndex: 8,
         }}
       >

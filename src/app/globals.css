@@ -1520,3 +1520,19 @@ html {
     transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
     margin-top 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* Shared horizontal page padding — every dashboard-section wrapper
+   uses this instead of baking 24px into each inline style, so the
+   mobile value only has to change in one place. This is also what
+   .chart-full-bleed's -20px/+40px math (above) assumes it's
+   escaping from; if this number changes, that one needs to match. */
+.dashboard-page-padding {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+@media (max-width: 768px) {
+  .dashboard-page-padding {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
