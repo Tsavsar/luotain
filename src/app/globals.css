@@ -1341,9 +1341,9 @@ html {
    edge-to-edge, the scrollable timeline uses the full screen width */
 @media (max-width: 768px) {
   .chart-full-bleed {
-    margin-left: -24px;
-    margin-right: -24px;
-    width: calc(100% + 48px);
+    margin-left: -20px;
+    margin-right: -20px;
+    width: calc(100% + 40px);
   }
 }
 .chart-trailing-spacer {

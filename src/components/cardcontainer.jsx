@@ -250,9 +250,13 @@ function DataRow({
           alignItems: 'center',
           gap: '8px',
           whiteSpace: 'nowrap',
-          width: `max(38px, calc(${pct} * (100% - 48px)))`,
+          // minWidth (not width) so this can still grow past its
+          // proportional bar size when the label needs more room —
+          // a fixed width was letting long labels (e.g. "United
+          // Kingdom") spill past the pill's edge on narrow screens.
+          minWidth: `max(38px, calc(${pct} * (100% - 48px)))`,
           transition:
-            'width 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
+            'min-width 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
         }}
       >
         {iconType === 'flag' && (

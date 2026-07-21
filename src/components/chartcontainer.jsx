@@ -120,7 +120,14 @@ export default function ChartContainer({ data }) {
   const legacyNow = nowDate?.getHours() ?? null
 
   return (
-    <div style={{ width: '100%', height: '328px', position: 'relative' }}>
+    // width lives in the .chart-full-bleed class in globals.css, not
+    // inline — inline styles always win over CSS classes, so setting
+    // width here would block the mobile media query from ever taking
+    // effect
+    <div
+      className='chart-full-bleed'
+      style={{ height: '328px', position: 'relative' }}
+    >
       <div
         ref={scrollRef}
         className='chart-scroll-wrapper'
