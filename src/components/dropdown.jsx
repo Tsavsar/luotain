@@ -22,9 +22,6 @@ export function Dropdown({
   triggerHover = false,
 }) {
   const [open, setOpen] = useState(false)
-  // Extra horizontal nudge, only non-zero when the panel's default
-  // position would run off the left or right edge of the screen.
-  const [correction, setCorrection] = useState(0)
   const ref = useRef(null)
   const panelRef = useRef(null)
 
@@ -44,41 +41,50 @@ export function Dropdown({
   }, [open])
 
   // ─── Keep the panel on-screen ───
-  // Fires right after the panel is added to the page, before it's
-  // visible to the user. Measures where it actually landed and, if
-  // it's spilling past either edge of the screen, nudges it back in.
-  // This is what was cutting the date-range dropdown off on mobile —
-  // it was always opening at a fixed spot regardless of screen size.
+  // Sets the panel's position directly (left, in px) instead of
+  // through a `transform`. The open animation below (`dropdownIn`)
+  // already animates `transform` for its pop-in — a second,
+  // separate `transform` used for screen-edge correction would fight
+  // it, and the animation wins for its first 0.15s. That's exactly
+  // the clip-then-jump: the panel opens in the wrong spot, then
+  // snaps over once the animation finishes. Using `left` instead
+  // avoids that fight, and runs before the browser paints, so
+  // there's no visible flash at the wrong position either.
   useLayoutEffect(() => {
-    if (!open) {
-      setCorrection(0)
-      return
+    if (!open) return
+    const anchor = ref.current
+    const panel = panelRef.current
+    if (!anchor || !panel) return
+
+    function position() {
+      const anchorRect = anchor.getBoundingClientRect()
+      const panelWidth = panel.offsetWidth
+
+      // Where the panel would sit by default, in screen pixels
+      let desiredLeft =
+        align === 'right'
+          ? anchorRect.right - panelWidth - sideOffset - offsetX
+          : anchorRect.left + sideOffset + offsetX
+
+      // Clamp fully inside the screen
+      desiredLeft = Math.min(
+        desiredLeft,
+        window.innerWidth - panelWidth - SCREEN_MARGIN
+      )
+      desiredLeft = Math.max(desiredLeft, SCREEN_MARGIN)
+
+      // The panel is absolutely positioned against `anchor`, so
+      // convert the screen position back to "distance from anchor"
+      panel.style.left = `${desiredLeft - anchorRect.left}px`
+      panel.style.right = 'auto'
     }
 
-    function measure() {
-      const panel = panelRef.current
-      if (!panel) return
-
-      // Reset first so every measurement starts from the true
-      // default position, not a correction stacked on a correction.
-      panel.style.transform = 'none'
-      const rect = panel.getBoundingClientRect()
-
-      let next = 0
-      if (rect.left < SCREEN_MARGIN) {
-        next = SCREEN_MARGIN - rect.left
-      } else if (rect.right > window.innerWidth - SCREEN_MARGIN) {
-        next = window.innerWidth - SCREEN_MARGIN - rect.right
-      }
-      setCorrection(next)
-    }
-
-    measure()
+    position()
     // Re-check on rotate/resize so it doesn't stay corrected for a
     // screen size it's no longer on.
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [open])
+    window.addEventListener('resize', position)
+    return () => window.removeEventListener('resize', position)
+  }, [open, align, sideOffset, offsetX])
 
   const close = () => setOpen(false)
 
@@ -95,7 +101,10 @@ export function Dropdown({
         {trigger}
       </div>
 
-      {/* --- Panel --- */}
+      {/* --- Panel ---
+          No left/right set here on purpose — the effect above sets
+          `left` directly once it knows the panel's real size and
+          the screen's width, before anything is painted. */}
       {open && (
         <div
           ref={panelRef}
@@ -103,8 +112,6 @@ export function Dropdown({
           style={{
             position: 'absolute',
             top: `calc(100% + ${offsetY}px)`,
-            [align === 'right' ? 'right' : 'left']: `${sideOffset + offsetX}px`,
-            transform: correction ? `translateX(${correction}px)` : undefined,
             zIndex: 50,
             transformOrigin: align === 'right' ? 'top right' : 'top left',
           }}
