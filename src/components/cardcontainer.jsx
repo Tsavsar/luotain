@@ -201,11 +201,13 @@ function SourceIcon({ domain }) {
 }
 
 // ─── DataRow ───
-// Two independent hover actions now, not one row-click-does-both:
-// the copy icon copies the value (link rows only — copying "Norway"
-// doesn't mean anything the way copying a URL does), and the filter
-// icon toggles this row into/out of the stackable filter set. Row
-// background/underline still hints "interactive" on hover regardless.
+// Clicking anywhere on the row now applies it as a filter — copy
+// stays its own explicit icon (copying "Norway" doesn't mean
+// anything the way copying a URL does, so it shouldn't fire on
+// every row click). The filter icon still shows on hover too, both
+// as a hint this row is filterable and as a target that does the
+// same thing as clicking the row (its own stopPropagation stops
+// that click from also bubbling up and toggling a second time).
 function DataRow({
   label,
   value,
@@ -228,13 +230,14 @@ function DataRow({
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => onToggleFilter?.()}
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
         paddingRight: '10px',
-        cursor: 'default',
+        cursor: 'pointer',
       }}
     >
       <div
