@@ -123,6 +123,7 @@ export default function ChartContainer({ data, compareSeries }) {
         return {
           ...s,
           color: SERIES_COLORS[i],
+          fillGradientId: `chartSeriesFill-${i}`,
           values: seriesValues[i],
           points: pts,
           strokePath: smoothPath(pts),
@@ -359,43 +360,40 @@ export default function ChartContainer({ data, compareSeries }) {
                 </>
               )}
 
-              {/* Comparison mode — every line fully visible all the
-                  time instead of the hover-reveal treatment above:
-                  with 2-3 colors already telling the lines apart,
-                  ghosting them down to a single slice on hover would
-                  just hide the other lines rather than clarify
-                  anything. Every line gets its own gradient fill in
-                  its own color — fills render first (in series
-                  order), then every stroke on top of all of them, so
-                  a line is never dimmed under another line's wash. */}
+              {/* Comparison mode. Same underlying trick as the
+                  single-line version above (muted everywhere, vivid
+                  only in the hovered column, via chartHoverClip) —
+                  just applied to the FILLS only, not the strokes.
+                  Strokes stay full color and unclipped the whole
+                  time so no line ever disappears; only the fill
+                  underneath them dims down to a gray wash outside
+                  the hovered column, then bursts back into real
+                  color right at it. That's what actually reads as
+                  "this column is active" instead of a flat overlay
+                  sitting on top, which is what was here before and
+                  just looked like nothing against the white page. */}
               {isComparing &&
-                series.map((s, i) => (
-                  <path
-                    key={`${s.id}-fill`}
-                    d={`${s.strokePath} L ${s.points[s.points.length - 1]?.x ?? 0.5} 100 L 0.5 100 Z`}
-                    fill={`url(#chartSeriesFill-${i})`}
-                    stroke='none'
-                  />
-                ))}
-              {/* Hover highlight band — the single-line version spotlights
-                  the hovered column by clipping the orange fill down to
-                  just that slice, desaturating everywhere else; can't
-                  do that here without hiding whichever line sits
-                  underneath at that moment, so instead this is a
-                  lightening wash over the fills at the hovered column —
-                  same "this one's active" read, sits above the color
-                  washes so it's actually visible, but below the
-                  strokes so the lines themselves stay crisp. */}
-              {isComparing && hoveredIdx !== null && (
-                <rect
-                  x={hoveredIdx}
-                  y='-15'
-                  width='1'
-                  height='130'
-                  fill='white'
-                  opacity='0.45'
-                />
-              )}
+                series.map((s) => {
+                  const fillD = `${s.strokePath} L ${s.points[s.points.length - 1]?.x ?? 0.5} 100 L 0.5 100 Z`
+                  return (
+                    <g key={`${s.id}-fills`}>
+                      <path
+                        d={fillD}
+                        fill='url(#chartFillGradientMuted)'
+                        stroke='none'
+                        opacity={hoveredIdx !== null ? 1 : 0}
+                        style={{ transition: 'opacity 0.25s ease' }}
+                      />
+                      <g clipPath='url(#chartHoverClip)'>
+                        <path
+                          d={fillD}
+                          fill={`url(#${s.fillGradientId})`}
+                          stroke='none'
+                        />
+                      </g>
+                    </g>
+                  )
+                })}
               {isComparing &&
                 series.map((s) => (
                   <path
