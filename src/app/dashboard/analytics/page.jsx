@@ -36,6 +36,10 @@ export default function AnalyticsPage() {
     )
   }
 
+  function clearAllFilters() {
+    setActiveFilters([])
+  }
+
   return (
     <>
       <div
@@ -64,7 +68,11 @@ export default function AnalyticsPage() {
           }}
         >
           <div style={{ width: '100%', maxWidth: '720px' }}>
-            <FilterPill filters={activeFilters} onRemove={removeFilter} />
+            <FilterPill
+              filters={activeFilters}
+              onRemove={removeFilter}
+              onClearAll={clearAllFilters}
+            />
           </div>
         </div>
       )}

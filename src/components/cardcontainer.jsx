@@ -248,52 +248,46 @@ function DataRow({
           padding: '6px 10px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: '8px',
           whiteSpace: 'nowrap',
           width: `max(38px, calc(${pct} * (100% - 48px)))`,
           transition:
             'width 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
         }}
       >
-        <div
+        {iconType === 'flag' && (
+          <CountryFlag country={country || label} size={18} />
+        )}
+        {iconType === 'favicon' && <SourceIcon domain={label} />}
+        <p
+          className='para-sm'
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            minWidth: 0,
+            color:
+              hovered || isFiltered ? 'var(--text-strong)' : 'var(--text-sub)',
+            margin: 0,
+            whiteSpace: 'nowrap',
+            textDecoration: hovered || isFiltered ? 'underline' : 'none',
+            textUnderlineOffset: '2px',
+            transition: 'color 0.15s ease',
           }}
         >
-          {iconType === 'flag' && (
-            <CountryFlag country={country || label} size={18} />
-          )}
-          {iconType === 'favicon' && <SourceIcon domain={label} />}
-          <p
-            className='para-sm'
-            style={{
-              color:
-                hovered || isFiltered
-                  ? 'var(--text-strong)'
-                  : 'var(--text-sub)',
-              margin: 0,
-              whiteSpace: 'nowrap',
-              textDecoration: hovered || isFiltered ? 'underline' : 'none',
-              textUnderlineOffset: '2px',
-              transition: 'color 0.15s ease',
-            }}
-          >
-            {label}
-          </p>
-        </div>
+          {label}
+        </p>
+      </div>
+
+      {/* Icons live in the row, not the pill — end of the FULL row,
+          right before the count, regardless of how narrow the grey
+          pill itself is */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          flexShrink: 0,
+        }}
+      >
         {(hovered || isFiltered) && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              flexShrink: 0,
-              marginLeft: '8px',
-            }}
-          >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {isLink && (
               <button
                 onClick={handleCopy}
@@ -327,13 +321,13 @@ function DataRow({
             </button>
           </div>
         )}
+        <p
+          className='label-sm'
+          style={{ color: 'var(--text-strong)', margin: 0 }}
+        >
+          {value}
+        </p>
       </div>
-      <p
-        className='label-sm'
-        style={{ color: 'var(--text-strong)', margin: 0, flexShrink: 0 }}
-      >
-        {value}
-      </p>
     </div>
   )
 }
@@ -510,16 +504,20 @@ function Card({
                   always closes the menu after a click, which breaks
                   picking multiple links in one open session. This
                   stays open across selections; only clicking outside
-                  or the plus icon again closes it. */}
+                  or the plus icon again closes it. Capped at 3 —
+                  once reached, unselected rows grey out and stop
+                  responding until one is removed. */}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {(rows || []).map((row) => {
                   const picked = ownFilters.some((f) => f.label === row.label)
+                  const capped = !picked && ownFilters.length >= 3
                   return (
                     <div
                       key={row.label}
-                      onClick={() =>
+                      onClick={() => {
+                        if (capped) return
                         onToggleFilter?.({ type: filterType, label: row.label })
-                      }
+                      }}
                       className={`dropdown-item${picked ? ' is-selected' : ''}`}
                       style={{
                         display: 'flex',
@@ -527,7 +525,8 @@ function Card({
                         justifyContent: 'space-between',
                         padding: '6px 14px 6px 12px',
                         borderRadius: 'var(--radius-lg)',
-                        cursor: 'pointer',
+                        cursor: capped ? 'default' : 'pointer',
+                        opacity: capped ? 0.4 : 1,
                       }}
                     >
                       <p
@@ -540,6 +539,17 @@ function Card({
                     </div>
                   )
                 })}
+                {ownFilters.length >= 3 && (
+                  <p
+                    className='para-xs'
+                    style={{
+                      color: 'var(--text-soft)',
+                      margin: '4px 12px 2px',
+                    }}
+                  >
+                    Up to 3 at once
+                  </p>
+                )}
               </div>
             </DropdownMenu>
           </Dropdown>

@@ -34,8 +34,9 @@ function keyOf(f) {
 // ─── FilterPill ───
 // Stackable — `filters` is an array. Label reads "Filter:" for one,
 // "Filters:" for two or more, followed by one tag per active filter,
-// each independently removable.
-export default function FilterPill({ filters, onRemove }) {
+// each independently removable, plus a "Clear all" to drop everything
+// at once instead of removing tags one by one.
+export default function FilterPill({ filters, onRemove, onClearAll }) {
   if (!filters || filters.length === 0) return null
 
   return (
@@ -96,6 +97,25 @@ export default function FilterPill({ filters, onRemove }) {
           </button>
         </div>
       ))}
+
+      {filters.length > 1 && (
+        <button
+          onClick={onClearAll}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px 4px',
+          }}
+        >
+          <span
+            className='para-xs'
+            style={{ color: 'var(--text-soft)', textDecoration: 'underline' }}
+          >
+            Clear all
+          </span>
+        </button>
+      )}
     </div>
   )
 }
