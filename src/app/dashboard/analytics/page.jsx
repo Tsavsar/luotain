@@ -101,6 +101,7 @@ export default function AnalyticsPage() {
       >
         <DashboardCards
           data={mock?.cardData}
+          filterOptions={mock?.filterOptions}
           activeFilters={activeFilters}
           onToggleFilter={toggleFilter}
         />

@@ -337,6 +337,7 @@ function Card({
   columnOptions = [],
   showDropdown = true,
   dataByColumn,
+  filterOptions,
   iconType = 'none',
   filterType,
   activeFilters,
@@ -347,6 +348,10 @@ function Card({
   const rows = dataByColumn?.[selected]
   const hasRows = Array.isArray(rows) && rows.length > 0
   const maxValue = hasRows ? Math.max(...rows.map((r) => r.value), 1) : 1
+  // Unfiltered list for the picker specifically — falls back to rows
+  // if filterOptions wasn't passed, so nothing breaks if a caller
+  // doesn't wire it up
+  const pickerRows = filterOptions?.[selected] || rows
 
   // Which of THIS card's own filters are active — the tags row and
   // "compare" display only care about filterType (e.g. only link
@@ -508,7 +513,7 @@ function Card({
                   once reached, unselected rows grey out and stop
                   responding until one is removed. */}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {(rows || []).map((row) => {
+                {(pickerRows || []).map((row) => {
                   const picked = ownFilters.some((f) => f.label === row.label)
                   const capped = !picked && ownFilters.length >= 3
                   return (
@@ -617,6 +622,7 @@ function Card({
 // filter if it's not already active, removes it if it is.
 export default function DashboardCards({
   data,
+  filterOptions,
   activeFilters,
   onToggleFilter,
 }) {
@@ -635,6 +641,7 @@ export default function DashboardCards({
           title='Clicks'
           columnOptions={['Short links', 'QR codes']}
           dataByColumn={data?.clicks}
+          filterOptions={filterOptions?.clicks}
           filterType='link'
           activeFilters={activeFilters}
           onToggleFilter={onToggleFilter}

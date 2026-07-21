@@ -486,5 +486,12 @@ export function getMockAnalytics(range = 'Last 7 days', filters = []) {
     stats: aggregateStats(filteredRangeEvents, filteredPriorEvents),
     chartData: aggregateChartSlots(filteredRangeEvents, range, now),
     cardData: aggregateCardData(filteredRangeEvents),
+    // Full universe of pickable options for this range — deliberately
+    // NOT dimension-filtered, so the "+" picker can always show every
+    // link/country/etc. that exists, including ones not currently
+    // selected. Using cardData here instead would mean, once you've
+    // filtered to one link, every OTHER link has already been
+    // filtered out of the data the picker reads from.
+    filterOptions: aggregateCardData(rangeEvents),
   }
 }
