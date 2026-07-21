@@ -86,7 +86,9 @@ export default function AnalyticsPage() {
           padding: '64px 24px 64px',
         }}
       >
-        <ChartContainer data={mock?.chartData} />
+        <div className='chart-full-bleed' style={{ width: '100%' }}>
+          <ChartContainer data={mock?.chartData} />
+        </div>
       </div>
 
       <div

@@ -1337,6 +1337,15 @@ html {
 .chart-hour-column-v2 {
   flex: 0 0 var(--chart-col);
 }
+/* Chart section breaks out of the page's side padding on mobile —
+   edge-to-edge, the scrollable timeline uses the full screen width */
+@media (max-width: 768px) {
+  .chart-full-bleed {
+    margin-left: -24px;
+    margin-right: -24px;
+    width: calc(100% + 48px);
+  }
+}
 .chart-trailing-spacer {
   flex: 0 0 34vw;
 }
