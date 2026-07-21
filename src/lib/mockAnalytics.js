@@ -20,6 +20,29 @@ const LINKS = [
   { url: 'luo.io/summer-sale', weight: 8 },
   { url: 'luo.io/3xK9fL2', weight: 1 },
 ]
+// Destination + creation date for each link above — the links table
+// needs both, and neither is something the click-event pool tracks
+// (a link's destination and the day it was made don't change based
+// on which date range you're viewing), so this lives as its own
+// small fixed table instead of being derived from events.
+const LINK_METADATA = {
+  'luo.io/swift-otter': {
+    destination: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    createdAt: '2026-07-03',
+  },
+  'luo.io/quick-fox': {
+    destination: 'https://www.youtube.com/watch?v=3JZ_D3ELwOQ',
+    createdAt: '2025-08-12',
+  },
+  'luo.io/summer-sale': {
+    destination: 'https://luotain.app/campaigns/summer-sale',
+    createdAt: '2026-06-01',
+  },
+  'luo.io/3xK9fL2': {
+    destination: 'https://example.com/private-promo',
+    createdAt: '2026-05-15',
+  },
+}
 const QR_LINKS = [
   { url: 'Store window QR', weight: 18 },
   { url: 'Business card QR', weight: 9 },
@@ -193,18 +216,21 @@ function filterByRange(events, range, now) {
   }
 }
 
+// Shared by filterByPriorRange and getMockLinksStats — both need to
+// know how many ms a given range label actually spans.
+const RANGE_SPAN_MS = {
+  Today: 24 * 3600 * 1000,
+  Yesterday: 24 * 3600 * 1000,
+  'Last 7 days': 7 * 24 * 3600 * 1000,
+  'Last 30 days': 30 * 24 * 3600 * 1000,
+  'Last 90 days': 90 * 24 * 3600 * 1000,
+  Custom: 14 * 24 * 3600 * 1000,
+}
+
 // The comparison period immediately before the selected range — what
 // trend badges compare against.
 function filterByPriorRange(events, range, now) {
-  const spanMs =
-    {
-      Today: 24 * 3600 * 1000,
-      Yesterday: 24 * 3600 * 1000,
-      'Last 7 days': 7 * 24 * 3600 * 1000,
-      'Last 30 days': 30 * 24 * 3600 * 1000,
-      'Last 90 days': 90 * 24 * 3600 * 1000,
-      Custom: 14 * 24 * 3600 * 1000,
-    }[range] || 7 * 24 * 3600 * 1000
+  const spanMs = RANGE_SPAN_MS[range] || 7 * 24 * 3600 * 1000
 
   const rangeEnd =
     range === 'Yesterday' ? new Date(now.getTime() - spanMs) : now
@@ -530,5 +556,69 @@ export function getMockAnalytics(range = 'Last 7 days', filters = []) {
     // filtered to one link, every OTHER link has already been
     // filtered out of the data the picker reads from.
     filterOptions: aggregateCardData(rangeEvents),
+  }
+}
+
+// ─── Links page ───
+// Same event pool and filters as everything above, just aggregated
+// differently: one row per link (not per time slot), and folded in
+// with the fixed destination/createdAt metadata since those aren't
+// things a click event carries.
+
+export function getMockLinksTable(range = 'Last 7 days', filters = []) {
+  const now = new Date()
+  const pool = getEventPool()
+  const rangeEvents = filterByRange(pool, range, now)
+  const filteredEvents = filterByDimension(rangeEvents, filters)
+  const clicksOnly = filteredEvents.filter((e) => e.type === 'click')
+
+  return LINKS.map((link) => {
+    const meta = LINK_METADATA[link.url] || {}
+    return {
+      id: link.url,
+      shortUrl: link.url,
+      destination: meta.destination || '',
+      clicks: clicksOnly.filter((e) => e.linkUrl === link.url).length,
+      createdAt: meta.createdAt || now.toISOString(),
+    }
+  })
+}
+
+export function getMockLinksStats(range = 'Last 7 days', filters = []) {
+  const now = new Date()
+  const pool = getEventPool()
+  const rangeEvents = filterByRange(pool, range, now)
+  const priorEvents = filterByPriorRange(pool, range, now)
+  const filteredRangeEvents = filterByDimension(rangeEvents, filters)
+  const filteredPriorEvents = filterByDimension(priorEvents, filters)
+
+  const clicks = filteredRangeEvents.filter((e) => e.type === 'click')
+  const priorClicks = filteredPriorEvents.filter((e) => e.type === 'click')
+
+  const visitorKey = (e) => `${e.linkUrl}|${e.country}|${e.device}`
+  const uniqueVisitors = new Set(filteredRangeEvents.map(visitorKey)).size
+  const priorUniqueVisitors = new Set(filteredPriorEvents.map(visitorKey)).size
+
+  // How many of the known links were created within the selected
+  // window — reuses the same range-to-milliseconds table
+  // filterByPriorRange already relies on, rather than a second copy.
+  const spanMs = RANGE_SPAN_MS[range] || RANGE_SPAN_MS['Last 7 days']
+  const rangeStart = new Date(now.getTime() - spanMs)
+  const linksCreated = Object.values(LINK_METADATA).filter(
+    (m) => new Date(m.createdAt) >= rangeStart
+  ).length
+  const priorRangeStart = new Date(rangeStart.getTime() - spanMs)
+  const priorLinksCreated = Object.values(LINK_METADATA).filter((m) => {
+    const created = new Date(m.createdAt)
+    return created >= priorRangeStart && created < rangeStart
+  }).length
+
+  return {
+    totalClicks: clicks.length,
+    clicksTrend: trendObject(clicks.length, priorClicks.length),
+    uniqueVisitors,
+    visitorsTrend: trendObject(uniqueVisitors, priorUniqueVisitors),
+    linksCreated,
+    linksTrend: trendObject(linksCreated, priorLinksCreated),
   }
 }
