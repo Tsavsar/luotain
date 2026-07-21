@@ -7,6 +7,28 @@ const CURVE_TOP = 40
 const CURVE_HEIGHT = 220
 const AXIS_BASELINE = 302
 
+// Order the "+" picker in DashboardCards already adds links in: the
+// first stays the chart's existing orange, second gets purple,
+// third gets green. Matches Figma node 73:2539 / 73:2999 — the
+// second line's dot there uses --feature-base, the existing purple
+// token, not a literal blue.
+const SERIES_COLORS = [
+  'var(--primary-base)',
+  'var(--feature-base)',
+  'var(--success-base)',
+]
+
+// Normalizes one series' per-slot values into 0-100 chart-space
+// points, against a max SHARED across every series being compared —
+// so two links' relative heights stay honest instead of each line
+// separately stretching to fill the chart on its own.
+function buildPoints(values, maxValue) {
+  return values.map((v, i) => ({
+    x: i + 0.5,
+    y: 100 - (v / maxValue) * 100,
+  }))
+}
+
 // Catmull-Rom -> cubic Bezier. Unlike the previous midpoint-quadratic
 // version, this passes THROUGH every data point rather than being
 // merely pulled toward it — so a value's marker dot always lands
@@ -37,10 +59,19 @@ function smoothPath(points) {
 // reaching back into yesterday, "now" anchored at 2/3), daily for
 // week/month ranges. Each slot:
 //   { key, label, date, timeLabel, totalClicks, topLinks,
-//     othersClicks, isNow, isFuture }
+//     othersClicks, isNow, isFuture, seriesClicks? }
 // Future slots draw nothing and aren't hoverable. No data at all =
 // the original empty state (24h axis + live now line).
-export default function ChartContainer({ data }) {
+//
+// `compareSeries` (optional) turns on multi-line mode: pass 2 or 3
+// entries as [{ id, label }], in the order links were added (same
+// order DashboardCards' "+" picker builds its tags in) — first
+// entry renders orange, second purple, third green. When passed,
+// every slot in `data` needs a matching `seriesClicks: { [id]: n }`
+// map so each line has a value at every slot (0 where that link had
+// no clicks that slot). Fewer than 2 entries falls back to today's
+// single aggregate-total line, unchanged.
+export default function ChartContainer({ data, compareSeries }) {
   const [hoveredIdx, setHoveredIdx] = useState(null)
   const [lastHovered, setLastHovered] = useState(null)
   const [nowDate, setNowDate] = useState(null)
@@ -68,9 +99,36 @@ export default function ChartContainer({ data }) {
     return last
   })()
   const realSlots = slots.slice(0, lastRealIdx + 1)
-  const maxClicks = realSlots.length
-    ? Math.max(...realSlots.map((s) => s.totalClicks), 1)
-    : 1
+
+  // ─── Comparison mode ───
+  // 2-3 entries turns this on; below that, everything downstream
+  // (points/strokePath/fillPath) behaves exactly as it always has.
+  const isComparing = Array.isArray(compareSeries) && compareSeries.length >= 2
+
+  const seriesValues = isComparing
+    ? compareSeries
+        .slice(0, 3)
+        .map((s) => realSlots.map((slot) => slot.seriesClicks?.[s.id] ?? 0))
+    : []
+
+  const maxClicks = isComparing
+    ? Math.max(...seriesValues.flat(), 1)
+    : realSlots.length
+      ? Math.max(...realSlots.map((s) => s.totalClicks), 1)
+      : 1
+
+  const series = isComparing
+    ? compareSeries.slice(0, 3).map((s, i) => {
+        const pts = buildPoints(seriesValues[i], maxClicks)
+        return {
+          ...s,
+          color: SERIES_COLORS[i],
+          values: seriesValues[i],
+          points: pts,
+          strokePath: smoothPath(pts),
+        }
+      })
+    : []
   const points = realSlots.map((s, i) => ({
     x: i + 0.5,
     y: 100 - (s.totalClicks / maxClicks) * 100,
@@ -84,6 +142,21 @@ export default function ChartContainer({ data }) {
     hasData && activeIdx !== null && points[activeIdx]
       ? CURVE_TOP + (points[activeIdx].y / 100) * CURVE_HEIGHT
       : null
+
+  // One dot height per compared line at the active column — this is
+  // the multi-line version of activeDotTop above.
+  const seriesActiveDots =
+    isComparing && activeIdx !== null
+      ? series
+          .filter((s) => s.points[activeIdx])
+          .map((s) => ({
+            id: s.id,
+            label: s.label,
+            color: s.color,
+            top: CURVE_TOP + (s.points[activeIdx].y / 100) * CURVE_HEIGHT,
+            value: s.values[activeIdx] ?? 0,
+          }))
+      : []
 
   // Auto-scroll the now-slot (or the newest slot) to 2/3 of the
   // visible window. Follows data changes, never hover.
@@ -221,55 +294,151 @@ export default function ChartContainer({ data }) {
                 </clipPath>
               </defs>
 
-              {/* Muted base layer — the whole curve as light gray
-                  dashes + faint gray fill, visible only on hover
-                  (the Figma luminosity treatment) */}
-              <g
-                style={{
-                  opacity: hoveredIdx !== null ? 1 : 0,
-                  transition: 'opacity 0.25s ease',
-                }}
-              >
-                <path
-                  d={fillPath}
-                  fill='url(#chartFillGradientMuted)'
-                  stroke='none'
-                />
-                <path
-                  d={strokePath}
-                  fill='none'
-                  stroke='var(--bg-subtle)'
-                  strokeWidth='1.5'
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeDasharray='0.12 0.1'
-                  vectorEffect='non-scaling-stroke'
-                />
-              </g>
+              {!isComparing && (
+                <>
+                  {/* Muted base layer — the whole curve as light gray
+                      dashes + faint gray fill, visible only on hover
+                      (the Figma luminosity treatment) */}
+                  <g
+                    style={{
+                      opacity: hoveredIdx !== null ? 1 : 0,
+                      transition: 'opacity 0.25s ease',
+                    }}
+                  >
+                    <path
+                      d={fillPath}
+                      fill='url(#chartFillGradientMuted)'
+                      stroke='none'
+                    />
+                    <path
+                      d={strokePath}
+                      fill='none'
+                      stroke='var(--bg-subtle)'
+                      strokeWidth='1.5'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeDasharray='0.12 0.1'
+                      vectorEffect='non-scaling-stroke'
+                    />
+                  </g>
 
-              {/* Orange layer — full curve at rest; on hover, clipped
-                  down to just the hovered column's slice */}
-              <g clipPath='url(#chartHoverClip)'>
+                  {/* Orange layer — full curve at rest; on hover,
+                      clipped down to just the hovered column's slice */}
+                  <g clipPath='url(#chartHoverClip)'>
+                    <path
+                      d={fillPath}
+                      fill='url(#chartFillGradient)'
+                      stroke='none'
+                    />
+                    <path
+                      d={strokePath}
+                      fill='none'
+                      stroke='var(--primary-base)'
+                      strokeWidth='1.5'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      vectorEffect='non-scaling-stroke'
+                    />
+                  </g>
+                </>
+              )}
+
+              {/* Comparison mode — every line fully visible all the
+                  time instead of the hover-reveal treatment above:
+                  with 2-3 colors already telling the lines apart,
+                  ghosting them down to a single slice on hover would
+                  just hide the other lines rather than clarify
+                  anything. Only the first (orange, same color as the
+                  default single line) keeps a gradient fill — a
+                  second or third overlapping fill reads as muddy
+                  rather than informative, so 2 and 3 are clean
+                  strokes on top of it, drawn after so they sit above
+                  the fill instead of under it. */}
+              {isComparing && series[0] && (
                 <path
-                  d={fillPath}
+                  d={`${series[0].strokePath} L ${series[0].points[series[0].points.length - 1]?.x ?? 0.5} 100 L 0.5 100 Z`}
                   fill='url(#chartFillGradient)'
                   stroke='none'
                 />
-                <path
-                  d={strokePath}
-                  fill='none'
-                  stroke='var(--primary-base)'
-                  strokeWidth='1.5'
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  vectorEffect='non-scaling-stroke'
-                />
-              </g>
+              )}
+              {isComparing &&
+                series.map((s) => (
+                  <path
+                    key={s.id}
+                    d={s.strokePath}
+                    fill='none'
+                    stroke={s.color}
+                    strokeWidth='1.5'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    vectorEffect='non-scaling-stroke'
+                  />
+                ))}
             </svg>
           )}
 
           {/* Gliding marker on the active slot */}
-          {hasData && activeIdx !== null && activeDotTop !== null && (
+          {!isComparing &&
+            hasData &&
+            activeIdx !== null &&
+            activeDotTop !== null && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `calc(var(--chart-col) * ${activeIdx})`,
+                  width: 'var(--chart-col)',
+                  top: 0,
+                  bottom: 0,
+                  pointerEvents: 'none',
+                  transition: 'left 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                  zIndex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: 0,
+                    height: `${activeDotTop - 4}px`,
+                    borderLeft: '1px dashed var(--bg-subtle)',
+                    transition: 'height 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 'calc(50% - 3px)',
+                    top: `${activeDotTop - 3}px`,
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: 'var(--radius-full)',
+                    background: 'var(--primary-base)',
+                    transition: 'top 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: `${activeDotTop + 4}px`,
+                    height: `${AXIS_BASELINE - activeDotTop - 4}px`,
+                    borderLeft: '1.5px solid var(--primary-base)',
+                    transition:
+                      'top 0.3s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                />
+              </div>
+            )}
+
+          {/* Comparison mode marker — one guide line, one dot per
+              line at its own height (matches Figma's "Highlight dot"
+              pattern: same x position, one dot per compared line,
+              each at the height its own value lands at). No
+              solid/dashed split like the single-dot version above —
+              with multiple dots at different heights there's no one
+              obvious place for that split to happen, so the guide
+              just stays dashed the full height. */}
+          {isComparing && activeIdx !== null && seriesActiveDots.length > 0 && (
             <div
               style={{
                 position: 'absolute',
@@ -287,34 +456,25 @@ export default function ChartContainer({ data }) {
                   position: 'absolute',
                   left: '50%',
                   top: 0,
-                  height: `${activeDotTop - 4}px`,
+                  height: `${AXIS_BASELINE}px`,
                   borderLeft: '1px dashed var(--bg-subtle)',
-                  transition: 'height 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
                 }}
               />
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 'calc(50% - 3px)',
-                  top: `${activeDotTop - 3}px`,
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: 'var(--radius-full)',
-                  background: 'var(--primary-base)',
-                  transition: 'top 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  left: '50%',
-                  top: `${activeDotTop + 4}px`,
-                  height: `${AXIS_BASELINE - activeDotTop - 4}px`,
-                  borderLeft: '1.5px solid var(--primary-base)',
-                  transition:
-                    'top 0.3s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              />
+              {seriesActiveDots.map((dot) => (
+                <div
+                  key={dot.id}
+                  style={{
+                    position: 'absolute',
+                    left: 'calc(50% - 3px)',
+                    top: `${dot.top - 3}px`,
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: 'var(--radius-full)',
+                    background: dot.color,
+                    transition: 'top 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                />
+              ))}
             </div>
           )}
 
@@ -516,54 +676,105 @@ export default function ChartContainer({ data }) {
               <div
                 style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}
               >
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
-                  <span className='label-sm' style={{ color: 'white' }}>
-                    Total clicks
-                  </span>
-                  <span className='label-sm' style={{ color: 'white' }}>
-                    {tooltipSlot.totalClicks}
-                  </span>
-                </div>
+                {isComparing ? (
+                  series.map((s) => (
+                    <div
+                      key={s.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: 'var(--radius-full)',
+                            background: s.color,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span
+                          className='para-xs'
+                          style={{ color: 'var(--text-sub)' }}
+                        >
+                          {s.label}
+                        </span>
+                      </div>
+                      <span className='label-sm' style={{ color: 'white' }}>
+                        {s.values[tooltipIdx] ?? 0}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <span className='label-sm' style={{ color: 'white' }}>
+                        Total clicks
+                      </span>
+                      <span className='label-sm' style={{ color: 'white' }}>
+                        {tooltipSlot.totalClicks}
+                      </span>
+                    </div>
 
-                {tooltipSlot.topLinks?.map((link) => (
-                  <div
-                    key={link.url}
-                    style={{ display: 'flex', justifyContent: 'space-between' }}
-                  >
-                    <span
-                      className='para-xs'
-                      style={{ color: 'var(--text-sub)' }}
-                    >
-                      {link.url}
-                    </span>
-                    <span
-                      className='para-xs'
-                      style={{ color: 'var(--text-sub)' }}
-                    >
-                      {link.clicks}
-                    </span>
-                  </div>
-                ))}
+                    {tooltipSlot.topLinks?.map((link) => (
+                      <div
+                        key={link.url}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <span
+                          className='para-xs'
+                          style={{ color: 'var(--text-sub)' }}
+                        >
+                          {link.url}
+                        </span>
+                        <span
+                          className='para-xs'
+                          style={{ color: 'var(--text-sub)' }}
+                        >
+                          {link.clicks}
+                        </span>
+                      </div>
+                    ))}
 
-                {tooltipSlot.othersClicks > 0 && (
-                  <div
-                    style={{ display: 'flex', justifyContent: 'space-between' }}
-                  >
-                    <span
-                      className='para-xs'
-                      style={{ color: 'var(--text-sub)' }}
-                    >
-                      Others
-                    </span>
-                    <span
-                      className='para-xs'
-                      style={{ color: 'var(--text-sub)' }}
-                    >
-                      {tooltipSlot.othersClicks}
-                    </span>
-                  </div>
+                    {tooltipSlot.othersClicks > 0 && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <span
+                          className='para-xs'
+                          style={{ color: 'var(--text-sub)' }}
+                        >
+                          Others
+                        </span>
+                        <span
+                          className='para-xs'
+                          style={{ color: 'var(--text-sub)' }}
+                        >
+                          {tooltipSlot.othersClicks}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

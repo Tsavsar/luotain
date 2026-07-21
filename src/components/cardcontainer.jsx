@@ -324,7 +324,7 @@ function DataRow({
                 padding: 0,
               }}
             >
-              <FilterIcon />
+              {isFiltered ? <CloseIcon /> : <FilterIcon />}
             </button>
           </div>
         )}
