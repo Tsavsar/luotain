@@ -147,9 +147,9 @@ function OrgDropdown({ orgName, allOrgs = [], activeOrgId }) {
             gap: '6px',
             height: '36px',
             padding: '6px 8px 6px 12px',
-            border: '1px solid var(--stroke-soft)',
+            border: 'none',
             borderRadius: 'var(--radius-md)',
-            background: 'var(--bg-default)',
+            background: 'var(--bg-layer)',
             color: 'var(--text-strong)',
             justifyContent: 'center',
           }}
