@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import EmptyStateIcon from './emptystateicon'
-import SourceIcon from './sourceicon'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import { toast } from './toast'
 
@@ -32,16 +31,82 @@ function hostnameOf(url) {
   }
 }
 
-// Same chevron already established in LinksStats/StatsSegment (same
-// path data, just this app's one "expand/toggle" glyph) — a single
-// arm instead of the double one, since a single chevron can rotate
-// to show current direction, an up/down pair can't say much more
-// than "this is sortable."
+// Shown in place of the favicon when one isn't available — recolored
+// from the sample's literal #e8e8e8 to var(--bg-subtle), which is
+// what that hex already matches almost exactly, so it stays
+// theme-correct instead of freezing at one specific gray forever.
+function NoFaviconIcon() {
+  return (
+    <svg width='16' height='16' viewBox='0 0 20 20' fill='none'>
+      <g fill='var(--bg-subtle)'>
+        <path
+          d='m10,17c-1.3807,0-2.5-3.134-2.5-7s1.1193-7,2.5-7c1.1019,0,2.0373,1.9961,2.3701,4.7674'
+          fill='none'
+          stroke='var(--bg-subtle)'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <path
+          d='m10,17c-3.866,0-7-3.134-7-7s3.134-7,7-7c3.6244,0,6.6054,2.7545,6.9639,6.2843'
+          fill='none'
+          stroke='var(--bg-subtle)'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <line
+          x1='3'
+          y1='10'
+          x2='8.5'
+          y2='10'
+          fill='none'
+          stroke='var(--bg-subtle)'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <polygon
+          points='11.5 11 17.5 13 14.5 14 13.5 17 11.5 11'
+          fill='var(--bg-subtle)'
+          stroke='var(--bg-subtle)'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+      </g>
+    </svg>
+  )
+}
+
+// Tries the favicon first, swaps to NoFaviconIcon on load failure
+// instead of just leaving a blank gap where a broken image used to
+// silently hide itself.
+function DestinationIcon({ domain }) {
+  const [failed, setFailed] = useState(false)
+  if (!domain || failed) return <NoFaviconIcon />
+  return (
+    <img
+      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`}
+      alt=''
+      width={16}
+      height={16}
+      style={{ borderRadius: '4px', flexShrink: 0 }}
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
+// Same chevron shape already established elsewhere, but re-framed —
+// lifting just one arm out of the original icon while keeping its
+// full 20x20 canvas left the shape sitting tiny and off-center in
+// one corner, since that arm only ever occupied a sliver of that
+// canvas. This viewBox is fitted to just the arm itself.
 function SortIcon() {
   return (
-    <svg width='14' height='14' viewBox='0 0 20 20' fill='none'>
+    <svg width='14' height='14' viewBox='0 0 12 8' fill='none'>
       <path
-        d='M13 7L10 4L7 7'
+        d='M2 6L6 2L10 6'
         stroke='var(--text-soft)'
         strokeWidth='1.5'
         strokeLinecap='round'
@@ -90,6 +155,14 @@ const COL_LINK = '210px'
 const COL_DESTINATION = '220px'
 const COL_DATE = '150px'
 const COL_MORE = '30px'
+// Fixed instead of flex:1 — Link + Destination + Date + More already
+// account for 610px, plus 24px of gaps between the 5 columns, which
+// only leaves exactly 86px within the table's own 720px cap (same
+// width every other section on this page already uses). A flexible
+// Clicks column was absorbing whatever was left of THAT math
+// unpredictably, which is what made the table's real rendered width
+// drift out of alignment with the stats bar above it.
+const COL_CLICKS = '86px'
 
 // ─── Header ───
 function TableHeader({ sortBy, sortDir, onSort }) {
@@ -116,8 +189,8 @@ function TableHeader({ sortBy, sortDir, onSort }) {
       <div
         style={{
           ...cellBase,
-          flex: 1,
-          minWidth: 0,
+          width: COL_CLICKS,
+          flexShrink: 0,
           justifyContent: 'space-between',
           paddingRight: '4px',
           cursor: 'pointer',
@@ -295,7 +368,7 @@ function LinkRow({ link, onEdit, onDelete }) {
           gap: '4px',
         }}
       >
-        <SourceIcon domain={hostnameOf(link.destination)} />
+        <DestinationIcon domain={hostnameOf(link.destination)} />
         <p
           className='para-xs'
           style={{
@@ -312,7 +385,7 @@ function LinkRow({ link, onEdit, onDelete }) {
         </p>
       </div>
 
-      <div style={{ ...cellBase, flex: 1, minWidth: 0 }}>
+      <div style={{ ...cellBase, width: COL_CLICKS, flexShrink: 0 }}>
         <p
           className='para-xs'
           style={{ color: 'var(--text-strong)', margin: 0 }}
