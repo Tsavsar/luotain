@@ -1298,7 +1298,7 @@ html {
 /* --- Chart: responsive column sizing + scroll --- */
 .chart-scroll-wrapper {
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible; /* was hidden — clipped the tooltip/marker whenever they extended past the column bounds */
   scrollbar-width: none;
 }
 .chart-scroll-wrapper::-webkit-scrollbar {

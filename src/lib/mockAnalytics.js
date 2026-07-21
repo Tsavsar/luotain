@@ -216,18 +216,31 @@ function filterByPriorRange(events, range, now) {
 }
 
 // filters: array of { type: 'link'|'country'|'source'|'device', label }
-// Stackable — every active filter must match (AND), same as a real
-// query would do `WHERE country = X AND device = Y`.
+// Stackable with faceted semantics — the standard e-commerce-filter
+// pattern: OR *within* a type (selecting two links means "either
+// link" — a comparison), AND *across* types (a link filter plus a
+// country filter means "this link AND this country" together).
+const DIMENSION_VALUE = {
+  link: (e) => e.linkUrl,
+  country: (e) => e.country,
+  source: (e) => e.source,
+  device: (e) => e.device,
+}
+
 export function filterByDimension(events, filters) {
   if (!filters || filters.length === 0) return events
-  const matchers = {
-    link: (e, label) => e.linkUrl === label,
-    country: (e, label) => e.country === label,
-    source: (e, label) => e.source === label,
-    device: (e, label) => e.device === label,
-  }
+
+  const byType = {}
+  filters.forEach((f) => {
+    if (!byType[f.type]) byType[f.type] = []
+    byType[f.type].push(f.label)
+  })
+
   return events.filter((e) =>
-    filters.every((f) => matchers[f.type]?.(e, f.label) ?? true)
+    Object.entries(byType).every(([type, labels]) => {
+      const getValue = DIMENSION_VALUE[type]
+      return getValue ? labels.includes(getValue(e)) : true
+    })
   )
 }
 

@@ -57,7 +57,7 @@ export default function FilterPill({ filters, onRemove }) {
           style={{
             background: 'var(--bg-default)',
             border: '1px solid var(--stroke-soft)',
-            borderRadius: 'var(--radius-sm, 8px)',
+            borderRadius: '10px', // was 8px
             boxShadow: '0px 2px 2px rgba(54, 54, 54, 0.04)',
             display: 'flex',
             alignItems: 'center',

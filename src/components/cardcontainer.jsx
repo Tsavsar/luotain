@@ -122,6 +122,66 @@ function FilterIcon() {
   )
 }
 
+function CloseIcon() {
+  return (
+    <svg
+      width='12'
+      height='12'
+      viewBox='0 0 12 12'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <path
+        d='M9 3L3 9M3 3L9 9'
+        stroke='var(--text-soft)'
+        strokeWidth='1.2'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
+function PlusIcon() {
+  return (
+    <svg
+      width='10'
+      height='10'
+      viewBox='0 0 10 10'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <path
+        d='M5 1V9M1 5H9'
+        stroke='var(--text-soft)'
+        strokeWidth='1.3'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      width='16'
+      height='16'
+      viewBox='0 0 16 16'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <path
+        d='M3.5 8.5L6.5 11.5L12.5 4.5'
+        stroke='var(--primary-base)'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
 function SourceIcon({ domain }) {
   if (!domain || domain.toLowerCase() === 'direct') {
     return <DirectLinkIcon />
@@ -166,17 +226,18 @@ function DataRow({
 
   return (
     <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
         paddingRight: '10px',
+        cursor: 'default',
       }}
     >
       <div
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         style={{
           background: isFiltered
             ? 'var(--bg-subtle)'
@@ -267,11 +328,23 @@ function Card({
   filterType,
   activeFilters,
   onToggleFilter,
+  enableCompare = false,
 }) {
   const [selected, setSelected] = useState(columnOptions[0])
   const rows = dataByColumn?.[selected]
   const hasRows = Array.isArray(rows) && rows.length > 0
   const maxValue = hasRows ? Math.max(...rows.map((r) => r.value), 1) : 1
+
+  // Which of THIS card's own filters are active — the tags row and
+  // "compare" display only care about filterType (e.g. only link
+  // filters affect the Clicks card, not a country filter elsewhere)
+  const ownFilters = (activeFilters || []).filter((f) => f.type === filterType)
+  const isComparing = enableCompare && ownFilters.length > 0
+  const compareRows = isComparing
+    ? ownFilters
+        .map((f) => rows?.find((r) => r.label === f.label))
+        .filter(Boolean)
+    : []
 
   return (
     <div
@@ -281,7 +354,7 @@ function Card({
         borderRadius: '14px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '18px',
+        gap: isComparing ? '10px' : '18px',
         flex: '1 0 0',
         minWidth: 0,
         height: '250px',
@@ -351,6 +424,97 @@ function Card({
         )}
       </div>
 
+      {enableCompare && hasRows && (
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '6px',
+            padding: '0 4px',
+          }}
+        >
+          {ownFilters.map((f) => (
+            <div
+              key={f.label}
+              style={{
+                background: 'var(--bg-default)',
+                border: '1px solid var(--stroke-soft)',
+                borderRadius: '10px',
+                boxShadow: '0px 2px 2px rgba(54, 54, 54, 0.04)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 8px',
+              }}
+            >
+              <span
+                className='para-xs'
+                style={{ color: 'var(--text-strong)', whiteSpace: 'nowrap' }}
+              >
+                {f.label}
+              </span>
+              <button
+                onClick={() => onToggleFilter?.(f)}
+                style={{
+                  display: 'flex',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          ))}
+
+          <Dropdown
+            trigger={
+              <div
+                style={{
+                  background: 'var(--bg-default)',
+                  border: '1px solid var(--stroke-soft)',
+                  borderRadius: '10px',
+                  boxShadow: '0px 2px 2px rgba(54, 54, 54, 0.04)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px',
+                }}
+              >
+                <PlusIcon />
+              </div>
+            }
+          >
+            <DropdownMenu width='200px'>
+              {(rows || []).map((row) => {
+                const picked = ownFilters.some((f) => f.label === row.label)
+                return (
+                  <DropdownOption
+                    key={row.label}
+                    onClick={() =>
+                      onToggleFilter?.({ type: filterType, label: row.label })
+                    }
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                      }}
+                    >
+                      <span>{row.label}</span>
+                      {picked && <CheckIcon />}
+                    </div>
+                  </DropdownOption>
+                )
+              })}
+            </DropdownMenu>
+          </Dropdown>
+        </div>
+      )}
+
       {hasRows ? (
         <div
           style={{
@@ -362,7 +526,7 @@ function Card({
             overflowY: 'auto',
           }}
         >
-          {rows.map((row) => {
+          {(isComparing ? compareRows : rows).map((row) => {
             const isFiltered = activeFilters?.some(
               (f) => f.type === filterType && f.label === row.label
             )
@@ -433,6 +597,7 @@ export default function DashboardCards({
           filterType='link'
           activeFilters={activeFilters}
           onToggleFilter={onToggleFilter}
+          enableCompare
         />
         <Card
           title='Sources'
