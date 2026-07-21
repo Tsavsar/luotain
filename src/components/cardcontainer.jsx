@@ -248,33 +248,58 @@ function DataRow({
           padding: '6px 10px',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          justifyContent: 'space-between',
           whiteSpace: 'nowrap',
-          width: `max(38px, calc(${pct} * (100% - 48px)))`,
+          // Expands to fill the row on hover/filtered — otherwise a
+          // low-value row stays narrow and the action icons end up
+          // cramped against the text instead of sitting at the end
+          width:
+            hovered || isFiltered
+              ? '100%'
+              : `max(38px, calc(${pct} * (100% - 48px)))`,
           transition:
-            'width 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
+            'width 0.3s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
         }}
       >
-        {iconType === 'flag' && (
-          <CountryFlag country={country || label} size={18} />
-        )}
-        {iconType === 'favicon' && <SourceIcon domain={label} />}
-        <p
-          className='para-sm'
+        <div
           style={{
-            color:
-              hovered || isFiltered ? 'var(--text-strong)' : 'var(--text-sub)',
-            margin: 0,
-            whiteSpace: 'nowrap',
-            textDecoration: hovered || isFiltered ? 'underline' : 'none',
-            textUnderlineOffset: '2px',
-            transition: 'color 0.15s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            minWidth: 0,
           }}
         >
-          {label}
-        </p>
+          {iconType === 'flag' && (
+            <CountryFlag country={country || label} size={18} />
+          )}
+          {iconType === 'favicon' && <SourceIcon domain={label} />}
+          <p
+            className='para-sm'
+            style={{
+              color:
+                hovered || isFiltered
+                  ? 'var(--text-strong)'
+                  : 'var(--text-sub)',
+              margin: 0,
+              whiteSpace: 'nowrap',
+              textDecoration: hovered || isFiltered ? 'underline' : 'none',
+              textUnderlineOffset: '2px',
+              transition: 'color 0.15s ease',
+            }}
+          >
+            {label}
+          </p>
+        </div>
         {(hovered || isFiltered) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexShrink: 0,
+              marginLeft: '8px',
+            }}
+          >
             {isLink && (
               <button
                 onClick={handleCopy}
@@ -424,7 +449,7 @@ function Card({
         )}
       </div>
 
-      {enableCompare && hasRows && (
+      {enableCompare && hasRows && ownFilters.length > 0 && (
         <div
           style={{
             display: 'flex',
