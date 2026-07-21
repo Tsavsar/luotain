@@ -10,13 +10,31 @@ import { getMockAnalytics } from '@/lib/mockAnalytics'
 export default function AnalyticsPage() {
   const [useMockData, setUseMockData] = useState(false)
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
-  const [activeFilter, setActiveFilter] = useState(null)
+  const [activeFilters, setActiveFilters] = useState([])
 
-  // Filter now genuinely changes the numbers — it's passed straight
-  // through to aggregation, same call either way.
   const mock = useMockData
-    ? getMockAnalytics(selectedRange, activeFilter)
+    ? getMockAnalytics(selectedRange, activeFilters)
     : null
+
+  function toggleFilter(filter) {
+    setActiveFilters((prev) => {
+      const exists = prev.some(
+        (f) => f.type === filter.type && f.label === filter.label
+      )
+      if (exists) {
+        return prev.filter(
+          (f) => !(f.type === filter.type && f.label === filter.label)
+        )
+      }
+      return [...prev, filter]
+    })
+  }
+
+  function removeFilter(filter) {
+    setActiveFilters((prev) =>
+      prev.filter((f) => !(f.type === filter.type && f.label === filter.label))
+    )
+  }
 
   return (
     <>
@@ -36,7 +54,7 @@ export default function AnalyticsPage() {
         />
       </div>
 
-      {activeFilter && (
+      {activeFilters.length > 0 && (
         <div
           style={{
             width: '100%',
@@ -46,10 +64,7 @@ export default function AnalyticsPage() {
           }}
         >
           <div style={{ width: '100%', maxWidth: '720px' }}>
-            <FilterPill
-              filter={activeFilter}
-              onClear={() => setActiveFilter(null)}
-            />
+            <FilterPill filters={activeFilters} onRemove={removeFilter} />
           </div>
         </div>
       )}
@@ -78,8 +93,8 @@ export default function AnalyticsPage() {
       >
         <DashboardCards
           data={mock?.cardData}
-          activeFilter={activeFilter}
-          onFilterSelect={setActiveFilter}
+          activeFilters={activeFilters}
+          onToggleFilter={toggleFilter}
         />
       </div>
 

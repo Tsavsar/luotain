@@ -215,17 +215,20 @@ function filterByPriorRange(events, range, now) {
   )
 }
 
-// filter: { type: 'link'|'country'|'source'|'device', label } | null
-export function filterByDimension(events, filter) {
-  if (!filter) return events
+// filters: array of { type: 'link'|'country'|'source'|'device', label }
+// Stackable — every active filter must match (AND), same as a real
+// query would do `WHERE country = X AND device = Y`.
+export function filterByDimension(events, filters) {
+  if (!filters || filters.length === 0) return events
   const matchers = {
-    link: (e) => e.linkUrl === filter.label,
-    country: (e) => e.country === filter.label,
-    source: (e) => e.source === filter.label,
-    device: (e) => e.device === filter.label,
+    link: (e, label) => e.linkUrl === label,
+    country: (e, label) => e.country === label,
+    source: (e, label) => e.source === label,
+    device: (e, label) => e.device === label,
   }
-  const matcher = matchers[filter.type]
-  return matcher ? events.filter(matcher) : events
+  return events.filter((e) =>
+    filters.every((f) => matchers[f.type]?.(e, f.label) ?? true)
+  )
 }
 
 // ─── Aggregation ───
@@ -456,15 +459,15 @@ function aggregateCardData(events) {
 // real data later means replacing this function's body with a fetch
 // — everything that calls it (page components, filter state) doesn't
 // need to change, since the return shape is identical either way.
-export function getMockAnalytics(range = 'Last 7 days', filter = null) {
+export function getMockAnalytics(range = 'Last 7 days', filters = []) {
   const now = new Date()
   const pool = getEventPool()
 
   const rangeEvents = filterByRange(pool, range, now)
   const priorEvents = filterByPriorRange(pool, range, now)
 
-  const filteredRangeEvents = filterByDimension(rangeEvents, filter)
-  const filteredPriorEvents = filterByDimension(priorEvents, filter)
+  const filteredRangeEvents = filterByDimension(rangeEvents, filters)
+  const filteredPriorEvents = filterByDimension(priorEvents, filters)
 
   return {
     stats: aggregateStats(filteredRangeEvents, filteredPriorEvents),

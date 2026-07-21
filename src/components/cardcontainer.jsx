@@ -59,6 +59,7 @@ function DirectLinkIcon() {
   )
 }
 
+// Exact icons provided — copy (two overlapping squares)
 function CopyIcon() {
   return (
     <svg
@@ -68,26 +69,26 @@ function CopyIcon() {
       fill='none'
       xmlns='http://www.w3.org/2000/svg'
     >
-      <rect
-        x='5.5'
-        y='5.5'
-        width='8'
-        height='8'
-        rx='1.5'
-        stroke='var(--text-soft)'
-        strokeWidth='1.2'
+      <path
+        d='M13.2 6V11.6C13.2 12.484 12.484 13.2 11.6 13.2H6'
+        stroke='#5C5C5C'
+        strokeWidth='1.25'
+        strokeLinecap='round'
+        strokeLinejoin='round'
       />
       <path
-        d='M3.5 10V3.5C3.5 2.67157 4.17157 2 5 2H10.5'
-        stroke='var(--text-soft)'
-        strokeWidth='1.2'
+        d='M8.4 2H3.6C2.71634 2 2 2.71634 2 3.6V8.4C2 9.28366 2.71634 10 3.6 10H8.4C9.28366 10 10 9.28366 10 8.4V3.6C10 2.71634 9.28366 2 8.4 2Z'
+        stroke='#5C5C5C'
+        strokeWidth='1.25'
         strokeLinecap='round'
+        strokeLinejoin='round'
       />
     </svg>
   )
 }
 
-function OpenLinkIcon() {
+// Exact icon provided — apply as filter (funnel/sort lines)
+function FilterIcon() {
   return (
     <svg
       width='16'
@@ -97,16 +98,23 @@ function OpenLinkIcon() {
       xmlns='http://www.w3.org/2000/svg'
     >
       <path
-        d='M6.5 9.5L13.5 2.5M13.5 2.5H9M13.5 2.5V7'
-        stroke='var(--text-soft)'
-        strokeWidth='1.2'
+        d='M11.2008 8H4.80078'
+        stroke='#5C5C5C'
+        strokeWidth='1.25'
         strokeLinecap='round'
         strokeLinejoin='round'
       />
       <path
-        d='M11.5 8.5V12.5C11.5 13.0523 11.0523 13.5 10.5 13.5H3.5C2.94772 13.5 2.5 13.0523 2.5 12.5V5.5C2.5 4.94772 2.94772 4.5 3.5 4.5H7.5'
-        stroke='var(--text-soft)'
-        strokeWidth='1.2'
+        d='M2.40039 4H13.6004'
+        stroke='#5C5C5C'
+        strokeWidth='1.25'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M7.20117 12H8.80117'
+        stroke='#5C5C5C'
+        strokeWidth='1.25'
         strokeLinecap='round'
         strokeLinejoin='round'
       />
@@ -133,10 +141,11 @@ function SourceIcon({ domain }) {
 }
 
 // ─── DataRow ───
-// Hover now matches the Figma spec: background darkens (bg-surface ->
-// bg-subtle), text darkens + underlines, and — for rows with a real
-// URL (the Clicks card specifically) — copy/open icons fade in next
-// to the count. Clicking a row sets it as the active filter.
+// Two independent hover actions now, not one row-click-does-both:
+// the copy icon copies the value (link rows only — copying "Norway"
+// doesn't mean anything the way copying a URL does), and the filter
+// icon toggles this row into/out of the stackable filter set. Row
+// background/underline still hints "interactive" on hover regardless.
 function DataRow({
   label,
   value,
@@ -144,11 +153,16 @@ function DataRow({
   iconType,
   country,
   isLink,
-  onSelect,
+  onToggleFilter,
   isFiltered,
 }) {
   const [hovered, setHovered] = useState(false)
   const pct = maxValue > 0 ? value / maxValue : 0
+
+  function handleCopy(e) {
+    e.stopPropagation()
+    navigator.clipboard?.writeText(label)
+  }
 
   return (
     <div
@@ -163,7 +177,6 @@ function DataRow({
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        onClick={onSelect}
         style={{
           background: isFiltered
             ? 'var(--bg-subtle)'
@@ -179,7 +192,6 @@ function DataRow({
           width: `max(38px, calc(${pct} * (100% - 48px)))`,
           transition:
             'width 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
-          cursor: 'pointer',
         }}
       >
         {iconType === 'flag' && (
@@ -200,10 +212,39 @@ function DataRow({
         >
           {label}
         </p>
-        {isLink && (hovered || isFiltered) && (
+        {(hovered || isFiltered) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CopyIcon />
-            <OpenLinkIcon />
+            {isLink && (
+              <button
+                onClick={handleCopy}
+                title='Copy'
+                style={{
+                  display: 'flex',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                <CopyIcon />
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleFilter?.()
+              }}
+              title={isFiltered ? 'Remove filter' : 'Filter by this'}
+              style={{
+                display: 'flex',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              <FilterIcon />
+            </button>
           </div>
         )}
       </div>
@@ -224,8 +265,8 @@ function Card({
   dataByColumn,
   iconType = 'none',
   filterType,
-  activeFilter,
-  onFilterSelect,
+  activeFilters,
+  onToggleFilter,
 }) {
   const [selected, setSelected] = useState(columnOptions[0])
   const rows = dataByColumn?.[selected]
@@ -322,9 +363,9 @@ function Card({
           }}
         >
           {rows.map((row) => {
-            const isFiltered =
-              activeFilter?.type === filterType &&
-              activeFilter?.label === row.label
+            const isFiltered = activeFilters?.some(
+              (f) => f.type === filterType && f.label === row.label
+            )
             return (
               <DataRow
                 key={row.label}
@@ -335,10 +376,8 @@ function Card({
                 country={row.country}
                 isLink={filterType === 'link'}
                 isFiltered={isFiltered}
-                onSelect={() =>
-                  onFilterSelect?.(
-                    isFiltered ? null : { type: filterType, label: row.label }
-                  )
+                onToggleFilter={() =>
+                  onToggleFilter?.({ type: filterType, label: row.label })
                 }
               />
             )
@@ -369,11 +408,13 @@ function Card({
   )
 }
 
-// activeFilter / onFilterSelect are optional — passing them wires up
-// click-to-filter (row click sets/clears the shared filter, and the
-// currently-filtered row stays visually highlighted). Omitting them
-// leaves the cards fully functional with no filtering.
-export default function DashboardCards({ data, activeFilter, onFilterSelect }) {
+// activeFilters is now an ARRAY (stackable). onToggleFilter adds a
+// filter if it's not already active, removes it if it is.
+export default function DashboardCards({
+  data,
+  activeFilters,
+  onToggleFilter,
+}) {
   return (
     <div
       style={{
@@ -390,8 +431,8 @@ export default function DashboardCards({ data, activeFilter, onFilterSelect }) {
           columnOptions={['Short links', 'QR codes']}
           dataByColumn={data?.clicks}
           filterType='link'
-          activeFilter={activeFilter}
-          onFilterSelect={onFilterSelect}
+          activeFilters={activeFilters}
+          onToggleFilter={onToggleFilter}
         />
         <Card
           title='Sources'
@@ -400,8 +441,8 @@ export default function DashboardCards({ data, activeFilter, onFilterSelect }) {
           dataByColumn={data?.sources}
           iconType='favicon'
           filterType='source'
-          activeFilter={activeFilter}
-          onFilterSelect={onFilterSelect}
+          activeFilters={activeFilters}
+          onToggleFilter={onToggleFilter}
         />
       </div>
       <div className='card-row'>
@@ -411,16 +452,16 @@ export default function DashboardCards({ data, activeFilter, onFilterSelect }) {
           dataByColumn={data?.geography}
           iconType='flag'
           filterType='country'
-          activeFilter={activeFilter}
-          onFilterSelect={onFilterSelect}
+          activeFilters={activeFilters}
+          onToggleFilter={onToggleFilter}
         />
         <Card
           title='Devices'
           columnOptions={['Type', 'Browser']}
           dataByColumn={data?.devices}
           filterType='device'
-          activeFilter={activeFilter}
-          onFilterSelect={onFilterSelect}
+          activeFilters={activeFilters}
+          onToggleFilter={onToggleFilter}
         />
       </div>
     </div>

@@ -15,6 +15,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   memberships   Membership[]
+  links         Link[] // links this user created — org owns them, this is attribution only
 }
 
 model Account {
@@ -57,6 +58,8 @@ model Organization {
   name      String
   createdAt DateTime     @default(now())
   members   Membership[]
+  links     Link[]
+  clicks    Click[]
 }
 
 model Membership {
@@ -75,4 +78,77 @@ enum Role {
   OWNER
   ADMIN
   MEMBER
+}
+
+model Link {
+  id             String   @id @default(cuid())
+  shortCode      String   @unique // luot.link/{shortCode} — globally unique, not scoped per-org
+  destinationUrl String
+  title          String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  qrCodes QrCode[]
+  clicks  Click[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model QrCode {
+  id        String @id @default(cuid())
+  shortCode String @unique // its own slug, distinct from the parent link's — lets a
+  // scan be attributed to this specific QR placement (e.g. "Store window" vs
+  // "Business card"), not just the link generally
+  label     String
+
+  linkId String
+  link   Link   @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  clicks Click[]
+
+  createdAt DateTime @default(now())
+
+  @@index([linkId])
+}
+
+model Click {
+  id String @id @default(cuid())
+
+  linkId String
+  link   Link   @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  // Present only when this hit came through a QR scan rather than a
+  // direct link click — this IS what "click vs scan" means, not a
+  // separate stored field (which could drift out of sync with the
+  // real origin).
+  qrCodeId String?
+  qrCode   QrCode? @relation(fields: [qrCodeId], references: [id], onDelete: SetNull)
+
+  // Denormalized from Link — this is the highest-volume table in the
+  // system, and every analytics query filters by org, so saving that
+  // join is worth the small duplication.
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Populated at write time (geo-IP lookup, User-Agent parsing) —
+  // never derived later
+  country  String?
+  region   String?
+  city     String?
+  device   String?
+  browser  String?
+  referrer String? // source domain, or null for direct
+
+  createdAt DateTime @default(now())
+
+  @@index([linkId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([qrCodeId])
 }

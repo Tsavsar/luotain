@@ -27,12 +27,16 @@ const TYPE_LABELS = {
   device: 'Device',
 }
 
+function keyOf(f) {
+  return `${f.type}:${f.label}`
+}
+
 // ─── FilterPill ───
-// Sits above the chart, matches the Figma tag exactly: dot + type
-// prefix + value + close button. Renders nothing when there's no
-// active filter.
-export default function FilterPill({ filter, onClear }) {
-  if (!filter) return null
+// Stackable — `filters` is an array. Label reads "Filter:" for one,
+// "Filters:" for two or more, followed by one tag per active filter,
+// each independently removable.
+export default function FilterPill({ filters, onRemove }) {
+  if (!filters || filters.length === 0) return null
 
   return (
     <div
@@ -44,51 +48,54 @@ export default function FilterPill({ filter, onClear }) {
       }}
     >
       <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
-        {TYPE_LABELS[filter.type] || 'Filter'}:
+        {filters.length > 1 ? 'Filters' : 'Filter'}:
       </span>
 
-      <div
-        style={{
-          background: 'var(--bg-default)',
-          border: '1px solid var(--stroke-soft)',
-          borderRadius: 'var(--radius-sm, 8px)',
-          boxShadow: '0px 2px 2px rgba(54, 54, 54, 0.04)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '4px 8px 4px 10px',
-        }}
-      >
+      {filters.map((filter) => (
         <div
+          key={keyOf(filter)}
           style={{
-            width: '8px',
-            height: '8px',
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--primary-base)',
-            flexShrink: 0,
-          }}
-        />
-        <span
-          className='para-sm'
-          style={{ color: 'var(--text-strong)', whiteSpace: 'nowrap' }}
-        >
-          {filter.label}
-        </span>
-        <button
-          onClick={onClear}
-          style={{
+            background: 'var(--bg-default)',
+            border: '1px solid var(--stroke-soft)',
+            borderRadius: 'var(--radius-sm, 8px)',
+            boxShadow: '0px 2px 2px rgba(54, 54, 54, 0.04)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
+            gap: '6px',
+            padding: '4px 8px 4px 10px',
           }}
         >
-          <CloseIcon />
-        </button>
-      </div>
+          <div
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--primary-base)',
+              flexShrink: 0,
+            }}
+          />
+          <span
+            className='para-sm'
+            style={{ color: 'var(--text-strong)', whiteSpace: 'nowrap' }}
+          >
+            {filter.label}
+          </span>
+          <button
+            onClick={() => onRemove(filter)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+      ))}
     </div>
   )
 }
