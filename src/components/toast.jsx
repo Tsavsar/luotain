@@ -45,21 +45,58 @@ function useToasts() {
 }
 
 // ─── Icons ───
-// Figma's exact assets (node 391:1083) — temporary export URLs, they
-// expire around July 28 2026 (~7 days from today). Before then:
-// download these two and commit them to /public/assets/icons/, then
-// swap the URLs below for local paths. Network access from this
-// session couldn't reach figma.com to download them directly, or
-// they'd already be committed rather than linked.
-const ICONS = {
-  success:
-    'https://www.figma.com/api/mcp/asset/8a5936c9-14d9-4dda-bc0e-a7b44f22d99d',
+// Not using the Figma image exports here — pulled them apart from
+// the raw styles: the checkmark's circle is var(--success-base) and
+// the close mark is var(--text-strong), both theme-reactive. A
+// flattened image export bakes in whatever those resolved to at
+// export time (dark mode) and stays that color forever, so it'd
+// have been visibly wrong the moment the page switched to light.
+// Both shapes are simple enough (a circle + check, an X) to
+// reproduce exactly without needing the real vector file.
+function SuccessIcon() {
+  return (
+    <svg
+      width='24'
+      height='24'
+      viewBox='0 0 24 24'
+      fill='none'
+      style={{
+        flexShrink: 0,
+        filter: 'drop-shadow(0px 2px 4px rgba(54,54,54,0.04))',
+      }}
+    >
+      <circle cx='12' cy='12' r='10.75' fill='var(--success-base)' />
+      <path
+        d='M8 12.5L10.5 15L16 9'
+        stroke='white'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
 }
-const CLOSE_ICON_URL =
-  'https://www.figma.com/api/mcp/asset/fa7fc010-cc76-47e6-a4c2-c5e17e620f31'
 
-// Chevron for the stack's expand/collapse badge — this one's simple
-// enough to hand-draw rather than needing a Figma export.
+function CloseIcon() {
+  return (
+    <svg
+      width='22'
+      height='22'
+      viewBox='0 0 22 22'
+      fill='none'
+      style={{ filter: 'drop-shadow(0px 2px 4px rgba(54,54,54,0.04))' }}
+    >
+      <path
+        d='M6.2 6.19L15.81 15.8M15.81 6.19L6.2 15.8'
+        stroke='var(--text-strong)'
+        strokeWidth='1.25'
+        strokeLinecap='round'
+      />
+    </svg>
+  )
+}
+
+// Chevron for the stack's expand/collapse badge.
 function ChevronIcon() {
   return (
     <svg width='10' height='10' viewBox='0 0 10 10' fill='none'>
@@ -74,6 +111,10 @@ function ChevronIcon() {
   )
 }
 
+// Only one designed so far — add more here as more toast types get
+// designed (e.g. error: ErrorIcon), same pattern.
+const TOAST_ICONS = { success: SuccessIcon }
+
 // ─── One toast card ───
 function ToastCard({
   data,
@@ -84,6 +125,7 @@ function ToastCard({
   onDismiss,
 }) {
   const [open, setOpen] = useState(false)
+  const Icon = TOAST_ICONS[data.icon] || SuccessIcon
 
   // Mounts closed, flips open next frame — that's what makes the
   // .t-toast → .t-toast.is-open transition actually play instead of
@@ -104,8 +146,12 @@ function ToastCard({
       style={{
         position: 'relative',
         background: 'var(--bg-default)',
-        border: '1px solid var(--stroke-soft)',
-        borderRadius: 'var(--radius-xl)',
+        // outline, not border — matches the exact spec, and doesn't
+        // add to the box's size the way a border would, so it can't
+        // throw off the padding math below
+        outline: '1px solid var(--stroke-soft)',
+        outlineOffset: '-1px',
+        borderRadius: '24px',
         boxShadow: 'var(--shadow-xs)',
         display: 'flex',
         alignItems: 'flex-start',
@@ -116,45 +162,43 @@ function ToastCard({
         cursor: isFront && stackCount > 1 && !expanded ? 'pointer' : 'default',
       }}
     >
-      <img
-        src={ICONS[data.icon] || ICONS.success}
-        alt=''
-        width={24}
-        height={24}
-        style={{
-          flexShrink: 0,
-          filter: 'drop-shadow(0px 2px 2px rgba(54,54,54,0.04))',
-        }}
-      />
-      <p
-        className='label-md'
-        style={{ flex: 1, minWidth: 0, color: 'var(--text-strong)', margin: 0 }}
-      >
-        {data.message}
-      </p>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onDismiss()
-        }}
-        title='Dismiss'
-        style={{
-          display: 'flex',
-          flexShrink: 0,
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          padding: 0,
-        }}
-      >
-        <img
-          src={CLOSE_ICON_URL}
-          alt=''
-          width={22}
-          height={22}
-          style={{ filter: 'drop-shadow(0px 2px 2px rgba(54,54,54,0.04))' }}
-        />
-      </button>
+      <Icon />
+
+      {/* relative wrapper so the close mark can pin to its corner
+          instead of sitting in its own flex column — matches the
+          exact spec, and means the message can wrap to 2 lines
+          without shoving the close mark sideways */}
+      <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+        <p
+          className='label-md'
+          style={{
+            color: 'var(--text-strong)',
+            margin: 0,
+            paddingRight: '26px',
+          }}
+        >
+          {data.message}
+        </p>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onDismiss()
+          }}
+          title='Dismiss'
+          style={{
+            position: 'absolute',
+            top: '1px',
+            right: '-6px',
+            display: 'flex',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          <CloseIcon />
+        </button>
+      </div>
 
       {/* Stack-count badge, front card only, 2+ toasts. Chevron
           dissolves between pointing-up (tap to expand) and
