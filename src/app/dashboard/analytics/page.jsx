@@ -4,11 +4,13 @@ import { useState } from 'react'
 import StatsSegment from '@/components/statssegment'
 import ChartContainer from '@/components/chartcontainer'
 import DashboardCards from '@/components/cardcontainer'
+import FilterPill from '@/components/filterpill'
 import { getMockAnalytics } from '@/lib/mockAnalytics'
 
 export default function AnalyticsPage() {
   const [useMockData, setUseMockData] = useState(false)
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
+  const [activeFilter, setActiveFilter] = useState(null)
 
   const mock = useMockData ? getMockAnalytics(selectedRange) : null
 
@@ -29,6 +31,27 @@ export default function AnalyticsPage() {
           onRangeChange={setSelectedRange}
         />
       </div>
+
+      {/* Filter pill sits above the chart, between it and the stats
+          row — appears once a card row's been clicked, cleared via
+          its own X */}
+      {activeFilter && (
+        <div
+          style={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '0 24px',
+          }}
+        >
+          <div style={{ width: '100%', maxWidth: '720px' }}>
+            <FilterPill
+              filter={activeFilter}
+              onClear={() => setActiveFilter(null)}
+            />
+          </div>
+        </div>
+      )}
 
       <div
         className='dashboard-section dashboard-section-4'
@@ -52,7 +75,11 @@ export default function AnalyticsPage() {
           zIndex: 8,
         }}
       >
-        <DashboardCards data={mock?.cardData} />
+        <DashboardCards
+          data={mock?.cardData}
+          activeFilter={activeFilter}
+          onFilterSelect={setActiveFilter}
+        />
       </div>
 
       <button

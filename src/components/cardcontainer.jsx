@@ -59,14 +59,65 @@ function DirectLinkIcon() {
   )
 }
 
-// Favicon via Google's service — works for any domain without a
-// brand-icon library's coverage gaps. "direct" (no domain) gets the
-// chain-link icon instead.
+function CopyIcon() {
+  return (
+    <svg
+      width='16'
+      height='16'
+      viewBox='0 0 16 16'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <rect
+        x='5.5'
+        y='5.5'
+        width='8'
+        height='8'
+        rx='1.5'
+        stroke='var(--text-soft)'
+        strokeWidth='1.2'
+      />
+      <path
+        d='M3.5 10V3.5C3.5 2.67157 4.17157 2 5 2H10.5'
+        stroke='var(--text-soft)'
+        strokeWidth='1.2'
+        strokeLinecap='round'
+      />
+    </svg>
+  )
+}
+
+function OpenLinkIcon() {
+  return (
+    <svg
+      width='16'
+      height='16'
+      viewBox='0 0 16 16'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <path
+        d='M6.5 9.5L13.5 2.5M13.5 2.5H9M13.5 2.5V7'
+        stroke='var(--text-soft)'
+        strokeWidth='1.2'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M11.5 8.5V12.5C11.5 13.0523 11.0523 13.5 10.5 13.5H3.5C2.94772 13.5 2.5 13.0523 2.5 12.5V5.5C2.5 4.94772 2.94772 4.5 3.5 4.5H7.5'
+        stroke='var(--text-soft)'
+        strokeWidth='1.2'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
 function SourceIcon({ domain }) {
   if (!domain || domain.toLowerCase() === 'direct') {
     return <DirectLinkIcon />
   }
-
   return (
     <img
       src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`}
@@ -81,13 +132,22 @@ function SourceIcon({ domain }) {
   )
 }
 
-// ─── Row ───
-// The gray pill IS a bar chart: its width is proportional to the
-// row's value relative to the column max. The label is allowed to
-// overflow past a short bar (per the Figma spec — see the 41px pill
-// with a full-length link in it), so text stays readable even when
-// the value is tiny.
-function DataRow({ label, value, maxValue, iconType, country }) {
+// ─── DataRow ───
+// Hover now matches the Figma spec: background darkens (bg-surface ->
+// bg-subtle), text darkens + underlines, and — for rows with a real
+// URL (the Clicks card specifically) — copy/open icons fade in next
+// to the count. Clicking a row sets it as the active filter.
+function DataRow({
+  label,
+  value,
+  maxValue,
+  iconType,
+  country,
+  isLink,
+  onSelect,
+  isFiltered,
+}) {
+  const [hovered, setHovered] = useState(false)
   const pct = maxValue > 0 ? value / maxValue : 0
 
   return (
@@ -101,8 +161,15 @@ function DataRow({ label, value, maxValue, iconType, country }) {
       }}
     >
       <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onClick={onSelect}
         style={{
-          background: 'var(--bg-layer)',
+          background: isFiltered
+            ? 'var(--bg-subtle)'
+            : hovered
+              ? 'var(--bg-subtle)'
+              : 'var(--bg-layer)',
           borderRadius: '9px',
           padding: '6px 10px',
           display: 'flex',
@@ -110,26 +177,35 @@ function DataRow({ label, value, maxValue, iconType, country }) {
           gap: '8px',
           whiteSpace: 'nowrap',
           width: `max(38px, calc(${pct} * (100% - 48px)))`,
-          transition: 'width 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+          transition:
+            'width 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
+          cursor: 'pointer',
         }}
       >
-        {/* For country rows the label IS the country; for region/city
-            rows the flag comes from the row's explicit `country`
-            field — a city name alone can't identify a flag */}
         {iconType === 'flag' && (
           <CountryFlag country={country || label} size={18} />
         )}
         {iconType === 'favicon' && <SourceIcon domain={label} />}
-        {/* whiteSpace inline: the typography pass added text-wrap:
-            pretty to .para-*, which re-enables wrapping despite the
-            pill's nowrap (text-wrap and white-space share a
-            longhand). Inline wins, so labels never wrap mid-pill. */}
         <p
           className='para-sm'
-          style={{ color: 'var(--text-sub)', margin: 0, whiteSpace: 'nowrap' }}
+          style={{
+            color:
+              hovered || isFiltered ? 'var(--text-strong)' : 'var(--text-sub)',
+            margin: 0,
+            whiteSpace: 'nowrap',
+            textDecoration: hovered || isFiltered ? 'underline' : 'none',
+            textUnderlineOffset: '2px',
+            transition: 'color 0.15s ease',
+          }}
         >
           {label}
         </p>
+        {isLink && (hovered || isFiltered) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CopyIcon />
+            <OpenLinkIcon />
+          </div>
+        )}
       </div>
       <p
         className='label-sm'
@@ -147,6 +223,9 @@ function Card({
   showDropdown = true,
   dataByColumn,
   iconType = 'none',
+  filterType,
+  activeFilter,
+  onFilterSelect,
 }) {
   const [selected, setSelected] = useState(columnOptions[0])
   const rows = dataByColumn?.[selected]
@@ -242,16 +321,28 @@ function Card({
             overflowY: 'auto',
           }}
         >
-          {rows.map((row) => (
-            <DataRow
-              key={row.label}
-              label={row.label}
-              value={row.value}
-              maxValue={maxValue}
-              iconType={iconType}
-              country={row.country}
-            />
-          ))}
+          {rows.map((row) => {
+            const isFiltered =
+              activeFilter?.type === filterType &&
+              activeFilter?.label === row.label
+            return (
+              <DataRow
+                key={row.label}
+                label={row.label}
+                value={row.value}
+                maxValue={maxValue}
+                iconType={iconType}
+                country={row.country}
+                isLink={filterType === 'link'}
+                isFiltered={isFiltered}
+                onSelect={() =>
+                  onFilterSelect?.(
+                    isFiltered ? null : { type: filterType, label: row.label }
+                  )
+                }
+              />
+            )
+          })}
         </div>
       ) : (
         <div
@@ -278,7 +369,11 @@ function Card({
   )
 }
 
-export default function DashboardCards({ data }) {
+// activeFilter / onFilterSelect are optional — passing them wires up
+// click-to-filter (row click sets/clears the shared filter, and the
+// currently-filtered row stays visually highlighted). Omitting them
+// leaves the cards fully functional with no filtering.
+export default function DashboardCards({ data, activeFilter, onFilterSelect }) {
   return (
     <div
       style={{
@@ -294,6 +389,9 @@ export default function DashboardCards({ data }) {
           title='Clicks'
           columnOptions={['Short links', 'QR codes']}
           dataByColumn={data?.clicks}
+          filterType='link'
+          activeFilter={activeFilter}
+          onFilterSelect={onFilterSelect}
         />
         <Card
           title='Sources'
@@ -301,6 +399,9 @@ export default function DashboardCards({ data }) {
           showDropdown={false}
           dataByColumn={data?.sources}
           iconType='favicon'
+          filterType='source'
+          activeFilter={activeFilter}
+          onFilterSelect={onFilterSelect}
         />
       </div>
       <div className='card-row'>
@@ -309,11 +410,17 @@ export default function DashboardCards({ data }) {
           columnOptions={['Countries', 'Regions', 'Cities']}
           dataByColumn={data?.geography}
           iconType='flag'
+          filterType='country'
+          activeFilter={activeFilter}
+          onFilterSelect={onFilterSelect}
         />
         <Card
           title='Devices'
           columnOptions={['Type', 'Browser']}
           dataByColumn={data?.devices}
+          filterType='device'
+          activeFilter={activeFilter}
+          onFilterSelect={onFilterSelect}
         />
       </div>
     </div>
