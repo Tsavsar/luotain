@@ -12,26 +12,33 @@ const DATE_OPTIONS = [
   'Custom',
 ]
 
-// Same trigger icon/markup as StatsSegment's date dropdown — kept
-// separate rather than imported since this one has no chevron, just
-// the calendar glyph, per Figma node 73:5417.
-function CalendarIcon() {
+// Same chevron StatsSegment's date dropdown already uses on the
+// analytics page — reusing it here instead of the calendar glyph
+// Figma's static mock happened to show, so both pages' date
+// triggers actually match instead of introducing a second icon for
+// the same control.
+function ChevronIcon() {
   return (
-    <svg width='20' height='20' viewBox='0 0 20 20' fill='none'>
-      <rect
-        x='4'
-        y='4'
-        width='12'
-        height='12'
-        rx='2'
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 20 20'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+    >
+      <path
+        d='M13 7L10 4L7 7'
         stroke='var(--text-soft)'
-        strokeWidth='1.4'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
       />
       <path
-        d='M4 8H16M7 3V5M13 3V5'
+        d='M13 13L10 16L7 13'
         stroke='var(--text-soft)'
-        strokeWidth='1.4'
+        strokeWidth='1.5'
         strokeLinecap='round'
+        strokeLinejoin='round'
       />
     </svg>
   )
@@ -111,15 +118,14 @@ export default function LinksStats({ stats, selectedRange, onRangeChange }) {
 
   return (
     <div
+      className='stats-segment-row'
       style={{
         width: '100%',
         maxWidth: '720px',
-        display: 'flex',
         alignItems: 'flex-start',
-        justifyContent: 'space-between',
       }}
     >
-      <div style={{ display: 'flex', gap: '42px', alignItems: 'flex-start' }}>
+      <div className='stats-metrics-row'>
         <Metric
           label='Total clicks'
           width='76px'
@@ -156,7 +162,7 @@ export default function LinksStats({ stats, selectedRange, onRangeChange }) {
             >
               {range}
             </p>
-            <CalendarIcon />
+            <ChevronIcon />
           </div>
         }
       >

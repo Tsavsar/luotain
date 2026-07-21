@@ -204,18 +204,20 @@ function DataRow({
           alignItems: 'center',
           gap: '8px',
           whiteSpace: 'nowrap',
-          // minWidth (not width) so this can still grow past its
-          // proportional bar size when the label needs more room —
-          // a fixed width was letting long labels (e.g. "United
-          // Kingdom") spill past the pill's edge on narrow screens.
-          minWidth: `max(38px, calc(${pct} * (100% - 48px)))`,
-          // ...but that growth needs a ceiling too, or a long label
-          // on a high-value row can grow the pill enough to crowd
-          // out the value column on the right (the number was
-          // getting pushed toward the edge of the card). 100px
-          // reserves enough room for the copy/remove icons plus the
-          // count even when both are showing.
-          maxWidth: 'calc(100% - 100px)',
+          // Three constraints folded into one expression, since
+          // separate minWidth + maxWidth properties don't actually
+          // clamp between each other — when they conflict, minWidth
+          // always wins outright and maxWidth is ignored. That's
+          // exactly what was still pushing the count off the edge
+          // on high-value rows: pct * (100% - 48px) alone already
+          // exceeded the old maxWidth, so the cap never applied.
+          // Here CSS's min()/max() functions do the clamping
+          // directly: never below 38px, never above 100% - 100px
+          // (the icons + count's reserved room), and in between,
+          // whichever of "proportional target" or "that ceiling" is
+          // smaller — so a long label on a high-value row still
+          // respects the ceiling instead of overriding it.
+          minWidth: `max(38px, min(calc(${pct} * (100% - 48px)), calc(100% - 100px)))`,
           transition:
             'min-width 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
         }}

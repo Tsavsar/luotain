@@ -360,53 +360,58 @@ export default function ChartContainer({ data, compareSeries }) {
                 </>
               )}
 
-              {/* Comparison mode. Same underlying trick as the
-                  single-line version above (muted everywhere, vivid
-                  only in the hovered column, via chartHoverClip) —
-                  just applied to the FILLS only, not the strokes.
-                  Strokes stay full color and unclipped the whole
-                  time so no line ever disappears; only the fill
-                  underneath them dims down to a gray wash outside
-                  the hovered column, then bursts back into real
-                  color right at it. That's what actually reads as
-                  "this column is active" instead of a flat overlay
-                  sitting on top, which is what was here before and
-                  just looked like nothing against the white page. */}
+              {/* Comparison mode. Same two-layer trick as the
+                  single-line version above (muted ghost everywhere,
+                  vivid real color only in the hovered column, via
+                  chartHoverClip), just run once per series instead
+                  of once. At rest (nothing hovered) the clip is full
+                  width, so every line just shows its real color —
+                  the muted ghost only becomes visible once hovering
+                  starts, same as single-line. */}
               {isComparing &&
                 series.map((s) => {
                   const fillD = `${s.strokePath} L ${s.points[s.points.length - 1]?.x ?? 0.5} 100 L 0.5 100 Z`
                   return (
-                    <g key={`${s.id}-fills`}>
-                      <path
-                        d={fillD}
-                        fill='url(#chartFillGradientMuted)'
-                        stroke='none'
+                    <g key={`${s.id}-layers`}>
+                      <g
                         opacity={hoveredIdx !== null ? 1 : 0}
                         style={{ transition: 'opacity 0.25s ease' }}
-                      />
+                      >
+                        <path
+                          d={fillD}
+                          fill='url(#chartFillGradientMuted)'
+                          stroke='none'
+                        />
+                        <path
+                          d={s.strokePath}
+                          fill='none'
+                          stroke='var(--bg-subtle)'
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeDasharray='0.12 0.1'
+                          vectorEffect='non-scaling-stroke'
+                        />
+                      </g>
                       <g clipPath='url(#chartHoverClip)'>
                         <path
                           d={fillD}
                           fill={`url(#${s.fillGradientId})`}
                           stroke='none'
                         />
+                        <path
+                          d={s.strokePath}
+                          fill='none'
+                          stroke={s.color}
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          vectorEffect='non-scaling-stroke'
+                        />
                       </g>
                     </g>
                   )
                 })}
-              {isComparing &&
-                series.map((s) => (
-                  <path
-                    key={s.id}
-                    d={s.strokePath}
-                    fill='none'
-                    stroke={s.color}
-                    strokeWidth='1.5'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    vectorEffect='non-scaling-stroke'
-                  />
-                ))}
             </svg>
           )}
 

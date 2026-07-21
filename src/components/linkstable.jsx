@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import EmptyStateIcon from './emptystateicon'
 import SourceIcon from './sourceicon'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
@@ -32,20 +32,18 @@ function hostnameOf(url) {
   }
 }
 
+// Same chevron already established in LinksStats/StatsSegment (same
+// path data, just this app's one "expand/toggle" glyph) — a single
+// arm instead of the double one, since a single chevron can rotate
+// to show current direction, an up/down pair can't say much more
+// than "this is sortable."
 function SortIcon() {
   return (
-    <svg width='16' height='16' viewBox='0 0 16 16' fill='none'>
+    <svg width='14' height='14' viewBox='0 0 20 20' fill='none'>
       <path
-        d='M5 6.5L8 4L11 6.5'
+        d='M13 7L10 4L7 7'
         stroke='var(--text-soft)'
-        strokeWidth='1.3'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-      <path
-        d='M5 9.5L8 12L11 9.5'
-        stroke='var(--text-soft)'
-        strokeWidth='1.3'
+        strokeWidth='1.5'
         strokeLinecap='round'
         strokeLinejoin='round'
       />
@@ -91,6 +89,7 @@ function MoreIcon() {
 const COL_LINK = '210px'
 const COL_DESTINATION = '220px'
 const COL_DATE = '150px'
+const COL_MORE = '30px'
 
 // ─── Header ───
 function TableHeader({ sortBy, sortDir, onSort }) {
@@ -133,7 +132,10 @@ function TableHeader({ sortBy, sortDir, onSort }) {
             display: 'flex',
             opacity: sortBy === 'clicks' ? 1 : 0.5,
             transform:
-              sortBy === 'clicks' && sortDir === 'desc' ? 'scaleY(-1)' : 'none',
+              sortBy === 'clicks' && sortDir === 'desc'
+                ? 'rotate(180deg)'
+                : 'none',
+            transition: 'transform 0.15s ease',
           }}
         >
           <SortIcon />
@@ -158,12 +160,20 @@ function TableHeader({ sortBy, sortDir, onSort }) {
             display: 'flex',
             opacity: sortBy === 'date' ? 1 : 0.5,
             transform:
-              sortBy === 'date' && sortDir === 'desc' ? 'scaleY(-1)' : 'none',
+              sortBy === 'date' && sortDir === 'desc'
+                ? 'rotate(180deg)'
+                : 'none',
+            transition: 'transform 0.15s ease',
           }}
         >
           <SortIcon />
         </span>
       </div>
+      {/* Matches COL_MORE on rows below — without this, rows (which
+          always reserve that width for the more-button) would sit
+          narrower than the header and every column would be
+          slightly out of alignment with its header label. */}
+      <div style={{ width: COL_MORE, flexShrink: 0 }} />
     </div>
   )
 }
@@ -209,6 +219,17 @@ function MoreMenu({ link, onEdit, onDelete }) {
 // ─── One row ───
 function LinkRow({ link, onEdit, onDelete }) {
   const [hovered, setHovered] = useState(false)
+  // Touch devices don't fire onMouseEnter/Leave the way a cursor
+  // does, so a reveal wired only to hover can end up permanently
+  // invisible — and with opacity 0 also meaning pointerEvents:
+  // 'none', permanently untappable too. This is the same check
+  // chartcontainer.jsx already uses for its own hover-vs-tap split.
+  const [isTouch, setIsTouch] = useState(false)
+  useEffect(() => {
+    setIsTouch(window.matchMedia?.('(hover: none)').matches ?? false)
+  }, [])
+  const showMore = hovered || isTouch
+
   const cellBase = {
     display: 'flex',
     alignItems: 'center',
@@ -225,10 +246,10 @@ function LinkRow({ link, onEdit, onDelete }) {
         gap: '6px',
         width: '100%',
         alignItems: 'center',
-        padding: hovered ? '4px 8px' : '4px 0',
-        margin: hovered ? '0 -8px' : '0',
+        padding: '4px 8px',
+        margin: '0 -8px',
         borderRadius: '8px',
-        background: hovered ? 'var(--bg-surface)' : 'transparent',
+        background: hovered || isTouch ? 'var(--bg-surface)' : 'transparent',
         transition: 'background 0.1s ease',
       }}
     >
@@ -309,15 +330,19 @@ function LinkRow({ link, onEdit, onDelete }) {
         </p>
       </div>
 
-      {/* Reveals on hover — width/opacity animate instead of the row
-          reflowing when this mounts, so nothing else shifts. */}
+      {/* Width is constant (COL_MORE) whether hovering or not — only
+          opacity toggles, so this can never push or reflow anything
+          else in the row. pointerEvents keeps it unclickable while
+          invisible instead of just visually hidden. */}
       <div
         style={{
-          width: hovered ? '24px' : '0px',
-          opacity: hovered ? 1 : 0,
-          overflow: 'hidden',
+          width: COL_MORE,
           flexShrink: 0,
-          transition: 'width 0.15s ease, opacity 0.15s ease',
+          display: 'flex',
+          justifyContent: 'center',
+          opacity: showMore ? 1 : 0,
+          pointerEvents: showMore ? 'auto' : 'none',
+          transition: 'opacity 0.15s ease',
         }}
       >
         <MoreMenu link={link} onEdit={onEdit} onDelete={onDelete} />
