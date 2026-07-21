@@ -97,18 +97,24 @@ function DestinationIcon({ domain }) {
   )
 }
 
-// Same chevron shape already established elsewhere, but re-framed —
-// lifting just one arm out of the original icon while keeping its
-// full 20x20 canvas left the shape sitting tiny and off-center in
-// one corner, since that arm only ever occupied a sliver of that
-// canvas. This viewBox is fitted to just the arm itself.
-function SortIcon() {
+// Exact SVG as given. direction is 'asc' | 'desc' | null (null =
+// this column isn't the one currently sorted) — colors whichever
+// arrow matches the active direction black, the other stays the
+// default gray, instead of rotating a single arrow.
+function SortIcon({ direction }) {
   return (
-    <svg width='14' height='14' viewBox='0 0 12 8' fill='none'>
+    <svg width='16' height='16' viewBox='0 0 16 16' fill='none'>
       <path
-        d='M2 6L6 2L10 6'
-        stroke='var(--text-soft)'
-        strokeWidth='1.5'
+        d='M10.3996 5.60019L7.99961 3.2002L5.59961 5.60019'
+        stroke={direction === 'asc' ? 'var(--text-strong)' : '#A3A3A3'}
+        strokeWidth='1.25'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M10.3996 10.4004L7.99961 12.8004L5.59961 10.4004'
+        stroke={direction === 'desc' ? 'var(--text-strong)' : '#A3A3A3'}
+        strokeWidth='1.25'
         strokeLinecap='round'
         strokeLinejoin='round'
       />
@@ -154,15 +160,16 @@ function MoreIcon() {
 const COL_LINK = '210px'
 const COL_DESTINATION = '220px'
 const COL_DATE = '150px'
-const COL_MORE = '30px'
-// Fixed instead of flex:1 — Link + Destination + Date + More already
-// account for 610px, plus 24px of gaps between the 5 columns, which
-// only leaves exactly 86px within the table's own 720px cap (same
-// width every other section on this page already uses). A flexible
-// Clicks column was absorbing whatever was left of THAT math
-// unpredictably, which is what made the table's real rendered width
-// drift out of alignment with the stats bar above it.
-const COL_CLICKS = '86px'
+// Link + Destination + Date + 3 gaps between the 4 columns (18px)
+// account for 598px, leaving exactly 122px for Clicks within the
+// table's 720px cap — matching Figma's own math for this row, and
+// the reason there's no fifth "more button" column: reserving space
+// for it here was leaving a permanent empty gap at the table's right
+// edge even when nothing was hovered, which is what was making the
+// table visibly fall short of 720px. The button is now an absolutely
+// positioned overlay instead (see LinkRow) — zero footprint in the
+// row's own layout, so all four real columns can use the full width.
+const COL_CLICKS = '122px'
 
 // ─── Header ───
 function TableHeader({ sortBy, sortDir, onSort }) {
@@ -200,18 +207,8 @@ function TableHeader({ sortBy, sortDir, onSort }) {
         <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
           Clicks
         </span>
-        <span
-          style={{
-            display: 'flex',
-            opacity: sortBy === 'clicks' ? 1 : 0.5,
-            transform:
-              sortBy === 'clicks' && sortDir === 'desc'
-                ? 'rotate(180deg)'
-                : 'none',
-            transition: 'transform 0.15s ease',
-          }}
-        >
-          <SortIcon />
+        <span style={{ display: 'flex' }}>
+          <SortIcon direction={sortBy === 'clicks' ? sortDir : null} />
         </span>
       </div>
       <div
@@ -228,25 +225,10 @@ function TableHeader({ sortBy, sortDir, onSort }) {
         <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
           Date created
         </span>
-        <span
-          style={{
-            display: 'flex',
-            opacity: sortBy === 'date' ? 1 : 0.5,
-            transform:
-              sortBy === 'date' && sortDir === 'desc'
-                ? 'rotate(180deg)'
-                : 'none',
-            transition: 'transform 0.15s ease',
-          }}
-        >
-          <SortIcon />
+        <span style={{ display: 'flex' }}>
+          <SortIcon direction={sortBy === 'date' ? sortDir : null} />
         </span>
       </div>
-      {/* Matches COL_MORE on rows below — without this, rows (which
-          always reserve that width for the more-button) would sit
-          narrower than the header and every column would be
-          slightly out of alignment with its header label. */}
-      <div style={{ width: COL_MORE, flexShrink: 0 }} />
     </div>
   )
 }
@@ -315,6 +297,7 @@ function LinkRow({ link, onEdit, onDelete }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
+        position: 'relative',
         display: 'flex',
         gap: '6px',
         width: '100%',
@@ -403,16 +386,19 @@ function LinkRow({ link, onEdit, onDelete }) {
         </p>
       </div>
 
-      {/* Width is constant (COL_MORE) whether hovering or not — only
-          opacity toggles, so this can never push or reflow anything
-          else in the row. pointerEvents keeps it unclickable while
-          invisible instead of just visually hidden. */}
+      {/* Absolutely positioned — takes up no space in the row's own
+          flex layout, so it can't push or reflow the real columns
+          (same guarantee the old reserved-width slot had), but also
+          doesn't leave a permanent empty gap sitting at the row's
+          end the way that reserved space did. Sits over the tail of
+          the Date column, which date strings ("3rd July, 2026")
+          don't fill anyway, so nothing real is ever covered. */}
       <div
         style={{
-          width: COL_MORE,
-          flexShrink: 0,
-          display: 'flex',
-          justifyContent: 'center',
+          position: 'absolute',
+          right: '8px',
+          top: '50%',
+          transform: 'translateY(-50%)',
           opacity: showMore ? 1 : 0,
           pointerEvents: showMore ? 'auto' : 'none',
           transition: 'opacity 0.15s ease',
