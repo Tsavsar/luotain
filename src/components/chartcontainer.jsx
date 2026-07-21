@@ -377,6 +377,25 @@ export default function ChartContainer({ data, compareSeries }) {
                     stroke='none'
                   />
                 ))}
+              {/* Hover highlight band — the single-line version spotlights
+                  the hovered column by clipping the orange fill down to
+                  just that slice, desaturating everywhere else; can't
+                  do that here without hiding whichever line sits
+                  underneath at that moment, so instead this is a
+                  lightening wash over the fills at the hovered column —
+                  same "this one's active" read, sits above the color
+                  washes so it's actually visible, but below the
+                  strokes so the lines themselves stay crisp. */}
+              {isComparing && hoveredIdx !== null && (
+                <rect
+                  x={hoveredIdx}
+                  y='-15'
+                  width='1'
+                  height='130'
+                  fill='white'
+                  opacity='0.45'
+                />
+              )}
               {isComparing &&
                 series.map((s) => (
                   <path
