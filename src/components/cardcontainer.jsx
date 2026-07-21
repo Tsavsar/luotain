@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import EmptyStateIcon from './emptystateicon'
 import CountryFlag from './countryflag'
+import SourceIcon from './sourceicon'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
+import { toast } from './toast'
 
 function ChevronIcon() {
   return (
@@ -18,40 +20,6 @@ function ChevronIcon() {
         d='M3.5 5.25L7 8.75L10.5 5.25'
         stroke='var(--text-soft)'
         strokeWidth='1.3'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-    </svg>
-  )
-}
-
-function DirectLinkIcon() {
-  return (
-    <svg
-      width='18'
-      height='18'
-      viewBox='0 0 18 18'
-      fill='none'
-      xmlns='http://www.w3.org/2000/svg'
-    >
-      <path
-        d='M9.9 5.4L8.13 3.63C6.89 2.39 4.87 2.39 3.63 3.63C2.39 4.87 2.39 6.89 3.63 8.13L5.4 9.9'
-        stroke='var(--text-soft)'
-        strokeWidth='1.4'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-      <path
-        d='M8.1 12.6L9.87 14.37C11.11 15.61 13.13 15.61 14.37 14.37C15.61 13.13 15.61 11.11 14.37 9.87L12.6 8.1'
-        stroke='var(--text-soft)'
-        strokeWidth='1.4'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-      <path
-        d='M10.8 10.8L7.2 7.2'
-        stroke='var(--text-soft)'
-        strokeWidth='1.4'
         strokeLinecap='round'
         strokeLinejoin='round'
       />
@@ -182,24 +150,6 @@ function CheckIcon() {
   )
 }
 
-function SourceIcon({ domain }) {
-  if (!domain || domain.toLowerCase() === 'direct') {
-    return <DirectLinkIcon />
-  }
-  return (
-    <img
-      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`}
-      alt=''
-      width={18}
-      height={18}
-      style={{ borderRadius: '4px', flexShrink: 0 }}
-      onError={(e) => {
-        e.currentTarget.style.display = 'none'
-      }}
-    />
-  )
-}
-
 // ─── DataRow ───
 // Clicking anywhere on the row now applies it as a filter — copy
 // stays its own explicit icon (copying "Norway" doesn't mean
@@ -224,6 +174,7 @@ function DataRow({
   function handleCopy(e) {
     e.stopPropagation()
     navigator.clipboard?.writeText(label)
+    toast('Link copied to clipboard')
   }
 
   return (
@@ -258,6 +209,13 @@ function DataRow({
           // a fixed width was letting long labels (e.g. "United
           // Kingdom") spill past the pill's edge on narrow screens.
           minWidth: `max(38px, calc(${pct} * (100% - 48px)))`,
+          // ...but that growth needs a ceiling too, or a long label
+          // on a high-value row can grow the pill enough to crowd
+          // out the value column on the right (the number was
+          // getting pushed toward the edge of the card). 100px
+          // reserves enough room for the copy/remove icons plus the
+          // count even when both are showing.
+          maxWidth: 'calc(100% - 100px)',
           transition:
             'min-width 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
         }}
@@ -272,7 +230,10 @@ function DataRow({
             color:
               hovered || isFiltered ? 'var(--text-strong)' : 'var(--text-sub)',
             margin: 0,
+            minWidth: 0,
             whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             textDecoration: hovered || isFiltered ? 'underline' : 'none',
             textUnderlineOffset: '2px',
             transition: 'color 0.15s ease',

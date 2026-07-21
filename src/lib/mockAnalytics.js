@@ -321,6 +321,24 @@ function topLinksBreakdown(events) {
   return { topLinks: top, othersClicks: Math.max(0, othersClicks) }
 }
 
+// Per-slot click counts for each link being compared, so the chart
+// can draw one curve per link instead of only the combined total.
+// Keyed by link URL — that's also what ChartContainer expects as
+// each series' `id`. Runs on the same already-filtered event subset
+// as everything else in the slot, so an active country/source/device
+// filter narrows these curves the same way it narrows totalClicks.
+function seriesClicksForSlot(slotEvents, compareLinks) {
+  if (!compareLinks || compareLinks.length === 0) return undefined
+  const counts = {}
+  compareLinks.forEach((url) => {
+    counts[url] = 0
+  })
+  slotEvents.forEach((e) => {
+    if (e.linkUrl in counts) counts[e.linkUrl] += 1
+  })
+  return counts
+}
+
 const pad = (n) => String(n).padStart(2, '0')
 const MONTHS = [
   'Jan',
@@ -339,7 +357,7 @@ const MONTHS = [
 const formatDate = (d) =>
   `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
 
-function aggregateChartSlots(events, range, now) {
+function aggregateChartSlots(events, range, now, compareLinks) {
   if (range === 'Today') {
     const NOW_INDEX = 15
     const slots = []
@@ -367,6 +385,7 @@ function aggregateChartSlots(events, range, now) {
         totalClicks: hourEvents.length,
         topLinks,
         othersClicks,
+        seriesClicks: seriesClicksForSlot(hourEvents, compareLinks),
         isNow,
         isFuture,
       })
@@ -388,6 +407,7 @@ function aggregateChartSlots(events, range, now) {
         totalClicks: hourEvents.length,
         topLinks,
         othersClicks,
+        seriesClicks: seriesClicksForSlot(hourEvents, compareLinks),
         isNow: false,
         isFuture: false,
       })
@@ -415,6 +435,7 @@ function aggregateChartSlots(events, range, now) {
       totalClicks: dayEvents.length,
       topLinks,
       othersClicks,
+      seriesClicks: seriesClicksForSlot(dayEvents, compareLinks),
       isNow: i === days - 1,
       isFuture: false,
     })
@@ -482,9 +503,25 @@ export function getMockAnalytics(range = 'Last 7 days', filters = []) {
   const filteredRangeEvents = filterByDimension(rangeEvents, filters)
   const filteredPriorEvents = filterByDimension(priorEvents, filters)
 
+  // Links currently selected as filters double as the chart's
+  // comparison lines — same list, just read as "which curves" rather
+  // than "which events." ChartContainer only turns on multi-line
+  // mode at 2+, but that threshold lives there, not here.
+  const compareSeries = filters
+    .filter((f) => f.type === 'link')
+    .map((f) => ({ id: f.label, label: f.label }))
+  const compareLinks = compareSeries.map((s) => s.id)
+
   return {
     stats: aggregateStats(filteredRangeEvents, filteredPriorEvents),
-    chartData: aggregateChartSlots(filteredRangeEvents, range, now),
+    chartData: aggregateChartSlots(
+      filteredRangeEvents,
+      range,
+      now,
+      compareLinks
+    ),
+    // Ready to pass straight to <ChartContainer compareSeries={...} />
+    chartCompareSeries: compareSeries,
     cardData: aggregateCardData(filteredRangeEvents),
     // Full universe of pickable options for this range — deliberately
     // NOT dimension-filtered, so the "+" picker can always show every

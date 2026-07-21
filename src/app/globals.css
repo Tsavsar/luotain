@@ -1413,3 +1413,110 @@ html {
     animation: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════
+   Toast (Alert) — Figma node 391:1083
+═══════════════════════════════════════════════════ */
+
+/* Transitions.dev — Toast open/close, used verbatim (same pattern
+   already in this file for .t-digit-group). One class, not two
+   states: opening uses the slower --toast-open clock, the resting/
+   closing transition uses the faster --toast-close clock, so
+   toggling .is-open alone gives the open/close asymmetry. */
+:root {
+  --toast-open: 350ms;
+  --toast-close: 250ms;
+  --toast-distance: 16px;
+  --toast-blur: 2px;
+  --toast-scale: 0.97;
+  --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+.t-toast {
+  opacity: 0;
+  transform: translateY(var(--toast-distance)) scale(var(--toast-scale));
+  filter: blur(var(--toast-blur));
+  will-change: transform, opacity, filter;
+  transition:
+    opacity var(--toast-close) var(--toast-ease),
+    transform var(--toast-close) var(--toast-ease),
+    filter var(--toast-close) var(--toast-ease);
+}
+.t-toast.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+  transition:
+    opacity var(--toast-open) var(--toast-ease),
+    transform var(--toast-open) var(--toast-ease),
+    filter var(--toast-open) var(--toast-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-toast {
+    transition: none !important;
+  }
+}
+
+/* Transitions.dev — Icon swap, used verbatim. Drives the stack's
+   expand/collapse chevron: data-state="collapsed" | "expanded" on
+   .t-icon-swap, matching data-icon on each .t-icon child. */
+:root {
+  --icon-swap-dur: 250ms;
+  --icon-swap-blur: 2px;
+  --icon-swap-start-scale: 0.25;
+  --icon-swap-ease: ease-in-out;
+}
+.t-icon-swap {
+  position: relative;
+  display: inline-grid;
+}
+.t-icon-swap .t-icon {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--icon-swap-dur) var(--icon-swap-ease),
+    filter var(--icon-swap-dur) var(--icon-swap-ease),
+    transform var(--icon-swap-dur) var(--icon-swap-ease);
+  will-change: opacity, filter, transform;
+}
+.t-icon-swap[data-state='collapsed'] .t-icon[data-icon='collapsed'],
+.t-icon-swap[data-state='expanded'] .t-icon[data-icon='expanded'] {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+.t-icon-swap[data-state='collapsed'] .t-icon[data-icon='expanded'],
+.t-icon-swap[data-state='expanded'] .t-icon[data-icon='collapsed'] {
+  opacity: 0;
+  filter: blur(var(--icon-swap-blur));
+  transform: scale(var(--icon-swap-start-scale));
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-icon-swap .t-icon {
+    transition: none !important;
+  }
+}
+
+/* Stack positioning — not part of the Transitions.dev snippets,
+   this is the piece that actually makes multiple toasts stack.
+   Collapsed: every toast pins to the same spot, each one further
+   back scaled down and nudged up slightly so they peek out like a
+   card stack. Expanded: normal vertical flow, gap between each. The
+   transition on transform/margin is what makes that switch glide
+   instead of snapping. */
+.toast-stack {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.toast-stack-item {
+  pointer-events: auto;
+  width: 320px;
+  max-width: calc(100vw - 40px);
+  transition:
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin-top 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}

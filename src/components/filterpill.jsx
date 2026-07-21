@@ -1,5 +1,8 @@
 'use client'
 
+import CountryFlag from './countryflag'
+import SourceIcon from './sourceicon'
+
 function CloseIcon() {
   return (
     <svg
@@ -29,6 +32,29 @@ const TYPE_LABELS = {
 
 function keyOf(f) {
   return `${f.type}:${f.label}`
+}
+
+// Country and source filters get the same flag/favicon the cards
+// already show for that row, instead of a plain color dot — link
+// and device filters keep the dot, since neither has a natural icon.
+function FilterIcon({ filter }) {
+  if (filter.type === 'country') {
+    return <CountryFlag country={filter.label} size={16} />
+  }
+  if (filter.type === 'source') {
+    return <SourceIcon domain={filter.label} />
+  }
+  return (
+    <div
+      style={{
+        width: '8px',
+        height: '8px',
+        borderRadius: 'var(--radius-full)',
+        background: 'var(--primary-base)',
+        flexShrink: 0,
+      }}
+    />
+  )
 }
 
 // ─── FilterPill ───
@@ -66,15 +92,7 @@ export default function FilterPill({ filters, onRemove, onClearAll }) {
             padding: '4px 8px 4px 10px',
           }}
         >
-          <div
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--primary-base)',
-              flexShrink: 0,
-            }}
-          />
+          <FilterIcon filter={filter} />
           <span
             className='para-sm'
             style={{ color: 'var(--text-strong)', whiteSpace: 'nowrap' }}
@@ -108,10 +126,7 @@ export default function FilterPill({ filters, onRemove, onClearAll }) {
             padding: '4px 4px',
           }}
         >
-          <span
-            className='para-xs'
-            style={{ color: 'var(--text-soft)', textDecoration: 'underline' }}
-          >
+          <span className='para-xs' style={{ color: 'var(--text-soft)' }}>
             Clear all
           </span>
         </button>
