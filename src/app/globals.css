@@ -1426,7 +1426,7 @@ html {
 ═══════════════════════════════════════════════════ */
 [data-sonner-toast] {
   border-radius: 12px !important;
-  padding: 8px 10px !important;
+  padding: 10px 14px !important;
 }
 [data-sonner-toast] [data-title],
 .kernui-toast-title {
