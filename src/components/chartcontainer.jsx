@@ -718,10 +718,7 @@ export default function ChartContainer({ data, compareSeries }) {
                             flexShrink: 0,
                           }}
                         />
-                        <span
-                          className='para-xs'
-                          style={{ color: 'var(--text-sub)' }}
-                        >
+                        <span style={{ fontSize: '14px', color: 'white' }}>
                           {s.label}
                         </span>
                       </div>

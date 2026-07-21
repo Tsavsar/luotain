@@ -14,6 +14,23 @@ export default function DashboardLayout({ children }) {
   const [allOrgs, setAllOrgs] = useState([])
   const [activeOrgId, setActiveOrgId] = useState(null)
   const [userImage, setUserImage] = useState(null)
+  // Testing-only theme override — reads whatever's already on <html>
+  // (your real [data-theme] mechanism from globals.css) so this
+  // starts in sync, then just flips that same attribute directly.
+  // Nothing new here, this is the exact switch your CSS already
+  // looks for.
+  const [theme, setTheme] = useState('dark')
+
+  useEffect(() => {
+    const current = document.documentElement.dataset.theme
+    if (current === 'light' || current === 'dark') setTheme(current)
+  }, [])
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    document.documentElement.dataset.theme = next
+  }
 
   useEffect(() => {
     async function guard() {
@@ -104,43 +121,94 @@ export default function DashboardLayout({ children }) {
 
       <ToastStack />
 
-      {/* Temporary, same idea as the "Mock data: ON" pill on the
-          analytics page — a quick way to fire a test toast from
-          anywhere in the dashboard while this is still being
-          checked over. Bottom-LEFT on purpose, so it doesn't sit on
-          top of the toast stack itself or the mock data pill, both
-          of which live bottom-right. Pull this once real triggers
-          (copy, save, etc.) are enough to test with on their own. */}
-      <button
-        onClick={() => toast('Test toast')}
+      {/* Temporary testing cluster, same idea as the "Mock data: ON"
+          pill on the analytics page. Bottom-LEFT on purpose, so it
+          doesn't sit on top of the toast stack or the mock data
+          pill, both of which live bottom-right. Pull this once
+          you're done adjusting the toast and have real triggers
+          (copy, save, etc.) to test with on their own. */}
+      <div
         style={{
           position: 'fixed',
           left: '20px',
           bottom: '20px',
           zIndex: 99,
           display: 'flex',
-          alignItems: 'center',
           gap: '8px',
-          padding: '10px 16px 10px 12px',
-          borderRadius: 'var(--radius-full)',
-          background: '#171717',
-          border: 'none',
-          cursor: 'pointer',
         }}
       >
-        <div
+        <button
+          onClick={() => toast('Link copied to clipboard')}
           style={{
-            width: '8px',
-            height: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 14px',
             borderRadius: 'var(--radius-full)',
-            background: 'var(--primary-base)',
-            flexShrink: 0,
+            background: '#171717',
+            border: 'none',
+            cursor: 'pointer',
           }}
-        />
-        <span className='label-sm' style={{ color: 'white' }}>
-          Fire test toast
-        </span>
-      </button>
+        >
+          <div
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--success-base)',
+              flexShrink: 0,
+            }}
+          />
+          <span className='label-sm' style={{ color: 'white' }}>
+            Fire toast
+          </span>
+        </button>
+
+        <button
+          onClick={() => toast.error('Failed to save changes')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-full)',
+            background: '#171717',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <div
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--error-base)',
+              flexShrink: 0,
+            }}
+          />
+          <span className='label-sm' style={{ color: 'white' }}>
+            Fire error
+          </span>
+        </button>
+
+        <button
+          onClick={toggleTheme}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-full)',
+            background: '#171717',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <span className='label-sm' style={{ color: 'white' }}>
+            {theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
+          </span>
+        </button>
+      </div>
     </main>
   )
 }

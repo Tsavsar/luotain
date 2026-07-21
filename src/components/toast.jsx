@@ -17,7 +17,7 @@ export { toast }
 // Exact SVGs as provided, same ones used before.
 function SuccessIcon() {
   return (
-    <svg width='20' height='20' viewBox='0 0 30 30' fill='none'>
+    <svg width='28' height='28' viewBox='0 0 30 30' fill='none'>
       <g filter='url(#toastCheckShadow)'>
         <path
           fillRule='evenodd'
@@ -95,7 +95,6 @@ export function ToastStack() {
   return (
     <SonnerToaster
       position='bottom-right'
-      closeButton
       icons={{
         success: <SuccessIcon />,
         error: <ErrorIcon />,
@@ -105,7 +104,6 @@ export function ToastStack() {
           toast: 'kernui-toast',
           title: 'kernui-toast-title',
           description: 'kernui-toast-description',
-          closeButton: 'kernui-toast-close',
         },
       }}
       style={{
