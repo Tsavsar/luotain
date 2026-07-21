@@ -380,6 +380,15 @@ function Card({
         flex: '1 0 0',
         minWidth: 0,
         height: '250px',
+        // minHeight repeats the height on purpose: once card-row
+        // stacks these into a column on mobile, `flex: 1 0 0` starts
+        // this card's height calculation from 0 (not 250px) and
+        // grows it from there — but with no fixed height set on the
+        // row wrapping it, there's nothing solid to grow into, so
+        // the card was settling at "just tall enough for the title,"
+        // squeezing the rows list toward zero height. minHeight
+        // isn't affected by that calculation, so it holds the floor.
+        minHeight: '250px',
         padding: '14px 12px 12px',
       }}
     >
