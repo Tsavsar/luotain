@@ -1,334 +1,124 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+// Real Sonner (npm install sonner) instead of the hand-rolled
+// version from before — same visual direction, but Sonner's own
+// stacking/expand/swipe-to-dismiss animations are the actual point
+// of switching, so this file doesn't touch that at all. It only
+// retheme's Sonner's own CSS variables and icons to match KernUI;
+// everything interactive is stock Sonner.
+//
+// `toast`/`toast.success`/`toast.error` are re-exported as-is, so
+// every existing `toast('message')` call (cardcontainer.jsx's copy
+// button, etc.) keeps working without changes.
+import { Toaster as SonnerToaster, toast } from 'sonner'
 
-// ─── Store ───
-// Plain module-level array + subscriber list, not React context —
-// the same reason Sonner is built this way: toast() needs to be
-// callable from anywhere (an onClick, a fetch .then, a keyboard
-// handler) without the caller needing hook access or being inside a
-// provider's child tree.
-let toasts = []
-let listeners = []
-let idCounter = 0
+export { toast }
 
-function emit() {
-  listeners.forEach((fn) => fn(toasts))
-}
-
-// icon: 'success' for now (the only one Figma has designed) — add
-// more entries to ICONS below as more toast types get designed.
-export function toast(message, { icon = 'success', duration = 4000 } = {}) {
-  const id = ++idCounter
-  toasts = [...toasts, { id, message, icon }]
-  emit()
-  if (duration !== Infinity) {
-    setTimeout(() => dismissToast(id), duration)
-  }
-  return id
-}
-
-export function dismissToast(id) {
-  toasts = toasts.filter((t) => t.id !== id)
-  emit()
-}
-
-function useToasts() {
-  const [state, setState] = useState(toasts)
-  useEffect(() => {
-    listeners.push(setState)
-    return () => {
-      listeners = listeners.filter((fn) => fn !== setState)
-    }
-  }, [])
-  return state
-}
-
-// ─── Icons ───
-// Not using the Figma image exports here — pulled them apart from
-// the raw styles: the checkmark's circle is var(--success-base) and
-// the close mark is var(--text-strong), both theme-reactive. A
-// flattened image export bakes in whatever those resolved to at
-// export time (dark mode) and stays that color forever, so it'd
-// have been visibly wrong the moment the page switched to light.
-// Both shapes are simple enough (a circle + check, an X) to
-// reproduce exactly without needing the real vector file.
+// Exact SVGs as provided, same ones used before.
 function SuccessIcon() {
   return (
-    <svg
-      width='24'
-      height='24'
-      viewBox='0 0 24 24'
-      fill='none'
-      style={{
-        flexShrink: 0,
-        filter: 'drop-shadow(0px 2px 4px rgba(54,54,54,0.04))',
-      }}
-    >
-      <circle cx='12' cy='12' r='10.75' fill='var(--success-base)' />
+    <svg width='20' height='20' viewBox='0 0 30 30' fill='none'>
+      <g filter='url(#toastCheckShadow)'>
+        <path
+          fillRule='evenodd'
+          clipRule='evenodd'
+          d='M14.75 2C8.813 2 4 6.813 4 12.75C4 18.687 8.813 23.5 14.75 23.5C20.687 23.5 25.5 18.687 25.5 12.75C25.5 6.813 20.687 2 14.75 2ZM10.28 12.72C10.1378 12.5875 9.94978 12.5154 9.75548 12.5188C9.56118 12.5223 9.37579 12.601 9.23838 12.7384C9.10097 12.8758 9.02225 13.0612 9.01883 13.2555C9.0154 13.4498 9.08752 13.6378 9.22 13.78L12.22 16.78C12.3606 16.9205 12.5512 16.9993 12.75 16.9993C12.9488 16.9993 13.1394 16.9205 13.28 16.78L20.28 9.78C20.4125 9.63783 20.4846 9.44978 20.4812 9.25548C20.4777 9.06118 20.399 8.87579 20.2616 8.73838C20.1242 8.60097 19.9388 8.52225 19.7445 8.51883C19.5502 8.5154 19.3622 8.58752 19.22 8.72L12.75 15.19L10.28 12.72Z'
+          fill='var(--success-base)'
+        />
+        <path
+          d='M10.28 12.72C10.1378 12.5875 9.94978 12.5154 9.75548 12.5188C9.56118 12.5223 9.37579 12.601 9.23838 12.7384C9.10097 12.8758 9.02225 13.0612 9.01883 13.2555C9.0154 13.4498 9.08752 13.6378 9.22 13.78L12.22 16.78C12.3606 16.9205 12.5512 16.9993 12.75 16.9993C12.9488 16.9993 13.1394 16.9205 13.28 16.78L20.28 9.78C20.4125 9.63783 20.4846 9.44978 20.4812 9.25548C20.4777 9.06118 20.399 8.87579 20.2616 8.73838C20.1242 8.60097 19.9388 8.52225 19.7445 8.51883C19.5502 8.5154 19.3622 8.58752 19.22 8.72L12.75 15.19L10.28 12.72Z'
+          fill='white'
+        />
+      </g>
+      <defs>
+        <filter
+          id='toastCheckShadow'
+          x='-1.25'
+          y='-1.25024'
+          width='32'
+          height='32'
+          filterUnits='userSpaceOnUse'
+          colorInterpolationFilters='sRGB'
+        >
+          <feFlood floodOpacity='0' result='BackgroundImageFix' />
+          <feColorMatrix
+            in='SourceAlpha'
+            type='matrix'
+            values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0'
+            result='hardAlpha'
+          />
+          <feOffset dy='2' />
+          <feGaussianBlur stdDeviation='2' />
+          <feComposite in2='hardAlpha' operator='out' />
+          <feColorMatrix
+            type='matrix'
+            values='0 0 0 0 0.210308 0 0 0 0 0.210308 0 0 0 0 0.210308 0 0 0 0.04 0'
+          />
+          <feBlend
+            mode='normal'
+            in2='BackgroundImageFix'
+            result='effect1_dropShadow'
+          />
+          <feBlend
+            mode='normal'
+            in='SourceGraphic'
+            in2='effect1_dropShadow'
+            result='shape'
+          />
+        </filter>
+      </defs>
+    </svg>
+  )
+}
+
+function ErrorIcon() {
+  return (
+    <svg width='20' height='20' viewBox='0 0 20 20' fill='none'>
       <path
-        d='M8 12.5L10.5 15L16 9'
-        stroke='white'
-        strokeWidth='1.5'
-        strokeLinecap='round'
-        strokeLinejoin='round'
+        d='m15.657,4.343c-3.119-3.119-8.195-3.119-11.314,0s-3.119,8.194,0,11.313c1.56,1.56,3.608,2.339,5.657,2.339s4.098-.78,5.657-2.339c3.119-3.119,3.119-8.194,0-11.313Zm-1.95,7.95c.391.391.391,1.023,0,1.414-.195.195-.451.293-.707.293s-.512-.098-.707-.293l-2.293-2.293-2.293,2.293c-.195.195-.451.293-.707.293s-.512-.098-.707-.293c-.391-.391-.391-1.023,0-1.414l2.293-2.293-2.293-2.293c-.391-.391-.391-1.023,0-1.414s1.023-.391,1.414,0l2.293,2.293,2.293-2.293c.391-.391,1.023-.391,1.414,0s.391,1.023,0,1.414l-2.293,2.293,2.293,2.293Z'
+        fill='var(--error-base)'
       />
     </svg>
   )
 }
 
-function CloseIcon() {
-  return (
-    <svg
-      width='22'
-      height='22'
-      viewBox='0 0 22 22'
-      fill='none'
-      style={{ filter: 'drop-shadow(0px 2px 4px rgba(54,54,54,0.04))' }}
-    >
-      <path
-        d='M6.2 6.19L15.81 15.8M15.81 6.19L6.2 15.8'
-        stroke='var(--text-strong)'
-        strokeWidth='1.25'
-        strokeLinecap='round'
-      />
-    </svg>
-  )
-}
-
-// Chevron for the stack's expand/collapse badge.
-function ChevronIcon() {
-  return (
-    <svg width='10' height='10' viewBox='0 0 10 10' fill='none'>
-      <path
-        d='M2.5 3.75L5 6.25L7.5 3.75'
-        stroke='var(--text-inverse)'
-        strokeWidth='1.3'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-    </svg>
-  )
-}
-
-// Only one designed so far — add more here as more toast types get
-// designed (e.g. error: ErrorIcon), same pattern.
-const TOAST_ICONS = { success: SuccessIcon }
-
-// ─── One toast card ───
-function ToastCard({
-  data,
-  isFront,
-  stackCount,
-  expanded,
-  onToggleStack,
-  onDismiss,
-}) {
-  const [open, setOpen] = useState(false)
-  const Icon = TOAST_ICONS[data.icon] || SuccessIcon
-
-  // Mounts closed, flips open next frame — that's what makes the
-  // .t-toast → .t-toast.is-open transition actually play instead of
-  // just appearing already-open.
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setOpen(true))
-    return () => cancelAnimationFrame(raf)
-  }, [])
-
-  const showBadge = isFront && stackCount > 1
-
-  return (
-    <div
-      className={`t-toast${open ? ' is-open' : ''}`}
-      onClick={() => {
-        if (isFront && stackCount > 1 && !expanded) onToggleStack()
-      }}
-      style={{
-        position: 'relative',
-        background: 'var(--bg-default)',
-        // outline, not border — matches the exact spec, and doesn't
-        // add to the box's size the way a border would, so it can't
-        // throw off the padding math below
-        outline: '1px solid var(--stroke-soft)',
-        outlineOffset: '-1px',
-        borderRadius: '24px',
-        boxShadow: 'var(--shadow-xs)',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '10px',
-        padding: '16px 20px',
-        width: '320px',
-        maxWidth: 'calc(100vw - 40px)',
-        cursor: isFront && stackCount > 1 && !expanded ? 'pointer' : 'default',
-      }}
-    >
-      <Icon />
-
-      {/* relative wrapper so the close mark can pin to its corner
-          instead of sitting in its own flex column — matches the
-          exact spec, and means the message can wrap to 2 lines
-          without shoving the close mark sideways */}
-      <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-        <p
-          className='label-md'
-          style={{
-            color: 'var(--text-strong)',
-            margin: 0,
-            paddingRight: '26px',
-          }}
-        >
-          {data.message}
-        </p>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onDismiss()
-          }}
-          title='Dismiss'
-          style={{
-            position: 'absolute',
-            top: '1px',
-            right: '-6px',
-            display: 'flex',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
-          }}
-        >
-          <CloseIcon />
-        </button>
-      </div>
-
-      {/* Stack-count badge, front card only, 2+ toasts. Chevron
-          dissolves between pointing-up (tap to expand) and
-          pointing-down (tap to collapse) via the icon-swap pattern —
-          state lives on the badge itself so the two frames can sit
-          in the same grid cell and cross-fade. */}
-      {showBadge && (
-        <div
-          onClick={(e) => {
-            e.stopPropagation()
-            onToggleStack()
-          }}
-          title={expanded ? 'Collapse' : `${stackCount - 1} more`}
-          style={{
-            position: 'absolute',
-            top: '-8px',
-            left: '-8px',
-            minWidth: '20px',
-            height: '20px',
-            padding: '0 5px',
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--primary-base)',
-            border: '2px solid var(--bg-default)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-          }}
-        >
-          <div
-            className='t-icon-swap'
-            data-state={expanded ? 'expanded' : 'collapsed'}
-          >
-            <span className='t-icon' data-icon='collapsed'>
-              <span
-                className='label-2xs'
-                style={{ color: 'var(--text-inverse)' }}
-              >
-                {stackCount - 1}
-              </span>
-            </span>
-            <span
-              className='t-icon'
-              data-icon='expanded'
-              style={{ display: 'flex', transform: 'rotate(180deg)' }}
-            >
-              <ChevronIcon />
-            </span>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Stack ───
-// Mount this once, near the root layout. Toasts are absolutely
-// positioned and animated purely with transform/opacity (not
-// document flow) so collapsed-peek and expanded-list can be the same
-// elements just re-targeted — nothing has to mount or unmount to
-// switch between the two.
+// ─── Mount once, near the root layout ───
+// Retheming is CSS-variable-first (Sonner's own --normal-bg /
+// --success-border / etc., documented at sonner.emilkowal.ski/styling)
+// rather than `unstyled: true` — going fully unstyled would mean
+// rebuilding the positioning/animation CSS ourselves, which is the
+// exact work switching to Sonner was meant to avoid. Because these
+// map to KernUI's OWN var(--bg-default) etc., the toast re-themes
+// for light/dark automatically through the normal CSS cascade —
+// Sonner's separate `theme` prop isn't needed on top of that.
 export function ToastStack() {
-  const items = useToasts()
-  const [expanded, setExpanded] = useState(false)
-  const [heights, setHeights] = useState({})
-  const elsRef = useRef({})
-
-  const ordered = [...items].reverse() // index 0 = newest = front
-
-  useLayoutEffect(() => {
-    const next = {}
-    ordered.forEach((t) => {
-      const el = elsRef.current[t.id]
-      if (el) next[t.id] = el.offsetHeight
-    })
-    setHeights(next)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items.length, expanded])
-
-  useEffect(() => {
-    if (items.length <= 1) setExpanded(false)
-  }, [items.length])
-
-  if (items.length === 0) return null
-
-  const GAP = 8
-  let cumulative = 0
-  const expandedOffset = ordered.map((t) => {
-    const y = cumulative
-    cumulative += (heights[t.id] || 72) + GAP
-    return y
-  })
-
   return (
-    <div className='toast-stack'>
-      {ordered.map((t, i) => {
-        const depth = Math.min(i, 3)
-        const translateY = expanded ? -expandedOffset[i] : depth * -10
-        const scale = expanded ? 1 : 1 - depth * 0.04
-        const opacity = expanded ? 1 : i > 3 ? 0 : 1
-
-        return (
-          <div
-            key={t.id}
-            ref={(el) => {
-              elsRef.current[t.id] = el
-            }}
-            className='toast-stack-item'
-            style={{
-              position: 'absolute',
-              right: 0,
-              bottom: 0,
-              zIndex: items.length - i,
-              transformOrigin: 'bottom right',
-              transform: `translateY(${translateY}px) scale(${scale})`,
-              opacity,
-              pointerEvents: opacity === 0 ? 'none' : 'auto',
-            }}
-          >
-            <ToastCard
-              data={t}
-              isFront={i === 0}
-              stackCount={items.length}
-              expanded={expanded}
-              onToggleStack={() => setExpanded((e) => !e)}
-              onDismiss={() => dismissToast(t.id)}
-            />
-          </div>
-        )
-      })}
-    </div>
+    <SonnerToaster
+      position='bottom-right'
+      closeButton
+      icons={{
+        success: <SuccessIcon />,
+        error: <ErrorIcon />,
+      }}
+      toastOptions={{
+        classNames: {
+          toast: 'kernui-toast',
+          title: 'kernui-toast-title',
+          description: 'kernui-toast-description',
+          closeButton: 'kernui-toast-close',
+        },
+      }}
+      style={{
+        '--normal-bg': 'var(--bg-default)',
+        '--normal-text': 'var(--text-strong)',
+        '--normal-border': 'var(--stroke-soft)',
+        '--success-bg': 'var(--bg-default)',
+        '--success-text': 'var(--text-strong)',
+        '--success-border': 'var(--stroke-soft)',
+        '--error-bg': 'var(--bg-default)',
+        '--error-text': 'var(--text-strong)',
+        '--error-border': 'var(--stroke-soft)',
+      }}
+    />
   )
 }

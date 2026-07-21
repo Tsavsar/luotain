@@ -30,14 +30,24 @@ const TYPE_LABELS = {
   device: 'Device',
 }
 
+// Same order as chartcontainer.jsx's SERIES_COLORS — a link filter's
+// dot needs to match whichever line it draws on the chart, and that
+// line's color comes from this same first/second/third order.
+const LINK_COLORS = [
+  'var(--primary-base)',
+  'var(--feature-base)',
+  'var(--success-base)',
+]
+
 function keyOf(f) {
   return `${f.type}:${f.label}`
 }
 
 // Country and source filters get the same flag/favicon the cards
-// already show for that row, instead of a plain color dot — link
-// and device filters keep the dot, since neither has a natural icon.
-function FilterIcon({ filter }) {
+// already show for that row. Link filters get a dot colored to match
+// their chart line (device filters keep a plain primary dot — device
+// isn't a chart series, so there's no line color to match).
+function FilterIcon({ filter, linkColor }) {
   if (filter.type === 'country') {
     return <CountryFlag country={filter.label} size={16} />
   }
@@ -50,7 +60,7 @@ function FilterIcon({ filter }) {
         width: '8px',
         height: '8px',
         borderRadius: 'var(--radius-full)',
-        background: 'var(--primary-base)',
+        background: linkColor || 'var(--primary-base)',
         flexShrink: 0,
       }}
     />
@@ -78,43 +88,56 @@ export default function FilterPill({ filters, onRemove, onClearAll }) {
         {filters.length > 1 ? 'Filters' : 'Filter'}:
       </span>
 
-      {filters.map((filter) => (
-        <div
-          key={keyOf(filter)}
-          style={{
-            background: 'var(--bg-default)',
-            border: '1px solid var(--stroke-soft)',
-            borderRadius: '10px', // was 8px
-            boxShadow: '0px 2px 2px rgba(54, 54, 54, 0.04)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '4px 8px 4px 10px',
-          }}
-        >
-          <FilterIcon filter={filter} />
-          <span
-            className='para-sm'
-            style={{ color: 'var(--text-strong)', whiteSpace: 'nowrap' }}
-          >
-            {filter.label}
-          </span>
-          <button
-            onClick={() => onRemove(filter)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
-            <CloseIcon />
-          </button>
-        </div>
-      ))}
+      {(() => {
+        let linkIndex = -1
+        return filters.map((filter) => {
+          if (filter.type === 'link') linkIndex += 1
+          return (
+            <div
+              key={keyOf(filter)}
+              style={{
+                background: 'var(--bg-default)',
+                border: '1px solid var(--stroke-soft)',
+                borderRadius: '10px', // was 8px
+                boxShadow: '0px 2px 2px rgba(54, 54, 54, 0.04)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 8px 4px 10px',
+              }}
+            >
+              <FilterIcon
+                filter={filter}
+                linkColor={
+                  filter.type === 'link'
+                    ? LINK_COLORS[Math.min(linkIndex, LINK_COLORS.length - 1)]
+                    : undefined
+                }
+              />
+              <span
+                className='para-sm'
+                style={{ color: 'var(--text-strong)', whiteSpace: 'nowrap' }}
+              >
+                {filter.label}
+              </span>
+              <button
+                onClick={() => onRemove(filter)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          )
+        })
+      })()}
 
       {filters.length > 1 && (
         <button

@@ -259,6 +259,22 @@ export default function ChartContainer({ data, compareSeries }) {
                     stopOpacity='0'
                   />
                 </linearGradient>
+                {/* One fill per comparison color — same list the
+                    lines themselves pull from, so this never drifts
+                    out of sync with SERIES_COLORS. */}
+                {SERIES_COLORS.map((color, i) => (
+                  <linearGradient
+                    key={color}
+                    id={`chartSeriesFill-${i}`}
+                    x1='0'
+                    y1='0'
+                    x2='0'
+                    y2='1'
+                  >
+                    <stop offset='0%' stopColor={color} stopOpacity='0.22' />
+                    <stop offset='100%' stopColor={color} stopOpacity='0' />
+                  </linearGradient>
+                ))}
                 <linearGradient
                   id='chartFillGradientMuted'
                   x1='0'
@@ -348,19 +364,19 @@ export default function ChartContainer({ data, compareSeries }) {
                   with 2-3 colors already telling the lines apart,
                   ghosting them down to a single slice on hover would
                   just hide the other lines rather than clarify
-                  anything. Only the first (orange, same color as the
-                  default single line) keeps a gradient fill — a
-                  second or third overlapping fill reads as muddy
-                  rather than informative, so 2 and 3 are clean
-                  strokes on top of it, drawn after so they sit above
-                  the fill instead of under it. */}
-              {isComparing && series[0] && (
-                <path
-                  d={`${series[0].strokePath} L ${series[0].points[series[0].points.length - 1]?.x ?? 0.5} 100 L 0.5 100 Z`}
-                  fill='url(#chartFillGradient)'
-                  stroke='none'
-                />
-              )}
+                  anything. Every line gets its own gradient fill in
+                  its own color — fills render first (in series
+                  order), then every stroke on top of all of them, so
+                  a line is never dimmed under another line's wash. */}
+              {isComparing &&
+                series.map((s, i) => (
+                  <path
+                    key={`${s.id}-fill`}
+                    d={`${s.strokePath} L ${s.points[s.points.length - 1]?.x ?? 0.5} 100 L 0.5 100 Z`}
+                    fill={`url(#chartSeriesFill-${i})`}
+                    stroke='none'
+                  />
+                ))}
               {isComparing &&
                 series.map((s) => (
                   <path
