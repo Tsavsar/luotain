@@ -12,7 +12,11 @@ export default function AnalyticsPage() {
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
   const [activeFilter, setActiveFilter] = useState(null)
 
-  const mock = useMockData ? getMockAnalytics(selectedRange) : null
+  // Filter now genuinely changes the numbers — it's passed straight
+  // through to aggregation, same call either way.
+  const mock = useMockData
+    ? getMockAnalytics(selectedRange, activeFilter)
+    : null
 
   return (
     <>
@@ -32,9 +36,6 @@ export default function AnalyticsPage() {
         />
       </div>
 
-      {/* Filter pill sits above the chart, between it and the stats
-          row — appears once a card row's been clicked, cleared via
-          its own X */}
       {activeFilter && (
         <div
           style={{
