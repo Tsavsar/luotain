@@ -325,13 +325,33 @@ function LinkRow({ link, zIndex, onEdit, onDelete }) {
         gap: '6px',
         width: '100%',
         alignItems: 'center',
-        padding: '4px 8px',
-        margin: '0 -8px',
-        borderRadius: '8px',
-        background: hovered ? 'var(--bg-surface)' : 'transparent',
-        transition: 'background 0.1s ease',
+        padding: '4px 0',
       }}
     >
+      {/* Hover background as its own layer instead of padding +
+          negative margin on the row itself. The old trick tangled
+          the visual overhang up with the row's actual box: under
+          border-box sizing, width:100% + 16px of padding meant the
+          COLUMNS' space shrank by 16px while the box grew to 736 —
+          off-center and misaligned at the same time. This layer
+          hangs 8px past each side purely visually; the row's real
+          box stays exactly 720px and the columns never know the
+          difference. zIndex -1 tucks it behind the row's content
+          (the row's own zIndex makes that self-contained). */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          left: '-8px',
+          right: '-8px',
+          borderRadius: '8px',
+          background: hovered ? 'var(--bg-surface)' : 'transparent',
+          transition: 'background 0.1s ease',
+          zIndex: -1,
+        }}
+      />
       <div style={{ ...cellBase, width: COL_LINK, flexShrink: 0, gap: '10px' }}>
         <p
           className='para-xs'
@@ -424,7 +444,7 @@ function LinkRow({ link, zIndex, onEdit, onDelete }) {
       <div
         style={{
           position: 'absolute',
-          right: '8px',
+          right: 0,
           top: '50%',
           transform: 'translateY(-50%)',
         }}
