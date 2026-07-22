@@ -54,7 +54,6 @@ function MetricCard({ label, value, icon, trend }) {
   return (
     <div
       style={{
-        flex: '1 0 0',
         minWidth: 0,
         display: 'flex',
         flexDirection: 'column',
@@ -213,7 +212,7 @@ export default function StatsCards({
         </Dropdown>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
+      <div className='stats-cards-grid'>
         {metrics.map((m) => (
           <MetricCard key={m.label} {...m} />
         ))}
