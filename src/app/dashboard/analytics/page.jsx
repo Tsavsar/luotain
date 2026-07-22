@@ -56,27 +56,17 @@ export default function AnalyticsPage() {
           stats={mock?.stats}
           selectedRange={selectedRange}
           onRangeChange={setSelectedRange}
+          filters={
+            activeFilters.length > 0 ? (
+              <FilterPill
+                filters={activeFilters}
+                onRemove={removeFilter}
+                onClearAll={clearAllFilters}
+              />
+            ) : null
+          }
         />
       </div>
-
-      {activeFilters.length > 0 && (
-        <div
-          className='dashboard-page-padding'
-          style={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-          }}
-        >
-          <div style={{ width: '100%', maxWidth: '720px' }}>
-            <FilterPill
-              filters={activeFilters}
-              onRemove={removeFilter}
-              onClearAll={clearAllFilters}
-            />
-          </div>
-        </div>
-      )}
 
       <div
         className='dashboard-section dashboard-section-4 dashboard-page-padding'

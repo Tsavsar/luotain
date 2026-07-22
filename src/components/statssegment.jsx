@@ -10,7 +10,12 @@ import CountryFlag from './countryflag'
 // fields here (clicks/scans/visitors/country) match what I have on
 // record, but if anything's drifted since, send the real file and
 // I'll reconcile it properly rather than layering a guess on a guess.
-export default function StatsSegment({ stats, selectedRange, onRangeChange }) {
+export default function StatsSegment({
+  stats,
+  filters,
+  selectedRange,
+  onRangeChange,
+}) {
   const metrics = [
     {
       label: 'Total clicks',
@@ -46,6 +51,7 @@ export default function StatsSegment({ stats, selectedRange, onRangeChange }) {
       // instance, so this one's not confirmed against a real design.
       title='Overview'
       metrics={metrics}
+      filters={filters}
       selectedRange={selectedRange}
       onRangeChange={onRangeChange}
     />

@@ -145,6 +145,7 @@ function MetricCard({ label, value, icon, trend }) {
 export default function StatsCards({
   title,
   metrics,
+  filters,
   selectedRange,
   onRangeChange,
 }) {
@@ -211,6 +212,12 @@ export default function StatsCards({
           </DropdownMenu>
         </Dropdown>
       </div>
+
+      {/* Optional slot — the analytics page passes its active-filter
+          pills through here so they sit between the title row and
+          the cards, per the reference layout. Pages without filters
+          just don't pass anything and nothing renders. */}
+      {filters}
 
       <div className='stats-cards-grid'>
         {metrics.map((m) => (
