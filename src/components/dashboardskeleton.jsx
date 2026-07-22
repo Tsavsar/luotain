@@ -128,7 +128,7 @@ export default function DashboardSkeleton() {
                 style={{
                   flex: '1 0 0',
                   minWidth: 0,
-                  background: 'var(--bg-surface)',
+                  background: 'var(--bg-light)',
                   borderRadius: '14px',
                   padding: '12px 14px',
                   display: 'flex',

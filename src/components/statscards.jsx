@@ -59,7 +59,7 @@ function MetricCard({ label, value, icon, trend }) {
         flexDirection: 'column',
         gap: '6px',
         alignItems: 'flex-start',
-        background: 'var(--bg-surface)',
+        background: 'var(--bg-light)',
         borderRadius: '14px',
         padding: '12px 14px',
       }}
@@ -159,7 +159,7 @@ export default function StatsCards({
         maxWidth: '720px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '14px',
+        gap: '20px',
       }}
     >
       <div
