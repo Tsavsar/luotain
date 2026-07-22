@@ -1425,25 +1425,17 @@ html {
   }
 }
 
-/* Stats card grid — 4 columns down to 2 down to 1 as the screen
-   narrows, instead of the cards just getting proportionally
-   thinner forever with no wrap. 768px matches the breakpoint used
-   everywhere else in this file; 480px is a second, narrower step
-   for small phones specifically, since 2-up already reads fine at
-   normal phone widths and doesn't need to drop to 1 that early. */
+/* Stats card grid. auto-fit instead of a hardcoded column count —
+   repeat(4, 1fr) was reserving 4 columns even on the links page's 3
+   metrics, leaving an empty trailing column instead of letting the
+   3 real cards stretch to fill the row. auto-fit only ever creates
+   as many columns as there are cards to fill them, and naturally
+   drops to fewer on narrow screens too (each card has a 140px
+   floor, so this doubles as the mobile breakpoint behavior without
+   needing separate media queries for it). */
 .stats-cards-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 16px;
   width: 100%;
-}
-@media (max-width: 768px) {
-  .stats-cards-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 480px) {
-  .stats-cards-grid {
-    grid-template-columns: 1fr;
-  }
 }

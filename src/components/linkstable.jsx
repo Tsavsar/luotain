@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import EmptyStateIcon from './emptystateicon'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import { toast } from './toast'
@@ -296,16 +296,6 @@ function MoreMenu({ link, onEdit, onDelete }) {
 // ─── One row ───
 function LinkRow({ link, onEdit, onDelete }) {
   const [hovered, setHovered] = useState(false)
-  // Touch devices don't fire onMouseEnter/Leave the way a cursor
-  // does, so a reveal wired only to hover can end up permanently
-  // invisible — and with opacity 0 also meaning pointerEvents:
-  // 'none', permanently untappable too. This is the same check
-  // chartcontainer.jsx already uses for its own hover-vs-tap split.
-  const [isTouch, setIsTouch] = useState(false)
-  useEffect(() => {
-    setIsTouch(window.matchMedia?.('(hover: none)').matches ?? false)
-  }, [])
-  const showMore = hovered || isTouch
 
   const cellBase = {
     display: 'flex',
@@ -325,7 +315,7 @@ function LinkRow({ link, onEdit, onDelete }) {
         // stopping the next rows' text from painting over top of
         // it — that's what was showing "Edit"/"Delete" tangled up
         // with the following rows' dates.
-        zIndex: showMore ? 10 : 'auto',
+        zIndex: hovered ? 10 : 'auto',
         display: 'flex',
         gap: '6px',
         width: '100%',
@@ -333,7 +323,7 @@ function LinkRow({ link, onEdit, onDelete }) {
         padding: '4px 8px',
         margin: '0 -8px',
         borderRadius: '8px',
-        background: hovered || isTouch ? 'var(--bg-surface)' : 'transparent',
+        background: hovered ? 'var(--bg-surface)' : 'transparent',
         transition: 'background 0.1s ease',
       }}
     >
@@ -420,16 +410,18 @@ function LinkRow({ link, onEdit, onDelete }) {
           doesn't leave a permanent empty gap sitting at the row's
           end the way that reserved space did. Sits over the tail of
           the Date column, which date strings ("3rd July, 2026")
-          don't fill anyway, so nothing real is ever covered. */}
+          don't fill anyway, so nothing real is ever covered.
+          Permanently visible now, not hover-gated — detecting touch
+          vs. mouse reliably enough to gate visibility on it turned
+          out not to hold up on the actual device this runs on, so
+          rather than try a third detection heuristic, it's just
+          always there and always tappable. */}
       <div
         style={{
           position: 'absolute',
           right: '8px',
           top: '50%',
           transform: 'translateY(-50%)',
-          opacity: showMore ? 1 : 0,
-          pointerEvents: showMore ? 'auto' : 'none',
-          transition: 'opacity 0.15s ease',
         }}
       >
         <MoreMenu link={link} onEdit={onEdit} onDelete={onDelete} />
@@ -494,28 +486,47 @@ export default function LinksTable({ links, onEdit, onDelete }) {
     : []
 
   return (
+    // Table content is a fixed 720px wide (matches the desktop
+    // column widths from Figma) — on a phone screen that's wider
+    // than the viewport, so this needs to scroll horizontally
+    // rather than either getting clipped or forcing the whole PAGE
+    // to scroll sideways. chart-full-bleed (same class the chart
+    // already uses) lets the scroll area use the full screen width
+    // on mobile instead of being boxed into the page's own 20px
+    // padding first.
     <div
-      style={{
-        width: '100%',
-        maxWidth: '720px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-      }}
+      className='chart-full-bleed'
+      style={{ width: '100%', maxWidth: '720px' }}
     >
-      <TableHeader sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-      {hasLinks ? (
-        sorted.map((link) => (
-          <LinkRow
-            key={link.id}
-            link={link}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        ))
-      ) : (
-        <EmptyState />
-      )}
+      <div
+        style={{
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <div
+          style={{
+            minWidth: '720px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          <TableHeader sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+          {hasLinks ? (
+            sorted.map((link) => (
+              <LinkRow
+                key={link.id}
+                link={link}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            ))
+          ) : (
+            <EmptyState />
+          )}
+        </div>
+      </div>
     </div>
   )
 }
