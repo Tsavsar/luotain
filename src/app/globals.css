@@ -1439,3 +1439,20 @@ html {
   gap: 16px;
   width: 100%;
 }
+
+/* Links table scroll wrapper — overflow machinery ONLY at mobile
+   widths. On desktop this must stay overflow: visible: an
+   overflow-x: auto container measures everything inside it,
+   including a row's open dropdown hanging past the content edge,
+   and grows scrollbars to fit (and auto-x silently forces auto-y,
+   so a vertical bar appears too). Desktop content fits its
+   container exactly and needs none of it. */
+.table-scroll {
+  overflow: visible;
+}
+@media (max-width: 768px) {
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

@@ -493,22 +493,20 @@ export default function LinksTable({ links, onEdit, onDelete }) {
   return (
     // Table content is a fixed 720px wide (matches the desktop
     // column widths from Figma) — on a phone screen that's wider
-    // than the viewport, so this needs to scroll horizontally
-    // rather than either getting clipped or forcing the whole PAGE
-    // to scroll sideways. chart-full-bleed (same class the chart
-    // already uses) lets the scroll area use the full screen width
-    // on mobile instead of being boxed into the page's own 20px
-    // padding first.
+    // than the viewport, so it scrolls horizontally there.
+    // table-scroll only turns that scrolling on at mobile widths:
+    // on desktop the wrapper stays overflow: visible, because an
+    // overflow-x: auto wrapper measures EVERYTHING inside it —
+    // including an open row dropdown hanging past the content's
+    // edge — and grows scrollbars to fit it (auto-x silently forces
+    // auto-y too, hence the vertical bar that was appearing).
+    // Desktop content fits its container exactly, so it needs no
+    // scroll machinery at all.
     <div
       className='chart-full-bleed'
       style={{ width: '100%', maxWidth: '720px' }}
     >
-      <div
-        style={{
-          overflowX: 'auto',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
+      <div className='table-scroll'>
         <div
           style={{
             minWidth: '720px',
