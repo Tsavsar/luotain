@@ -294,7 +294,17 @@ function MoreMenu({ link, onEdit, onDelete }) {
 }
 
 // ─── One row ───
-function LinkRow({ link, onEdit, onDelete }) {
+// zIndex is positional, not tied to hover/open state — every row
+// permanently outranks every row after it in the list. That state-
+// free approach is on purpose: tying it to `hovered` (as this used
+// to) meant the elevation dropped back to 'auto' the moment the
+// mouse left the row, even while its dropdown — opened by a click,
+// tracked entirely inside Dropdown, invisible to this component —
+// was still open. Since every dropdown here opens downward into
+// whatever rows follow it, "always above the rows after it" covers
+// the open-menu case without needing to know whether one actually
+// is open.
+function LinkRow({ link, zIndex, onEdit, onDelete }) {
   const [hovered, setHovered] = useState(false)
 
   const cellBase = {
@@ -310,12 +320,7 @@ function LinkRow({ link, onEdit, onDelete }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         position: 'relative',
-        // Rows after this one in the list are later in paint order,
-        // so without this, an opened dropdown here has nothing
-        // stopping the next rows' text from painting over top of
-        // it — that's what was showing "Edit"/"Delete" tangled up
-        // with the following rows' dates.
-        zIndex: hovered ? 10 : 'auto',
+        zIndex,
         display: 'flex',
         gap: '6px',
         width: '100%',
@@ -514,10 +519,11 @@ export default function LinksTable({ links, onEdit, onDelete }) {
         >
           <TableHeader sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
           {hasLinks ? (
-            sorted.map((link) => (
+            sorted.map((link, index) => (
               <LinkRow
                 key={link.id}
                 link={link}
+                zIndex={sorted.length - index}
                 onEdit={onEdit}
                 onDelete={onDelete}
               />
