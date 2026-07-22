@@ -1201,40 +1201,6 @@ html {
   max-width: 100%;
 }
 
-/* --- Stats segment: filter stacks ABOVE stats on narrow screens ---
-   column-reverse flips visual order without touching JSX order —
-   the filter is the second element in the markup but needs to
-   render first once stacked. */
-.stats-segment-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  width: 100%;
-}
-@media (max-width: 768px) {
-  .stats-segment-row {
-    flex-direction: column-reverse;
-    gap: 16px;
-  }
-}
-.stats-metrics-row {
-  display: flex;
-  gap: 42px;
-  align-items: flex-start;
-  overflow-x: auto;
-  /* overflow-x: auto silently turns overflow-y into "auto" too (a
-     CSS default you can't opt out of), which clips anything that
-     paints outside the row's box — including the trend badges'
-     drop shadow. Padding gives the shadow room inside that clipped
-     area instead of right on the edge; the matching negative
-     margin cancels the padding back out so this row doesn't take up
-     any extra visual space. */
-  padding-top: 8px;
-  padding-bottom: 8px;
-  margin-top: -8px;
-  margin-bottom: -8px;
-}
-
 /* --- Org dropdown trigger: hover + active(open) state ---
    Matches Figma node 72:1373. Opt-in via the Dropdown component's
    triggerHover prop — only the org trigger uses this; other
