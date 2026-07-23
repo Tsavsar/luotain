@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import BackButton from '@/components/backbutton'
@@ -45,6 +45,33 @@ function LockCircleIcon() {
   )
 }
 
+// Wraps a tab's icon so it only EXISTS visually on the active tab —
+// width and margin collapse to 0 (label slides over to fill the
+// space, per the no-snap rule) while it fades and shrinks slightly.
+// marginRight here replaces the Link's own gap: a flex gap keeps
+// its 6px even next to a 0-width child, which would leave the
+// inactive label sitting 6px off where it should be.
+function TabIcon({ active, children }) {
+  return (
+    <span
+      aria-hidden={!active}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        width: active ? '16px' : '0px',
+        marginRight: active ? '6px' : '0px',
+        opacity: active ? 1 : 0,
+        transform: active ? 'scale(1)' : 'scale(0.6)',
+        overflow: 'hidden',
+        transition:
+          'width 0.3s cubic-bezier(0.22, 1, 0.36, 1), margin-right 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
 export default function LegalHeader() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -60,13 +87,47 @@ export default function LegalHeader() {
   const termsRef = useRef(null)
   const privacyRef = useRef(null)
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0 })
+  // Transitions stay OFF until after the first measurement has
+  // painted — otherwise the pill visibly slides in from 0 width at
+  // the top-left corner on every page load (the transitions.dev
+  // pattern's "snap to position on first paint" rule).
+  const [pillReady, setPillReady] = useState(false)
 
-  useEffect(() => {
-    const activeEl = isPrivacy ? privacyRef.current : termsRef.current
-    if (activeEl) {
-      setPillStyle({ left: activeEl.offsetLeft, width: activeEl.offsetWidth })
+  useLayoutEffect(() => {
+    function measure() {
+      const activeEl = isPrivacy ? privacyRef.current : termsRef.current
+      if (activeEl) {
+        setPillStyle({ left: activeEl.offsetLeft, width: activeEl.offsetWidth })
+      }
+    }
+
+    measure()
+
+    // The active tab's own width ANIMATES now (its icon grows in
+    // over 300ms), so one measurement at route-change time would
+    // capture the pre-growth width and leave the pill visibly
+    // narrower than the tab it's highlighting. The observer re-fires
+    // as the tab resizes mid-animation; each update retargets the
+    // pill's CSS transition from wherever it currently is, so pill
+    // and tab arrive together instead of the pill freezing early.
+    const ro = new ResizeObserver(measure)
+    if (termsRef.current) ro.observe(termsRef.current)
+    if (privacyRef.current) ro.observe(privacyRef.current)
+    window.addEventListener('resize', measure)
+
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
     }
   }, [isPrivacy])
+
+  useEffect(() => {
+    // Flip transitions on one frame AFTER the first measured paint,
+    // so the initial position lands instantly and only real tab
+    // switches animate.
+    const raf = requestAnimationFrame(() => setPillReady(true))
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
@@ -113,8 +174,9 @@ export default function LegalHeader() {
               width: `${pillStyle.width}px`,
               borderRadius: 'var(--radius-full)',
               background: 'var(--bg-surface)',
-              transition:
-                'left 0.35s cubic-bezier(0.4,0,0.2,1), width 0.35s cubic-bezier(0.4,0,0.2,1)',
+              transition: pillReady
+                ? 'left 0.3s cubic-bezier(0.22, 1, 0.36, 1), width 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
+                : 'none',
               zIndex: 0,
             }}
           />
@@ -128,15 +190,16 @@ export default function LegalHeader() {
               zIndex: 1,
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
               padding: '8px var(--legal-tab-padding-x)',
               borderRadius: 'var(--radius-full)',
               color: isPrivacy ? 'var(--text-sub)' : 'var(--text-strong)',
               textDecoration: 'none',
-              transition: 'color 0.35s ease',
+              transition: 'color 0.3s ease',
             }}
           >
-            <LawShieldIcon />
+            <TabIcon active={!isPrivacy}>
+              <LawShieldIcon />
+            </TabIcon>
             Terms
           </Link>
 
@@ -149,15 +212,16 @@ export default function LegalHeader() {
               zIndex: 1,
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
               padding: '8px var(--legal-tab-padding-x)',
               borderRadius: 'var(--radius-full)',
               color: isPrivacy ? 'var(--text-strong)' : 'var(--text-sub)',
               textDecoration: 'none',
-              transition: 'color 0.35s ease',
+              transition: 'color 0.3s ease',
             }}
           >
-            <LockCircleIcon />
+            <TabIcon active={isPrivacy}>
+              <LockCircleIcon />
+            </TabIcon>
             Privacy
           </Link>
         </div>

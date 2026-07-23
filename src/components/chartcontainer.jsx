@@ -54,6 +54,27 @@ function smoothPath(points) {
   return d
 }
 
+// Extends a RENDERED line to the chart's true edges. Data points
+// live at column centers (i + 0.5), which leaves half a column of
+// dead space before the first point — the inset visible at the
+// screen edge. This prepends a flat half-column run-in so the line
+// enters from x=0, and appends the mirror run-out to x=N — but only
+// when the last real point sits in the final column, so ranges that
+// end mid-chart (Today's "now", with future slots after it) still
+// stop exactly at the now-dot instead of ghosting half a column
+// past it. Render-only on purpose: hover, marker dots, and the
+// tooltip all index the RAW center points by slot index, so those
+// arrays stay untouched and slot -> point stays 1:1.
+function withEdgePoints(pts, N) {
+  if (!pts.length) return pts
+  const out = [...pts]
+  const first = pts[0]
+  if (first.x > 0) out.unshift({ x: Math.max(0, first.x - 0.5), y: first.y })
+  const last = pts[pts.length - 1]
+  if (last.x + 0.5 >= N) out.push({ x: N, y: last.y })
+  return out
+}
+
 // ─── ChartContainer (slot-based) ───
 // `data` is an array of slots — hourly for Today (a rolling window
 // reaching back into yesterday, "now" anchored at 2/3), daily for
@@ -120,13 +141,19 @@ export default function ChartContainer({ data, compareSeries }) {
   const series = isComparing
     ? compareSeries.slice(0, 3).map((s, i) => {
         const pts = buildPoints(seriesValues[i], maxClicks)
+        const renderPts = withEdgePoints(pts, N)
+        const stroke = smoothPath(renderPts)
         return {
           ...s,
           color: SERIES_COLORS[i],
           fillGradientId: `chartSeriesFill-${i}`,
           values: seriesValues[i],
           points: pts,
-          strokePath: smoothPath(pts),
+          strokePath: stroke,
+          fillPath:
+            renderPts.length >= 2
+              ? `${stroke} L ${renderPts[renderPts.length - 1].x} 100 L ${renderPts[0].x} 100 Z`
+              : '',
         }
       })
     : []
@@ -134,10 +161,14 @@ export default function ChartContainer({ data, compareSeries }) {
     x: i + 0.5,
     y: 100 - (s.totalClicks / maxClicks) * 100,
   }))
-  const strokePath = smoothPath(points)
-  const lastX = points.length ? points[points.length - 1].x : 0.5
+  const renderPoints = withEdgePoints(points, N)
+  const strokePath = smoothPath(renderPoints)
+  const firstX = renderPoints.length ? renderPoints[0].x : 0
+  const lastX = renderPoints.length
+    ? renderPoints[renderPoints.length - 1].x
+    : 0.5
   const fillPath =
-    points.length >= 2 ? `${strokePath} L ${lastX} 100 L 0.5 100 Z` : ''
+    points.length >= 2 ? `${strokePath} L ${lastX} 100 L ${firstX} 100 Z` : ''
 
   const activeDotTop =
     hasData && activeIdx !== null && points[activeIdx]
@@ -370,7 +401,7 @@ export default function ChartContainer({ data, compareSeries }) {
                   starts, same as single-line. */}
               {isComparing &&
                 series.map((s) => {
-                  const fillD = `${s.strokePath} L ${s.points[s.points.length - 1]?.x ?? 0.5} 100 L 0.5 100 Z`
+                  const fillD = s.fillPath
                   return (
                     <g key={`${s.id}-layers`}>
                       <g
