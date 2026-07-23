@@ -121,7 +121,17 @@ export default function DashboardSkeleton() {
             <Skeleton width='70px' height='20px' />
             <Skeleton width='104px' height='20px' />
           </div>
-          <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '6px',
+              width: '100%',
+              background: 'var(--bg-default)',
+              border: '1px solid var(--stroke-soft)',
+              borderRadius: '18px',
+              padding: '3px',
+            }}
+          >
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}

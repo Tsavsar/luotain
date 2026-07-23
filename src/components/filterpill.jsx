@@ -1,5 +1,6 @@
 'use client'
 
+import { useLayoutEffect, useRef } from 'react'
 import CountryFlag from './countryflag'
 import SourceIcon from './sourceicon'
 
@@ -73,10 +74,57 @@ function FilterIcon({ filter, linkColor }) {
 // each independently removable, plus a "Clear all" to drop everything
 // at once instead of removing tags one by one.
 export default function FilterPill({ filters, onRemove, onClearAll }) {
+  const containerRef = useRef(null)
+  const prevRects = useRef(new Map())
+
+  // FLIP: after every render, compare each child's new position to
+  // where it was last render. Anything that moved gets snapped back
+  // to its old spot with a transform (invisibly, before paint —
+  // that's why useLayoutEffect and not useEffect), then released to
+  // transition to its real position. That's what makes the
+  // remaining pills SLIDE over when one is removed, instead of
+  // teleporting. Children with no previous position are brand new —
+  // they're skipped here and handled by the CSS entry animation
+  // instead, so the two never fight over the same transform.
+  useLayoutEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const newRects = new Map()
+    for (const child of container.children) {
+      const key = child.dataset.flipKey
+      if (!key) continue
+      newRects.set(key, child.getBoundingClientRect())
+    }
+
+    for (const child of container.children) {
+      const key = child.dataset.flipKey
+      if (!key) continue
+      const prev = prevRects.current.get(key)
+      const next = newRects.get(key)
+      if (!prev || !next) continue
+      const dx = prev.left - next.left
+      const dy = prev.top - next.top
+      if (dx || dy) {
+        child.style.transition = 'none'
+        child.style.transform = `translate(${dx}px, ${dy}px)`
+        // Force the browser to commit the snapped-back position
+        // before the transition below — without this read, both
+        // style writes collapse into one frame and nothing animates.
+        child.getBoundingClientRect()
+        child.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
+        child.style.transform = ''
+      }
+    }
+
+    prevRects.current = newRects
+  })
+
   if (!filters || filters.length === 0) return null
 
   return (
     <div
+      ref={containerRef}
       style={{
         display: 'flex',
         flexWrap: 'wrap',
@@ -84,7 +132,11 @@ export default function FilterPill({ filters, onRemove, onClearAll }) {
         gap: '6px',
       }}
     >
-      <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
+      <span
+        className='para-xs filter-pill-enter'
+        data-flip-key='label'
+        style={{ color: 'var(--text-sub)' }}
+      >
         {filters.length > 1 ? 'Filters' : 'Filter'}:
       </span>
 
@@ -95,6 +147,8 @@ export default function FilterPill({ filters, onRemove, onClearAll }) {
           return (
             <div
               key={keyOf(filter)}
+              data-flip-key={keyOf(filter)}
+              className='filter-pill-enter'
               style={{
                 background: 'var(--bg-default)',
                 border: '1px solid var(--stroke-soft)',
@@ -142,6 +196,8 @@ export default function FilterPill({ filters, onRemove, onClearAll }) {
       {filters.length > 1 && (
         <button
           onClick={onClearAll}
+          data-flip-key='clear-all'
+          className='filter-pill-enter'
           style={{
             background: 'transparent',
             border: 'none',

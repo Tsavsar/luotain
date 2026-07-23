@@ -1440,7 +1440,7 @@ html {
 .stats-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 16px;
+  gap: 6px;
   width: 100%;
 }
 
@@ -1459,4 +1459,23 @@ html {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+}
+
+/* Filter pill entry — new pills slide in from the left with a fade
+   instead of popping into existence. Pills that were ALREADY there
+   slide to their new positions via the FLIP logic in
+   filterpill.jsx; this animation only ever plays on mount, so the
+   two motions never overlap on the same element. */
+@keyframes filterPillIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.filter-pill-enter {
+  animation: filterPillIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }

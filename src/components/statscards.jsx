@@ -219,7 +219,20 @@ export default function StatsCards({
           just don't pass anything and nothing renders. */}
       {filters}
 
-      <div className='stats-cards-grid'>
+      {/* Container per Figma 404:1169 — the cards now sit inside a
+          bg-default surface with a soft stroke, 3px of padding, and
+          an 18px radius (cards' own 14px + 3px padding ≈ concentric
+          corners, so the inner and outer curves track each other
+          instead of fighting). */}
+      <div
+        className='stats-cards-grid'
+        style={{
+          background: 'var(--bg-default)',
+          border: '1px solid var(--stroke-soft)',
+          borderRadius: '18px',
+          padding: '3px',
+        }}
+      >
         {metrics.map((m) => (
           <MetricCard key={m.label} {...m} />
         ))}
