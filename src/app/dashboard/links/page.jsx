@@ -26,13 +26,36 @@ export default function LinksPage() {
     // string (e.g. "luo.io/summer-sale"), which isn't a real cuid AND
     // contains a slash, so it can't even go in a URL path: a fetch to
     // /api/links/luo.io/summer-sale/delete doesn't resolve to the
-    // [id] route at all, it just hangs, which is what left the button
-    // stuck on "Deleting..." forever. So while mock data is on, this
-    // stays fully local: no fetch regardless, matching what the mock
-    // toggle means everywhere else in the app.
+    // [id] route at all, it just hangs. So while mock data is on,
+    // this stays fully local: no fetch regardless.
     if (useMockData) {
-      setLinks((prev) => (prev || []).filter((l) => l.id !== link.id))
-      toast(`${link.shortUrl} moved to trash`)
+      // Capture the removed row's index so undo can put it back
+      // exactly where it was, not append it to the end — undo should
+      // reverse the delete, not reorder the list.
+      let removedIndex = -1
+      setLinks((prev) => {
+        const list = prev || []
+        removedIndex = list.findIndex((l) => l.id === link.id)
+        return list.filter((l) => l.id !== link.id)
+      })
+      toast(`${link.shortUrl} moved to trash`, {
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            setLinks((prev) => {
+              const list = prev || []
+              if (list.some((l) => l.id === link.id)) return list
+              const next = [...list]
+              next.splice(
+                removedIndex >= 0 ? removedIndex : next.length,
+                0,
+                link
+              )
+              return next
+            })
+          },
+        },
+      })
       return
     }
 
@@ -48,7 +71,27 @@ export default function LinksPage() {
       throw new Error('Failed to delete link')
     }
     setLinks((prev) => (prev || []).filter((l) => l.id !== link.id))
-    toast(`${link.shortUrl} moved to trash`)
+    toast(`${link.shortUrl} moved to trash`, {
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          // Same endpoint the trash page's Recover uses — undo IS a
+          // recover, just triggered from the toast instead of the
+          // trash list.
+          const recoverRes = await fetch(`/api/links/${link.id}/recover`, {
+            method: 'POST',
+          })
+          if (recoverRes.ok) {
+            setLinks((prev) => {
+              const list = prev || []
+              return list.some((l) => l.id === link.id) ? list : [link, ...list]
+            })
+          } else {
+            toast.error(`Couldn't undo`)
+          }
+        },
+      },
+    })
   }
 
   return (
@@ -60,7 +103,7 @@ export default function LinksPage() {
           display: 'flex',
           justifyContent: 'center',
           paddingTop: 0,
-          paddingBottom: '24px',
+          paddingBottom: 0,
         }}
       >
         <LinksStats
