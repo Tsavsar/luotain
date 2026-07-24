@@ -205,21 +205,41 @@ export function DropdownMenu({ children, width = '220px', close }) {
 
       {Array.isArray(children)
         ? children.map((child) =>
-            isValidElement(child) ? cloneElement(child, { close }) : child
+            isValidElement(child)
+              ? cloneElement(child, { close, menuHovering: highlight !== null })
+              : child
           )
         : isValidElement(children)
-          ? cloneElement(children, { close })
+          ? cloneElement(children, { close, menuHovering: highlight !== null })
           : children}
     </div>
   )
 }
 
-export function DropdownOption({ children, selected, danger, onClick, close }) {
+export function DropdownOption({
+  children,
+  selected,
+  danger,
+  onClick,
+  close,
+  menuHovering,
+}) {
+  // Selected's own persistent background steps back for as long as
+  // ANYTHING in the menu is being actively hovered — not just while
+  // this particular option is — otherwise hovering a different
+  // option left two things visibly highlighted at once (the sliding
+  // highlight where the cursor actually is, plus the selected row's
+  // own background sitting there unrelated to it). Once the cursor
+  // leaves the whole menu, this reverts and the selected row's own
+  // background reasserts itself — that's the "idle state" the
+  // selected indicator normally lives in.
+  const showSelected = selected && !menuHovering
+
   return (
     <div
       data-dropdown-item
       data-danger={danger ? 'true' : undefined}
-      className={`dropdown-item${selected ? ' is-selected' : ''}${danger ? ' is-danger' : ''}`}
+      className={`dropdown-item${showSelected ? ' is-selected' : ''}${danger ? ' is-danger' : ''}`}
       onClick={(e) => {
         onClick?.(e)
         close?.()

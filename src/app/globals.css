@@ -1136,6 +1136,7 @@ html {
 /* --- Dropdowns: shared across Date, card filters, Org, Profile --- */
 .dropdown-item {
   cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 .dropdown-item.is-selected {
   background: var(--bg-surface);
