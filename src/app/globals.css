@@ -1490,3 +1490,49 @@ html {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Optical vertical centering for every text utility class. Every
+   font reserves extra leading above and below the actual glyphs —
+   more above than below, for most fonts including Inter — which is
+   why text sitting inside a pill, badge, or dropdown item never
+   quite looks centered even though its BOX is: the box is centered
+   correctly, the GLYPHS inside it aren't, because of that built-in
+   asymmetric spacing. text-box-trim removes exactly that leading,
+   nothing else — line-height between wrapped lines is untouched.
+   Wrapped in @supports since this is a newer property (not yet
+   Baseline, no Firefox support as of writing): unsupported browsers
+   just ignore the whole block and get the current behavior back, a
+   pixel or two of extra leading, not a broken layout. Safe to ship
+   unconditionally as a result. */
+@supports (text-box-trim: trim-both) {
+  .title-h1,
+  .title-h2,
+  .title-h3,
+  .title-h4,
+  .title-h5,
+  .title-h6,
+  .title-h1-regular,
+  .title-h2-regular,
+  .title-h3-regular,
+  .title-h4-regular,
+  .title-h5-regular,
+  .title-h6-regular,
+  .label-xl,
+  .label-lg,
+  .label-md,
+  .label-sm,
+  .label-xs,
+  .label-2xs,
+  .para-xl,
+  .para-lg,
+  .para-md,
+  .para-sm,
+  .para-xs,
+  .subheading-lg,
+  .subheading-md,
+  .subheading-sm,
+  .subheading-xs,
+  .subheading-2xs {
+    text-box: trim-both cap alphabetic;
+  }
+}
