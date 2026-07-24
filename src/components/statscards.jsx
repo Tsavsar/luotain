@@ -60,7 +60,7 @@ function MetricCard({ label, value, icon, trend }) {
         // icon+name like country) would sit a different height than
         // its neighbors, since the content was determining size on
         // its own before.
-        height: '90px',
+        height: '82px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
