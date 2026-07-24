@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import DashboardMenu from '@/components/dashboardmenu'
 import DashboardNav from '@/components/dashboardnav'
 import DashboardSkeleton from '@/components/dashboardskeleton'
-import { toast, ToastStack } from '@/components/toast'
+import { ToastStack } from '@/components/toast'
 
 export default function DashboardLayout({ children }) {
   const router = useRouter()
@@ -121,12 +121,10 @@ export default function DashboardLayout({ children }) {
 
       <ToastStack />
 
-      {/* Temporary testing cluster, same idea as the "Mock data: ON"
-          pill on the analytics page. Bottom-LEFT on purpose, so it
-          doesn't sit on top of the toast stack or the mock data
-          pill, both of which live bottom-right. Pull this once
-          you're done adjusting the toast and have real triggers
-          (copy, save, etc.) to test with on their own. */}
+      {/* Theme toggle only now — the Fire toast / Fire error buttons
+          that used to sit alongside it are gone, done validating the
+          toast itself. Still bottom-left so it doesn't collide with
+          the toast stack or the mock-data pill, both bottom-right. */}
       <div
         style={{
           position: 'fixed',
@@ -137,60 +135,6 @@ export default function DashboardLayout({ children }) {
           gap: '8px',
         }}
       >
-        <button
-          onClick={() => toast('Link copied to clipboard')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 14px',
-            borderRadius: 'var(--radius-full)',
-            background: '#171717',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <div
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--success-base)',
-              flexShrink: 0,
-            }}
-          />
-          <span className='label-sm' style={{ color: 'white' }}>
-            Fire toast
-          </span>
-        </button>
-
-        <button
-          onClick={() => toast.error('Failed to save changes')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 14px',
-            borderRadius: 'var(--radius-full)',
-            background: '#171717',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <div
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--error-base)',
-              flexShrink: 0,
-            }}
-          />
-          <span className='label-sm' style={{ color: 'white' }}>
-            Fire error
-          </span>
-        </button>
-
         <button
           onClick={toggleTheme}
           style={{
