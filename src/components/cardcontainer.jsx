@@ -345,15 +345,29 @@ function Card({
   // the real one. Same technique already used in filterpill.jsx for
   // the same reason: without this, a reorder just teleports rows to
   // their new spots instead of sliding.
+  //
+  // Measured relative to the CONTAINER, not raw viewport coordinates
+  // — this card can itself get pushed down the page by something
+  // unrelated (e.g. the filter tags row appearing above the stats
+  // cards for the first time), and raw coordinates can't tell that
+  // apart from an actual reorder. Relative-to-container cancels an
+  // ancestor-level shift out to zero automatically, since every
+  // row's distance from ITS OWN container stays the same either way
+  // — only a real change in row order shows up as a nonzero delta.
   useLayoutEffect(() => {
     const container = rowListRef.current
     if (!container) return
 
+    const containerRect = container.getBoundingClientRect()
     const newRects = new Map()
     for (const child of container.children) {
       const key = child.dataset.flipKey
       if (!key) continue
-      newRects.set(key, child.getBoundingClientRect())
+      const r = child.getBoundingClientRect()
+      newRects.set(key, {
+        top: r.top - containerRect.top,
+        left: r.left - containerRect.left,
+      })
     }
 
     for (const child of container.children) {

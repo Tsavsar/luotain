@@ -86,15 +86,27 @@ export default function FilterPill({ filters, onRemove, onClearAll }) {
   // teleporting. Children with no previous position are brand new —
   // they're skipped here and handled by the CSS entry animation
   // instead, so the two never fight over the same transform.
+  //
+  // Measured relative to the CONTAINER, not raw viewport coordinates
+  // — this row can itself get pushed around the page by something
+  // unrelated, and relative-to-container cancels that out to zero
+  // automatically, since every pill's distance from ITS OWN
+  // container stays the same either way. Only an actual pill
+  // reorder now shows up as a nonzero delta.
   useLayoutEffect(() => {
     const container = containerRef.current
     if (!container) return
 
+    const containerRect = container.getBoundingClientRect()
     const newRects = new Map()
     for (const child of container.children) {
       const key = child.dataset.flipKey
       if (!key) continue
-      newRects.set(key, child.getBoundingClientRect())
+      const r = child.getBoundingClientRect()
+      newRects.set(key, {
+        top: r.top - containerRect.top,
+        left: r.left - containerRect.left,
+      })
     }
 
     for (const child of container.children) {
