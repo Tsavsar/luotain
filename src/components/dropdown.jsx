@@ -125,10 +125,50 @@ export function Dropdown({
   )
 }
 
+// One highlight that SLIDES between items on mouse move, instead of
+// each item flashing its own background independently. Position is
+// measured directly off the hovered item's DOM rect rather than
+// tracked by index, so it works regardless of item height (a row
+// with a flag or favicon icon is taller than a plain text row) with
+// no per-item math to keep in sync.
+//
+// Colour-aware on purpose: the per-item CSS this replaces gave
+// danger options (Delete, etc.) a red-tinted hover instead of the
+// neutral gray, and that distinction is real information — losing
+// it would make a destructive option look identical to a normal
+// one until the moment it's clicked. data-danger on each item is
+// how the highlight knows which tint to become as it slides onto it.
+const HIGHLIGHT_EASE = 'cubic-bezier(0.23, 1, 0.32, 1)'
+
 export function DropdownMenu({ children, width = '220px', close }) {
+  const containerRef = useRef(null)
+  const [highlight, setHighlight] = useState(null) // { top, height, danger } | null
+
+  function handleMouseMove(e) {
+    const container = containerRef.current
+    if (!container) return
+    const items = container.querySelectorAll('[data-dropdown-item]')
+    const containerRect = container.getBoundingClientRect()
+    for (const item of items) {
+      const r = item.getBoundingClientRect()
+      if (e.clientY >= r.top && e.clientY <= r.bottom) {
+        setHighlight({
+          top: r.top - containerRect.top,
+          height: r.height,
+          danger: item.dataset.danger === 'true',
+        })
+        return
+      }
+    }
+  }
+
   return (
     <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setHighlight(null)}
       style={{
+        position: 'relative',
         background: 'var(--bg-default)',
         border: '1px solid var(--stroke-soft)',
         borderRadius: '14px',
@@ -139,6 +179,30 @@ export function DropdownMenu({ children, width = '220px', close }) {
         width,
       }}
     >
+      {/* Starts pinned at the top with zero height rather than at
+          some arbitrary default position — with opacity also at 0
+          until the first real measurement, it's invisible either
+          way, but this means the very first slide-in (top row ->
+          wherever the cursor lands) always has a correct starting
+          point instead of animating in from a stale one. */}
+      <div
+        aria-hidden='true'
+        style={{
+          position: 'absolute',
+          left: '4px',
+          right: '4px',
+          top: `${highlight?.top ?? 4}px`,
+          height: `${highlight?.height ?? 0}px`,
+          opacity: highlight ? 1 : 0,
+          background: highlight?.danger
+            ? 'var(--error-mute)'
+            : 'var(--bg-surface)',
+          borderRadius: 'var(--radius-lg)',
+          transition: `top 0.2s ${HIGHLIGHT_EASE}, height 0.2s ${HIGHLIGHT_EASE}, opacity 0.15s ease, background 0.15s ease`,
+          pointerEvents: 'none',
+        }}
+      />
+
       {Array.isArray(children)
         ? children.map((child) =>
             isValidElement(child) ? cloneElement(child, { close }) : child
@@ -153,12 +217,15 @@ export function DropdownMenu({ children, width = '220px', close }) {
 export function DropdownOption({ children, selected, danger, onClick, close }) {
   return (
     <div
+      data-dropdown-item
+      data-danger={danger ? 'true' : undefined}
       className={`dropdown-item${selected ? ' is-selected' : ''}${danger ? ' is-danger' : ''}`}
       onClick={() => {
         onClick?.()
         close?.()
       }}
       style={{
+        position: 'relative',
         display: 'flex',
         alignItems: 'center',
         padding: '6px 14px 6px 12px',
