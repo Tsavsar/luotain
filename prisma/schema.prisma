@@ -95,10 +95,24 @@ model Link {
   qrCodes QrCode[]
   clicks  Click[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  // Soft delete. Null = active/live link. Set on delete, cleared
+  // back to null on recover — the trash page is just "where
+  // deletedAt is not null" and the real links list adds "is null" to
+  // whatever it already filters by. Permanent removal after the
+  // 30-day window is a separate concern (a scheduled job doing a
+  // real .delete(), not anything this field triggers by itself) —
+  // not implemented here, since nothing user-facing needs it yet.
+  deletedAt DateTime?
 
   @@index([organizationId])
+  // Compound, not just organizationId alone — every query that reads
+  // this table from now on filters by both together (trash: is not
+  // null, real list: is null), so the index should match the shape
+  // of the actual queries rather than just the column that already
+  // had one.
+  @@index([organizationId, deletedAt])
 }
 
 model QrCode {

@@ -622,3 +622,43 @@ export function getMockLinksStats(range = 'Last 7 days', filters = []) {
     linksTrend: trendObject(linksCreated, priorLinksCreated),
   }
 }
+
+// ─── Trash ───
+// Deleted links live as their own small static list rather than
+// events derived from the click pool — clicks here are frozen at
+// whatever they were when the link was deleted, not still counting,
+// and nothing about this list is range-filterable the way the main
+// table is, so it doesn't need to touch getEventPool at all.
+const TRASH_ITEMS = [
+  {
+    id: 'trash-swift-otter',
+    shortUrl: 'luo.io/swift-otter',
+    destination: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    clicks: 86,
+    deletedDaysAgo: 28,
+  },
+  {
+    id: 'trash-quick-fox',
+    shortUrl: 'luo.io/quick-fox',
+    destination: 'https://www.youtube.com/watch?v=3JZ_D3ELwOQ',
+    clicks: 75,
+    deletedDaysAgo: 21,
+  },
+  {
+    id: 'trash-clever-crow',
+    shortUrl: 'luo.io/clever-crow',
+    destination: 'https://www.youtube.com/watch?v=9bZkp7q19f0',
+    clicks: 92,
+    deletedDaysAgo: 12,
+  },
+]
+
+export function getMockTrash() {
+  const now = new Date()
+  return TRASH_ITEMS.map((item) => ({
+    ...item,
+    deletedAt: new Date(
+      now.getTime() - item.deletedDaysAgo * 24 * 3600 * 1000
+    ).toISOString(),
+  }))
+}

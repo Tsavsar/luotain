@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import LinksStats from '@/components/linksstats'
 import LinksTable from '@/components/linkstable'
+import RecentlyDeletedLink from '@/components/recentlydeletedlink'
 import { getMockLinksStats, getMockLinksTable } from '@/lib/mockAnalytics'
 
 export default function LinksPage() {
@@ -41,18 +42,47 @@ export default function LinksPage() {
           paddingBottom: '64px',
         }}
       >
-        {/* No mock toggle on, table renders its own empty state —
-            same "no data yet" the real app shows before any links
-            have been created, not a separate loading state. */}
-        <LinksTable
-          links={links}
-          onEdit={(link) => {
-            // TODO: route to the link's edit view once it exists
+        <div
+          style={{
+            width: '100%',
+            maxWidth: '720px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
           }}
-          onDelete={(link) => {
-            // TODO: wire up the real delete call once it exists
-          }}
-        />
+        >
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <RecentlyDeletedLink />
+          </div>
+
+          {/* No mock toggle on, table renders its own empty state —
+              same "no data yet" the real app shows before any links
+              have been created, not a separate loading state. */}
+          <LinksTable
+            links={links}
+            onEdit={(link) => {
+              // TODO: route to the link's edit view once it exists
+            }}
+            onDelete={async (link) => {
+              const res = await fetch(`/api/links/${link.id}/delete`, {
+                method: 'POST',
+              })
+              if (!res.ok) {
+                // Thrown, not caught here — DeleteConfirmModal's own
+                // onConfirm already wraps this in a try/catch that
+                // re-enables its button and keeps the modal open on
+                // failure. Catching it here too would just swallow
+                // that behavior.
+                throw new Error('Failed to delete link')
+              }
+              // Note: the row won't disappear from view yet even on
+              // success — `links` above comes from mock data, not a
+              // real fetch, so there's nothing here to remove it
+              // from. That's the read-side, still to be wired up
+              // once there's a route to fetch real links from.
+            }}
+          />
+        </div>
       </div>
 
       <button
