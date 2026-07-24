@@ -1115,7 +1115,7 @@ html {
   }
 }
 .dashboard-section {
-  animation: dashboardSectionIn 300ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation: dashboardSectionIn 300ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 .dashboard-section-1 {
   animation-delay: 0ms;
