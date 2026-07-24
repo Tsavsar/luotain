@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import EmptyStateIcon from './emptystateicon'
 import CountryFlag from './countryflag'
 import SourceIcon from './sourceicon'
@@ -179,6 +179,7 @@ function DataRow({
 
   return (
     <div
+      data-flip-key={label}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => onToggleFilter?.()}
@@ -315,6 +316,8 @@ function Card({
   enableCompare = false,
 }) {
   const [selected, setSelected] = useState(columnOptions[0])
+  const rowListRef = useRef(null)
+  const prevRowRects = useRef(new Map())
   const rows = dataByColumn?.[selected]
   const hasRows = Array.isArray(rows) && rows.length > 0
   const maxValue = hasRows ? Math.max(...rows.map((r) => r.value), 1) : 1
@@ -333,6 +336,48 @@ function Card({
         .map((f) => rows?.find((r) => r.label === f.label))
         .filter(Boolean)
     : []
+
+  // FLIP: whatever caused this render to reorder the rows — a new
+  // date range, a filter toggling on the CLICKS card's own list,
+  // switching the column dropdown (Countries -> Cities) — compare
+  // each row's new position to where it sat last render, snap it
+  // back to the old spot invisibly, then release it to transition to
+  // the real one. Same technique already used in filterpill.jsx for
+  // the same reason: without this, a reorder just teleports rows to
+  // their new spots instead of sliding.
+  useLayoutEffect(() => {
+    const container = rowListRef.current
+    if (!container) return
+
+    const newRects = new Map()
+    for (const child of container.children) {
+      const key = child.dataset.flipKey
+      if (!key) continue
+      newRects.set(key, child.getBoundingClientRect())
+    }
+
+    for (const child of container.children) {
+      const key = child.dataset.flipKey
+      if (!key) continue
+      const prev = prevRowRects.current.get(key)
+      const next = newRects.get(key)
+      if (!prev || !next) continue
+      const dx = prev.left - next.left
+      const dy = prev.top - next.top
+      if (dx || dy) {
+        child.style.transition = 'none'
+        child.style.transform = `translate(${dx}px, ${dy}px)`
+        // Force the browser to commit the snapped-back position
+        // before the transition below — without this read, both
+        // style writes collapse into one frame and nothing animates.
+        child.getBoundingClientRect()
+        child.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
+        child.style.transform = ''
+      }
+    }
+
+    prevRowRects.current = newRects
+  })
 
   return (
     <div
@@ -542,6 +587,7 @@ function Card({
 
       {hasRows ? (
         <div
+          ref={rowListRef}
           style={{
             flex: 1,
             width: '100%',
