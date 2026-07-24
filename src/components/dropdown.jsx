@@ -259,7 +259,7 @@ export function DropdownOption({
       }}
     >
       <p
-        className='para-xs'
+        className='para-xs dropdown-item-label'
         style={{
           flex: 1,
           color: danger ? 'var(--error-base)' : 'var(--text-strong)',
