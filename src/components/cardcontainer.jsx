@@ -200,7 +200,15 @@ function DataRow({
               ? 'var(--bg-subtle)'
               : 'var(--bg-layer)',
           borderRadius: '9px',
-          padding: '6px 10px',
+          // Fixed height instead of vertical padding — padding here
+          // was being re-tuned every time text-box-trim changed how
+          // tall the text itself renders, which is exactly the
+          // "cooked padding" complaint. A fixed height decouples the
+          // pill's size from the text's own metrics entirely: 32px
+          // uniform regardless of font changes, descenders, or
+          // anything else about the label inside it.
+          height: '32px',
+          padding: '0 10px',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
