@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import LinksStats from '@/components/linksstats'
 import LinksTable from '@/components/linkstable'
 import RecentlyDeletedLink from '@/components/recentlydeletedlink'
@@ -11,7 +11,18 @@ export default function LinksPage() {
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
 
   const stats = useMockData ? getMockLinksStats(selectedRange, []) : null
-  const links = useMockData ? getMockLinksTable(selectedRange, []) : null
+
+  // `links` used to be derived directly from getMockLinksTable() on
+  // every render, which is why delete looked broken: mock data
+  // regenerates the exact same list every time, so nothing a delete
+  // did could ever make a row actually disappear. This is real state
+  // now, re-seeded from the generator whenever the inputs that
+  // should reset it change (mock toggled, range changed), but
+  // otherwise left alone so a delete's own removal sticks.
+  const [links, setLinks] = useState(null)
+  useEffect(() => {
+    setLinks(useMockData ? getMockLinksTable(selectedRange, []) : null)
+  }, [useMockData, selectedRange])
 
   return (
     <>
@@ -64,6 +75,21 @@ export default function LinksPage() {
               // TODO: route to the link's edit view once it exists
             }}
             onDelete={async (link) => {
+              // Mock rows aren't real database rows — their id is
+              // just the link's own url string (e.g.
+              // "luo.io/swift-otter"), not a real cuid, so a fetch to
+              // the real delete route would always 404. That 404 was
+              // the actual "delete doesn't work": the button did
+              // something, it just always failed silently against an
+              // endpoint that could never recognize a mock id.
+              // Simulated locally instead, matching what the mock
+              // toggle already means everywhere else in this app: no
+              // real network calls while it's on.
+              if (useMockData) {
+                setLinks((prev) => (prev || []).filter((l) => l.id !== link.id))
+                return
+              }
+
               const res = await fetch(`/api/links/${link.id}/delete`, {
                 method: 'POST',
               })
@@ -75,11 +101,7 @@ export default function LinksPage() {
                 // that behavior.
                 throw new Error('Failed to delete link')
               }
-              // Note: the row won't disappear from view yet even on
-              // success — `links` above comes from mock data, not a
-              // real fetch, so there's nothing here to remove it
-              // from. That's the read-side, still to be wired up
-              // once there's a route to fetch real links from.
+              setLinks((prev) => (prev || []).filter((l) => l.id !== link.id))
             }}
           />
         </div>
