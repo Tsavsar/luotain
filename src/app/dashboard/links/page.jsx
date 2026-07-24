@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import LinksStats from '@/components/linksstats'
 import LinksTable from '@/components/linkstable'
 import RecentlyDeletedLink from '@/components/recentlydeletedlink'
+import { toast } from '@/components/toast'
 import { getMockLinksStats, getMockLinksTable } from '@/lib/mockAnalytics'
 
 export default function LinksPage() {
@@ -12,17 +13,43 @@ export default function LinksPage() {
 
   const stats = useMockData ? getMockLinksStats(selectedRange, []) : null
 
-  // `links` used to be derived directly from getMockLinksTable() on
-  // every render, which is why delete looked broken: mock data
-  // regenerates the exact same list every time, so nothing a delete
-  // did could ever make a row actually disappear. This is real state
-  // now, re-seeded from the generator whenever the inputs that
-  // should reset it change (mock toggled, range changed), but
-  // otherwise left alone so a delete's own removal sticks.
+  // Real state, re-seeded from the generator only when the inputs
+  // that should reset it change (mock toggled, range changed), so a
+  // delete's own removal otherwise sticks.
   const [links, setLinks] = useState(null)
   useEffect(() => {
     setLinks(useMockData ? getMockLinksTable(selectedRange, []) : null)
   }, [useMockData, selectedRange])
+
+  async function handleDelete(link) {
+    // Mock rows are display-only — their id is the link's own url
+    // string (e.g. "luo.io/summer-sale"), which isn't a real cuid AND
+    // contains a slash, so it can't even go in a URL path: a fetch to
+    // /api/links/luo.io/summer-sale/delete doesn't resolve to the
+    // [id] route at all, it just hangs, which is what left the button
+    // stuck on "Deleting..." forever. So while mock data is on, this
+    // stays fully local: no fetch regardless, matching what the mock
+    // toggle means everywhere else in the app.
+    if (useMockData) {
+      setLinks((prev) => (prev || []).filter((l) => l.id !== link.id))
+      toast(`${link.shortUrl} moved to trash`)
+      return
+    }
+
+    // Real path — link.id here is a real cuid with no slashes.
+    const res = await fetch(`/api/links/${link.id}/delete`, {
+      method: 'POST',
+    })
+    if (!res.ok) {
+      // Thrown, not caught here — DeleteConfirmModal's own handleConfirm
+      // wraps this call in a try/catch that re-enables its button and
+      // keeps the modal open on failure. Catching it here would just
+      // swallow that.
+      throw new Error('Failed to delete link')
+    }
+    setLinks((prev) => (prev || []).filter((l) => l.id !== link.id))
+    toast(`${link.shortUrl} moved to trash`)
+  }
 
   return (
     <>
@@ -74,35 +101,7 @@ export default function LinksPage() {
             onEdit={(link) => {
               // TODO: route to the link's edit view once it exists
             }}
-            onDelete={async (link) => {
-              // Mock rows aren't real database rows — their id is
-              // just the link's own url string (e.g.
-              // "luo.io/swift-otter"), not a real cuid, so a fetch to
-              // the real delete route would always 404. That 404 was
-              // the actual "delete doesn't work": the button did
-              // something, it just always failed silently against an
-              // endpoint that could never recognize a mock id.
-              // Simulated locally instead, matching what the mock
-              // toggle already means everywhere else in this app: no
-              // real network calls while it's on.
-              if (useMockData) {
-                setLinks((prev) => (prev || []).filter((l) => l.id !== link.id))
-                return
-              }
-
-              const res = await fetch(`/api/links/${link.id}/delete`, {
-                method: 'POST',
-              })
-              if (!res.ok) {
-                // Thrown, not caught here — DeleteConfirmModal's own
-                // onConfirm already wraps this in a try/catch that
-                // re-enables its button and keeps the modal open on
-                // failure. Catching it here too would just swallow
-                // that behavior.
-                throw new Error('Failed to delete link')
-              }
-              setLinks((prev) => (prev || []).filter((l) => l.id !== link.id))
-            }}
+            onDelete={handleDelete}
           />
         </div>
       </div>

@@ -61,10 +61,17 @@ export default function DeleteConfirmModal({
       await onConfirm?.()
       onClose?.()
     } catch (err) {
-      // Real delete logic doesn't exist yet (see the TODO where this
-      // is wired in) — this catch is here so that when it does, a
-      // failed request re-enables the button instead of leaving it
-      // stuck on "Deleting...".
+      // On failure the modal stays open (no onClose) so the person
+      // can retry or cancel — the finally below re-enables the
+      // buttons either way.
+    } finally {
+      // MUST run on success too, not just failure. This modal is a
+      // single shared instance reused for every row rather than
+      // mounted fresh each time, so it isn't unmounted on close —
+      // leaving submitting=true after a successful delete left every
+      // NEXT open stuck on "Deleting..." with both buttons disabled.
+      // That's why all the delete modals looked broken after the
+      // first delete, not just the one that was deleted.
       setSubmitting(false)
     }
   }
