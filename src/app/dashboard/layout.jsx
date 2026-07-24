@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import DashboardMenu from '@/components/dashboardmenu'
 import DashboardNav from '@/components/dashboardnav'
 import DashboardSkeleton from '@/components/dashboardskeleton'
@@ -9,6 +9,14 @@ import { ToastStack } from '@/components/toast'
 
 export default function DashboardLayout({ children }) {
   const router = useRouter()
+  const pathname = usePathname()
+  // Trash is reached from Links but isn't really "the Links tab" in
+  // the way Analytics/Links/QR codes are — it's more like a
+  // secondary page one level down, similar to how a settings page
+  // wouldn't show the same top-level tabs either. Hiding the nav row
+  // there instead of leaving it active-on-nothing (none of the three
+  // tabs correspond to /trash) or wrongly highlighted as Links.
+  const hideNav = pathname?.startsWith('/dashboard/links/trash')
   const [checking, setChecking] = useState(true)
   const [orgName, setOrgName] = useState('')
   const [allOrgs, setAllOrgs] = useState([])
@@ -104,18 +112,20 @@ export default function DashboardLayout({ children }) {
         />
       </div>
 
-      <div
-        className='dashboard-section dashboard-section-2 dashboard-page-padding'
-        style={{
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          paddingTop: '12px',
-          paddingBottom: '40px',
-        }}
-      >
-        <DashboardNav />
-      </div>
+      {!hideNav && (
+        <div
+          className='dashboard-section dashboard-section-2 dashboard-page-padding'
+          style={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            paddingTop: '12px',
+            paddingBottom: '40px',
+          }}
+        >
+          <DashboardNav />
+        </div>
+      )}
 
       {children}
 

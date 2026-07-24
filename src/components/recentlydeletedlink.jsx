@@ -1,14 +1,12 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
-// TEMPORARY DIAGNOSTIC VERSION — the fetch-on-mount that checked
-// whether the trash was empty has been pulled out entirely. If the
-// links page opens again with this in place, that fetch (or the
-// /api/links/trash/count route it called) was the actual problem;
-// if the page still won't open, it wasn't this file at all. Always
-// renders for now — the "hide when trash is empty" behavior is
-// gone until the real cause is found, not forgotten.
+// Same exact SVG BackButton uses, mirrored horizontally via
+// transform — not a separate icon. A back arrow flipped IS a
+// forward arrow, so reusing the real asset here means this can never
+// visually drift from what "Back" looks like elsewhere in the app.
 function BackIconFlipped() {
   return (
     <svg
@@ -37,7 +35,35 @@ function BackIconFlipped() {
   )
 }
 
+// Node 73:5103 — a small nav link, not a page or a toast. Only
+// renders once there's actually something in the trash; checks a
+// lightweight count endpoint on mount rather than showing itself
+// unconditionally and linking to what might be an empty page. This
+// is the restored version — confirmed the links page itself was a
+// separate file-location issue, not this fetch, before bringing it
+// back.
 export default function RecentlyDeletedLink() {
+  const [count, setCount] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/links/trash/count')
+      .then((res) => (res.ok ? res.json() : { count: 0 }))
+      .then((data) => {
+        if (!cancelled) setCount(data.count ?? 0)
+      })
+      .catch(() => {
+        if (!cancelled) setCount(0)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // null = still loading, not yet known either way — stays hidden
+  // rather than flashing on then off once the real count arrives.
+  if (!count) return null
+
   return (
     <Link
       href='/dashboard/links/trash'
