@@ -150,6 +150,63 @@ function CheckIcon() {
   )
 }
 
+// ─── PickerRow ───
+// One row in the "+" link-compare picker. Deliberately not
+// DropdownOption (see the comment where this is used) — but still
+// takes close/menuHovering as props so it can sit as a direct child
+// of DropdownMenu and receive them the same way DropdownOption does.
+// close is accepted and intentionally unused; menuHovering drives the
+// same "selected background steps back while something's actively
+// hovered" behavior every other dropdown already has — otherwise a
+// picked link and whatever you're currently hovering could both show
+// a highlighted background at once.
+function PickerRow({ label, picked, capped, onSelect, close, menuHovering }) {
+  const showSelected = picked && !menuHovering
+  return (
+    <div
+      data-dropdown-item
+      onClick={() => {
+        if (capped) return
+        onSelect?.()
+      }}
+      className={`dropdown-item${showSelected ? ' is-selected' : ''}`}
+      style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 14px 12px 12px',
+        borderRadius: 'var(--radius-lg)',
+        cursor: capped ? 'default' : 'pointer',
+        opacity: capped ? 0.4 : 1,
+      }}
+    >
+      <p
+        className='para-xs dropdown-item-label'
+        style={{ margin: 0, color: 'var(--text-strong)' }}
+      >
+        {label}
+      </p>
+      {picked && <CheckIcon />}
+    </div>
+  )
+}
+
+// Static footer note shown once the 3-link cap is hit. Also takes
+// close/menuHovering so DropdownMenu's cloneElement (which applies to
+// every direct child) has somewhere safe to land them — a plain <p>
+// would leak them onto the DOM as unrecognized attributes instead.
+function PickerCapNotice({ close, menuHovering }) {
+  return (
+    <p
+      className='para-xs'
+      style={{ color: 'var(--text-soft)', margin: '4px 12px 2px' }}
+    >
+      Up to 3 at once
+    </p>
+  )
+}
+
 // ─── DataRow ───
 // Clicking anywhere on the row now applies it as a filter — copy
 // stays its own explicit icon (copying "Norway" doesn't mean
@@ -551,57 +608,39 @@ function Card({
             }
           >
             <DropdownMenu width='200px'>
-              {/* Plain rows, not DropdownOption — DropdownOption
+              {/* Plain components, not DropdownOption — DropdownOption
                   always closes the menu after a click, which breaks
-                  picking multiple links in one open session. This
-                  stays open across selections; only clicking outside
+                  picking multiple links in one open session. These
+                  stay open across selections; only clicking outside
                   or the plus icon again closes it. Capped at 3 —
                   once reached, unselected rows grey out and stop
-                  responding until one is removed. */}
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {(pickerRows || []).map((row) => {
-                  const picked = ownFilters.some((f) => f.label === row.label)
-                  const capped = !picked && ownFilters.length >= 3
-                  return (
-                    <div
-                      key={row.label}
-                      onClick={() => {
-                        if (capped) return
-                        onToggleFilter?.({ type: filterType, label: row.label })
-                      }}
-                      className={`dropdown-item${picked ? ' is-selected' : ''}`}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '6px 14px 6px 12px',
-                        borderRadius: 'var(--radius-lg)',
-                        cursor: capped ? 'default' : 'pointer',
-                        opacity: capped ? 0.4 : 1,
-                      }}
-                    >
-                      <p
-                        className='para-xs'
-                        style={{ margin: 0, color: 'var(--text-strong)' }}
-                      >
-                        {row.label}
-                      </p>
-                      {picked && <CheckIcon />}
-                    </div>
-                  )
-                })}
-                {ownFilters.length >= 3 && (
-                  <p
-                    className='para-xs'
-                    style={{
-                      color: 'var(--text-soft)',
-                      margin: '4px 12px 2px',
-                    }}
-                  >
-                    Up to 3 at once
-                  </p>
-                )}
-              </div>
+                  responding until one is removed.
+
+                  Rendered as direct children of DropdownMenu (not
+                  wrapped in an intermediate div) specifically so its
+                  cloneElement can reach each row individually — that's
+                  what wires up both the sliding hover highlight
+                  (data-dropdown-item) and the "selected background
+                  steps back while hovering" behavior every other
+                  dropdown already has (menuHovering). A plain div
+                  couldn't receive those the same way without React
+                  warning about unknown DOM attributes; a component can. */}
+              {(pickerRows || []).map((row) => {
+                const picked = ownFilters.some((f) => f.label === row.label)
+                const capped = !picked && ownFilters.length >= 3
+                return (
+                  <PickerRow
+                    key={row.label}
+                    label={row.label}
+                    picked={picked}
+                    capped={capped}
+                    onSelect={() =>
+                      onToggleFilter?.({ type: filterType, label: row.label })
+                    }
+                  />
+                )
+              })}
+              {ownFilters.length >= 3 && <PickerCapNotice />}
             </DropdownMenu>
           </Dropdown>
         </div>
