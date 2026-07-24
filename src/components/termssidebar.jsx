@@ -69,7 +69,7 @@ export default function TermsSidebar({ sections }) {
               textDecoration: 'none',
               transition: 'color 0.2s ease, font-weight 0.2s ease',
             }}
-          >
+          > 
             {s.title}
           </a>
         ))}
