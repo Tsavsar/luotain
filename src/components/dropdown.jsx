@@ -248,16 +248,13 @@ export function DropdownOption({
         position: 'relative',
         display: 'flex',
         alignItems: 'center',
-        // Vertical padding bumped from 6px to 10px — text-box-trim
-        // (added globally to the typography classes) shrinks this
-        // text's own line-box from its untrimmed ~16px down to
-        // roughly cap-height-to-baseline, ~8-9px for a 12px font.
-        // The old 6px was sized against the untrimmed height, so
-        // once the text itself got shorter, the same padding left
-        // every row visibly tighter than it was designed to be.
-        // 10px keeps the row's overall height in the same range as
-        // before, now correctly proportioned to the smaller text.
-        padding: '10px 14px 10px 12px',
+        // Vertical padding — text-box-trim (added globally to the
+        // typography classes) shrinks this text's own line-box from
+        // its untrimmed ~16px down to roughly cap-height-to-baseline,
+        // ~8-9px for a 12px font, so padding tuned against the old
+        // untrimmed height reads as visibly tight against the new,
+        // smaller one. 12px here.
+        padding: '12px 14px 12px 12px',
         borderRadius: 'var(--radius-lg)',
       }}
     >
