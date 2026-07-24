@@ -4,6 +4,7 @@ import { useState } from 'react'
 import EmptyStateIcon from './emptystateicon'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import { toast } from './toast'
+import DeleteConfirmModal from './deleteconfirmmodal'
 
 // ─── Date formatting ───
 // "3rd July, 2026" — ordinal day, full month name, year. The teen
@@ -485,6 +486,11 @@ function EmptyState() {
 export default function LinksTable({ links, onEdit, onDelete }) {
   const [sortBy, setSortBy] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
+  // The link a row's "Delete" was clicked for — non-null means the
+  // confirm modal is open for that link. Clicking Delete in a row no
+  // longer deletes directly; it requests confirmation, and the real
+  // onDelete (from the page) only fires once that's granted.
+  const [pendingDelete, setPendingDelete] = useState(null)
 
   // Three clicks, not two: desc -> asc -> back to unsorted, then the
   // cycle repeats. Previously the second state just toggled forever
@@ -543,7 +549,7 @@ export default function LinksTable({ links, onEdit, onDelete }) {
                 link={link}
                 zIndex={sorted.length - index}
                 onEdit={onEdit}
-                onDelete={onDelete}
+                onDelete={setPendingDelete}
               />
             ))
           ) : (
@@ -551,6 +557,14 @@ export default function LinksTable({ links, onEdit, onDelete }) {
           )}
         </div>
       </div>
+
+      <DeleteConfirmModal
+        open={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => onDelete?.(pendingDelete)}
+        itemType='link'
+        itemLabel={pendingDelete?.shortUrl}
+      />
     </div>
   )
 }
