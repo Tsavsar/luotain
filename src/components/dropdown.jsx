@@ -220,8 +220,8 @@ export function DropdownOption({ children, selected, danger, onClick, close }) {
       data-dropdown-item
       data-danger={danger ? 'true' : undefined}
       className={`dropdown-item${selected ? ' is-selected' : ''}${danger ? ' is-danger' : ''}`}
-      onClick={() => {
-        onClick?.()
+      onClick={(e) => {
+        onClick?.(e)
         close?.()
       }}
       style={{

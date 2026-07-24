@@ -286,7 +286,7 @@ function MoreMenu({ link, onEdit, onDelete }) {
         >
           Copy short link
         </DropdownOption>
-        <DropdownOption danger onClick={() => onDelete?.(link)}>
+        <DropdownOption danger onClick={(e) => onDelete?.(link, e)}>
           Delete
         </DropdownOption>
       </DropdownMenu>
@@ -486,11 +486,25 @@ function EmptyState() {
 export default function LinksTable({ links, onEdit, onDelete }) {
   const [sortBy, setSortBy] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
-  // The link a row's "Delete" was clicked for — non-null means the
-  // confirm modal is open for that link. Clicking Delete in a row no
-  // longer deletes directly; it requests confirmation, and the real
-  // onDelete (from the page) only fires once that's granted.
-  const [pendingDelete, setPendingDelete] = useState(null)
+  // The link a row's "Delete" was clicked for, plus where that click
+  // happened on screen — non-null link means the confirm modal is
+  // open for that link. Clicking Delete in a row no longer deletes
+  // directly; it requests confirmation, and the real onDelete (from
+  // the page) only fires once that's granted.
+  const [pendingDelete, setPendingDelete] = useState({
+    link: null,
+    origin: null,
+  })
+
+  // e is the click event DropdownOption now forwards — used only to
+  // find where the click happened, never read for anything else.
+  function requestDelete(link, e) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setPendingDelete({
+      link,
+      origin: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+    })
+  }
 
   // Three clicks, not two: desc -> asc -> back to unsorted, then the
   // cycle repeats. Previously the second state just toggled forever
@@ -549,7 +563,7 @@ export default function LinksTable({ links, onEdit, onDelete }) {
                 link={link}
                 zIndex={sorted.length - index}
                 onEdit={onEdit}
-                onDelete={setPendingDelete}
+                onDelete={requestDelete}
               />
             ))
           ) : (
@@ -559,11 +573,12 @@ export default function LinksTable({ links, onEdit, onDelete }) {
       </div>
 
       <DeleteConfirmModal
-        open={pendingDelete !== null}
-        onClose={() => setPendingDelete(null)}
-        onConfirm={() => onDelete?.(pendingDelete)}
+        open={pendingDelete.link !== null}
+        onClose={() => setPendingDelete({ link: null, origin: null })}
+        onConfirm={() => onDelete?.(pendingDelete.link)}
         itemType='link'
-        itemLabel={pendingDelete?.shortUrl}
+        itemLabel={pendingDelete.link?.shortUrl}
+        origin={pendingDelete.origin}
       />
     </div>
   )

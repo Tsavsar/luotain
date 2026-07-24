@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 // ─── Modal ───
 // The primitive every other modal in the app builds on top of.
@@ -22,17 +23,39 @@ const EXIT_MS = 150
 const ENTER_EASE = 'cubic-bezier(0.23, 1, 0.32, 1)' // emil-design-eng's strong ease-out
 const EXIT_EASE = 'ease'
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
 export default function Modal({
   open,
   onClose,
   children,
   labelledBy,
   describedBy,
+  // Viewport coordinates {x, y} of whatever was clicked to open this
+  // — pass the trigger element's center. Optional: with nothing
+  // passed, this behaves exactly as before (plain center scale).
+  origin,
 }) {
   const [rendered, setRendered] = useState(open)
   const [entered, setEntered] = useState(false)
+  const [reducedMotion, setReducedMotion] = useState(false)
+  const [canPortal, setCanPortal] = useState(false)
+  const [transformOrigin, setTransformOrigin] = useState('center')
   const dialogRef = useRef(null)
   const restoreFocusTo = useRef(null)
+
+  // document.body doesn't exist during SSR, so the portal target can
+  // only be resolved after mounting client-side.
+  useEffect(() => setCanPortal(true), [])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setReducedMotion(mq.matches)
+    const onChange = (e) => setReducedMotion(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
 
   useEffect(() => {
     if (open) {
@@ -42,7 +65,19 @@ export default function Modal({
       // One frame so the browser commits the pre-animation style
       // before flipping to entered — without this the transition
       // has no starting point to animate FROM and just snaps in.
-      const raf = requestAnimationFrame(() => setEntered(true))
+      // By this point React has also committed the dialog into the
+      // DOM, so this is the first moment its real rect can be read.
+      const raf = requestAnimationFrame(() => {
+        if (origin && dialogRef.current) {
+          const rect = dialogRef.current.getBoundingClientRect()
+          setTransformOrigin(
+            `${origin.x - rect.left}px ${origin.y - rect.top}px`
+          )
+        } else {
+          setTransformOrigin('center')
+        }
+        setEntered(true)
+      })
       return () => cancelAnimationFrame(raf)
     }
     if (rendered) {
@@ -55,7 +90,7 @@ export default function Modal({
       }, EXIT_MS)
       return () => clearTimeout(t)
     }
-  }, [open])
+  }, [open, origin])
 
   useEffect(() => {
     if (!rendered) return
@@ -69,7 +104,29 @@ export default function Modal({
   useEffect(() => {
     if (!rendered) return
     function onKeyDown(e) {
-      if (e.key === 'Escape') onClose?.()
+      if (e.key === 'Escape') {
+        onClose?.()
+        return
+      }
+      // Focus trap: Tab/Shift+Tab cycle within the dialog instead of
+      // escaping into the page behind it. Recomputed on every
+      // keypress rather than cached once, since a submitting state
+      // can disable buttons (removing them from the focusable set)
+      // while the modal is still open.
+      if (e.key !== 'Tab' || !dialogRef.current) return
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll(FOCUSABLE_SELECTOR)
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -83,9 +140,9 @@ export default function Modal({
     ;(target || dialogRef.current).focus?.()
   }, [entered])
 
-  if (!rendered) return null
+  if (!rendered || !canPortal) return null
 
-  return (
+  const modal = (
     <div
       style={{
         position: 'fixed',
@@ -134,24 +191,38 @@ export default function Modal({
           flexDirection: 'column',
           gap: '24px',
           boxShadow: '0px 10px 20px -3px rgba(0, 0, 0, 0.08)',
-          // Modals are the one exception to origin-aware animation —
-          // they're not anchored to a trigger, they're centered in
-          // the viewport, so center is actually correct here.
-          transformOrigin: 'center',
-          // Never scale from 0 — nothing in the real world appears
-          // from nothing. 0.95 keeps a visible shape even at the
-          // start of the entrance.
-          transform: entered ? 'scale(1)' : 'scale(0.95)',
+          // Anchors the scale to wherever it was opened from, once
+          // known — computed above, defaults to plain center when
+          // no origin was given. Modals were previously always
+          // origin: center regardless of trigger (the usual rule for
+          // modals, since they're not normally anchored to one) —
+          // this is an intentional, requested exception to that.
+          transformOrigin,
+          // Reduced motion drops the scale/transform entirely and
+          // keeps only the opacity crossfade — apple-design's
+          // guidance: gentler, not absent.
+          transform: reducedMotion
+            ? 'none'
+            : entered
+              ? 'scale(1)'
+              : // Never scale from 0 — nothing in the real world
+                // appears from nothing. 0.95 keeps a visible shape
+                // even at the start of the entrance.
+                'scale(0.95)',
           opacity: entered ? 1 : 0,
-          transition: entered
-            ? `transform ${ENTER_MS}ms ${ENTER_EASE}, opacity ${ENTER_MS}ms ${ENTER_EASE}`
-            : `transform ${EXIT_MS}ms ${EXIT_EASE}, opacity ${EXIT_MS}ms ${EXIT_EASE}`,
+          transition: reducedMotion
+            ? `opacity ${entered ? ENTER_MS : EXIT_MS}ms ease`
+            : entered
+              ? `transform ${ENTER_MS}ms ${ENTER_EASE}, opacity ${ENTER_MS}ms ${ENTER_EASE}`
+              : `transform ${EXIT_MS}ms ${EXIT_EASE}, opacity ${EXIT_MS}ms ${EXIT_EASE}`,
         }}
       >
         {children}
       </div>
     </div>
   )
+
+  return createPortal(modal, document.body)
 }
 
 export function ModalIcon({ tone = 'neutral', children }) {

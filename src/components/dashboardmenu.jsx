@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import GeneratedAvatar from './generatedavatar'
-import { Dropdown, DropdownOption } from './dropdown'
+import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 
 function OrgChevronIcon() {
   return (
@@ -197,18 +197,7 @@ function ProfileDropdown({ userImage }) {
         </div>
       }
     >
-      <div
-        style={{
-          background: 'var(--bg-default)',
-          border: '1px solid var(--stroke-soft)',
-          borderRadius: '14px',
-          boxShadow: '0 10px 10px rgba(0, 0, 0, 0.04)',
-          padding: '4px',
-          display: 'flex',
-          flexDirection: 'column',
-          width: '180px',
-        }}
-      >
+      <DropdownMenu width='180px'>
         <DropdownOption onClick={() => router.push('/dashboard/settings')}>
           Settings
         </DropdownOption>
@@ -221,7 +210,7 @@ function ProfileDropdown({ userImage }) {
         <DropdownOption onClick={handleLogout} danger>
           Log out
         </DropdownOption>
-      </div>
+      </DropdownMenu>
     </Dropdown>
   )
 }

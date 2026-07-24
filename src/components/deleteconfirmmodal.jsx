@@ -47,6 +47,7 @@ export default function DeleteConfirmModal({
   itemType = 'link',
   itemLabel,
   recoveryDays = 30,
+  origin,
 }) {
   const [submitting, setSubmitting] = useState(false)
   const uid = useId()
@@ -74,6 +75,7 @@ export default function DeleteConfirmModal({
       onClose={onClose}
       labelledBy={titleId}
       describedBy={descId}
+      origin={origin}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <ModalIcon tone='danger'>
@@ -88,7 +90,12 @@ export default function DeleteConfirmModal({
       </div>
 
       <ModalActions>
-        <ModalButton variant='neutral' autoFocus onClick={onClose}>
+        <ModalButton
+          variant='neutral'
+          autoFocus
+          onClick={onClose}
+          disabled={submitting}
+        >
           Cancel
         </ModalButton>
         <ModalButton
