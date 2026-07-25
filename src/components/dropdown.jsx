@@ -142,7 +142,11 @@ const HIGHLIGHT_EASE = 'cubic-bezier(0.23, 1, 0.32, 1)'
 
 export function DropdownMenu({ children, width = '220px', close }) {
   const containerRef = useRef(null)
-  const [highlight, setHighlight] = useState(null) // { top, height, danger } | null
+  // Position is kept even after the pointer leaves, so the highlight
+  // fades out where it actually is instead of shrinking back up to
+  // the top of the menu as it disappears.
+  const [highlight, setHighlight] = useState(null) // { top, height, danger, animate }
+  const [hovering, setHovering] = useState(false)
 
   function handleMouseMove(e) {
     const container = containerRef.current
@@ -152,10 +156,27 @@ export function DropdownMenu({ children, width = '220px', close }) {
     for (const item of items) {
       const r = item.getBoundingClientRect()
       if (e.clientY >= r.top && e.clientY <= r.bottom) {
-        setHighlight({
-          top: r.top - containerRect.top,
-          height: r.height,
-          danger: item.dataset.danger === 'true',
+        const top = r.top - containerRect.top
+        const height = r.height
+        const danger = item.dataset.danger === 'true'
+        const wasHovering = hovering
+        setHovering(true)
+        setHighlight((prev) => {
+          // Same row, nothing actually changed — returning the SAME
+          // object reference makes React bail out of the re-render
+          // entirely, rather than re-rendering the whole menu (and
+          // every child, via cloneElement) on every pixel of pointer
+          // movement inside one row.
+          if (prev && prev.top === top && prev.height === height) return prev
+          // Animate ONLY when moving between rows. The first hover
+          // after opening snaps straight into place: animating it
+          // meant the bar visibly sprouted from zero height at the
+          // top of the menu and slid down to reach the cursor, which
+          // is the part that looked broken. Same on re-entering the
+          // menu after leaving — wasHovering is false there too, so
+          // it snaps to wherever the cursor came back in rather than
+          // sliding from wherever it left off.
+          return { top, height, danger, animate: prev !== null && wasHovering }
         })
         return
       }
@@ -166,7 +187,7 @@ export function DropdownMenu({ children, width = '220px', close }) {
     <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => setHighlight(null)}
+      onMouseLeave={() => setHovering(false)}
       style={{
         position: 'relative',
         background: 'var(--bg-default)',
@@ -179,12 +200,6 @@ export function DropdownMenu({ children, width = '220px', close }) {
         width,
       }}
     >
-      {/* Starts pinned at the top with zero height rather than at
-          some arbitrary default position — with opacity also at 0
-          until the first real measurement, it's invisible either
-          way, but this means the very first slide-in (top row ->
-          wherever the cursor lands) always has a correct starting
-          point instead of animating in from a stale one. */}
       <div
         aria-hidden='true'
         style={{
@@ -193,12 +208,24 @@ export function DropdownMenu({ children, width = '220px', close }) {
           right: '4px',
           top: `${highlight?.top ?? 4}px`,
           height: `${highlight?.height ?? 0}px`,
-          opacity: highlight ? 1 : 0,
+          opacity: hovering ? 1 : 0,
           background: highlight?.danger
             ? 'var(--error-mute)'
             : 'var(--bg-surface)',
           borderRadius: 'var(--radius-lg)',
-          transition: `top 0.2s ${HIGHLIGHT_EASE}, height 0.2s ${HIGHLIGHT_EASE}, opacity 0.15s ease, background 0.15s ease`,
+          // Opacity and colour always transition; position only when
+          // sliding between rows (see animate above). Built as a list
+          // so the position transitions can be omitted outright
+          // rather than set to 0s, which would still fire transition
+          // events for no reason.
+          transition: [
+            'opacity 0.15s ease',
+            'background 0.15s ease',
+            highlight?.animate ? `top 0.2s ${HIGHLIGHT_EASE}` : null,
+            highlight?.animate ? `height 0.2s ${HIGHLIGHT_EASE}` : null,
+          ]
+            .filter(Boolean)
+            .join(', '),
           pointerEvents: 'none',
         }}
       />
@@ -206,11 +233,11 @@ export function DropdownMenu({ children, width = '220px', close }) {
       {Array.isArray(children)
         ? children.map((child) =>
             isValidElement(child)
-              ? cloneElement(child, { close, menuHovering: highlight !== null })
+              ? cloneElement(child, { close, menuHovering: hovering })
               : child
           )
         : isValidElement(children)
-          ? cloneElement(children, { close, menuHovering: highlight !== null })
+          ? cloneElement(children, { close, menuHovering: hovering })
           : children}
     </div>
   )

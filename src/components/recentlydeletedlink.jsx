@@ -48,11 +48,22 @@ export default function RecentlyDeletedLink() {
   useEffect(() => {
     let cancelled = false
     fetch('/api/links/trash/count')
-      .then((res) => (res.ok ? res.json() : { count: 0 }))
+      .then((res) => {
+        if (!res.ok) {
+          // Hiding the link is still the right thing to DO on failure
+          // (better than linking to a page that can't load), but
+          // failing silently made a broken endpoint look identical to
+          // an empty trash. This is the difference between "there's
+          // nothing deleted" and "the request died" being visible.
+          throw new Error(`trash count failed: ${res.status}`)
+        }
+        return res.json()
+      })
       .then((data) => {
         if (!cancelled) setCount(data.count ?? 0)
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('[RecentlyDeletedLink]', err)
         if (!cancelled) setCount(0)
       })
     return () => {

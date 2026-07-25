@@ -1111,7 +1111,16 @@ html {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    /* `none`, NOT translateY(0). With animation-fill-mode: both, the
+       end state is held forever — and any transform value, even a
+       zero one, makes the element a stacking context. That trapped
+       every dropdown inside its own .dashboard-section: section-4
+       (the table) painted over section-3 (the stats + its date
+       dropdown) purely by DOM order, so the dropdown's z-index: 50
+       could never lift it above the table rows. `none` interpolates
+       identically to translateY(0) but leaves NO transform at rest,
+       so there's no stacking context and dropdowns escape normally. */
+    transform: none;
   }
 }
 .dashboard-section {
