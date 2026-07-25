@@ -8,6 +8,7 @@ import {
   cloneElement,
   isValidElement,
 } from 'react'
+import { createPortal } from 'react-dom'
 
 // Closest the panel is ever allowed to sit to the edge of the screen.
 const SCREEN_MARGIN = 12
@@ -22,15 +23,25 @@ export function Dropdown({
   triggerHover = false,
 }) {
   const [open, setOpen] = useState(false)
+  const [canPortal, setCanPortal] = useState(false)
   const ref = useRef(null)
   const panelRef = useRef(null)
+
+  // document.body doesn't exist during SSR, so the portal target can
+  // only be resolved after mounting on the client.
+  useEffect(() => setCanPortal(true), [])
 
   // ─── Close on outside click ───
   useEffect(() => {
     function handleClickOutside(e) {
-      if (ref.current && !ref.current.contains(e.target)) {
-        setOpen(false)
-      }
+      // Has to check the PANEL as well as the trigger now. The panel
+      // is portaled into document.body, so it's no longer a DOM
+      // descendant of `ref` — testing only `ref` would treat every
+      // click inside the menu as an outside click and close it before
+      // the option's own handler ever ran.
+      const inTrigger = ref.current?.contains(e.target)
+      const inPanel = panelRef.current?.contains(e.target)
+      if (!inTrigger && !inPanel) setOpen(false)
     }
     if (open) {
       document.addEventListener('mousedown', handleClickOutside)
@@ -40,16 +51,18 @@ export function Dropdown({
     }
   }, [open])
 
-  // ─── Keep the panel on-screen ───
-  // Sets the panel's position directly (left, in px) instead of
-  // through a `transform`. The open animation below (`dropdownIn`)
-  // already animates `transform` for its pop-in — a second,
-  // separate `transform` used for screen-edge correction would fight
-  // it, and the animation wins for its first 0.15s. That's exactly
-  // the clip-then-jump: the panel opens in the wrong spot, then
-  // snaps over once the animation finishes. Using `left` instead
-  // avoids that fight, and runs before the browser paints, so
-  // there's no visible flash at the wrong position either.
+  // ─── Position the panel ───
+  // The panel is portaled to document.body and positioned `fixed`,
+  // rather than `absolute` inside the component. That's the whole
+  // point: nested absolutely, the panel could be covered by a later
+  // sibling section, trapped inside any ancestor that happens to
+  // create a stacking context, or clipped outright by an ancestor's
+  // overflow (which is what cut off row menus inside the table's
+  // horizontal scroll container on mobile). Portaling sidesteps every
+  // one of those at once instead of patching them individually.
+  //
+  // The cost is that a fixed panel doesn't follow its trigger on its
+  // own, so position is recomputed on scroll and resize below.
   useLayoutEffect(() => {
     if (!open) return
     const anchor = ref.current
@@ -57,36 +70,74 @@ export function Dropdown({
     if (!anchor || !panel) return
 
     function position() {
-      const anchorRect = anchor.getBoundingClientRect()
+      const a = anchor.getBoundingClientRect()
       const panelWidth = panel.offsetWidth
+      const panelHeight = panel.offsetHeight
 
-      // Where the panel would sit by default, in screen pixels
-      let desiredLeft =
+      // Horizontal: align to the trigger, then clamp on-screen.
+      let left =
         align === 'right'
-          ? anchorRect.right - panelWidth - sideOffset - offsetX
-          : anchorRect.left + sideOffset + offsetX
+          ? a.right - panelWidth - sideOffset - offsetX
+          : a.left + sideOffset + offsetX
+      left = Math.min(left, window.innerWidth - panelWidth - SCREEN_MARGIN)
+      left = Math.max(left, SCREEN_MARGIN)
 
-      // Clamp fully inside the screen
-      desiredLeft = Math.min(
-        desiredLeft,
-        window.innerWidth - panelWidth - SCREEN_MARGIN
-      )
-      desiredLeft = Math.max(desiredLeft, SCREEN_MARGIN)
+      // Vertical: below the trigger normally, flipped above it when
+      // there isn't room below AND there is room above — otherwise a
+      // menu opened near the bottom of the screen would run off it.
+      const belowTop = a.bottom + offsetY
+      const noRoomBelow =
+        belowTop + panelHeight > window.innerHeight - SCREEN_MARGIN
+      const roomAbove = a.top - offsetY - panelHeight > SCREEN_MARGIN
+      const flip = noRoomBelow && roomAbove
 
-      // The panel is absolutely positioned against `anchor`, so
-      // convert the screen position back to "distance from anchor"
-      panel.style.left = `${desiredLeft - anchorRect.left}px`
-      panel.style.right = 'auto'
+      panel.style.left = `${left}px`
+      panel.style.top = `${flip ? a.top - offsetY - panelHeight : belowTop}px`
+      // Written straight to the element rather than held in state:
+      // this runs on every scroll event, and setState there would
+      // re-render the whole menu on each one.
+      panel.style.transformOrigin = flip
+        ? align === 'right'
+          ? 'bottom right'
+          : 'bottom left'
+        : align === 'right'
+          ? 'top right'
+          : 'top left'
     }
 
     position()
-    // Re-check on rotate/resize so it doesn't stay corrected for a
-    // screen size it's no longer on.
     window.addEventListener('resize', position)
-    return () => window.removeEventListener('resize', position)
-  }, [open, align, sideOffset, offsetX])
+    // capture: true so scrolling inside ANY scrollable ancestor
+    // repositions the panel, not just scrolling the window itself.
+    window.addEventListener('scroll', position, true)
+    return () => {
+      window.removeEventListener('resize', position)
+      window.removeEventListener('scroll', position, true)
+    }
+  }, [open, align, sideOffset, offsetX, offsetY])
 
   const close = () => setOpen(false)
+
+  const panel = (
+    <div
+      ref={panelRef}
+      className='dropdown-panel'
+      style={{
+        position: 'fixed',
+        // Real values are written by the layout effect above, which
+        // runs before the browser paints — so there's no flash at
+        // 0,0 first.
+        top: 0,
+        left: 0,
+        // Below the modal's 200 on purpose: if a dropdown option
+        // opens a modal, the modal belongs on top.
+        zIndex: 150,
+        transformOrigin: align === 'right' ? 'top right' : 'top left',
+      }}
+    >
+      {isValidElement(children) ? cloneElement(children, { close }) : children}
+    </div>
+  )
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
@@ -101,26 +152,7 @@ export function Dropdown({
         {trigger}
       </div>
 
-      {/* --- Panel ---
-          No left/right set here on purpose — the effect above sets
-          `left` directly once it knows the panel's real size and
-          the screen's width, before anything is painted. */}
-      {open && (
-        <div
-          ref={panelRef}
-          className='dropdown-panel'
-          style={{
-            position: 'absolute',
-            top: `calc(100% + ${offsetY}px)`,
-            zIndex: 50,
-            transformOrigin: align === 'right' ? 'top right' : 'top left',
-          }}
-        >
-          {isValidElement(children)
-            ? cloneElement(children, { close })
-            : children}
-        </div>
-      )}
+      {open && canPortal ? createPortal(panel, document.body) : null}
     </div>
   )
 }
@@ -275,12 +307,14 @@ export function DropdownOption({
         position: 'relative',
         display: 'flex',
         alignItems: 'center',
-        // Vertical padding — text-box-trim (added globally to the
-        // typography classes) shrinks this text's own line-box from
-        // its untrimmed ~16px down to roughly cap-height-to-baseline,
-        // ~8-9px for a 12px font, so padding tuned against the old
-        // untrimmed height reads as visibly tight against the new,
-        // smaller one. 12px here.
+        // Vertical padding — text-box-trim (scoped to the
+        // .dropdown-item-label class in globals.css, NOT applied to
+        // the shared typography classes; the app-wide version broke
+        // padding everywhere and was reverted) shrinks this text's
+        // own line-box from its untrimmed ~16px down to roughly
+        // cap-height-to-baseline, ~8-9px for a 12px font. So padding
+        // tuned against the old untrimmed height reads as visibly
+        // tight against the new, smaller one. 12px here.
         padding: '12px 14px 12px 12px',
         borderRadius: 'var(--radius-lg)',
       }}
