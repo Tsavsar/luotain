@@ -1141,6 +1141,16 @@ html {
 .dashboard-section-5 {
   animation-delay: 200ms;
 }
+/* 6 and 7 continue the same 50ms cadence — the link detail page has
+   five stacked content sections (back row, link meta, stats, chart,
+   cards) where other pages have three, and without these it fell off
+   the end of the stagger and every section animated in at once. */
+.dashboard-section-6 {
+  animation-delay: 250ms;
+}
+.dashboard-section-7 {
+  animation-delay: 300ms;
+}
 
 /* --- Dropdowns: shared across Date, card filters, Org, Profile --- */
 .dropdown-item {
@@ -1515,5 +1525,16 @@ html {
 @supports (text-box-trim: trim-both) {
   .dropdown-item-label {
     text-box: trim-both cap alphabetic;
+  }
+}
+
+/* Link detail page: QR preview and the link's details sit side by
+   side, and stack on mobile — a fixed 260px QR next to text doesn't
+   fit a phone. Same treatment .card-row already gets, for the same
+   reason. */
+@media (max-width: 768px) {
+  .link-detail-meta {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
