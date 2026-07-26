@@ -15,10 +15,10 @@
 // aggregateCardData and every component that calls this stay as-is.
 
 const LINKS = [
-  { url: 'luo.io/swift-otter', weight: 15 },
-  { url: 'luo.io/quick-fox', weight: 11 },
-  { url: 'luo.io/summer-sale', weight: 8 },
-  { url: 'luo.io/3xK9fL2', weight: 1 },
+  { url: 'luot.link/swift-otter', weight: 15 },
+  { url: 'luot.link/quick-fox', weight: 11 },
+  { url: 'luot.link/summer-sale', weight: 8 },
+  { url: 'luot.link/3xK9fL2', weight: 1 },
 ]
 // Destination + creation date for each link above — the links table
 // needs both, and neither is something the click-event pool tracks
@@ -26,19 +26,19 @@ const LINKS = [
 // on which date range you're viewing), so this lives as its own
 // small fixed table instead of being derived from events.
 const LINK_METADATA = {
-  'luo.io/swift-otter': {
+  'luot.link/swift-otter': {
     destination: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     createdAt: '2026-07-03',
   },
-  'luo.io/quick-fox': {
+  'luot.link/quick-fox': {
     destination: 'https://www.youtube.com/watch?v=3JZ_D3ELwOQ',
     createdAt: '2025-08-12',
   },
-  'luo.io/summer-sale': {
+  'luot.link/summer-sale': {
     destination: 'https://luotain.app/campaigns/summer-sale',
     createdAt: '2026-06-01',
   },
-  'luo.io/3xK9fL2': {
+  'luot.link/3xK9fL2': {
     destination: 'https://example.com/private-promo',
     createdAt: '2026-05-15',
   },
@@ -632,21 +632,21 @@ export function getMockLinksStats(range = 'Last 7 days', filters = []) {
 const TRASH_ITEMS = [
   {
     id: 'trash-swift-otter',
-    shortUrl: 'luo.io/swift-otter',
+    shortUrl: 'luot.link/swift-otter',
     destination: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     clicks: 86,
     deletedDaysAgo: 28,
   },
   {
     id: 'trash-quick-fox',
-    shortUrl: 'luo.io/quick-fox',
+    shortUrl: 'luot.link/quick-fox',
     destination: 'https://www.youtube.com/watch?v=3JZ_D3ELwOQ',
     clicks: 75,
     deletedDaysAgo: 21,
   },
   {
     id: 'trash-clever-crow',
-    shortUrl: 'luo.io/clever-crow',
+    shortUrl: 'luot.link/clever-crow',
     destination: 'https://www.youtube.com/watch?v=9bZkp7q19f0',
     clicks: 92,
     deletedDaysAgo: 12,
