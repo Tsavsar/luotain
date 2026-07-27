@@ -171,12 +171,6 @@ export default function LinksPage() {
             gap: '16px',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <RecentlyDeletedLink
-              count={useMockData ? mockTrashCount : undefined}
-            />
-          </div>
-
           {/* No mock toggle on, table renders its own empty state —
               same "no data yet" the real app shows before any links
               have been created, not a separate loading state. */}
@@ -190,6 +184,17 @@ export default function LinksPage() {
             }}
             onDelete={handleDelete}
           />
+
+          {/* Below the table, not above it. The component returns null
+              when the trash is empty, so this row collapses to nothing
+              rather than leaving a gap under the table — which is also
+              why it isn't wrapped in anything that would reserve
+              height on its own. */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <RecentlyDeletedLink
+              count={useMockData ? mockTrashCount : undefined}
+            />
+          </div>
         </div>
       </div>
 
