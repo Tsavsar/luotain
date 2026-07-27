@@ -18,9 +18,15 @@ import {
   CopyIcon,
   MoreIcon,
 } from '@/components/linktablehelpers'
-import { getMockAnalytics, getMockLinksTable } from '@/lib/mockAnalytics'
+import {
+  getMockAnalytics,
+  getMockLinksTable,
+  getMockTrash,
+} from '@/lib/mockAnalytics'
 import { shortUrlFor } from '@/lib/shortlink'
 import LogoMark from '@/components/logomark'
+import Alert, { AlertAction, AlertInfoIcon } from '@/components/alert'
+import { RECOVERY_WINDOW_DAYS, daysSinceDeleted } from '@/lib/linkrecovery'
 
 // ─── One labelled field in the details block ───
 // Node 73:6014 / 73:6017 / 73:6006 are all the same shape: a soft
@@ -116,6 +122,12 @@ export default function LinkDetailPage() {
     link: null,
     origin: null,
   })
+  // Drives the alert's exit collapse. Separate from the link's own
+  // deletedAt so the alert can animate out over a couple of hundred
+  // milliseconds before it unmounts, instead of vanishing the instant
+  // recovery succeeds and dropping everything below it upward.
+  const [collapsingAlert, setCollapsingAlert] = useState(false)
+  const [recovering, setRecovering] = useState(false)
 
   // Which link this page is about. Matched on slug rather than id for
   // the reason spelled out in slugOf(): mock ids contain a slash and
@@ -127,8 +139,16 @@ export default function LinkDetailPage() {
     let cancelled = false
 
     if (useMockData) {
-      const rows = getMockLinksTable(selectedRange, [])
-      setLink(rows.find((r) => slugOf(r.shortUrl) === slug) || null)
+      // Live links first, then the trash. Without the trash lookup,
+      // "View details" on a trashed row would report the link as not
+      // found in mock mode — the archived state would be unreachable
+      // without a real database behind it.
+      const live = getMockLinksTable(selectedRange, [])
+      const found =
+        live.find((r) => slugOf(r.shortUrl) === slug) ||
+        getMockTrash().find((r) => slugOf(r.shortUrl) === slug) ||
+        null
+      setLink(found)
       setLoadError(false)
       return
     }
@@ -212,6 +232,69 @@ export default function LinkDetailPage() {
   ]
 
   const shortUrl = link?.shortUrl || shortUrlFor(slug)
+
+  // A deleted link still renders its whole page — just archived. The
+  // route serves it deliberately (see the comment there); anything
+  // past the recovery window 404s instead and lands in loadError.
+  const isDeleted = Boolean(link?.deletedAt)
+  const deletedDaysAgo = link?.deletedAt ? daysSinceDeleted(link.deletedAt) : 0
+  const daysLeft = Math.max(0, RECOVERY_WINDOW_DAYS - deletedDaysAgo)
+
+  function pluralDays(n) {
+    return n === 1 ? '1 day' : `${n} days`
+  }
+  // "0 days ago" and "in 0 days" are both just wrong English, and both
+  // are reachable: the first on the day a link is deleted, the second
+  // on its final day in the trash.
+  const deletedPhrase =
+    deletedDaysAgo === 0 ? 'today' : `${pluralDays(deletedDaysAgo)} ago`
+  const expiryPhrase = daysLeft === 0 ? 'today' : `in ${pluralDays(daysLeft)}`
+
+  async function handleRecover() {
+    if (!link || recovering) return
+    setRecovering(true)
+
+    if (useMockData) {
+      // No network with mock data on — mock ids aren't database rows.
+      setCollapsingAlert(true)
+      setTimeout(() => {
+        setLink((prev) => (prev ? { ...prev, deletedAt: null } : prev))
+        setCollapsingAlert(false)
+        setRecovering(false)
+      }, 250)
+      toast(`${link.shortUrl} recovered`)
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/links/${link.id}/recover`, {
+        method: 'POST',
+      })
+      if (!res.ok) {
+        if (res.status === 410) {
+          toast.error(`Past the ${RECOVERY_WINDOW_DAYS}-day recovery window`)
+        } else {
+          throw new Error(`recover failed: ${res.status}`)
+        }
+        setRecovering(false)
+        return
+      }
+      // Collapse the alert first, then clear deletedAt — so the grey
+      // lifting and the alert leaving happen as one motion rather than
+      // the page snapping back to life in a single frame.
+      setCollapsingAlert(true)
+      setTimeout(() => {
+        setLink((prev) => (prev ? { ...prev, deletedAt: null } : prev))
+        setCollapsingAlert(false)
+        setRecovering(false)
+      }, 250)
+      toast(`${link.shortUrl} recovered`)
+    } catch (err) {
+      console.error('[LinkDetailPage]', err)
+      toast.error(`Couldn't recover ${link.shortUrl}`)
+      setRecovering(false)
+    }
+  }
 
   async function handleDelete(target) {
     if (useMockData) {
@@ -299,29 +382,39 @@ export default function LinkDetailPage() {
             }
           >
             <DropdownMenu width='160px'>
-              <DropdownOption
-                onClick={() => {
-                  // TODO: route to the link's edit view once it exists
-                }}
-              >
-                Edit
-              </DropdownOption>
-              <DropdownOption
-                danger
-                onClick={(e) => {
-                  if (!link) return
-                  const rect = e.currentTarget.getBoundingClientRect()
-                  setPendingDelete({
-                    link,
-                    origin: {
-                      x: rect.left + rect.width / 2,
-                      y: rect.top + rect.height / 2,
-                    },
-                  })
-                }}
-              >
-                Delete
-              </DropdownOption>
+              {/* On a deleted link, Edit and Delete are both
+                  meaningless — you can't edit something that's gone,
+                  and it's already deleted. Recover is the only real
+                  action, matching the alert above. */}
+              {isDeleted ? (
+                <DropdownOption onClick={handleRecover}>Recover</DropdownOption>
+              ) : (
+                <>
+                  <DropdownOption
+                    onClick={() => {
+                      // TODO: route to the link's edit view once it exists
+                    }}
+                  >
+                    Edit
+                  </DropdownOption>
+                  <DropdownOption
+                    danger
+                    onClick={(e) => {
+                      if (!link) return
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      setPendingDelete({
+                        link,
+                        origin: {
+                          x: rect.left + rect.width / 2,
+                          y: rect.top + rect.height / 2,
+                        },
+                      })
+                    }}
+                  >
+                    Delete
+                  </DropdownOption>
+                </>
+              )}
             </DropdownMenu>
           </Dropdown>
         </div>
@@ -338,163 +431,192 @@ export default function LinkDetailPage() {
         }}
       >
         <div
-          className='link-detail-meta'
           style={{
             width: '100%',
             maxWidth: '720px',
             display: 'flex',
-            gap: '24px',
-            alignItems: 'center',
+            flexDirection: 'column',
+            gap: '16px',
           }}
         >
-          {loadError ? (
-            // The slug in the URL is user-supplied, so a link that
-            // doesn't resolve is an ordinary case, not an edge one.
-            // Saying so beats rendering the full layout with a dash in
-            // every field, which reads as "this link exists but has no
-            // data" — a different and wrong message.
+          {/* Alert sits OUTSIDE the archived wrapper below, in full
+              colour and fully interactive — it holds the one action
+              that still applies to a deleted link. */}
+          {isDeleted ? (
             <div
-              style={{
-                width: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '6px',
-                alignItems: 'center',
-                padding: '48px 0',
-              }}
+              className={`alert-collapse${collapsingAlert ? ' is-collapsing' : ''}`}
             >
-              <p
-                className='para-sm'
-                style={{ color: 'var(--text-strong)', margin: 0 }}
-              >
-                Link not found
-              </p>
-              <p
-                className='para-xs'
-                style={{ color: 'var(--text-soft)', margin: 0 }}
-              >
-                It may have been deleted, or belong to another organization.
-              </p>
-            </div>
-          ) : (
-            <>
-              <LinkPreview
-                imageUrl={link?.ogImageUrl}
-                alt={link?.title || ''}
+              <Alert
+                variant='inline'
+                icon={<AlertInfoIcon />}
+                message={`This link was deleted ${deletedPhrase}. It will be permanently deleted ${expiryPhrase}.`}
+                action={
+                  <AlertAction onClick={handleRecover} disabled={recovering}>
+                    {recovering ? 'Recovering...' : 'Recover'}
+                  </AlertAction>
+                }
               />
+            </div>
+          ) : null}
 
+          <div
+            className={`link-detail-meta${isDeleted ? ' is-archived' : ''}`}
+            style={{
+              width: '100%',
+              display: 'flex',
+              gap: '24px',
+              alignItems: 'center',
+            }}
+          >
+            {loadError ? (
+              // The slug in the URL is user-supplied, so a link that
+              // doesn't resolve is an ordinary case, not an edge one.
+              // Saying so beats rendering the full layout with a dash in
+              // every field, which reads as "this link exists but has no
+              // data" — a different and wrong message.
               <div
                 style={{
+                  width: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '16px',
-                  minWidth: 0,
-                  flex: 1,
+                  gap: '6px',
+                  alignItems: 'center',
+                  padding: '48px 0',
                 }}
               >
-                <DetailField label='Short link'>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <p
-                      className='para-sm'
-                      style={{ color: 'var(--text-strong)', margin: 0 }}
-                    >
-                      {shortUrl}
-                    </p>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard?.writeText(shortUrl)
-                        toast('Link copied to clipboard')
-                      }}
-                      title='Copy'
+                <p
+                  className='para-sm'
+                  style={{ color: 'var(--text-strong)', margin: 0 }}
+                >
+                  Link not found
+                </p>
+                <p
+                  className='para-xs'
+                  style={{ color: 'var(--text-soft)', margin: 0 }}
+                >
+                  It may have been deleted, or belong to another organization.
+                </p>
+              </div>
+            ) : (
+              <>
+                <LinkPreview
+                  imageUrl={link?.ogImageUrl}
+                  alt={link?.title || ''}
+                />
+
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                    minWidth: 0,
+                    flex: 1,
+                  }}
+                >
+                  <DetailField label='Short link'>
+                    <div
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        background: 'none',
-                        border: 'none',
-                        padding: 0,
-                        cursor: 'pointer',
+                        gap: '8px',
                       }}
                     >
-                      <CopyIcon />
-                    </button>
-                  </div>
-                </DetailField>
+                      <p
+                        className='para-sm'
+                        style={{ color: 'var(--text-strong)', margin: 0 }}
+                      >
+                        {shortUrl}
+                      </p>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(shortUrl)
+                          toast('Link copied to clipboard')
+                        }}
+                        title='Copy'
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <CopyIcon />
+                      </button>
+                    </div>
+                  </DetailField>
 
-                <DetailField label='Destination'>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      minWidth: 0,
-                    }}
-                  >
-                    <DestinationIcon domain={hostnameOf(link?.destination)} />
-                    <p
-                      className='para-sm'
+                  <DetailField label='Destination'>
+                    <div
                       style={{
-                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
                         minWidth: 0,
-                        color: 'var(--text-strong)',
-                        margin: 0,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
                       }}
                     >
-                      {link?.destination || '-'}
-                    </p>
+                      <DestinationIcon domain={hostnameOf(link?.destination)} />
+                      <p
+                        className='para-sm'
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          color: 'var(--text-strong)',
+                          margin: 0,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {link?.destination || '-'}
+                      </p>
+                    </div>
+                  </DetailField>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <DetailField label='Date created' width='150px'>
+                      <p
+                        className='para-sm'
+                        style={{ color: 'var(--text-strong)', margin: 0 }}
+                      >
+                        {link?.createdAt ? formatRowDate(link.createdAt) : '-'}
+                      </p>
+                    </DetailField>
+
+                    <DetailField label='QR Code' width='150px'>
+                      <button
+                        onClick={() => {
+                          // TODO: wire up QR generation — the QrCode model
+                          // exists in the schema, but nothing writes to it yet.
+                          toast('QR code generation is coming soon')
+                        }}
+                        className='para-sm'
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          margin: 0,
+                          cursor: 'pointer',
+                          color: 'var(--text-strong)',
+                          textAlign: 'left',
+                          // Dotted underline per Figma (node 79:6150) — reads
+                          // as an action rather than a plain value.
+                          textDecoration: 'underline',
+                          textDecorationStyle: 'dotted',
+                          textDecorationColor: 'var(--text-soft)',
+                          textUnderlineOffset: '3px',
+                          fontFamily: 'var(--font-sans)',
+                        }}
+                      >
+                        Generate QR code
+                      </button>
+                    </DetailField>
                   </div>
-                </DetailField>
-
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <DetailField label='Date created' width='150px'>
-                    <p
-                      className='para-sm'
-                      style={{ color: 'var(--text-strong)', margin: 0 }}
-                    >
-                      {link?.createdAt ? formatRowDate(link.createdAt) : '-'}
-                    </p>
-                  </DetailField>
-
-                  <DetailField label='QR Code' width='150px'>
-                    <button
-                      onClick={() => {
-                        // TODO: wire up QR generation — the QrCode model
-                        // exists in the schema, but nothing writes to it yet.
-                        toast('QR code generation is coming soon')
-                      }}
-                      className='para-sm'
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        padding: 0,
-                        margin: 0,
-                        cursor: 'pointer',
-                        color: 'var(--text-strong)',
-                        textAlign: 'left',
-                        // Dotted underline per Figma (node 79:6150) — reads
-                        // as an action rather than a plain value.
-                        textDecoration: 'underline',
-                        textDecorationStyle: 'dotted',
-                        textDecorationColor: 'var(--text-soft)',
-                        textUnderlineOffset: '3px',
-                        fontFamily: 'var(--font-sans)',
-                      }}
-                    >
-                      Generate QR code
-                    </button>
-                  </DetailField>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -508,12 +630,17 @@ export default function LinkDetailPage() {
           paddingBottom: 0,
         }}
       >
-        <StatsCards
-          title='Analytics'
-          metrics={metrics}
-          selectedRange={selectedRange}
-          onRangeChange={setSelectedRange}
-        />
+        <div
+          className={isDeleted ? 'is-archived' : undefined}
+          style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+        >
+          <StatsCards
+            title='Analytics'
+            metrics={metrics}
+            selectedRange={selectedRange}
+            onRangeChange={setSelectedRange}
+          />
+        </div>
       </div>
 
       {/* ─── Chart (node 79:6504) ─── */}
@@ -530,7 +657,10 @@ export default function LinkDetailPage() {
         {/* chart-full-bleed wrapper, same as the analytics page —
             without it the chart stays boxed at the 720px content
             width instead of running edge to edge. */}
-        <div className='chart-full-bleed' style={{ width: '100%' }}>
+        <div
+          className={`chart-full-bleed${isDeleted ? ' is-archived' : ''}`}
+          style={{ width: '100%' }}
+        >
           <ChartContainer data={analytics?.chartData} />
         </div>
       </div>
@@ -549,6 +679,7 @@ export default function LinkDetailPage() {
         }}
       >
         <div
+          className={isDeleted ? 'is-archived' : undefined}
           style={{
             width: '100%',
             maxWidth: '720px',
