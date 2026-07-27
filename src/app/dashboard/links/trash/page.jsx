@@ -1,13 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import BackButton from '@/components/backbutton'
 import TrashTable from '@/components/trashtable'
 import { toast } from '@/components/toast'
+import { slugOf } from '@/components/linktablehelpers'
 import { getMockTrash } from '@/lib/mockAnalytics'
 import { RECOVERY_WINDOW_DAYS } from '@/lib/linkrecovery'
 
 export default function TrashPage() {
+  const router = useRouter()
   // This page had NO mock toggle before, which was the root of the
   // recovery bug: it always rendered getMockTrash(), but Recover
   // called the real API with those mock ids ("trash-swift-otter").
@@ -103,11 +106,12 @@ export default function TrashPage() {
   }
 
   function handleViewDetails(item) {
-    // TODO: no design for this yet. Note for when there is one: the
-    // link detail page can't serve a trashed link as-is — its
-    // by-slug route filters on deletedAt: null, so it would 404.
-    // Either that route needs to accept trashed links behind a flag,
-    // or this needs its own view.
+    // Goes to the ordinary detail page, which now renders its own
+    // archived state for a deleted link. The by-slug route used to
+    // filter these out (deletedAt: null) so this could only ever
+    // 404 — it serves them deliberately now, within the recovery
+    // window.
+    router.push(`/dashboard/links/${slugOf(item.shortUrl)}`)
   }
 
   return (
