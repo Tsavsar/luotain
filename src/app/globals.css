@@ -1498,9 +1498,7 @@ html {
    work correctly on touch, not just mouse. Transform only, so this
    never competes with each button's own background transition. */
 .modal-btn {
-  transition:
-    transform 160ms ease-out,
-    background 0.15s ease;
+  transition: transform 160ms ease-out, background 0.15s ease;
 }
 .modal-btn:active {
   transform: scale(0.97);
