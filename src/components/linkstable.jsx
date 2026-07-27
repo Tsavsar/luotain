@@ -129,7 +129,7 @@ function MoreMenu({ link, onEdit, onDelete }) {
 // whatever rows follow it, "always above the rows after it" covers
 // the open-menu case without needing to know whether one actually
 // is open.
-function LinkRow({ link, zIndex, onEdit, onDelete }) {
+function LinkRow({ link, zIndex, onOpen, onEdit, onDelete }) {
   const [hovered, setHovered] = useState(false)
 
   const cellBase = {
@@ -143,6 +143,7 @@ function LinkRow({ link, zIndex, onEdit, onDelete }) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => onOpen?.(link)}
       style={{
         position: 'relative',
         zIndex,
@@ -151,6 +152,7 @@ function LinkRow({ link, zIndex, onEdit, onDelete }) {
         width: '100%',
         alignItems: 'center',
         padding: '4px 0',
+        cursor: 'pointer',
       }}
     >
       {/* Hover background as its own layer instead of padding +
@@ -193,7 +195,10 @@ function LinkRow({ link, zIndex, onEdit, onDelete }) {
           {link.shortUrl}
         </p>
         <button
-          onClick={() => {
+          onClick={(e) => {
+            // The row itself now navigates on click, so this has to
+            // stop here — copying a link shouldn't also open it.
+            e.stopPropagation()
             navigator.clipboard?.writeText(link.shortUrl)
             toast('Link copied to clipboard')
           }}
@@ -267,6 +272,10 @@ function LinkRow({ link, zIndex, onEdit, onDelete }) {
           rather than try a third detection heuristic, it's just
           always there and always tappable. */}
       <div
+        // Stops menu clicks reaching the row's navigation handler —
+        // otherwise opening the menu, or picking Edit/Delete inside
+        // it, would navigate to the detail page at the same time.
+        onClick={(e) => e.stopPropagation()}
         style={{
           position: 'absolute',
           right: 0,
@@ -307,7 +316,7 @@ function EmptyState() {
 // Sorting is local to the table (clicks/date, asc/desc) — doesn't
 // need to round-trip through the page, nothing else on the page
 // depends on the table's current sort order.
-export default function LinksTable({ links, onEdit, onDelete }) {
+export default function LinksTable({ links, onOpen, onEdit, onDelete }) {
   const [sortBy, setSortBy] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
   // The link a row's "Delete" was clicked for, plus where that click
@@ -344,7 +353,12 @@ export default function LinksTable({ links, onEdit, onDelete }) {
     }
   }
 
-  const hasLinks = Array.isArray(links) && links.length > 0
+  // null/undefined = not loaded yet, [] = genuinely no links. Treating
+  // both as "empty" made the table assert "no links yet" for the
+  // duration of the fetch, before any real rows had a chance to
+  // arrive.
+  const loaded = Array.isArray(links)
+  const hasLinks = loaded && links.length > 0
   const sorted = hasLinks
     ? [...links].sort((a, b) => {
         if (!sortBy) return 0
@@ -380,12 +394,13 @@ export default function LinksTable({ links, onEdit, onDelete }) {
           }}
         >
           <TableHeader sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-          {hasLinks ? (
+          {!loaded ? null : hasLinks ? (
             sorted.map((link, index) => (
               <LinkRow
                 key={link.id}
                 link={link}
                 zIndex={sorted.length - index}
+                onOpen={onOpen}
                 onEdit={onEdit}
                 onDelete={requestDelete}
               />

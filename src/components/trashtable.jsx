@@ -13,20 +13,18 @@ import {
   COL_DATE,
   COL_CLICKS,
 } from './linktablehelpers'
+import {
+  RECOVERY_WINDOW_DAYS,
+  WARNING_DAYS_REMAINING,
+  daysSinceDeleted,
+} from '@/lib/linkrecovery'
 
-const RECOVERY_WINDOW_DAYS = 30
-// Once this few days are left before permanent deletion, the
-// "deleted X days ago" text turns red — a warning that time's
-// actually running out, not just a timestamp. Figma's own example
-// showed exactly one row in warning color at 28 days (2 days left)
-// against two others at 21 and 12 days (not warned), so the
-// threshold sits at 3 days remaining rather than being a guess with
-// no anchor point.
-const WARNING_DAYS_REMAINING = 3
-
+// Window and threshold come from the shared module rather than being
+// redeclared here — this file, the trash page's copy, and three API
+// routes all depend on the same number, and a local copy is how they
+// drift apart.
 function daysAgo(deletedAt) {
-  const ms = Date.now() - new Date(deletedAt).getTime()
-  return Math.max(0, Math.floor(ms / (24 * 3600 * 1000)))
+  return daysSinceDeleted(deletedAt)
 }
 
 function formatDeletedAgo(deletedAt) {
@@ -302,7 +300,11 @@ export default function TrashTable({ items, onViewDetails, onRecover }) {
     }
   }
 
-  const hasItems = Array.isArray(items) && items.length > 0
+  // null/undefined = not loaded yet, [] = genuinely empty. Collapsing
+  // those two into one state made the page flash "Nothing in the
+  // trash" before the real rows arrived.
+  const loaded = Array.isArray(items)
+  const hasItems = loaded && items.length > 0
   const sorted = hasItems
     ? [...items].sort((a, b) => {
         if (!sortBy) return 0
@@ -327,7 +329,7 @@ export default function TrashTable({ items, onViewDetails, onRecover }) {
           }}
         >
           <TableHeader sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-          {hasItems ? (
+          {!loaded ? null : hasItems ? (
             sorted.map((item, index) => (
               <TrashRow
                 key={item.id}

@@ -25,6 +25,21 @@ export function hostnameOf(url) {
   }
 }
 
+// The URL-safe part of a short link: "luot.link/quick-fox" -> "quick-fox".
+// Used as the route param for a link's detail page.
+//
+// Deliberately NOT link.id. Mock rows use the full short URL as their
+// id, which contains a slash — the exact thing that made the delete
+// endpoint unroutable earlier (/api/links/luot.link/quick-fox/delete
+// resolves to nothing). Derived from shortUrl rather than read from a
+// field so it works against the existing mock data as-is, and it
+// lines up with the real schema too: Link.shortCode is already
+// globally unique, so the slug identifies a link on its own.
+export function slugOf(shortUrl) {
+  if (!shortUrl) return ''
+  return String(shortUrl).split('/').filter(Boolean).pop() || ''
+}
+
 // Shown in place of the favicon when one isn't available — recolored
 // from the sample's literal #e8e8e8 to var(--bg-subtle), which is
 // what that hex already matches almost exactly, so it stays
