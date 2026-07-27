@@ -1498,7 +1498,9 @@ html {
    work correctly on touch, not just mouse. Transform only, so this
    never competes with each button's own background transition. */
 .modal-btn {
-  transition: transform 160ms ease-out, background 0.15s ease;
+  transition:
+    transform 160ms ease-out,
+    background 0.15s ease;
 }
 .modal-btn:active {
   transform: scale(0.97);
@@ -1535,4 +1537,60 @@ html {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* --- Archived page content (a deleted link's detail page) ---
+   Figma achieves this with mix-blend-luminosity; grayscale() is the
+   direct CSS equivalent and doesn't depend on what's painted behind
+   it. Dimmed as well as desaturated because the design drops the
+   chart's own labels all the way to --bg-subtle, which is far lighter
+   than their live colour — desaturation alone wouldn't get there.
+
+   pointer-events is off for a real reason, not just to look inert:
+   dropdowns are portaled to document.body, so they escape this filter
+   entirely. A greyed-out date filter would open a full-colour menu.
+   Blocking interaction avoids that mismatch, and every action in here
+   is either meaningless on a deleted link (generate a QR, re-filter
+   frozen analytics) or minor (copy a URL that no longer resolves).
+   The one action that matters, Recover, sits in the alert above this
+   region in full colour.
+
+   Transitioned because this DOES change: recovering a link lifts the
+   whole treatment, and per the no-snap rule that shouldn't happen in
+   a single frame. */
+.is-archived {
+  filter: grayscale(1);
+  opacity: 0.7;
+  pointer-events: none;
+  transition:
+    filter 0.35s ease,
+    opacity 0.35s ease;
+}
+
+/* The alert's collapse when a link is recovered — height and opacity
+   together so the content below slides up rather than jumping into
+   the gap the alert leaves behind. */
+.alert-collapse {
+  overflow: hidden;
+  max-height: 200px;
+  opacity: 1;
+  transition:
+    max-height 0.25s ease,
+    opacity 0.2s ease,
+    margin-bottom 0.25s ease;
+}
+.alert-collapse.is-collapsing {
+  max-height: 0;
+  opacity: 0;
+  margin-bottom: 0 !important;
+}
+
+.alert-action {
+  transition: opacity 0.15s ease;
+}
+.alert-action:hover:not(:disabled) {
+  opacity: 0.6;
+}
+.alert-action:disabled {
+  opacity: 0.5;
 }
