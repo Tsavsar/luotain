@@ -1,13 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import LinksStats from '@/components/linksstats'
 import LinksTable from '@/components/linkstable'
 import RecentlyDeletedLink from '@/components/recentlydeletedlink'
+import { slugOf } from '@/components/linktablehelpers'
 import { toast } from '@/components/toast'
 import { getMockLinksStats, getMockLinksTable } from '@/lib/mockAnalytics'
 
 export default function LinksPage() {
+  const router = useRouter()
   const [useMockData, setUseMockData] = useState(false)
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
 
@@ -17,15 +20,49 @@ export default function LinksPage() {
   // that should reset it change (mock toggled, range changed), so a
   // delete's own removal otherwise sticks.
   const [links, setLinks] = useState(null)
+  // How many links have been deleted in THIS mock session. Only used
+  // while mock data is on, to decide whether "Recently deleted" shows.
+  // With mock off the component asks the API instead, which is the
+  // real answer.
+  const [mockTrashCount, setMockTrashCount] = useState(0)
   useEffect(() => {
-    setLinks(useMockData ? getMockLinksTable(selectedRange, []) : null)
+    let cancelled = false
+    // Re-seeding restores every row, so anything "deleted" in the
+    // previous mock session is back — the count has to reset with it.
+    setMockTrashCount(0)
+
+    if (useMockData) {
+      setLinks(getMockLinksTable(selectedRange, []))
+      return
+    }
+
+    // Real path. `null` while in flight rather than [] — the table
+    // treats null as "not loaded" and [] as "genuinely no links", so
+    // this doesn't flash the empty state before rows arrive.
+    setLinks(null)
+    fetch('/api/links')
+      .then((res) => {
+        if (!res.ok) throw new Error(`links list failed: ${res.status}`)
+        return res.json()
+      })
+      .then((data) => {
+        if (!cancelled) setLinks(data.links ?? [])
+      })
+      .catch((err) => {
+        console.error('[LinksPage]', err)
+        if (!cancelled) setLinks([])
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [useMockData, selectedRange])
 
   async function handleDelete(link) {
     // Mock rows are display-only — their id is the link's own url
-    // string (e.g. "luo.io/summer-sale"), which isn't a real cuid AND
+    // string (e.g. "luot.link/summer-sale"), which isn't a real cuid AND
     // contains a slash, so it can't even go in a URL path: a fetch to
-    // /api/links/luo.io/summer-sale/delete doesn't resolve to the
+    // /api/links/luot.link/summer-sale/delete doesn't resolve to the
     // [id] route at all, it just hangs. So while mock data is on,
     // this stays fully local: no fetch regardless.
     if (useMockData) {
@@ -38,6 +75,7 @@ export default function LinksPage() {
         removedIndex = list.findIndex((l) => l.id === link.id)
         return list.filter((l) => l.id !== link.id)
       })
+      setMockTrashCount((n) => n + 1)
       toast(`${link.shortUrl} moved to trash`, {
         action: {
           label: 'Undo',
@@ -53,6 +91,7 @@ export default function LinksPage() {
               )
               return next
             })
+            setMockTrashCount((n) => Math.max(0, n - 1))
           },
         },
       })
@@ -133,7 +172,9 @@ export default function LinksPage() {
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <RecentlyDeletedLink />
+            <RecentlyDeletedLink
+              count={useMockData ? mockTrashCount : undefined}
+            />
           </div>
 
           {/* No mock toggle on, table renders its own empty state —
@@ -141,6 +182,9 @@ export default function LinksPage() {
               have been created, not a separate loading state. */}
           <LinksTable
             links={links}
+            onOpen={(link) =>
+              router.push(`/dashboard/links/${slugOf(link.shortUrl)}`)
+            }
             onEdit={(link) => {
               // TODO: route to the link's edit view once it exists
             }}

@@ -42,11 +42,25 @@ function BackIconFlipped() {
 // is the restored version — confirmed the links page itself was a
 // separate file-location issue, not this fetch, before bringing it
 // back.
-export default function RecentlyDeletedLink() {
+// `count` is optional. When the caller already knows how many items are
+// in the trash — which the links page does while mock data is on — it
+// passes that in and no request is made. Without it, this asks the API.
+//
+// That option exists because this component was previously always
+// querying the real database, so with mock data on it could never
+// appear no matter how many mock links you deleted: mock deletes don't
+// write a deletedAt anywhere. The count and the list it links to now
+// come from the same source as each other in both modes.
+export default function RecentlyDeletedLink({ count: providedCount }) {
   const [count, setCount] = useState(null)
 
   useEffect(() => {
     let cancelled = false
+
+    if (providedCount !== undefined) {
+      setCount(providedCount)
+      return
+    }
     fetch('/api/links/trash/count')
       .then((res) => {
         if (!res.ok) {
@@ -69,7 +83,7 @@ export default function RecentlyDeletedLink() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [providedCount])
 
   // null = still loading, not yet known either way — stays hidden
   // rather than flashing on then off once the real count arrives.

@@ -368,7 +368,14 @@ function DataRow({
   )
 }
 
-function Card({
+// Exported so pages needing a different arrangement of these cards can
+// compose them directly, rather than a second near-identical card
+// existing somewhere else. DashboardCards below still assembles the
+// analytics dashboard's own 2x2 layout from it — the link detail page
+// just needs a different one (Sources full width, then Geography and
+// Devices side by side, and no Clicks card since that page IS a single
+// link).
+export function Card({
   title,
   columnOptions = [],
   showDropdown = true,
