@@ -20,6 +20,7 @@ import {
 } from '@/components/linktablehelpers'
 import { getMockAnalytics, getMockLinksTable } from '@/lib/mockAnalytics'
 import { shortUrlFor } from '@/lib/shortlink'
+import LogoMark from '@/components/logomark'
 
 // ─── One labelled field in the details block ───
 // Node 73:6014 / 73:6017 / 73:6006 are all the same shape: a soft
@@ -46,16 +47,22 @@ function DetailField({ label, width, children }) {
   )
 }
 
-// Placeholder standing in for the QR preview (node 79:6035, 260x160).
-// Figma shows an image there alongside a "Generate QR code" action,
-// which only makes sense as two states of one thing: no QR yet, so
-// this is the empty frame plus the affordance to create one. Built
-// from tokens rather than pointing at the Figma asset URL, which
-// expires.
-function QrPlaceholder() {
+// The 260x160 visual slot beside the link's details (node 79:6035).
+//
+// Takes an optional imageUrl and falls back to a muted logo mark. That
+// shape is deliberate: whatever eventually fills this — an Open Graph
+// image scraped from the destination, or a generated QR — will fail
+// often enough that a fallback isn't optional. OG tags are missing on
+// plenty of URLs, some hosts refuse server-side fetches, some time
+// out. So the logo isn't an alternative to a real image, it's what
+// shows when there isn't one, and adding OG support later becomes a
+// data change rather than a UI change.
+function LinkPreview({ imageUrl, alt }) {
+  const [failed, setFailed] = useState(false)
+  const showImage = imageUrl && !failed
+
   return (
     <div
-      aria-hidden
       style={{
         width: '260px',
         height: '160px',
@@ -66,41 +73,32 @@ function QrPlaceholder() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        // Clips the image to the rounded corners, and matters for the
+        // cover-fit below.
+        overflow: 'hidden',
       }}
     >
-      <svg width='32' height='32' viewBox='0 0 32 32' fill='none'>
-        <rect
-          x='4'
-          y='4'
-          width='9'
-          height='9'
-          rx='2'
-          stroke='var(--bg-subtle)'
-          strokeWidth='2'
+      {showImage ? (
+        <img
+          src={imageUrl}
+          alt={alt || ''}
+          style={{
+            width: '100%',
+            height: '100%',
+            // OG images are usually 1200x630 (1.91:1) against this
+            // box's 1.625:1 — close, but not equal, so cover crops
+            // rather than distorts. Letterboxing instead would leave
+            // grey bars on nearly every image.
+            objectFit: 'cover',
+            display: 'block',
+          }}
+          // A dead image URL should fall back to the mark, not leave a
+          // broken-image glyph sitting in the layout.
+          onError={() => setFailed(true)}
         />
-        <rect
-          x='19'
-          y='4'
-          width='9'
-          height='9'
-          rx='2'
-          stroke='var(--bg-subtle)'
-          strokeWidth='2'
-        />
-        <rect
-          x='4'
-          y='19'
-          width='9'
-          height='9'
-          rx='2'
-          stroke='var(--bg-subtle)'
-          strokeWidth='2'
-        />
-        <path
-          d='M19 19h4v4h-4zM24.5 24.5H28V28h-3.5z'
-          fill='var(--bg-subtle)'
-        />
-      </svg>
+      ) : (
+        <LogoMark size={44} muted />
+      )}
     </div>
   )
 }
@@ -380,7 +378,10 @@ export default function LinkDetailPage() {
             </div>
           ) : (
             <>
-              <QrPlaceholder />
+              <LinkPreview
+                imageUrl={link?.ogImageUrl}
+                alt={link?.title || ''}
+              />
 
               <div
                 style={{
