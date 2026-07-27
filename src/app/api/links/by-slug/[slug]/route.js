@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { shortUrlFor } from '@/lib/shortlink'
+import { isRecoverable } from '@/lib/linkrecovery'
 
 // GET /api/links/by-slug/[slug]
 //
@@ -21,25 +22,29 @@ export async function GET(request, { params }) {
   const { error, organizationId } = await resolveActiveOrg()
   if (error) return error
 
+  // Deleted links ARE served here, deliberately. This previously
+  // filtered on deletedAt: null, which meant the trash page's "View
+  // details" had nowhere to go — it could only ever 404. The page
+  // renders its own archived state off the deletedAt below, which is
+  // also why a link deleted in another tab doesn't 404 on refresh: it
+  // changes appearance instead of vanishing.
   const link = await prisma.link.findFirst({
-    where: {
-      shortCode: slug,
-      organizationId,
-      // A trashed link shouldn't resolve here — it belongs to the
-      // trash page, not its own live detail page.
-      deletedAt: null,
-    },
+    where: { shortCode: slug, organizationId },
     include: {
-      // Enough to know whether a QR already exists, without pulling
-      // the image payload itself.
       qrCodes: { select: { id: true }, take: 1 },
-      // Cheap count instead of loading every click row just to
-      // display a total.
       _count: { select: { clicks: true } },
     },
   })
 
   if (!link) {
+    return Response.json({ error: 'Link not found' }, { status: 404 })
+  }
+
+  // Past the recovery window it's genuinely gone, whether or not a
+  // cleanup job has physically removed the row yet. Serving it would
+  // offer a Recover action that the recover route itself now refuses
+  // with a 410.
+  if (link.deletedAt && !isRecoverable(link.deletedAt)) {
     return Response.json({ error: 'Link not found' }, { status: 404 })
   }
 
@@ -56,6 +61,8 @@ export async function GET(request, { params }) {
       title: link.title,
       clicks: link._count.clicks,
       createdAt: link.createdAt,
+      // null for a live link. Drives the archived state on the page.
+      deletedAt: link.deletedAt,
       hasQrCode: link.qrCodes.length > 0,
     },
   })
