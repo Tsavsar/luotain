@@ -7,6 +7,7 @@ import BackButton from '@/components/backbutton'
 import StatsCards from '@/components/statscards'
 import ChartContainer from '@/components/chartcontainer'
 import { Card } from '@/components/cardcontainer'
+import FilterPill from '@/components/filterpill'
 import CountryFlag from '@/components/countryflag'
 import DeleteConfirmModal from '@/components/deleteconfirmmodal'
 import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
@@ -129,6 +130,11 @@ export default function LinkDetailPage() {
   // deletedAt so the alert can animate out over a couple of hundred
   // milliseconds before it unmounts, instead of vanishing the instant
   // recovery succeeds and dropping everything below it upward.
+  // Card filters (source / country / device). The link itself is NOT a
+  // filter here — this page is already scoped to one link, so a link
+  // filter would be redundant, and the compare-links picker stays off
+  // for the same reason.
+  const [activeFilters, setActiveFilters] = useState([])
   const [collapsingAlert, setCollapsingAlert] = useState(false)
   const [recovering, setRecovering] = useState(false)
 
@@ -145,14 +151,17 @@ export default function LinkDetailPage() {
     let cancelled = false
 
     if (useMockData) {
-      // Live links first, then the trash. Without the trash lookup,
-      // "View details" on a trashed row would report the link as not
-      // found in mock mode — the archived state would be unreachable
-      // without a real database behind it.
-      const live = getMockLinksTable(selectedRange, [])
+      // Trash is checked FIRST, deliberately. If a slug ever turns up in
+      // both lists, deleted has to win: rendering a deleted link as
+      // live is the more harmful of the two mistakes, since it offers
+      // actions that no longer apply. The mock data no longer overlaps
+      // (getMockTrash and getMockLinksTable split one pool), but the
+      // ordering shouldn't be what's holding that together.
       const found =
-        live.find((r) => slugOf(r.shortUrl) === slug) ||
         getMockTrash().find((r) => slugOf(r.shortUrl) === slug) ||
+        getMockLinksTable(selectedRange, []).find(
+          (r) => slugOf(r.shortUrl) === slug
+        ) ||
         null
       setLink(found)
       setLoadError(false)
@@ -196,10 +205,15 @@ export default function LinkDetailPage() {
   // exactly what the Figma frame shows.
   const analytics = useMemo(() => {
     if (!useMockData || !link) return null
+    // The link filter scopes everything to this one link; the card
+    // filters layer on top of it. Both go through the same mechanism,
+    // which is why the whole page is just the analytics dashboard
+    // narrowed down.
     return getMockAnalytics(selectedRange, [
       { type: 'link', label: link.shortUrl },
+      ...activeFilters,
     ])
-  }, [useMockData, link, selectedRange])
+  }, [useMockData, link, selectedRange, activeFilters])
 
   const stats = analytics?.stats
   const cardData = analytics?.cardData
@@ -238,6 +252,28 @@ export default function LinkDetailPage() {
   ]
 
   const shortUrl = link?.shortUrl || shortUrlFor(slug)
+
+  function toggleFilter(filter) {
+    setActiveFilters((prev) => {
+      const exists = prev.some(
+        (f) => f.type === filter.type && f.label === filter.label
+      )
+      if (exists) {
+        return prev.filter(
+          (f) => !(f.type === filter.type && f.label === filter.label)
+        )
+      }
+      return [...prev, filter]
+    })
+  }
+  function removeFilter(filter) {
+    setActiveFilters((prev) =>
+      prev.filter((f) => !(f.type === filter.type && f.label === filter.label))
+    )
+  }
+  function clearAllFilters() {
+    setActiveFilters([])
+  }
 
   // A deleted link still renders its whole page — just archived. The
   // route serves it deliberately (see the comment there); anything
@@ -645,6 +681,15 @@ export default function LinkDetailPage() {
             metrics={metrics}
             selectedRange={selectedRange}
             onRangeChange={setSelectedRange}
+            filters={
+              activeFilters.length > 0 ? (
+                <FilterPill
+                  filters={activeFilters}
+                  onRemove={removeFilter}
+                  onClearAll={clearAllFilters}
+                />
+              ) : null
+            }
           />
         </div>
       </div>
@@ -701,6 +746,8 @@ export default function LinkDetailPage() {
             dataByColumn={cardData?.sources}
             iconType='favicon'
             filterType='source'
+            activeFilters={activeFilters}
+            onToggleFilter={toggleFilter}
           />
           <div className='card-row'>
             <Card
@@ -709,12 +756,16 @@ export default function LinkDetailPage() {
               dataByColumn={cardData?.geography}
               iconType='flag'
               filterType='country'
+              activeFilters={activeFilters}
+              onToggleFilter={toggleFilter}
             />
             <Card
               title='Devices'
               columnOptions={['Type', 'Browser']}
               dataByColumn={cardData?.devices}
               filterType='device'
+              activeFilters={activeFilters}
+              onToggleFilter={toggleFilter}
             />
           </div>
         </div>

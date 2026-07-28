@@ -14,11 +14,23 @@
 // instead of generate); aggregateStats/aggregateChartSlots/
 // aggregateCardData and every component that calls this stay as-is.
 
+// Every link that exists in the click pool, live or trashed. TRASHED_URLS
+// below splits them: getMockLinksTable serves the ones NOT in it,
+// getMockTrash serves the ones that are. A link can't be both, which is
+// exactly what was broken before — swift-otter and quick-fox appeared in
+// the live table AND the trash, so opening either resolved to the live
+// copy and the deleted state could never render.
+//
+// The last two carry low weights deliberately: they exist mainly to be
+// trashed, and heavier weights would noticeably shift every total on
+// the analytics pages.
 const LINKS = [
   { url: 'luot.link/swift-otter', weight: 15 },
   { url: 'luot.link/quick-fox', weight: 11 },
   { url: 'luot.link/summer-sale', weight: 8 },
   { url: 'luot.link/3xK9fL2', weight: 1 },
+  { url: 'luot.link/clever-crow', weight: 6 },
+  { url: 'luot.link/beta-launch', weight: 5 },
 ]
 // Destination + creation date for each link above — the links table
 // needs both, and neither is something the click-event pool tracks
@@ -41,6 +53,14 @@ const LINK_METADATA = {
   'luot.link/3xK9fL2': {
     destination: 'https://example.com/private-promo',
     createdAt: '2026-05-15',
+  },
+  'luot.link/clever-crow': {
+    destination: 'https://www.youtube.com/watch?v=9bZkp7q19f0',
+    createdAt: '2026-04-18',
+  },
+  'luot.link/beta-launch': {
+    destination: 'https://luotain.app/beta',
+    createdAt: '2026-03-22',
   },
 }
 const QR_LINKS = [
@@ -163,7 +183,15 @@ function generateEventPool() {
     }
   }
 
-  return events
+  // A deleted link can't keep accruing clicks after it was deleted.
+  // The generator above doesn't know about deletion, so without this a
+  // link trashed 28 days ago would still show traffic from yesterday —
+  // and its archived detail page would render a chart running right up
+  // to today, which is nonsense.
+  return events.filter((e) => {
+    const cutoff = TRASHED_AT.get(e.linkUrl)
+    return !cutoff || e.timestamp <= cutoff
+  })
 }
 
 function getEventPool() {
@@ -572,7 +600,9 @@ export function getMockLinksTable(range = 'Last 7 days', filters = []) {
   const filteredEvents = filterByDimension(rangeEvents, filters)
   const clicksOnly = filteredEvents.filter((e) => e.type === 'click')
 
-  return LINKS.map((link) => {
+  // Trashed links are excluded — they belong to getMockTrash, and a link
+  // showing up in both lists is what stopped the deleted state working.
+  return LINKS.filter((link) => !TRASHED_URLS.has(link.url)).map((link) => {
     const meta = LINK_METADATA[link.url] || {}
     return {
       id: link.url,
@@ -624,41 +654,51 @@ export function getMockLinksStats(range = 'Last 7 days', filters = []) {
 }
 
 // ─── Trash ───
-// Deleted links live as their own small static list rather than
-// events derived from the click pool — clicks here are frozen at
-// whatever they were when the link was deleted, not still counting,
-// and nothing about this list is range-filterable the way the main
-// table is, so it doesn't need to touch getEventPool at all.
-const TRASH_ITEMS = [
-  {
-    id: 'trash-swift-otter',
-    shortUrl: 'luot.link/swift-otter',
-    destination: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    clicks: 86,
-    deletedDaysAgo: 28,
-  },
-  {
-    id: 'trash-quick-fox',
-    shortUrl: 'luot.link/quick-fox',
-    destination: 'https://www.youtube.com/watch?v=3JZ_D3ELwOQ',
-    clicks: 75,
-    deletedDaysAgo: 21,
-  },
-  {
-    id: 'trash-clever-crow',
-    shortUrl: 'luot.link/clever-crow',
-    destination: 'https://www.youtube.com/watch?v=9bZkp7q19f0',
-    clicks: 92,
-    deletedDaysAgo: 12,
-  },
+// Trashed links are real links from the pool above, not a separate
+// hardcoded list. That matters for two reasons: nothing appears in both
+// the live table and the trash (a link can't be both), and a deleted
+// link still has its click history, so its detail page shows real
+// numbers greyed out rather than an empty shell — which is what the
+// design for that state actually shows.
+//
+// Clicks are counted over the whole pool rather than a date range: a
+// deleted link's total is frozen at what it was, not something you
+// re-filter.
+const TRASHED = [
+  { url: 'luot.link/swift-otter', deletedDaysAgo: 28 },
+  { url: 'luot.link/clever-crow', deletedDaysAgo: 21 },
+  { url: 'luot.link/beta-launch', deletedDaysAgo: 12 },
 ]
+
+const TRASHED_URLS = new Set(TRASHED.map((t) => t.url))
+
+// url -> the Date it was deleted. Read by generateEventPool to cut a
+// trashed link's events off at its deletion. Declared here rather than
+// at the top of the file because it derives from TRASHED; that's safe
+// because the pool is built lazily on first call, by which point the
+// whole module has evaluated.
+const TRASHED_AT = new Map(
+  TRASHED.map((t) => [
+    t.url,
+    new Date(Date.now() - t.deletedDaysAgo * 24 * 3600 * 1000),
+  ])
+)
 
 export function getMockTrash() {
   const now = new Date()
-  return TRASH_ITEMS.map((item) => ({
-    ...item,
-    deletedAt: new Date(
-      now.getTime() - item.deletedDaysAgo * 24 * 3600 * 1000
-    ).toISOString(),
-  }))
+  const clicksOnly = getEventPool().filter((e) => e.type === 'click')
+
+  return TRASHED.map((item) => {
+    const meta = LINK_METADATA[item.url] || {}
+    return {
+      id: item.url,
+      shortUrl: item.url,
+      destination: meta.destination || '',
+      clicks: clicksOnly.filter((e) => e.linkUrl === item.url).length,
+      createdAt: meta.createdAt || now.toISOString(),
+      deletedAt: new Date(
+        now.getTime() - item.deletedDaysAgo * 24 * 3600 * 1000
+      ).toISOString(),
+    }
+  })
 }

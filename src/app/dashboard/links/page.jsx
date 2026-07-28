@@ -165,7 +165,43 @@ export default function LinksPage() {
           display: 'flex',
           justifyContent: 'center',
           paddingTop: '32px',
-          paddingBottom: '64px',
+          paddingBottom: '24px',
+        }}
+      >
+        {/* No mock toggle on, table renders its own empty state —
+            same "no data yet" the real app shows before any links
+            have been created, not a separate loading state. */}
+        <LinksTable
+          links={links}
+          onOpen={(link) =>
+            router.push(`/dashboard/links/${slugOf(link.shortUrl)}`)
+          }
+          onEdit={(link) => {
+            // TODO: route to the link's edit view once it exists
+          }}
+          onDelete={handleDelete}
+        />
+      </div>
+
+      {/* Its own section at the foot of the page rather than tucked
+          under the table. marginTop:auto is what pushes it down: the
+          layout's <main> is a flex column at min-height 100vh, so the
+          spare vertical space collects above this instead of below it.
+          On a long list it simply follows the table; on a short one it
+          settles at the bottom of the screen.
+
+          The component returns null when the trash is empty, so this
+          whole row collapses to nothing — no reserved height, no
+          stranded gap at the bottom of the page. */}
+      <div
+        className='dashboard-section dashboard-section-5 dashboard-page-padding'
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          marginTop: 'auto',
+          paddingTop: '24px',
+          paddingBottom: '40px',
         }}
       >
         <div
@@ -173,34 +209,12 @@ export default function LinksPage() {
             width: '100%',
             maxWidth: '720px',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
+            justifyContent: 'flex-end',
           }}
         >
-          {/* No mock toggle on, table renders its own empty state —
-              same "no data yet" the real app shows before any links
-              have been created, not a separate loading state. */}
-          <LinksTable
-            links={links}
-            onOpen={(link) =>
-              router.push(`/dashboard/links/${slugOf(link.shortUrl)}`)
-            }
-            onEdit={(link) => {
-              // TODO: route to the link's edit view once it exists
-            }}
-            onDelete={handleDelete}
+          <RecentlyDeletedLink
+            count={useMockData ? mockTrashCount : undefined}
           />
-
-          {/* Below the table, not above it. The component returns null
-              when the trash is empty, so this row collapses to nothing
-              rather than leaving a gap under the table — which is also
-              why it isn't wrapped in anything that would reserve
-              height on its own. */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <RecentlyDeletedLink
-              count={useMockData ? mockTrashCount : undefined}
-            />
-          </div>
         </div>
       </div>
     </>
