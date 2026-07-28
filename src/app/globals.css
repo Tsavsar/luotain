@@ -1594,3 +1594,18 @@ html {
 .alert-action:disabled {
   opacity: 0.5;
 }
+
+/* --- lucide-animated icons ---
+   Every icon downloaded from that registry wraps its svg in a plain
+   <div>, which is block-level and would stretch to full width outside
+   a flex row. The class is stamped on by cn() in src/lib/utils.js so
+   this one rule covers every icon already installed and every one
+   added later, instead of the fix having to be re-applied per file
+   each time the CLI overwrites one. */
+.animated-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.animated-icon svg {
+  display: block;
+}

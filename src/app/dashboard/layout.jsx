@@ -6,6 +6,7 @@ import DashboardMenu from '@/components/dashboardmenu'
 import DashboardNav from '@/components/dashboardnav'
 import DashboardSkeleton from '@/components/dashboardskeleton'
 import { ToastStack } from '@/components/toast'
+import { MotionConfig } from 'motion/react'
 
 export default function DashboardLayout({ children }) {
   const router = useRouter()
@@ -86,84 +87,93 @@ export default function DashboardLayout({ children }) {
   if (checking) return <DashboardSkeleton />
 
   return (
-    <main
-      style={{
-        position: 'relative',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-      }}
-    >
-      <div
-        className='dashboard-section dashboard-section-1 dashboard-page-padding'
+    // reducedMotion='user' makes every Motion animation in this tree
+    // respect the OS "reduce motion" setting. It's here rather than
+    // inside each icon because Motion animates in JavaScript, so the
+    // blanket reduced-motion rule in globals.css can't reach it — that
+    // rule only overrides CSS animation-duration. One switch covers
+    // every lucide-animated icon, including ones added later, with no
+    // per-icon code to lose when the CLI overwrites a file.
+    <MotionConfig reducedMotion='user'>
+      <main
         style={{
-          width: '100%',
+          position: 'relative',
+          minHeight: '100vh',
           display: 'flex',
-          justifyContent: 'center',
-          paddingTop: '36px',
-          paddingBottom: '24px',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        <DashboardMenu
-          orgName={orgName}
-          allOrgs={allOrgs}
-          activeOrgId={activeOrgId}
-          userImage={userImage}
-        />
-      </div>
-
-      {!hideNav && (
         <div
-          className='dashboard-section dashboard-section-2 dashboard-page-padding'
+          className='dashboard-section dashboard-section-1 dashboard-page-padding'
           style={{
             width: '100%',
             display: 'flex',
             justifyContent: 'center',
-            paddingTop: '12px',
-            paddingBottom: '40px',
+            paddingTop: '36px',
+            paddingBottom: '24px',
           }}
         >
-          <DashboardNav />
+          <DashboardMenu
+            orgName={orgName}
+            allOrgs={allOrgs}
+            activeOrgId={activeOrgId}
+            userImage={userImage}
+          />
         </div>
-      )}
 
-      {children}
+        {!hideNav && (
+          <div
+            className='dashboard-section dashboard-section-2 dashboard-page-padding'
+            style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              paddingTop: '12px',
+              paddingBottom: '40px',
+            }}
+          >
+            <DashboardNav />
+          </div>
+        )}
 
-      <ToastStack />
+        {children}
 
-      {/* Theme toggle only now — the Fire toast / Fire error buttons
+        <ToastStack />
+
+        {/* Theme toggle only now — the Fire toast / Fire error buttons
           that used to sit alongside it are gone, done validating the
           toast itself. Still bottom-left so it doesn't collide with
           the toast stack or the mock-data pill, both bottom-right. */}
-      <div
-        style={{
-          position: 'fixed',
-          left: '20px',
-          bottom: '20px',
-          zIndex: 99,
-          display: 'flex',
-          gap: '8px',
-        }}
-      >
-        <button
-          onClick={toggleTheme}
+        <div
           style={{
+            position: 'fixed',
+            left: '20px',
+            bottom: '20px',
+            zIndex: 99,
             display: 'flex',
-            alignItems: 'center',
             gap: '8px',
-            padding: '10px 14px',
-            borderRadius: 'var(--radius-full)',
-            background: '#171717',
-            border: 'none',
-            cursor: 'pointer',
           }}
         >
-          <span className='label-sm' style={{ color: 'white' }}>
-            {theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
-          </span>
-        </button>
-      </div>
-    </main>
+          <button
+            onClick={toggleTheme}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-full)',
+              background: '#171717',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <span className='label-sm' style={{ color: 'white' }}>
+              {theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
+            </span>
+          </button>
+        </div>
+      </main>
+    </MotionConfig>
   )
 }
