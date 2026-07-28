@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BackButton from '@/components/backbutton'
 import SegmentedTabs from '@/components/segmentedtabs'
+import Inputfield from '@/components/input'
 import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
 import { toast } from '@/components/toast'
 import { useMockDataState } from '@/components/mockdatacontext'
@@ -12,8 +13,21 @@ import { SHORT_DOMAIN, shortUrlFor } from '@/lib/shortlink'
 // Nodes 136:2038 (empty) and 147:749 (filled) are the same screen —
 // placeholder vs value, which a real input gives for free. So this is
 // one component, not two.
+//
+// Inputs are the project's own Inputfield, which brings the focus and
+// hover borders, the shadow tokens, and the shake with it. Its error
+// signal is a red border plus a shake rather than error text, so that's
+// the pattern used here — matching the auth and onboarding screens
+// instead of inventing a second one.
 
 const SLUG_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,48}[a-zA-Z0-9])?$/
+
+// Shake is brief; the red border outlives it on its own timer, so
+// there's still something to look at once the motion has finished —
+// and so anyone with reduced motion enabled (which strips the shake
+// entirely) still gets a signal. Same split as the auth pages.
+const SHAKE_MS = 320
+const ERROR_MS = 2000
 
 const ADJECTIVES = [
   'swift',
@@ -62,7 +76,7 @@ function LinkIcon() {
     <svg width='20' height='20' viewBox='0 0 20 20' fill='none'>
       <path
         d='M8.5 11.5 11.5 8.5M7.2 9.1 5.9 10.4a2.9 2.9 0 0 0 4.1 4.1l1.3-1.3M12.8 10.9l1.3-1.3a2.9 2.9 0 0 0-4.1-4.1L8.7 6.8'
-        stroke='var(--text-soft)'
+        stroke='currentColor'
         strokeWidth='1.4'
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -85,10 +99,9 @@ function ChevronIcon() {
   )
 }
 
-// The regenerate affordance on the slug label (node 139:2479) — the real
-// asset. Its #D1D1D1 is swapped for var(--bg-muted), which is that exact
-// value in the token set, so it inverts properly in dark mode instead of
-// staying a fixed light grey on a dark background.
+// Node 139:2479. Its #D1D1D1 is var(--bg-muted) in the token set, so the
+// variable is used instead of the literal — hardcoded, it would stay a
+// pale grey on a dark background in dark mode.
 function SparkleIcon() {
   return (
     <svg
@@ -114,14 +127,9 @@ function SparkleIcon() {
   )
 }
 
-// ─── Field ───
-// Local to this page on purpose. The design models this as a library
-// component (its children carry instance ids), but the onboarding and
-// new-org screens already have their own input treatment with the
-// shake-on-error behaviour, and I can't see it from here. Building a
-// second shared input would give you two competing ones. If you'd
-// rather this used the existing component, say so and I'll swap it.
-function Field({ label, hint, action, error, width, children }) {
+// Label scaffolding only — Inputfield takes no label, so the auth pages
+// place theirs externally too. This is that, not a second input.
+function FieldLabel({ label, hint, action, width, children }) {
   return (
     <div
       style={{
@@ -159,62 +167,9 @@ function Field({ label, hint, action, error, width, children }) {
         ) : null}
         {action}
       </div>
-
       {children}
-
-      {/* Error sits under the field rather than replacing the label, so
-          the field never changes height on validation — the whole form
-          would otherwise jump on every failed submit. */}
-      <p
-        className='para-xs'
-        aria-live='polite'
-        style={{
-          margin: 0,
-          color: 'var(--error-base)',
-          maxHeight: error ? '16px' : 0,
-          opacity: error ? 1 : 0,
-          overflow: 'hidden',
-          transition: 'max-height 0.2s ease, opacity 0.2s ease',
-        }}
-      >
-        {error || ''}
-      </p>
     </div>
   )
-}
-
-function inputShell(hasError) {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    width: '100%',
-    background: 'var(--bg-default)',
-    // Design emits var(--radius-lg, 16px); this project's --radius-lg is
-    // 12px and --radius-xl is 16px, so this matches the design's actual
-    // radius. Figma's variable set and globals.css have drifted here.
-    borderRadius: 'var(--radius-xl)',
-    border: `1px solid ${hasError ? 'var(--error-base)' : 'var(--stroke-soft)'}`,
-    boxShadow: '0px 2px 4px 0px rgba(54, 54, 54, 0.04)',
-    padding: '10px 8px 10px 14px',
-    transition: 'border-color 0.15s ease',
-    boxSizing: 'border-box',
-  }
-}
-
-const bareInput = {
-  flex: '1 0 0',
-  minWidth: 0,
-  border: 'none',
-  outline: 'none',
-  background: 'transparent',
-  padding: 0,
-  margin: 0,
-  color: 'var(--text-strong)',
-  fontFamily: 'var(--font-sans)',
-  fontSize: '14px',
-  lineHeight: '20px',
-  letterSpacing: '0.28px',
 }
 
 export default function CreatePage() {
@@ -226,11 +181,22 @@ export default function CreatePage() {
   const [slug, setSlug] = useState('')
   const [domain, setDomain] = useState(SHORT_DOMAIN)
   const [errors, setErrors] = useState({})
+  const [shaking, setShaking] = useState({})
   const [submitting, setSubmitting] = useState(false)
-  const destinationRef = useRef(null)
+  const timers = useRef([])
 
+  // Any pending shake/error timer has to be dropped on unmount, or it
+  // fires setState on a component that's gone — which is easy to hit
+  // here since a successful create navigates away immediately.
   useEffect(() => {
-    destinationRef.current?.focus()
+    return () => timers.current.forEach(clearTimeout)
+  }, [])
+
+  const flagError = useCallback((fields) => {
+    setErrors(fields)
+    setShaking(fields)
+    timers.current.push(setTimeout(() => setShaking({}), SHAKE_MS))
+    timers.current.push(setTimeout(() => setErrors({}), ERROR_MS))
   }, [])
 
   const clearError = useCallback((field) => {
@@ -243,27 +209,35 @@ export default function CreatePage() {
   }, [])
 
   function validate() {
-    const next = {}
+    const bad = {}
     if (!destination.trim()) {
-      next.destination = 'Enter a destination URL'
+      bad.destination = true
     } else {
       const withScheme = /^https?:\/\//i.test(destination.trim())
         ? destination.trim()
         : `https://${destination.trim()}`
       try {
         const u = new URL(withScheme)
-        if (!u.hostname.includes('.')) {
-          next.destination = "That doesn't look like a valid URL"
-        }
+        if (!u.hostname.includes('.')) bad.destination = true
       } catch {
-        next.destination = "That doesn't look like a valid URL"
+        bad.destination = true
       }
     }
-    if (slug.trim() && !SLUG_PATTERN.test(slug.trim())) {
-      next.slug = 'Use letters, numbers and hyphens only'
+    if (slug.trim() && !SLUG_PATTERN.test(slug.trim())) bad.slug = true
+
+    if (Object.keys(bad).length > 0) {
+      flagError(bad)
+      // The border and shake carry the "which field" part; the toast
+      // carries the "why", since Inputfield has nowhere to put a
+      // message.
+      toast.error(
+        bad.destination
+          ? 'Enter a valid destination URL'
+          : 'Slugs can use letters, numbers and hyphens only'
+      )
+      return false
     }
-    setErrors(next)
-    return Object.keys(next).length === 0
+    return true
   }
 
   async function handleCreate() {
@@ -271,18 +245,17 @@ export default function CreatePage() {
     if (!validate()) return
 
     if (mode === 'qr') {
-      // QR creation needs the QrCode write path, which doesn't exist
-      // yet — see the note in my message rather than a silent no-op.
-      toast('QR creation is not wired up yet')
+      // QR creation needs the QrCode write path, which doesn't exist yet.
+      toast('QR design is not wired up yet')
       return
     }
 
     setSubmitting(true)
 
     if (useMockData) {
-      // No network with mock data on. Nothing persists here either:
-      // the mock link pool is a fixed list, so a created link has
-      // nowhere to live. Says so rather than pretending.
+      // No network with mock data on, and nothing persists: the mock
+      // link pool is a fixed list, so a created link has nowhere to
+      // live. Says so rather than pretending.
       const generated = slug.trim() || randomSlug()
       toast(`${shortUrlFor(generated)} created (mock, not saved)`)
       setSubmitting(false)
@@ -302,22 +275,18 @@ export default function CreatePage() {
       const data = await res.json()
 
       if (!res.ok) {
-        // The server names which field failed, so the error lands on
-        // that field instead of in a toast the person has to map back
-        // to an input themselves.
-        if (data?.field) {
-          setErrors({ [data.field]: data.error })
-        } else {
-          toast.error(data?.error || 'Something went wrong')
-        }
+        // The server names which field failed, so the shake and border
+        // land on that field rather than the person having to work out
+        // which input the message refers to.
+        if (data?.field) flagError({ [data.field]: true })
+        toast.error(data?.error || 'Something went wrong')
         setSubmitting(false)
         return
       }
 
       toast(`${data.link.shortUrl} created`)
-      // Straight to the new link's page — which is node 147:855, the
-      // detail page with empty analytics. That state already exists;
-      // it doesn't need building again.
+      // Straight to the new link's page — node 147:855 is that page with
+      // empty analytics, which already exists.
       router.push(`/dashboard/links/${data.link.shortCode}`)
     } catch (err) {
       console.error('[CreatePage]', err)
@@ -334,9 +303,8 @@ export default function CreatePage() {
         display: 'flex',
         justifyContent: 'center',
         // 0, not 36 — the layout's header section already carries 24px
-        // of bottom padding, which is exactly the gap the design wants
-        // between the logo row and Back. Adding more here would stack
-        // the two into a 60px gap.
+        // of bottom padding, which is the gap the design wants between
+        // the logo row and Back. More here would stack them.
         paddingTop: 0,
         paddingBottom: '64px',
       }}
@@ -360,9 +328,6 @@ export default function CreatePage() {
           </p>
         </div>
 
-        {/* Reusing the existing SegmentedTabs — it already renders as
-            buttons with onChange when no href is given, and it brings
-            the sliding indicator and reduced-motion handling with it. */}
         <SegmentedTabs
           items={[
             { id: 'link', label: 'Shorten a link' },
@@ -374,54 +339,41 @@ export default function CreatePage() {
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <Field label='Destination' error={errors.destination}>
-            <div style={inputShell(Boolean(errors.destination))}>
-              <span style={{ display: 'flex', flexShrink: 0 }}>
-                <LinkIcon />
-              </span>
-              <input
-                ref={destinationRef}
-                type='url'
-                inputMode='url'
-                value={destination}
-                onChange={(e) => {
-                  setDestination(e.target.value)
-                  clearError('destination')
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreate()
-                }}
-                placeholder='https://example.com/your-page'
-                style={bareInput}
-              />
-            </div>
-          </Field>
+          <FieldLabel label='Destination'>
+            <Inputfield
+              lefticon={<LinkIcon />}
+              placeholder='https://example.com/your-page'
+              value={destination}
+              onChange={(e) => {
+                setDestination(e.target.value)
+                clearError('destination')
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreate()
+              }}
+              error={Boolean(errors.destination)}
+              shaking={Boolean(shaking.destination)}
+            />
+          </FieldLabel>
 
           <div
             style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}
           >
-            <Field label='Domain' width='170px'>
+            <FieldLabel label='Domain' width='170px'>
               <Dropdown
                 fullWidth
                 align='left'
                 trigger={
-                  <div style={inputShell(false)}>
-                    <p
-                      className='para-sm'
-                      style={{
-                        flex: '1 0 0',
-                        minWidth: 0,
-                        color: 'var(--text-strong)',
-                        margin: 0,
-                        textAlign: 'left',
-                      }}
-                    >
-                      {domain}
-                    </p>
-                    <span style={{ display: 'flex', flexShrink: 0 }}>
-                      <ChevronIcon />
-                    </span>
-                  </div>
+                  // Inputfield as the trigger so the domain matches the
+                  // other two exactly rather than a second control that
+                  // only looks similar. onChange is a no-op: it's a
+                  // picker, and a controlled input whose value never
+                  // changes is read-only in practice.
+                  <Inputfield
+                    value={domain}
+                    onChange={() => {}}
+                    righticon={<ChevronIcon />}
+                  />
                 }
               >
                 <DropdownMenu width='170px'>
@@ -433,12 +385,11 @@ export default function CreatePage() {
                   </DropdownOption>
                 </DropdownMenu>
               </Dropdown>
-            </Field>
+            </FieldLabel>
 
-            <Field
+            <FieldLabel
               label='Slug'
               hint='(Optional)'
-              error={errors.slug}
               action={
                 <button
                   type='button'
@@ -462,25 +413,20 @@ export default function CreatePage() {
                 </button>
               }
             >
-              <div style={inputShell(Boolean(errors.slug))}>
-                <input
-                  type='text'
-                  value={slug}
-                  onChange={(e) => {
-                    setSlug(e.target.value)
-                    clearError('slug')
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreate()
-                  }}
-                  placeholder='swift-otter'
-                  autoCapitalize='none'
-                  autoCorrect='off'
-                  spellCheck='false'
-                  style={bareInput}
-                />
-              </div>
-            </Field>
+              <Inputfield
+                placeholder='swift-otter'
+                value={slug}
+                onChange={(e) => {
+                  setSlug(e.target.value)
+                  clearError('slug')
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreate()
+                }}
+                error={Boolean(errors.slug)}
+                shaking={Boolean(shaking.slug)}
+              />
+            </FieldLabel>
           </div>
 
           <p
@@ -536,7 +482,7 @@ export default function CreatePage() {
             {submitting
               ? 'Creating…'
               : mode === 'qr'
-                ? 'Create QR code'
+                ? 'Design QR code'
                 : 'Create link'}
           </button>
         </div>
