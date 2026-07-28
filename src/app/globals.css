@@ -1622,14 +1622,33 @@ html {
 .create-submit:disabled {
   opacity: 0.6;
 }
+/* Resting grey, orange and pulsing on hover. The icon paints with
+   currentColor so this rule can reach it — an inline fill couldn't be
+   overridden here.
+
+   No :active transform: an animation overrides the transform property
+   for as long as it runs, so a press rotation would simply be swallowed
+   by the pulse and look broken rather than absent. The colour shift is
+   the press feedback.
+
+   The global reduced-motion rule collapses animation-duration, which
+   effectively removes the pulse and leaves just the colour change —
+   which is the right outcome for an infinite loop. */
 .slug-regen {
-  transition:
-    transform 200ms cubic-bezier(0.23, 1, 0.32, 1),
-    opacity 0.15s ease;
+  color: var(--bg-muted);
+  transition: color 0.15s ease;
 }
-.slug-regen:hover {
-  opacity: 0.7;
+.slug-regen:hover,
+.slug-regen:focus-visible {
+  color: var(--primary-base);
+  animation: sparklePulse 1.1s ease-in-out infinite;
 }
-.slug-regen:active {
-  transform: rotate(-25deg);
+@keyframes sparklePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.14);
+  }
 }

@@ -11,6 +11,14 @@ export default function Inputfield({
   error,
   shaking,
   onKeyDown,
+  // Blurs and fades JUST the text while a value is being replaced
+  // programmatically — the create form's "generate slug" uses it so the
+  // swap reads as a soft change instead of the characters snapping to
+  // something else. Only the text moves, not the border or the shell,
+  // which is why this lives here rather than as a wrapper around the
+  // whole field. Optional and off by default, so nothing that already
+  // uses this component changes.
+  swapping = false,
 }) {
   const [focused, setFocused] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -75,6 +83,11 @@ export default function Inputfield({
           fontFamily: 'var(--font-sans)',
           fontSize: '14px',
           color: value.length > 0 ? 'var(--text-strong)' : 'var(--text-soft)',
+          // Enough blur that the characters are unreadable mid-swap, so
+          // the old and new values are never both legible.
+          filter: swapping ? 'blur(5px)' : 'none',
+          opacity: swapping ? 0.5 : 1,
+          transition: 'filter 0.13s ease, opacity 0.13s ease, color 0.15s ease',
         }}
       />
       {righticon}

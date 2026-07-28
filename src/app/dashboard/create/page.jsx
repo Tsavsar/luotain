@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import BackButton from '@/components/backbutton'
 import SegmentedTabs from '@/components/segmentedtabs'
 import Inputfield from '@/components/input'
+import Tooltip from '@/components/tooltip'
 import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
 import { toast } from '@/components/toast'
 import { useMockDataState } from '@/components/mockdatacontext'
@@ -28,6 +29,9 @@ const SLUG_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,48}[a-zA-Z0-9])?$/
 // entirely) still gets a signal. Same split as the auth pages.
 const SHAKE_MS = 320
 const ERROR_MS = 2000
+// Half the slug swap: blur out, replace the value while it's unreadable,
+// blur back in. Short enough not to feel like waiting.
+const SWAP_MS = 130
 
 const ADJECTIVES = [
   'swift',
@@ -99,9 +103,10 @@ function ChevronIcon() {
   )
 }
 
-// Node 139:2479. Its #D1D1D1 is var(--bg-muted) in the token set, so the
-// variable is used instead of the literal — hardcoded, it would stay a
-// pale grey on a dark background in dark mode.
+// Node 139:2479. Painted with currentColor rather than a fixed fill, so
+// the hover state in globals.css can take it orange — an inline fill
+// can't be reached by a :hover rule. Resting colour is --bg-muted,
+// which is the #D1D1D1 the asset ships with.
 function SparkleIcon() {
   return (
     <svg
@@ -113,15 +118,15 @@ function SparkleIcon() {
     >
       <path
         d='M9.59961 5.59961L10.5226 8.67657L13.5996 9.59961L10.5226 10.5226L9.59961 13.5996L8.67657 10.5226L5.59961 9.59961L8.67657 8.67657L9.59961 5.59961Z'
-        fill='var(--bg-muted)'
-        stroke='var(--bg-muted)'
+        fill='currentColor'
+        stroke='currentColor'
         strokeWidth='1.25'
         strokeLinecap='round'
         strokeLinejoin='round'
       />
       <path
         d='M6.81065 3.81499L5.46609 3.30723L4.96137 1.95355C4.78633 1.48163 4.01297 1.48163 3.83793 1.95355L3.33321 3.30723L1.98865 3.81499C1.75505 3.90347 1.59961 4.12883 1.59961 4.38051C1.59961 4.63219 1.75505 4.85755 1.98865 4.94603L3.33321 5.45379L3.83793 6.80747C3.92545 7.04347 4.14961 7.19955 4.39961 7.19955C4.64961 7.19955 4.87385 7.04339 4.96129 6.80747L5.46601 5.45379L6.81057 4.94603C7.04417 4.85755 7.19961 4.63219 7.19961 4.38051C7.19961 4.12883 7.04425 3.90347 6.81065 3.81499Z'
-        fill='var(--bg-muted)'
+        fill='currentColor'
       />
     </svg>
   )
@@ -183,14 +188,44 @@ export default function CreatePage() {
   const [errors, setErrors] = useState({})
   const [shaking, setShaking] = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const [swappingSlug, setSwappingSlug] = useState(false)
   const timers = useRef([])
+  const swapTimer = useRef(null)
 
   // Any pending shake/error timer has to be dropped on unmount, or it
   // fires setState on a component that's gone — which is easy to hit
   // here since a successful create navigates away immediately.
   useEffect(() => {
-    return () => timers.current.forEach(clearTimeout)
+    return () => {
+      timers.current.forEach(clearTimeout)
+      clearTimeout(swapTimer.current)
+    }
   }, [])
+
+  function regenerateSlug() {
+    // With reduced motion the blur transition is collapsed to nothing by
+    // the global rule, so waiting SWAP_MS would just be dead time with
+    // no visual — the value changes immediately instead.
+    const reduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    clearError('slug')
+    if (reduced) {
+      setSlug(randomSlug())
+      return
+    }
+
+    // Restarts rather than ignoring a second click mid-swap: the blur
+    // just holds and a new slug lands, which stays responsive instead of
+    // swallowing the tap.
+    clearTimeout(swapTimer.current)
+    setSwappingSlug(true)
+    swapTimer.current = setTimeout(() => {
+      setSlug(randomSlug())
+      setSwappingSlug(false)
+    }, SWAP_MS)
+  }
 
   const flagError = useCallback((fields) => {
     setErrors(fields)
@@ -391,26 +426,24 @@ export default function CreatePage() {
               label='Slug'
               hint='(Optional)'
               action={
-                <button
-                  type='button'
-                  onClick={() => {
-                    setSlug(randomSlug())
-                    clearError('slug')
-                  }}
-                  title='Generate slug'
-                  aria-label='Generate slug'
-                  className='slug-regen'
-                  style={{
-                    display: 'flex',
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                  }}
-                >
-                  <SparkleIcon />
-                </button>
+                <Tooltip label='Generate slug'>
+                  <button
+                    type='button'
+                    onClick={regenerateSlug}
+                    aria-label='Generate slug'
+                    className='slug-regen'
+                    style={{
+                      display: 'flex',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <SparkleIcon />
+                  </button>
+                </Tooltip>
               }
             >
               <Inputfield
@@ -425,6 +458,7 @@ export default function CreatePage() {
                 }}
                 error={Boolean(errors.slug)}
                 shaking={Boolean(shaking.slug)}
+                swapping={swappingSlug}
               />
             </FieldLabel>
           </div>
