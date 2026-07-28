@@ -229,7 +229,12 @@ export default function DashboardNav() {
         })}
       </div>
 
-      <button
+      {/* A Link rather than a button, since it navigates. The tabs
+          beside it already are, and it means cmd-click and middle-click
+          open it in a new tab the way people expect of anything that
+          changes the page. */}
+      <Link
+        href='/dashboard/create'
         className='create-new-desktop'
         style={{
           alignItems: 'center',
@@ -240,12 +245,13 @@ export default function DashboardNav() {
           border: 'none',
           borderRadius: 'var(--radius-full)',
           cursor: 'pointer',
+          textDecoration: 'none',
         }}
       >
         <span className='para-sm' style={{ color: 'inherit' }}>
           Create new
         </span>
-      </button>
+      </Link>
     </div>
   )
 }
