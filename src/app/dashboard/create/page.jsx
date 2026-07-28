@@ -9,7 +9,8 @@ import Tooltip from '@/components/tooltip'
 import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
 import { toast } from '@/components/toast'
 import { useMockDataState } from '@/components/mockdatacontext'
-import { SHORT_DOMAIN, shortUrlFor } from '@/lib/shortlink'
+import { SHORT_DOMAIN } from '@/lib/shortlink'
+import { getMockDomains } from '@/lib/mockAnalytics'
 
 // Nodes 136:2038 (empty) and 147:749 (filled) are the same screen —
 // placeholder vs value, which a real input gives for free. So this is
@@ -75,16 +76,48 @@ function randomSlug() {
   return `${a}-${n}`
 }
 
+// The real asset. Its #e8e8e8 is swapped for currentColor so it picks up
+// Inputfield's own icon colour logic — that wrapper already shifts from
+// --text-soft to --text-strong on focus or once the field has a value,
+// and a hardcoded fill would sit there ignoring it.
 function LinkIcon() {
   return (
-    <svg width='20' height='20' viewBox='0 0 20 20' fill='none'>
-      <path
-        d='M8.5 11.5 11.5 8.5M7.2 9.1 5.9 10.4a2.9 2.9 0 0 0 4.1 4.1l1.3-1.3M12.8 10.9l1.3-1.3a2.9 2.9 0 0 0-4.1-4.1L8.7 6.8'
-        stroke='currentColor'
-        strokeWidth='1.4'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
+    <svg
+      xmlns='http://www.w3.org/2000/svg'
+      width='20'
+      height='20'
+      viewBox='0 0 20 20'
+      aria-hidden='true'
+    >
+      <g fill='currentColor'>
+        <path
+          d='m11,6l-1.9645-1.9645c-1.3807-1.3807-3.6193-1.3807-5,0h0c-1.3807,1.3807-1.3807,3.6193,0,5l1.9645,1.9645'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <path
+          d='m9,14l1.9645,1.9645c1.3807,1.3807,3.6193,1.3807,5,0h0c1.3807-1.3807,1.3807-3.6193,0-5l-1.9645-1.9645'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <line
+          x1='12'
+          y1='12'
+          x2='8'
+          y2='8'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+      </g>
     </svg>
   )
 }
@@ -185,6 +218,9 @@ export default function CreatePage() {
   const [destination, setDestination] = useState('')
   const [slug, setSlug] = useState('')
   const [domain, setDomain] = useState(SHORT_DOMAIN)
+  // Verified only — the helper text under the form promises exactly
+  // that, so the picker has to honour it rather than list everything.
+  const domains = getMockDomains()
   const [errors, setErrors] = useState({})
   const [shaking, setShaking] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -292,7 +328,7 @@ export default function CreatePage() {
       // link pool is a fixed list, so a created link has nowhere to
       // live. Says so rather than pretending.
       const generated = slug.trim() || randomSlug()
-      toast(`${shortUrlFor(generated)} created (mock, not saved)`)
+      toast(`${domain}/${generated} created (mock, not saved)`)
       setSubmitting(false)
       router.push('/dashboard/links')
       return
@@ -305,6 +341,7 @@ export default function CreatePage() {
         body: JSON.stringify({
           destination: destination.trim(),
           slug: slug.trim() || undefined,
+          domain,
         }),
       })
       const data = await res.json()
@@ -411,13 +448,16 @@ export default function CreatePage() {
                   />
                 }
               >
-                <DropdownMenu width='170px'>
-                  <DropdownOption
-                    selected={domain === SHORT_DOMAIN}
-                    onClick={() => setDomain(SHORT_DOMAIN)}
-                  >
-                    {SHORT_DOMAIN}
-                  </DropdownOption>
+                <DropdownMenu width='220px'>
+                  {domains.map((d) => (
+                    <DropdownOption
+                      key={d.hostname}
+                      selected={domain === d.hostname}
+                      onClick={() => setDomain(d.hostname)}
+                    >
+                      {d.hostname}
+                    </DropdownOption>
+                  ))}
                 </DropdownMenu>
               </Dropdown>
             </FieldLabel>

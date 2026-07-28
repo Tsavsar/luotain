@@ -60,6 +60,9 @@ model Organization {
   members   Membership[]
   links     Link[]
   clicks    Click[]
+  // Custom domains belonging to this org. Prisma requires this side of
+  // the relation to exist even though nothing reads it yet.
+  domains   Domain[]
 }
 
 model Membership {
@@ -80,11 +83,50 @@ enum Role {
   MEMBER
 }
 
+// ─── Domain ───
+// Added because the create form can now pick a domain, and that breaks
+// the old assumption that one shortCode means one link. `verified` backs
+// the form's own promise ("Only verified domains show up here").
+//
+// organizationId null = a shared domain every org can use (luot.link
+// itself). Non-null = an org's own custom domain, visible only to them.
+model Domain {
+  id       String  @id @default(cuid())
+  hostname String  @unique // "luot.link", "go.acme.com"
+  verified Boolean @default(false)
+
+  // Null for the shared default. Cascade so deleting an org takes its
+  // custom domains with it — a domain with no owner and no shared flag
+  // would be unreachable.
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  links   Link[]
+  qrCodes QrCode[]
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId])
+}
+
 model Link {
   id             String   @id @default(cuid())
-  shortCode      String   @unique // luot.link/{shortCode} — globally unique, not scoped per-org
+  // NOT globally unique any more. With more than one domain in play,
+  // luot.link/summer and go.acme.com/summer are different links, and a
+  // global constraint would have the first one block the second. The
+  // compound @@unique([domainId, shortCode]) below is what replaces it.
+  shortCode      String
   destinationUrl String
   title          String?
+
+  // Scraped from the destination's Open Graph tags, for the preview on
+  // the link detail page. Nullable because plenty of URLs have no OG
+  // image, some hosts refuse server-side fetches, and some time out —
+  // the UI already falls back to the logo mark when this is null.
+  ogImageUrl     String?
+
+  domainId String
+  domain   Domain @relation(fields: [domainId], references: [id])
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -106,6 +148,8 @@ model Link {
   // not implemented here, since nothing user-facing needs it yet.
   deletedAt DateTime?
 
+  // A slug only has to be unique within its own domain.
+  @@unique([domainId, shortCode])
   @@index([organizationId])
   // Compound, not just organizationId alone — every query that reads
   // this table from now on filters by both together (trash: is not
@@ -117,10 +161,24 @@ model Link {
 
 model QrCode {
   id        String @id @default(cuid())
-  shortCode String @unique // its own slug, distinct from the parent link's — lets a
-  // scan be attributed to this specific QR placement (e.g. "Store window" vs
-  // "Business card"), not just the link generally
+  // Its own slug, distinct from the parent link's — lets a scan be
+  // attributed to this specific QR placement (e.g. "Store window" vs
+  // "Business card") rather than the link generally.
+  //
+  // Same de-globalising as Link.shortCode, and for the same reason.
+  //
+  // WORTH KNOWING: a QR's slug and a link's slug resolve at the same
+  // domain, so they share one namespace — luot.link/abc can't be both.
+  // Two separate unique constraints can't see each other, so nothing
+  // currently stops a Link and a QrCode both claiming "abc" on one
+  // domain, and the redirect would be ambiguous. Properly fixed by a
+  // single table owning the slug namespace that both point at; until
+  // then the create paths have to check both tables.
+  shortCode String
   label     String
+
+  domainId String
+  domain   Domain @relation(fields: [domainId], references: [id])
 
   linkId String
   link   Link   @relation(fields: [linkId], references: [id], onDelete: Cascade)
@@ -129,6 +187,7 @@ model QrCode {
 
   createdAt DateTime @default(now())
 
+  @@unique([domainId, shortCode])
   @@index([linkId])
 }
 

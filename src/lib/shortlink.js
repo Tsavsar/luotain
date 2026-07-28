@@ -17,7 +17,12 @@
 export const SHORT_DOMAIN = 'luot.link'
 
 // "quick-fox" -> "luot.link/quick-fox"
-export function shortUrlFor(shortCode) {
+//
+// hostname is optional and defaults to SHORT_DOMAIN, so existing calls
+// keep working — but now that a link belongs to a domain, callers with a
+// real one should pass it. Composing from the constant when the link
+// actually lives on go.acme.com would print a URL that doesn't resolve.
+export function shortUrlFor(shortCode, hostname) {
   if (!shortCode) return ''
-  return `${SHORT_DOMAIN}/${shortCode}`
+  return `${hostname || SHORT_DOMAIN}/${shortCode}`
 }

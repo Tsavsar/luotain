@@ -734,6 +734,28 @@ function visibleEvents(events, filters = [], sessionDeleted = []) {
   )
 }
 
+// ─── Domains ───
+// Test data for the create form's domain picker. `verified` mirrors the
+// design's own copy ("Only verified domains show up here"), so an
+// unverified one is included specifically to prove the picker filters
+// rather than just listing everything it's handed.
+//
+// Temporary: real domains belong in a Domain table, which is what the
+// schema change alongside this adds.
+const DOMAINS = [
+  { hostname: 'luot.link', verified: true, isDefault: true },
+  { hostname: 'go.acme.com', verified: true, isDefault: false },
+  { hostname: 'links.notionhq.com', verified: true, isDefault: false },
+  { hostname: 'l.shatermt.com', verified: true, isDefault: false },
+  { hostname: 'pending.example.com', verified: false, isDefault: false },
+]
+
+export function getMockDomains({ verifiedOnly = true } = {}) {
+  return DOMAINS.filter((d) => (verifiedOnly ? d.verified : true)).map((d) => ({
+    ...d,
+  }))
+}
+
 export function getMockTrash(sessionDeleted = []) {
   const now = new Date()
   const clicksOnly = getEventPool().filter((e) => e.type === 'click')

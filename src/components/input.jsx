@@ -55,19 +55,25 @@ export default function Inputfield({
         transition: 'border 0.15s ease, box-shadow 0.15s ease',
       }}
     >
-      <div
-        style={{
-          color:
-            focused || value.length > 0
-              ? 'var(--text-strong)'
-              : 'var(--text-soft)',
-          display: 'flex',
-          alignItems: 'center',
-          transition: 'color 0.15s ease',
-        }}
-      >
-        {lefticon}
-      </div>
+      {/* Rendered only when there IS an icon. Unconditionally, the empty
+          div still counts as a flex child, so the parent's 8px gap
+          applied to it and every iconless field picked up 22px of left
+          space instead of 14px. */}
+      {lefticon ? (
+        <div
+          style={{
+            color:
+              focused || value.length > 0
+                ? 'var(--text-strong)'
+                : 'var(--text-soft)',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'color 0.15s ease',
+          }}
+        >
+          {lefticon}
+        </div>
+      ) : null}
       <input
         placeholder={placeholder}
         value={value}

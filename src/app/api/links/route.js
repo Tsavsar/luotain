@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
-import { shortUrlFor } from '@/lib/shortlink'
+import { SHORT_DOMAIN, shortUrlFor } from '@/lib/shortlink'
 import { isRecoverable } from '@/lib/linkrecovery'
 
 // Both methods for /api/links live here — Next.js resolves every verb
@@ -31,6 +31,10 @@ export async function GET() {
     },
     orderBy: { createdAt: 'desc' },
     include: {
+      // The hostname is needed to compose a usable short URL — a link on
+      // a custom domain composed from the default constant would print a
+      // URL that doesn't resolve.
+      domain: { select: { hostname: true } },
       // A count, not the rows. Loading every click just to show a
       // total would be the single most expensive thing on the page —
       // Click is the highest-volume table in the schema.
@@ -42,7 +46,7 @@ export async function GET() {
     links: links.map((l) => ({
       id: l.id,
       shortCode: l.shortCode,
-      shortUrl: shortUrlFor(l.shortCode),
+      shortUrl: shortUrlFor(l.shortCode, l.domain.hostname),
       destination: l.destinationUrl,
       title: l.title,
       clicks: l._count.clicks,
@@ -170,6 +174,39 @@ export async function POST(request) {
     )
   }
 
+  // Resolve the domain first — everything below is scoped to it, since a
+  // slug is only unique within one.
+  const requestedHostname = String(body?.domain || '').trim() || SHORT_DOMAIN
+  const domainRecord = await prisma.domain.findUnique({
+    where: { hostname: requestedHostname },
+    select: { id: true, hostname: true, verified: true, organizationId: true },
+  })
+
+  if (!domainRecord) {
+    return Response.json(
+      { error: 'Unknown domain', field: 'domain' },
+      { status: 400 }
+    )
+  }
+  if (!domainRecord.verified) {
+    return Response.json(
+      { error: 'That domain is not verified yet', field: 'domain' },
+      { status: 400 }
+    )
+  }
+  // A custom domain belongs to one org. Checked server-side rather than
+  // trusting the picker, since the request body is just a hostname
+  // string and nothing stops it naming someone else's.
+  if (
+    domainRecord.organizationId &&
+    domainRecord.organizationId !== organizationId
+  ) {
+    return Response.json(
+      { error: 'That domain is not available to you', field: 'domain' },
+      { status: 403 }
+    )
+  }
+
   const requestedSlug = String(body?.slug || '').trim()
 
   if (requestedSlug) {
@@ -194,8 +231,14 @@ export async function POST(request) {
     // need different messages: someone else's live link is a dead end,
     // but the caller's own trashed link is recoverable and saying so
     // is far more useful than "already taken".
+    // Compound key now — shortCode alone is no longer unique.
     const existing = await prisma.link.findUnique({
-      where: { shortCode: requestedSlug },
+      where: {
+        domainId_shortCode: {
+          domainId: domainRecord.id,
+          shortCode: requestedSlug,
+        },
+      },
       select: { organizationId: true, deletedAt: true },
     })
     if (existing) {
@@ -231,11 +274,31 @@ export async function POST(request) {
         attempt < 4
           ? randomSlug()
           : `${randomSlug()}-${Math.floor(Math.random() * 900 + 100)}`
-      const taken = await prisma.link.findUnique({
-        where: { shortCode: candidate },
-        select: { id: true },
-      })
-      if (!taken) {
+      // Checks the QrCode table too: a QR's slug resolves at the same
+      // domain, so luot.link/abc can't be both. Two separate unique
+      // constraints can't see each other, which is why this has to be
+      // checked here rather than left to the database.
+      const [linkTaken, qrTaken] = await Promise.all([
+        prisma.link.findUnique({
+          where: {
+            domainId_shortCode: {
+              domainId: domainRecord.id,
+              shortCode: candidate,
+            },
+          },
+          select: { id: true },
+        }),
+        prisma.qrCode.findUnique({
+          where: {
+            domainId_shortCode: {
+              domainId: domainRecord.id,
+              shortCode: candidate,
+            },
+          },
+          select: { id: true },
+        }),
+      ])
+      if (!linkTaken && !qrTaken) {
         shortCode = candidate
         break
       }
@@ -255,6 +318,7 @@ export async function POST(request) {
       title: body?.title ? String(body.title).trim() : null,
       organizationId,
       createdById: userId,
+      domainId: domainRecord.id,
     },
   })
 
@@ -262,7 +326,7 @@ export async function POST(request) {
     link: {
       id: link.id,
       shortCode: link.shortCode,
-      shortUrl: shortUrlFor(link.shortCode),
+      shortUrl: shortUrlFor(link.shortCode, domainRecord.hostname),
       destination: link.destinationUrl,
       title: link.title,
       clicks: 0,

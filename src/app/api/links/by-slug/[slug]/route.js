@@ -31,6 +31,7 @@ export async function GET(request, { params }) {
   const link = await prisma.link.findFirst({
     where: { shortCode: slug, organizationId },
     include: {
+      domain: { select: { hostname: true } },
       qrCodes: { select: { id: true }, take: 1 },
       _count: { select: { clicks: true } },
     },
@@ -56,7 +57,7 @@ export async function GET(request, { params }) {
     link: {
       id: link.id,
       shortCode: link.shortCode,
-      shortUrl: shortUrlFor(link.shortCode),
+      shortUrl: shortUrlFor(link.shortCode, link.domain.hostname),
       destination: link.destinationUrl,
       title: link.title,
       clicks: link._count.clicks,
