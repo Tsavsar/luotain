@@ -14,12 +14,12 @@ export default function AnalyticsPage() {
   // No ready-gate needed here: this page derives its mock data during
   // render rather than fetching, so there's no request to hold back —
   // it just renders empty for the first frame.
-  const { useMockData } = useMockDataState()
+  const { useMockData, deletedUrls } = useMockDataState()
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
   const [activeFilters, setActiveFilters] = useState([])
 
   const mock = useMockData
-    ? getMockAnalytics(selectedRange, activeFilters)
+    ? getMockAnalytics(selectedRange, activeFilters, deletedUrls)
     : null
 
   function toggleFilter(filter) {

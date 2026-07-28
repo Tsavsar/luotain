@@ -20,7 +20,12 @@ export default function TrashPage() {
   // endpoints were wired to each other.
   // Shared across every page and persisted, so switching it on once
   // sticks instead of resetting on each navigation.
-  const { useMockData, ready: mockReady } = useMockDataState()
+  const {
+    useMockData,
+    ready: mockReady,
+    deletedUrls,
+    recoverMockLink,
+  } = useMockDataState()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -31,7 +36,7 @@ export default function TrashPage() {
     let cancelled = false
 
     if (useMockData) {
-      setItems(getMockTrash())
+      setItems(getMockTrash(deletedUrls))
       setLoading(false)
       return
     }
@@ -62,7 +67,7 @@ export default function TrashPage() {
     return () => {
       cancelled = true
     }
-  }, [mockReady, useMockData])
+  }, [mockReady, useMockData, deletedUrls])
 
   async function handleRecover(item) {
     // Optimistic either way — recover isn't destructive, so removing
@@ -79,6 +84,10 @@ export default function TrashPage() {
     // network while mock data is on — same rule the links page's
     // delete follows.
     if (useMockData) {
+      // Clearing shared state is what actually restores it — back into
+      // the links table, back into the totals. The optimistic removal
+      // above only takes it off this list.
+      recoverMockLink(item.shortUrl)
       toast(`${item.shortUrl} recovered`)
       return
     }

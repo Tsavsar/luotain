@@ -120,7 +120,13 @@ export default function LinkDetailPage() {
 
   // Shared across every page and persisted, so switching it on once
   // sticks instead of resetting on each navigation.
-  const { useMockData, ready: mockReady } = useMockDataState()
+  const {
+    useMockData,
+    ready: mockReady,
+    deletedUrls,
+    deleteMockLink,
+    recoverMockLink,
+  } = useMockDataState()
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
   const [pendingDelete, setPendingDelete] = useState({
     link: null,
@@ -158,8 +164,8 @@ export default function LinkDetailPage() {
       // (getMockTrash and getMockLinksTable split one pool), but the
       // ordering shouldn't be what's holding that together.
       const found =
-        getMockTrash().find((r) => slugOf(r.shortUrl) === slug) ||
-        getMockLinksTable(selectedRange, []).find(
+        getMockTrash(deletedUrls).find((r) => slugOf(r.shortUrl) === slug) ||
+        getMockLinksTable(selectedRange, [], deletedUrls).find(
           (r) => slugOf(r.shortUrl) === slug
         ) ||
         null
@@ -196,7 +202,7 @@ export default function LinkDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [mockReady, useMockData, selectedRange, slug])
+  }, [mockReady, useMockData, selectedRange, slug, deletedUrls])
 
   // The whole page is the analytics dashboard scoped to ONE link, so
   // it reuses the same generator with a link filter rather than
@@ -209,11 +215,16 @@ export default function LinkDetailPage() {
     // filters layer on top of it. Both go through the same mechanism,
     // which is why the whole page is just the analytics dashboard
     // narrowed down.
-    return getMockAnalytics(selectedRange, [
-      { type: 'link', label: link.shortUrl },
-      ...activeFilters,
-    ])
-  }, [useMockData, link, selectedRange, activeFilters])
+    // The link filter naming this link is also what keeps its history
+    // visible here after deletion — visibleEvents() in mockAnalytics
+    // drops trashed links from aggregates but makes an exception when
+    // one is asked for directly, which is exactly this case.
+    return getMockAnalytics(
+      selectedRange,
+      [{ type: 'link', label: link.shortUrl }, ...activeFilters],
+      deletedUrls
+    )
+  }, [useMockData, link, selectedRange, activeFilters, deletedUrls])
 
   const stats = analytics?.stats
   const cardData = analytics?.cardData
@@ -298,8 +309,13 @@ export default function LinkDetailPage() {
 
     if (useMockData) {
       // No network with mock data on — mock ids aren't database rows.
+      // Clearing it from shared state is what actually brings the link
+      // back everywhere else; the local deletedAt clear below is just
+      // so this page un-greys in the same motion rather than waiting
+      // for a re-fetch.
       setCollapsingAlert(true)
       setTimeout(() => {
+        recoverMockLink(link.shortUrl)
         setLink((prev) => (prev ? { ...prev, deletedAt: null } : prev))
         setCollapsingAlert(false)
         setRecovering(false)
@@ -340,12 +356,18 @@ export default function LinkDetailPage() {
 
   async function handleDelete(target) {
     if (useMockData) {
-      // No Undo offered here on purpose, unlike the links page. A mock
-      // delete on this page has nothing to reverse: it never wrote
-      // anything, and the list it returns to re-seeds straight from
-      // the generator, so the link is still there either way. An Undo
-      // button that does nothing is worse than no button.
-      toast(`${target.shortUrl} moved to trash`)
+      // This used to only fire a toast and navigate — the link stayed
+      // in the list, never reached the trash, and the totals didn't
+      // move, so deleting from this page did nothing at all. Recorded
+      // in shared state now, same as the links page, which is what
+      // makes it a real delete.
+      deleteMockLink(target.shortUrl)
+      toast(`${target.shortUrl} moved to trash`, {
+        action: {
+          label: 'Undo',
+          onClick: () => recoverMockLink(target.shortUrl),
+        },
+      })
       router.push('/dashboard/links')
       return
     }

@@ -8,37 +8,43 @@ import LinksTable from '@/components/linkstable'
 import RecentlyDeletedLink from '@/components/recentlydeletedlink'
 import { slugOf } from '@/components/linktablehelpers'
 import { toast } from '@/components/toast'
-import { getMockLinksStats, getMockLinksTable } from '@/lib/mockAnalytics'
+import {
+  getMockLinksStats,
+  getMockLinksTable,
+  getMockTrash,
+} from '@/lib/mockAnalytics'
 
 export default function LinksPage() {
   const router = useRouter()
   // Shared across every page and persisted, so switching it on once
   // sticks instead of resetting on each navigation.
-  const { useMockData, ready: mockReady } = useMockDataState()
+  const {
+    useMockData,
+    ready: mockReady,
+    deletedUrls,
+    deleteMockLink,
+    recoverMockLink,
+  } = useMockDataState()
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
 
-  const stats = useMockData ? getMockLinksStats(selectedRange, []) : null
+  // deletedUrls is passed through so the totals drop when something is
+  // deleted — no link, nothing to report.
+  const stats = useMockData
+    ? getMockLinksStats(selectedRange, [], deletedUrls)
+    : null
 
   // Real state, re-seeded from the generator only when the inputs
   // that should reset it change (mock toggled, range changed), so a
   // delete's own removal otherwise sticks.
   const [links, setLinks] = useState(null)
-  // How many links have been deleted in THIS mock session. Only used
-  // while mock data is on, to decide whether "Recently deleted" shows.
-  // With mock off the component asks the API instead, which is the
-  // real answer.
-  const [mockTrashCount, setMockTrashCount] = useState(0)
   useEffect(() => {
     // Wait until the saved mock preference is known — otherwise a
     // reload with mock on hits the network once for nothing.
     if (!mockReady) return
     let cancelled = false
-    // Re-seeding restores every row, so anything "deleted" in the
-    // previous mock session is back — the count has to reset with it.
-    setMockTrashCount(0)
 
     if (useMockData) {
-      setLinks(getMockLinksTable(selectedRange, []))
+      setLinks(getMockLinksTable(selectedRange, [], deletedUrls))
       return
     }
 
@@ -62,7 +68,7 @@ export default function LinksPage() {
     return () => {
       cancelled = true
     }
-  }, [mockReady, useMockData, selectedRange])
+  }, [mockReady, useMockData, selectedRange, deletedUrls])
 
   async function handleDelete(link) {
     // Mock rows are display-only — their id is the link's own url
@@ -72,33 +78,16 @@ export default function LinksPage() {
     // [id] route at all, it just hangs. So while mock data is on,
     // this stays fully local: no fetch regardless.
     if (useMockData) {
-      // Capture the removed row's index so undo can put it back
-      // exactly where it was, not append it to the end — undo should
-      // reverse the delete, not reorder the list.
-      let removedIndex = -1
-      setLinks((prev) => {
-        const list = prev || []
-        removedIndex = list.findIndex((l) => l.id === link.id)
-        return list.filter((l) => l.id !== link.id)
-      })
-      setMockTrashCount((n) => n + 1)
+      // Recorded in shared state rather than filtered out of this
+      // page's list. The row disappearing is only part of a delete —
+      // it also has to join the trash, leave the totals, and switch
+      // its own detail page to the archived state. The effect above
+      // re-seeds from the same source, so the row goes on its own.
+      deleteMockLink(link.shortUrl)
       toast(`${link.shortUrl} moved to trash`, {
         action: {
           label: 'Undo',
-          onClick: () => {
-            setLinks((prev) => {
-              const list = prev || []
-              if (list.some((l) => l.id === link.id)) return list
-              const next = [...list]
-              next.splice(
-                removedIndex >= 0 ? removedIndex : next.length,
-                0,
-                link
-              )
-              return next
-            })
-            setMockTrashCount((n) => Math.max(0, n - 1))
-          },
+          onClick: () => recoverMockLink(link.shortUrl),
         },
       })
       return
@@ -213,7 +202,7 @@ export default function LinksPage() {
           }}
         >
           <RecentlyDeletedLink
-            count={useMockData ? mockTrashCount : undefined}
+            count={useMockData ? getMockTrash(deletedUrls).length : undefined}
           />
         </div>
       </div>
