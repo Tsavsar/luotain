@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useMockDataState } from '@/components/mockdatacontext'
 import { useRouter } from 'next/navigation'
 import LinksStats from '@/components/linksstats'
 import LinksTable from '@/components/linkstable'
@@ -11,7 +12,9 @@ import { getMockLinksStats, getMockLinksTable } from '@/lib/mockAnalytics'
 
 export default function LinksPage() {
   const router = useRouter()
-  const [useMockData, setUseMockData] = useState(false)
+  // Shared across every page and persisted, so switching it on once
+  // sticks instead of resetting on each navigation.
+  const { useMockData, ready: mockReady } = useMockDataState()
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
 
   const stats = useMockData ? getMockLinksStats(selectedRange, []) : null
@@ -26,6 +29,9 @@ export default function LinksPage() {
   // real answer.
   const [mockTrashCount, setMockTrashCount] = useState(0)
   useEffect(() => {
+    // Wait until the saved mock preference is known — otherwise a
+    // reload with mock on hits the network once for nothing.
+    if (!mockReady) return
     let cancelled = false
     // Re-seeding restores every row, so anything "deleted" in the
     // previous mock session is back — the count has to reset with it.
@@ -56,7 +62,7 @@ export default function LinksPage() {
     return () => {
       cancelled = true
     }
-  }, [useMockData, selectedRange])
+  }, [mockReady, useMockData, selectedRange])
 
   async function handleDelete(link) {
     // Mock rows are display-only — their id is the link's own url
@@ -197,38 +203,6 @@ export default function LinksPage() {
           </div>
         </div>
       </div>
-
-      <button
-        onClick={() => setUseMockData((v) => !v)}
-        style={{
-          position: 'fixed',
-          bottom: '16px',
-          right: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '8px 14px',
-          background: '#171717',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 'var(--radius-full)',
-          cursor: 'pointer',
-          zIndex: 999,
-        }}
-      >
-        <div
-          style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: 'var(--radius-full)',
-            background: useMockData
-              ? 'var(--success-base)'
-              : 'var(--text-disabled)',
-          }}
-        />
-        <span className='para-xs' style={{ color: 'white' }}>
-          Mock data: {useMockData ? 'ON' : 'OFF'}
-        </span>
-      </button>
     </>
   )
 }

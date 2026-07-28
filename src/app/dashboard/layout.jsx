@@ -7,8 +7,27 @@ import DashboardNav from '@/components/dashboardnav'
 import DashboardSkeleton from '@/components/dashboardskeleton'
 import { ToastStack } from '@/components/toast'
 import { MotionConfig } from 'motion/react'
+import Switch from '@/components/switch'
+import {
+  MockDataProvider,
+  useMockDataState,
+} from '@/components/mockdatacontext'
 
-export default function DashboardLayout({ children }) {
+// Split out because it needs to be INSIDE the provider to read it, and
+// DashboardLayout is the thing rendering the provider.
+function MockDataToggle() {
+  const { useMockData, toggleMockData, ready } = useMockDataState()
+  return (
+    <Switch
+      checked={useMockData}
+      onChange={toggleMockData}
+      disabled={!ready}
+      label={`Mock data${useMockData ? '' : ''}`}
+    />
+  )
+}
+
+function DashboardShell({ children }) {
   const router = useRouter()
   const pathname = usePathname()
   // Pages nested UNDER /dashboard/links (trash, a single link's detail
@@ -141,10 +160,12 @@ export default function DashboardLayout({ children }) {
 
         <ToastStack />
 
-        {/* Theme toggle only now — the Fire toast / Fire error buttons
-          that used to sit alongside it are gone, done validating the
-          toast itself. Still bottom-left so it doesn't collide with
-          the toast stack or the mock-data pill, both bottom-right. */}
+        {/* Testing controls, one cluster. The mock-data toggle lives here
+          rather than on each page: it used to be a separate button on
+          the links, trash, detail and analytics pages, each with its
+          own state, so switching it on and then navigating anywhere
+          silently turned it back off. One toggle, shared state, and it
+          survives a reload. */}
         <div
           style={{
             position: 'fixed',
@@ -152,28 +173,54 @@ export default function DashboardLayout({ children }) {
             bottom: '20px',
             zIndex: 99,
             display: 'flex',
-            gap: '8px',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '8px 14px',
+            borderRadius: 'var(--radius-full)',
+            background: '#171717',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
+          <MockDataToggle />
+
+          <span
+            aria-hidden='true'
+            style={{
+              width: '1px',
+              height: '16px',
+              background: 'rgba(255, 255, 255, 0.15)',
+            }}
+          />
+
           <button
             onClick={toggleTheme}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-full)',
-              background: '#171717',
+              background: 'none',
               border: 'none',
+              padding: 0,
               cursor: 'pointer',
+              fontFamily: 'var(--font-sans)',
             }}
           >
-            <span className='label-sm' style={{ color: 'white' }}>
-              {theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
+            <span
+              className='para-xs'
+              style={{ color: 'rgba(255,255,255,0.7)' }}
+            >
+              {theme === 'dark' ? 'Light' : 'Dark'}
             </span>
           </button>
         </div>
       </main>
     </MotionConfig>
+  )
+}
+
+// Provider sits outside the shell so the toggle and every page below it
+// share one source of truth.
+export default function DashboardLayout({ children }) {
+  return (
+    <MockDataProvider>
+      <DashboardShell>{children}</DashboardShell>
+    </MockDataProvider>
   )
 }

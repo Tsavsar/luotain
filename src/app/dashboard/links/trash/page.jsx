@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useMockDataState } from '@/components/mockdatacontext'
 import { useRouter } from 'next/navigation'
 import BackButton from '@/components/backbutton'
 import TrashTable from '@/components/trashtable'
@@ -17,11 +18,16 @@ export default function TrashPage() {
   // Nothing in the database has those ids, so every single recovery
   // 404'd, rolled back, and showed an error toast. Mock data and real
   // endpoints were wired to each other.
-  const [useMockData, setUseMockData] = useState(false)
+  // Shared across every page and persisted, so switching it on once
+  // sticks instead of resetting on each navigation.
+  const { useMockData, ready: mockReady } = useMockDataState()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Wait until the saved mock preference is known — otherwise a
+    // reload with mock on hits the network once for nothing.
+    if (!mockReady) return
     let cancelled = false
 
     if (useMockData) {
@@ -56,7 +62,7 @@ export default function TrashPage() {
     return () => {
       cancelled = true
     }
-  }, [useMockData])
+  }, [mockReady, useMockData])
 
   async function handleRecover(item) {
     // Optimistic either way — recover isn't destructive, so removing
@@ -164,38 +170,6 @@ export default function TrashPage() {
           onRecover={handleRecover}
         />
       </div>
-
-      <button
-        onClick={() => setUseMockData((v) => !v)}
-        style={{
-          position: 'fixed',
-          bottom: '16px',
-          right: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '8px 14px',
-          background: '#171717',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 'var(--radius-full)',
-          cursor: 'pointer',
-          zIndex: 999,
-        }}
-      >
-        <div
-          style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: 'var(--radius-full)',
-            background: useMockData
-              ? 'var(--success-base)'
-              : 'var(--text-disabled)',
-          }}
-        />
-        <span className='para-xs' style={{ color: 'white' }}>
-          Mock data: {useMockData ? 'ON' : 'OFF'}
-        </span>
-      </button>
     </>
   )
 }

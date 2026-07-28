@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useMockDataState } from '@/components/mockdatacontext'
 import StatsSegment from '@/components/statssegment'
 import ChartContainer from '@/components/chartcontainer'
 import DashboardCards from '@/components/cardcontainer'
@@ -8,7 +9,12 @@ import FilterPill from '@/components/filterpill'
 import { getMockAnalytics } from '@/lib/mockAnalytics'
 
 export default function AnalyticsPage() {
-  const [useMockData, setUseMockData] = useState(false)
+  // Shared across every page and persisted, so switching it on once
+  // sticks instead of resetting on each navigation.
+  // No ready-gate needed here: this page derives its mock data during
+  // render rather than fetching, so there's no request to hold back —
+  // it just renders empty for the first frame.
+  const { useMockData } = useMockDataState()
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
   const [activeFilters, setActiveFilters] = useState([])
 
@@ -104,38 +110,6 @@ export default function AnalyticsPage() {
           onToggleFilter={toggleFilter}
         />
       </div>
-
-      <button
-        onClick={() => setUseMockData((v) => !v)}
-        style={{
-          position: 'fixed',
-          bottom: '16px',
-          right: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '8px 14px',
-          background: '#171717',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 'var(--radius-full)',
-          cursor: 'pointer',
-          zIndex: 999,
-        }}
-      >
-        <div
-          style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: 'var(--radius-full)',
-            background: useMockData
-              ? 'var(--success-base)'
-              : 'var(--text-disabled)',
-          }}
-        />
-        <span className='para-xs' style={{ color: 'white' }}>
-          Mock data: {useMockData ? 'ON' : 'OFF'}
-        </span>
-      </button>
     </>
   )
 }
