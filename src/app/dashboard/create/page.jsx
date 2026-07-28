@@ -85,13 +85,30 @@ function ChevronIcon() {
   )
 }
 
-// The regenerate affordance on the slug label (node 139:2479).
+// The regenerate affordance on the slug label (node 139:2479) — the real
+// asset. Its #D1D1D1 is swapped for var(--bg-muted), which is that exact
+// value in the token set, so it inverts properly in dark mode instead of
+// staying a fixed light grey on a dark background.
 function SparkleIcon() {
   return (
-    <svg width='16' height='16' viewBox='0 0 16 16' fill='none'>
+    <svg
+      width='16'
+      height='16'
+      viewBox='0 0 16 16'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+    >
       <path
-        d='M6.2 2.2 7 4.6l2.4.8-2.4.8-.8 2.4-.8-2.4L3 5.4l2.4-.8.8-2.4ZM11.4 8.4l.5 1.4 1.4.5-1.4.5-.5 1.4-.5-1.4-1.4-.5 1.4-.5.5-1.4Z'
-        fill='var(--text-soft)'
+        d='M9.59961 5.59961L10.5226 8.67657L13.5996 9.59961L10.5226 10.5226L9.59961 13.5996L8.67657 10.5226L5.59961 9.59961L8.67657 8.67657L9.59961 5.59961Z'
+        fill='var(--bg-muted)'
+        stroke='var(--bg-muted)'
+        strokeWidth='1.25'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M6.81065 3.81499L5.46609 3.30723L4.96137 1.95355C4.78633 1.48163 4.01297 1.48163 3.83793 1.95355L3.33321 3.30723L1.98865 3.81499C1.75505 3.90347 1.59961 4.12883 1.59961 4.38051C1.59961 4.63219 1.75505 4.85755 1.98865 4.94603L3.33321 5.45379L3.83793 6.80747C3.92545 7.04347 4.14961 7.19955 4.39961 7.19955C4.64961 7.19955 4.87385 7.04339 4.96129 6.80747L5.46601 5.45379L6.81057 4.94603C7.04417 4.85755 7.19961 4.63219 7.19961 4.38051C7.19961 4.12883 7.04425 3.90347 6.81065 3.81499Z'
+        fill='var(--bg-muted)'
       />
     </svg>
   )
@@ -316,7 +333,11 @@ export default function CreatePage() {
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
-        paddingTop: '36px',
+        // 0, not 36 — the layout's header section already carries 24px
+        // of bottom padding, which is exactly the gap the design wants
+        // between the logo row and Back. Adding more here would stack
+        // the two into a 60px gap.
+        paddingTop: 0,
         paddingBottom: '64px',
       }}
     >
@@ -381,6 +402,7 @@ export default function CreatePage() {
           >
             <Field label='Domain' width='170px'>
               <Dropdown
+                fullWidth
                 align='left'
                 trigger={
                   <div style={inputShell(false)}>
@@ -424,8 +446,8 @@ export default function CreatePage() {
                     setSlug(randomSlug())
                     clearError('slug')
                   }}
-                  title='Generate a slug'
-                  aria-label='Generate a slug'
+                  title='Generate slug'
+                  aria-label='Generate slug'
                   className='slug-regen'
                   style={{
                     display: 'flex',

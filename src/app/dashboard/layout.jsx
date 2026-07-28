@@ -43,6 +43,12 @@ function DashboardShell({ children }) {
   const hideNav =
     pathname?.startsWith('/dashboard/links/') ||
     pathname?.startsWith('/dashboard/create')
+
+  // Create is a single-task page: the header drops to just the logo and
+  // the profile, and narrows to match the form's own 440px column
+  // instead of the usual 720px content width. Because this layout stays
+  // mounted across navigation, that narrowing animates.
+  const compactHeader = pathname?.startsWith('/dashboard/create')
   const [checking, setChecking] = useState(true)
   const [orgName, setOrgName] = useState('')
   const [allOrgs, setAllOrgs] = useState([])
@@ -143,6 +149,8 @@ function DashboardShell({ children }) {
             allOrgs={allOrgs}
             activeOrgId={activeOrgId}
             userImage={userImage}
+            compact={compactHeader}
+            maxWidth={compactHeader ? '440px' : '720px'}
           />
         </div>
 

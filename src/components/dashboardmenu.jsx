@@ -216,11 +216,22 @@ function ProfileDropdown({ userImage }) {
   )
 }
 
+// `compact` strips this back to the logo and the profile — no org
+// switcher, no Create new — for focused single-task pages like create.
+// `maxWidth` comes from the caller so the header lines up with whatever
+// that page's content column is: 720px normally, 440px on create.
+//
+// Same component rather than a separate compact header because the
+// profile still has to be the real ProfileDropdown (settings, logout),
+// and the logo still has to link home. A stripped-down copy would be
+// two of each to keep in sync.
 export default function DashboardMenu({
   orgName,
   allOrgs,
   activeOrgId,
   userImage,
+  compact = false,
+  maxWidth = '720px',
 }) {
   const router = useRouter()
   return (
@@ -228,10 +239,14 @@ export default function DashboardMenu({
       style={{
         width: '100%',
         zIndex: 8,
-        maxWidth: '720px',
+        maxWidth,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        // The layout keeps this mounted across navigation, so going to
+        // create actually animates the collapse from 720 to 440 rather
+        // than snapping to it.
+        transition: 'max-width 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -239,44 +254,50 @@ export default function DashboardMenu({
           <LogoMark size={32} />
         </Link>
 
-        <div
-          style={{
-            width: '1.5px',
-            height: '20px',
-            background: 'var(--bg-layer)',
-            borderRadius: '19px',
-          }}
-        />
+        {!compact && (
+          <>
+            <div
+              style={{
+                width: '1.5px',
+                height: '20px',
+                background: 'var(--bg-layer)',
+                borderRadius: '19px',
+              }}
+            />
 
-        <OrgDropdown
-          orgName={orgName}
-          allOrgs={allOrgs}
-          activeOrgId={activeOrgId}
-        />
+            <OrgDropdown
+              orgName={orgName}
+              allOrgs={allOrgs}
+              activeOrgId={activeOrgId}
+            />
+          </>
+        )}
       </div>
 
       {/* Right side: on mobile, Create New sits before the pfp too —
           hidden on desktop since DashboardNav already has its own
           copy there */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <button
-          onClick={() => router.push('/dashboard/create')}
-          className='create-new-mobile'
-          style={{
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '8px 16px',
-            background: 'var(--text-strong)',
-            color: 'var(--bg-default)',
-            border: 'none',
-            borderRadius: 'var(--radius-full)',
-            cursor: 'pointer',
-          }}
-        >
-          <span className='para-sm' style={{ color: 'inherit' }}>
-            Create new
-          </span>
-        </button>
+        {!compact && (
+          <button
+            onClick={() => router.push('/dashboard/create')}
+            className='create-new-mobile'
+            style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '8px 16px',
+              background: 'var(--text-strong)',
+              color: 'var(--bg-default)',
+              border: 'none',
+              borderRadius: 'var(--radius-full)',
+              cursor: 'pointer',
+            }}
+          >
+            <span className='para-sm' style={{ color: 'inherit' }}>
+              Create new
+            </span>
+          </button>
+        )}
 
         <ProfileDropdown userImage={userImage} />
       </div>

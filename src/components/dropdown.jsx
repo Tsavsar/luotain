@@ -21,6 +21,13 @@ export function Dropdown({
   offsetY = 6,
   sideOffset = 0,
   triggerHover = false,
+  // The root is inline-block-ish by default, which is right for icon
+  // triggers like a row's "..." button — it shouldn't stretch. But when
+  // the trigger IS a full-width control (the domain select on the create
+  // form), that shrink-to-content collapses it to its text width and it
+  // stops filling its field. Opt-in rather than default so no existing
+  // dropdown changes shape.
+  fullWidth = false,
 }) {
   const [open, setOpen] = useState(false)
   const [canPortal, setCanPortal] = useState(false)
@@ -140,14 +147,17 @@ export function Dropdown({
   )
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div
+      ref={ref}
+      style={{ position: 'relative', width: fullWidth ? '100%' : undefined }}
+    >
       {/* --- Trigger --- */}
       <div
         onClick={() => setOpen((o) => !o)}
         className={
           triggerHover ? `dropdown-trigger${open ? ' is-open' : ''}` : ''
         }
-        style={{ cursor: 'pointer' }}
+        style={{ cursor: 'pointer', width: fullWidth ? '100%' : undefined }}
       >
         {trigger}
       </div>
