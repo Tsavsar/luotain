@@ -81,7 +81,7 @@ function TableHeader({ sortBy, sortDir, onSort }) {
 }
 
 // ─── Row actions menu ───
-function MoreMenu({ link, onEdit, onDelete }) {
+function MoreMenu({ link, onOpen, onEdit, onDuplicate, onDelete }) {
   return (
     <Dropdown
       align='right'
@@ -102,14 +102,17 @@ function MoreMenu({ link, onEdit, onDelete }) {
     >
       <DropdownMenu width='160px'>
         <DropdownOption onClick={() => onEdit?.(link)}>Edit</DropdownOption>
-        <DropdownOption
-          onClick={() => {
-            navigator.clipboard?.writeText(link.shortUrl)
-            toast('Link copied to clipboard')
-          }}
-        >
-          Copy short link
+        {/* Same handler tapping the row uses, not a second route to the
+            same place — one navigation path, two ways to reach it. */}
+        <DropdownOption onClick={() => onOpen?.(link)}>
+          View details
         </DropdownOption>
+        <DropdownOption onClick={() => onDuplicate?.(link)}>
+          Duplicate
+        </DropdownOption>
+        {/* "Copy short link" used to sit here and is gone: the row
+            already has a dedicated copy button a few pixels to the
+            left, so it was the same action twice in one row. */}
         <DropdownOption danger onClick={(e) => onDelete?.(link, e)}>
           Delete
         </DropdownOption>
@@ -129,7 +132,7 @@ function MoreMenu({ link, onEdit, onDelete }) {
 // whatever rows follow it, "always above the rows after it" covers
 // the open-menu case without needing to know whether one actually
 // is open.
-function LinkRow({ link, zIndex, onOpen, onEdit, onDelete }) {
+function LinkRow({ link, zIndex, onOpen, onEdit, onDuplicate, onDelete }) {
   const [hovered, setHovered] = useState(false)
 
   const cellBase = {
@@ -283,7 +286,13 @@ function LinkRow({ link, zIndex, onOpen, onEdit, onDelete }) {
           transform: 'translateY(-50%)',
         }}
       >
-        <MoreMenu link={link} onEdit={onEdit} onDelete={onDelete} />
+        <MoreMenu
+          link={link}
+          onOpen={onOpen}
+          onEdit={onEdit}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+        />
       </div>
     </div>
   )
@@ -316,7 +325,13 @@ function EmptyState() {
 // Sorting is local to the table (clicks/date, asc/desc) — doesn't
 // need to round-trip through the page, nothing else on the page
 // depends on the table's current sort order.
-export default function LinksTable({ links, onOpen, onEdit, onDelete }) {
+export default function LinksTable({
+  links,
+  onOpen,
+  onEdit,
+  onDuplicate,
+  onDelete,
+}) {
   const [sortBy, setSortBy] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
   // The link a row's "Delete" was clicked for, plus where that click
@@ -402,6 +417,7 @@ export default function LinksTable({ links, onOpen, onEdit, onDelete }) {
                 zIndex={sorted.length - index}
                 onOpen={onOpen}
                 onEdit={onEdit}
+                onDuplicate={onDuplicate}
                 onDelete={requestDelete}
               />
             ))

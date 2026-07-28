@@ -168,6 +168,14 @@ export default function LinksPage() {
           onEdit={(link) => {
             // TODO: route to the link's edit view once it exists
           }}
+          onDuplicate={(link) => {
+            // Blocked on the create flow, not stubbed out of laziness:
+            // duplicating means creating a new link with this one's
+            // destination and a fresh slug, and there's no POST /api/links
+            // yet to create anything with. Wire this to the create form
+            // pre-filled from `link` once that exists.
+            toast('Duplicating needs the create flow first')
+          }}
           onDelete={handleDelete}
         />
       </div>
