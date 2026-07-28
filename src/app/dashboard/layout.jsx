@@ -1,226 +1,273 @@
-'use client'
+import { prisma } from '@/lib/prisma'
+import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
+import { shortUrlFor } from '@/lib/shortlink'
+import { isRecoverable } from '@/lib/linkrecovery'
 
-import { useState, useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import DashboardMenu from '@/components/dashboardmenu'
-import DashboardNav from '@/components/dashboardnav'
-import DashboardSkeleton from '@/components/dashboardskeleton'
-import { ToastStack } from '@/components/toast'
-import { MotionConfig } from 'motion/react'
-import Switch from '@/components/switch'
-import {
-  MockDataProvider,
-  useMockDataState,
-} from '@/components/mockdatacontext'
+// Both methods for /api/links live here — Next.js resolves every verb
+// for a path from one route.js, so the list and the create can't be
+// separate files.
 
-// Split out because it needs to be INSIDE the provider to read it, and
-// DashboardLayout is the thing rendering the provider.
-function MockDataToggle() {
-  const { useMockData, toggleMockData, ready } = useMockDataState()
-  return (
-    <Switch
-      checked={useMockData}
-      onChange={toggleMockData}
-      disabled={!ready}
-      label={`Mock data${useMockData ? '' : ''}`}
-    />
-  )
+// ─── GET /api/links ───
+// The active links for the caller's org. This was the piece blocking
+// everything else: with mock data off the table had no rows at all, so
+// the real delete path, the undo toast, the trash list and recovery
+// were all unreachable in practice even once their endpoints existed.
+//
+// Returns the same field names the table already renders against
+// (which were shaped by the mock data), so nothing downstream needs a
+// second vocabulary: destinationUrl -> destination, shortCode -> a
+// composed shortUrl.
+export async function GET() {
+  const { error, organizationId } = await resolveActiveOrg()
+  if (error) return error
+
+  const links = await prisma.link.findMany({
+    where: {
+      organizationId,
+      // Trashed links belong to the trash page, not this list. This is
+      // the "is null" half of the pair the compound index
+      // [organizationId, deletedAt] was added for.
+      deletedAt: null,
+    },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      // A count, not the rows. Loading every click just to show a
+      // total would be the single most expensive thing on the page —
+      // Click is the highest-volume table in the schema.
+      _count: { select: { clicks: true } },
+    },
+  })
+
+  return Response.json({
+    links: links.map((l) => ({
+      id: l.id,
+      shortCode: l.shortCode,
+      shortUrl: shortUrlFor(l.shortCode),
+      destination: l.destinationUrl,
+      title: l.title,
+      clicks: l._count.clicks,
+      createdAt: l.createdAt,
+    })),
+  })
 }
 
-function DashboardShell({ children }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  // Pages nested UNDER /dashboard/links (trash, a single link's detail
-  // page) are secondary pages one level down, not one of the three
-  // top-level tabs — none of Analytics/Links/QR codes corresponds to
-  // them, so showing that row would leave it either highlighted on
-  // nothing or wrongly highlighted as Links. The trailing slash is
-  // what keeps /dashboard/links itself (which SHOULD show the nav)
-  // out of this.
-  const hideNav = pathname?.startsWith('/dashboard/links/')
-  const [checking, setChecking] = useState(true)
-  const [orgName, setOrgName] = useState('')
-  const [allOrgs, setAllOrgs] = useState([])
-  const [activeOrgId, setActiveOrgId] = useState(null)
-  const [userImage, setUserImage] = useState(null)
-  // Testing-only theme override — reads whatever's already on <html>
-  // (your real [data-theme] mechanism from globals.css) so this
-  // starts in sync, then just flips that same attribute directly.
-  // Nothing new here, this is the exact switch your CSS already
-  // looks for.
-  const [theme, setTheme] = useState('dark')
+// Word lists for generated slugs. Adjective + animal reads as
+// deliberate rather than random, which matters because this is the
+// thing people will read aloud and type by hand.
+const ADJECTIVES = [
+  'swift',
+  'quick',
+  'clever',
+  'bright',
+  'calm',
+  'bold',
+  'keen',
+  'brave',
+  'quiet',
+  'warm',
+  'sharp',
+  'gentle',
+  'lucky',
+  'noble',
+  'plain',
+  'proud',
+]
+const ANIMALS = [
+  'otter',
+  'fox',
+  'crow',
+  'heron',
+  'lynx',
+  'moth',
+  'wren',
+  'hare',
+  'seal',
+  'ibis',
+  'stag',
+  'mole',
+  'newt',
+  'owl',
+  'pike',
+  'toad',
+]
 
-  useEffect(() => {
-    const current = document.documentElement.dataset.theme
-    if (current === 'light' || current === 'dark') setTheme(current)
-  }, [])
+function randomSlug() {
+  const a = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
+  const n = ANIMALS[Math.floor(Math.random() * ANIMALS.length)]
+  return `${a}-${n}`
+}
 
-  function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    document.documentElement.dataset.theme = next
+// Same shape the client validates against, kept here because client
+// validation is a convenience and this is the one that actually counts.
+const SLUG_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,48}[a-zA-Z0-9])?$/
+
+// Reserved so a link can never shadow a real route. /dashboard/links
+// and friends live under the app, but a short link resolves at the
+// domain root, so anything here would be ambiguous at best.
+const RESERVED = new Set([
+  'api',
+  'dashboard',
+  'login',
+  'logout',
+  'signup',
+  'onboarding',
+  'settings',
+  'billing',
+  'terms',
+  'privacy',
+  'new-org',
+  'admin',
+  'static',
+  '_next',
+  'favicon.ico',
+  'robots.txt',
+  'sitemap.xml',
+])
+
+function normalizeDestination(raw) {
+  const trimmed = String(raw || '').trim()
+  if (!trimmed) return { error: 'Enter a destination URL' }
+
+  // Accept "example.com/page" and assume https, which is what people
+  // actually paste. Rejecting it would be technically correct and
+  // quietly infuriating.
+  const withScheme = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`
+
+  let url
+  try {
+    url = new URL(withScheme)
+  } catch {
+    return { error: "That doesn't look like a valid URL" }
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return { error: 'Only http and https links are supported' }
+  }
+  if (!url.hostname.includes('.')) {
+    return { error: "That doesn't look like a valid URL" }
+  }
+  return { url: url.toString() }
+}
+
+// POST /api/links
+export async function POST(request) {
+  const { error, userId, organizationId } = await resolveActiveOrg()
+  if (error) return error
+
+  let body
+  try {
+    body = await request.json()
+  } catch {
+    return Response.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  useEffect(() => {
-    async function guard() {
-      try {
-        const res = await fetch('/api/check-membership')
-        const data = await res.json()
+  const destination = normalizeDestination(body?.destination)
+  if (destination.error) {
+    return Response.json(
+      { error: destination.error, field: 'destination' },
+      { status: 400 }
+    )
+  }
 
-        if (!data.loggedIn) {
-          router.replace('/login')
-          return
-        }
+  const requestedSlug = String(body?.slug || '').trim()
 
-        if (!data.hasOrg) {
-          router.replace('/onboarding')
-          return
-        }
+  if (requestedSlug) {
+    if (!SLUG_PATTERN.test(requestedSlug)) {
+      return Response.json(
+        {
+          error: 'Use letters, numbers and hyphens only',
+          field: 'slug',
+        },
+        { status: 400 }
+      )
+    }
+    if (RESERVED.has(requestedSlug.toLowerCase())) {
+      return Response.json(
+        { error: 'That slug is reserved', field: 'slug' },
+        { status: 400 }
+      )
+    }
 
-        setChecking(false)
-      } catch (err) {
-        router.replace('/login')
+    // shortCode is globally unique, and a trashed link still holds
+    // its own. So a collision has two very different causes and they
+    // need different messages: someone else's live link is a dead end,
+    // but the caller's own trashed link is recoverable and saying so
+    // is far more useful than "already taken".
+    const existing = await prisma.link.findUnique({
+      where: { shortCode: requestedSlug },
+      select: { organizationId: true, deletedAt: true },
+    })
+    if (existing) {
+      const ownedByCaller = existing.organizationId === organizationId
+      if (
+        ownedByCaller &&
+        existing.deletedAt &&
+        isRecoverable(existing.deletedAt)
+      ) {
+        return Response.json(
+          {
+            error: 'That slug is in your trash. Recover it or pick another',
+            field: 'slug',
+            recoverable: true,
+          },
+          { status: 409 }
+        )
+      }
+      return Response.json(
+        { error: 'That slug is already taken', field: 'slug' },
+        { status: 409 }
+      )
+    }
+  }
+
+  // Generated slugs retry on collision rather than failing. The odds
+  // are low (16 x 16 pairs plus a numeric suffix) but "create failed,
+  // try again" for a slug the person never chose would be nonsense.
+  let shortCode = requestedSlug
+  if (!shortCode) {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const candidate =
+        attempt < 4
+          ? randomSlug()
+          : `${randomSlug()}-${Math.floor(Math.random() * 900 + 100)}`
+      const taken = await prisma.link.findUnique({
+        where: { shortCode: candidate },
+        select: { id: true },
+      })
+      if (!taken) {
+        shortCode = candidate
+        break
       }
     }
-    guard()
-  }, [router])
-
-  useEffect(() => {
-    if (checking) return
-
-    async function loadInfo() {
-      try {
-        const res = await fetch('/api/dashboard-info')
-        const data = await res.json()
-        setOrgName(data.orgName)
-        setAllOrgs(data.allOrgs || [])
-        setActiveOrgId(data.activeOrgId)
-        setUserImage(data.userImage)
-      } catch (err) {
-        setOrgName('Your Organization')
-      }
+    if (!shortCode) {
+      return Response.json(
+        { error: "Couldn't generate a unique slug. Try again" },
+        { status: 500 }
+      )
     }
-    loadInfo()
-  }, [checking])
+  }
 
-  if (checking) return <DashboardSkeleton />
+  const link = await prisma.link.create({
+    data: {
+      shortCode,
+      destinationUrl: destination.url,
+      title: body?.title ? String(body.title).trim() : null,
+      organizationId,
+      createdById: userId,
+    },
+  })
 
-  return (
-    // reducedMotion='user' makes every Motion animation in this tree
-    // respect the OS "reduce motion" setting. It's here rather than
-    // inside each icon because Motion animates in JavaScript, so the
-    // blanket reduced-motion rule in globals.css can't reach it — that
-    // rule only overrides CSS animation-duration. One switch covers
-    // every lucide-animated icon, including ones added later, with no
-    // per-icon code to lose when the CLI overwrites a file.
-    <MotionConfig reducedMotion='user'>
-      <main
-        style={{
-          position: 'relative',
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <div
-          className='dashboard-section dashboard-section-1 dashboard-page-padding'
-          style={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            paddingTop: '36px',
-            paddingBottom: '24px',
-          }}
-        >
-          <DashboardMenu
-            orgName={orgName}
-            allOrgs={allOrgs}
-            activeOrgId={activeOrgId}
-            userImage={userImage}
-          />
-        </div>
-
-        {!hideNav && (
-          <div
-            className='dashboard-section dashboard-section-2 dashboard-page-padding'
-            style={{
-              width: '100%',
-              display: 'flex',
-              justifyContent: 'center',
-              paddingTop: '12px',
-              paddingBottom: '40px',
-            }}
-          >
-            <DashboardNav />
-          </div>
-        )}
-
-        {children}
-
-        <ToastStack />
-
-        {/* Testing controls, one cluster. The mock-data toggle lives here
-          rather than on each page: it used to be a separate button on
-          the links, trash, detail and analytics pages, each with its
-          own state, so switching it on and then navigating anywhere
-          silently turned it back off. One toggle, shared state, and it
-          survives a reload. */}
-        <div
-          style={{
-            position: 'fixed',
-            left: '20px',
-            bottom: '20px',
-            zIndex: 99,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '8px 14px',
-            borderRadius: 'var(--radius-full)',
-            background: '#171717',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-          }}
-        >
-          <MockDataToggle />
-
-          <span
-            aria-hidden='true'
-            style={{
-              width: '1px',
-              height: '16px',
-              background: 'rgba(255, 255, 255, 0.15)',
-            }}
-          />
-
-          <button
-            onClick={toggleTheme}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-sans)',
-            }}
-          >
-            <span
-              className='para-xs'
-              style={{ color: 'rgba(255,255,255,0.7)' }}
-            >
-              {theme === 'dark' ? 'Light' : 'Dark'}
-            </span>
-          </button>
-        </div>
-      </main>
-    </MotionConfig>
-  )
-}
-
-// Provider sits outside the shell so the toggle and every page below it
-// share one source of truth.
-export default function DashboardLayout({ children }) {
-  return (
-    <MockDataProvider>
-      <DashboardShell>{children}</DashboardShell>
-    </MockDataProvider>
-  )
+  return Response.json({
+    link: {
+      id: link.id,
+      shortCode: link.shortCode,
+      shortUrl: shortUrlFor(link.shortCode),
+      destination: link.destinationUrl,
+      title: link.title,
+      clicks: 0,
+      createdAt: link.createdAt,
+      deletedAt: null,
+    },
+  })
 }

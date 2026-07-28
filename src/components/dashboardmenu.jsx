@@ -222,6 +222,7 @@ export default function DashboardMenu({
   activeOrgId,
   userImage,
 }) {
+  const router = useRouter()
   return (
     <div
       style={{
@@ -259,6 +260,7 @@ export default function DashboardMenu({
           copy there */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <button
+          onClick={() => router.push('/dashboard/create')}
           className='create-new-mobile'
           style={{
             alignItems: 'center',
