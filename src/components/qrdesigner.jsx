@@ -518,6 +518,7 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
   const [entered, setEntered] = useState(false)
   const cardRef = useRef(null)
   const glossRef = useRef(null)
+  const shadowRef = useRef(null)
   const target = useRef({ rx: 0, ry: 0 })
 
   useEffect(() => setCanPortal(true), [])
@@ -569,18 +570,31 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
     let id
 
     function loop() {
-      // 0.09 is deliberately unhurried — high enough to keep up, low
-      // enough that the card trails the cursor slightly instead of being
-      // welded to it.
-      rx += (target.current.rx - rx) * 0.09
-      ry += (target.current.ry - ry) * 0.09
+      // 0.12 rather than 0.09. With a bigger angle the old easing felt
+      // sluggish — the card was still catching up after the cursor had
+      // stopped. Still short of 1, so it trails rather than being welded
+      // to the pointer.
+      rx += (target.current.rx - rx) * 0.12
+      ry += (target.current.ry - ry) * 0.12
+
       if (cardRef.current) {
-        cardRef.current.style.transform = `perspective(1100px) rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`
+        // Shorter perspective (700 vs 1100) exaggerates the foreshortening
+        // — the far edge shrinks harder, which is most of what makes the
+        // rotation read as depth rather than a skew.
+        cardRef.current.style.transform = `perspective(700px) rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`
       }
       if (glossRef.current) {
-        // The highlight slides opposite to the tilt, which is what sells
-        // it as a surface catching light rather than a rotating image.
-        glossRef.current.style.transform = `translate3d(${(-ry * 3.4).toFixed(2)}%, ${(rx * 3.4).toFixed(2)}%, 0)`
+        // Slides opposite to the tilt, and further than before. This is
+        // what sells it as a surface catching light rather than an image
+        // being rotated.
+        glossRef.current.style.transform = `translate3d(${(-ry * 6).toFixed(2)}%, ${(rx * 6).toFixed(2)}%, 0) translateZ(60px)`
+      }
+      if (shadowRef.current) {
+        // The shadow leans away from the tilt, so the light stays in one
+        // place instead of the card appearing lit from wherever it
+        // happens to be facing. Translated rather than re-drawn: animating
+        // box-shadow itself repaints every frame, a transform composites.
+        shadowRef.current.style.transform = `translate3d(${(ry * 1.6).toFixed(2)}px, ${(-rx * 1.6).toFixed(2)}px, 0)`
       }
       id = requestAnimationFrame(loop)
     }
@@ -589,7 +603,9 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
   }, [open])
 
   function handleMove(e) {
-    const MAX = 11 // degrees
+    // 18 degrees. 11 was tasteful and barely noticeable; this is meant to
+    // be felt.
+    const MAX = 18 // degrees
     const cx = window.innerWidth / 2
     const cy = window.innerHeight / 2
     // Measured from the centre of the viewport rather than the card, so
@@ -679,39 +695,82 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
         </div>
       ) : null}
 
-      {/* The card. preserve-3d so the gloss tilts with it rather than
-          staying flat on top. */}
+      {/* The shadow is its own layer behind the card, so it can lean with
+          the tilt via a transform. Putting it on the card would mean
+          re-drawing box-shadow every frame, which repaints rather than
+          composites. */}
       <div
-        ref={cardRef}
-        onClick={(e) => e.stopPropagation()}
         style={{
           position: 'relative',
-          transformStyle: 'preserve-3d',
-          willChange: 'transform',
-          borderRadius: '20px',
-          overflow: 'hidden',
-          boxShadow: '0 40px 80px -20px rgba(0, 0, 0, 0.6)',
-          opacity: entered ? 1 : 0,
-          // Scale is animated on a wrapper-free element that the rAF loop
-          // also writes to, so it's applied via a separate CSS transition
-          // on opacity only — the loop owns transform outright to avoid
-          // the two fighting over the same property.
-          transition: 'opacity 0.3s ease',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <QrCode {...qr} card={300} margin={12} radius={20} />
         <div
-          ref={glossRef}
+          ref={shadowRef}
           aria-hidden='true'
           style={{
             position: 'absolute',
-            inset: '-40%',
-            background:
-              'linear-gradient(115deg, rgba(255,255,255,0) 38%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 62%)',
-            pointerEvents: 'none',
+            inset: '6%',
+            borderRadius: '24px',
+            background: 'rgba(0, 0, 0, 0.55)',
+            filter: 'blur(38px)',
             willChange: 'transform',
+            opacity: entered ? 1 : 0,
+            transition: 'opacity 0.3s ease',
           }}
         />
+
+        {/* preserve-3d is what makes this parallax rather than tilt: the
+            children below sit on their own Z planes, so the perspective
+            moves them at different rates as the card rotates. No manual
+            rate maths — the projection does it. */}
+        <div
+          ref={cardRef}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'relative',
+            transformStyle: 'preserve-3d',
+            willChange: 'transform',
+            borderRadius: '20px',
+            opacity: entered ? 1 : 0,
+            // The loop owns transform outright, so only opacity is
+            // transitioned here — the two writing to the same property
+            // would fight.
+            transition: 'opacity 0.3s ease',
+          }}
+        >
+          {/* Lifted off the card's own plane. This is the parallax: as the
+              card rotates, a layer 26px closer to the viewer sweeps
+              further than the card's edges do. */}
+          <div
+            style={{
+              transform: 'translateZ(26px)',
+              transformStyle: 'preserve-3d',
+              borderRadius: '20px',
+              overflow: 'hidden',
+            }}
+          >
+            <QrCode {...qr} card={300} margin={12} radius={20} />
+          </div>
+
+          <div
+            ref={glossRef}
+            aria-hidden='true'
+            style={{
+              position: 'absolute',
+              inset: '-45%',
+              background:
+                'linear-gradient(115deg, rgba(255,255,255,0) 36%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0) 64%)',
+              pointerEvents: 'none',
+              willChange: 'transform',
+              // Highest plane of the three, so the highlight travels
+              // furthest of anything on the card.
+              transform: 'translateZ(60px)',
+            }}
+          />
+        </div>
       </div>
 
       <button
