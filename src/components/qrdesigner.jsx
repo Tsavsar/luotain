@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Switch from '@/components/switch'
 import Tooltip from '@/components/tooltip'
 import LogoMark from '@/components/logomark'
@@ -294,9 +294,16 @@ function QrPreview({ color, markerColor, pattern, branding }) {
   // scannable at all, and its absence was the main reason this looked
   // cramped — modules ran right to the edge of the render. Four modules
   // is the spec's own minimum.
-  const QUIET = 4
+  // Quiet zone trimmed from 4 modules to 2. The white card it sits on
+  // already reads as clear space against the grey panel, so 4 was
+  // effectively padding inside padding — and it was costing module size
+  // for nothing.
+  const QUIET = 2
   const TOTAL = SIZE + QUIET * 2
-  const RENDER = 148
+  // The card fills the 180px preview box with 2px to spare, rather than
+  // floating at 148px with a band of grey above and below it.
+  const CARD = 176
+  const RENDER = CARD
   const { cells, timing, alignment } = useModules(1337, SIZE, branding)
 
   // Logo box geometry, all derived from the grid so it can't drift out of
@@ -338,8 +345,8 @@ function QrPreview({ color, markerColor, pattern, branding }) {
       <div
         style={{
           position: 'relative',
-          width: '148px',
-          height: '148px',
+          width: `${CARD}px`,
+          height: `${CARD}px`,
           borderRadius: '10px',
           background: '#ffffff',
           display: 'flex',
@@ -350,8 +357,8 @@ function QrPreview({ color, markerColor, pattern, branding }) {
       >
         <svg
           viewBox={`${-QUIET} ${-QUIET} ${TOTAL} ${TOTAL}`}
-          width='148'
-          height='148'
+          width={CARD}
+          height={CARD}
           role='img'
           aria-label='QR code preview'
           style={{ display: 'block' }}
@@ -481,8 +488,68 @@ function Swatch({ hex, selected, onSelect, label }) {
   )
 }
 
+// Expands #abc to #aabbcc. Three-digit hex is valid CSS and people type
+// it, so rejecting it would just look broken.
+function expandHex(digits) {
+  if (digits.length === 3) {
+    return digits
+      .split('')
+      .map((c) => c + c)
+      .join('')
+  }
+  return digits
+}
+
 function ColorRow({ label, value, onChange }) {
-  const current = QR_COLORS.find((c) => c.hex === value) || QR_COLORS[0]
+  // Raw text while the field is focused. Null means "not editing", so the
+  // input shows the committed value. Without this, typing would fight the
+  // parent: every keystroke would be normalised and written back, and a
+  // half-typed code like "fa7" would either be rejected or expanded out
+  // from under the cursor.
+  const [draft, setDraft] = useState(null)
+
+  // The value as-is, NOT looked up in the palette. This used to be
+  // QR_COLORS.find(...) || QR_COLORS[0], which meant any hex outside the
+  // preset list silently became black — custom colours couldn't work at
+  // all, whatever the input did.
+  const hex = value || '#000000'
+  const preset = QR_COLORS.find(
+    (c) => c.hex.toLowerCase() === hex.toLowerCase()
+  )
+
+  const digits = draft !== null ? draft : hex.replace('#', '').toUpperCase()
+
+  function handleInput(e) {
+    // Anything that isn't a hex digit is dropped rather than rejected,
+    // which means a pasted "#FA7319" or "fa7319ff" lands correctly
+    // instead of erroring.
+    const cleaned = e.target.value
+      .replace(/[^0-9a-fA-F]/g, '')
+      .slice(0, 6)
+      .toUpperCase()
+    setDraft(cleaned)
+
+    // Six digits only while typing. Committing three as well would mean
+    // "fa7319" passes through a valid shorthand at three characters, so
+    // the code would flash #ffaa77 on the way to #fa7319 — a visible
+    // flicker for every full code anyone types. Shorthand still works,
+    // it just lands on blur or Enter instead.
+    if (cleaned.length === 6) {
+      onChange(`#${cleaned.toLowerCase()}`)
+    }
+  }
+
+  function handleBlur() {
+    // Shorthand resolves here rather than mid-typing.
+    if (draft && draft.length === 3) {
+      onChange(`#${expandHex(draft).toLowerCase()}`)
+    }
+    // Dropping the draft snaps the field back to whatever is actually
+    // committed — so an abandoned half-typed code doesn't sit there
+    // looking like the current value.
+    setDraft(null)
+  }
+
   return (
     <div
       style={{
@@ -515,7 +582,7 @@ function ColorRow({ label, value, onChange }) {
             flexShrink: 0,
             background: 'var(--bg-surface)',
             borderRadius: '24px',
-            padding: '2px 16px 2px 2px',
+            padding: '2px 12px 2px 2px',
           }}
         >
           <span
@@ -523,17 +590,50 @@ function ColorRow({ label, value, onChange }) {
             style={{
               width: '30px',
               height: '30px',
+              flexShrink: 0,
               borderRadius: 'var(--radius-full)',
-              background: current.hex,
+              background: hex,
               transition: 'background 0.15s ease',
             }}
           />
-          <p
+          {/* The # is static rather than part of the input: it's always
+              required, so letting someone delete it only creates a state
+              where the field looks wrong and has to be corrected. */}
+          <span
             className='label-xs'
-            style={{ color: 'var(--text-strong)', margin: 0 }}
+            style={{ color: 'var(--text-soft)', userSelect: 'none' }}
           >
-            {current.hex.toUpperCase()}
-          </p>
+            #
+          </span>
+          <input
+            value={digits}
+            onChange={handleInput}
+            onBlur={handleBlur}
+            onFocus={(e) => e.target.select()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === 'Escape')
+                e.currentTarget.blur()
+            }}
+            aria-label={`${label} hex value`}
+            spellCheck='false'
+            autoCapitalize='none'
+            autoCorrect='off'
+            maxLength={6}
+            className='label-xs hex-input'
+            style={{
+              // Fixed width for six characters — sized to the content and
+              // the field would resize on every keystroke.
+              width: '58px',
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              padding: 0,
+              margin: 0,
+              color: 'var(--text-strong)',
+              fontFamily: 'var(--font-sans)',
+              letterSpacing: '0.6px',
+            }}
+          />
         </div>
 
         <div
@@ -550,7 +650,9 @@ function ColorRow({ label, value, onChange }) {
               key={c.id}
               hex={c.hex}
               label={`${label}: ${c.id}`}
-              selected={c.hex === current.hex}
+              // Nothing is selected while a custom hex is in play, which
+              // is the honest state — none of the presets is what's set.
+              selected={preset?.id === c.id}
               onSelect={() => onChange(c.hex)}
             />
           ))}

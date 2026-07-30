@@ -410,13 +410,12 @@ export default function CreatePage() {
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <BackButton
-            onBack={
-              mode === 'qr' && step === 'design'
-                ? () => setStep('details')
-                : undefined
-            }
-          />
+          {/* Hidden on the design step — its Back lives in the footer
+              beside Create code, where step navigation belongs. Two
+              Backs doing the same thing is noise, and two Backs doing
+              DIFFERENT things (one step, one exit) risks someone losing
+              a typed destination to a mis-click. */}
+          {mode === 'qr' && step === 'design' ? null : <BackButton />}
           <p
             className='para-md'
             style={{ color: 'var(--text-strong)', margin: 0 }}
@@ -573,7 +572,43 @@ export default function CreatePage() {
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            // space-between once there are two controls, so Back sits
+            // left and the primary action stays right.
+            justifyContent:
+              mode === 'qr' && step === 'design' ? 'space-between' : 'flex-end',
+            width: '100%',
+          }}
+        >
+          {mode === 'qr' && step === 'design' ? (
+            <button
+              type='button'
+              onClick={() => setStep('details')}
+              className='create-secondary'
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 20px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--bg-default)',
+                border: '1px solid var(--stroke-soft)',
+                boxShadow: 'var(--shadow-xs)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '14px',
+                lineHeight: '20px',
+                letterSpacing: '0.28px',
+                color: 'var(--text-strong)',
+              }}
+            >
+              Back
+            </button>
+          ) : null}
+
           <button
             type='button'
             onClick={handleCreate}
@@ -601,7 +636,7 @@ export default function CreatePage() {
                 ? 'Create link'
                 : step === 'details'
                   ? 'Design QR code'
-                  : 'Create QR code'}
+                  : 'Create code'}
           </button>
         </div>
       </div>

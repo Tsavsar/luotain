@@ -1676,3 +1676,27 @@ html {
 .qr-preview-action:disabled {
   opacity: 0.5;
 }
+
+/* Hex input in the QR designer. Placeholder-ish colour while empty so an
+   emptied field doesn't look like a committed value of nothing. */
+.hex-input::selection {
+  background: var(--primary-base);
+  color: white;
+}
+.hex-input:focus {
+  color: var(--text-strong);
+}
+
+/* Secondary footer action — press feedback matched to .create-submit so
+   the two buttons in a footer respond identically. */
+.create-secondary {
+  transition:
+    transform 160ms ease-out,
+    background 0.15s ease;
+}
+.create-secondary:hover {
+  background: var(--bg-surface) !important;
+}
+.create-secondary:active {
+  transform: scale(0.97);
+}
