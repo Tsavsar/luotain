@@ -18,12 +18,20 @@ import { useRouter, useSearchParams } from 'next/navigation'
 // route but won't be for anything nested. If any origin uses a
 // keyword that maps to a nested path, send me that page and I'll
 // special-case it here instead of guessing further.
-export default function BackButton() {
+// `onBack` overrides the navigation entirely — for multi-step flows where
+// back means "previous step", not "previous page". The QR designer uses
+// it so backing out of the design step returns to the details rather than
+// abandoning the whole thing.
+export default function BackButton({ onBack }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const from = searchParams.get('from')
 
   const handleBack = () => {
+    if (onBack) {
+      onBack()
+      return
+    }
     if (from) {
       router.push(from.startsWith('/') ? from : `/${from}`)
       return

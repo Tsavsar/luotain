@@ -6,6 +6,7 @@ import BackButton from '@/components/backbutton'
 import SegmentedTabs from '@/components/segmentedtabs'
 import Inputfield from '@/components/input'
 import Tooltip from '@/components/tooltip'
+import QrDesigner from '@/components/qrdesigner'
 import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
 import { toast } from '@/components/toast'
 import { useMockDataState } from '@/components/mockdatacontext'
@@ -215,6 +216,15 @@ export default function CreatePage() {
   const { useMockData } = useMockDataState()
 
   const [mode, setMode] = useState('link')
+  // QR creation is two steps: the destination details, then the design.
+  // Links are one step, so this only ever leaves 'details' in QR mode.
+  const [step, setStep] = useState('details')
+  const [qr, setQr] = useState({
+    color: '#000000',
+    markerColor: '#000000',
+    pattern: 'square',
+    branding: true,
+  })
   const [destination, setDestination] = useState('')
   const [slug, setSlug] = useState('')
   const [domain, setDomain] = useState(SHORT_DOMAIN)
@@ -315,9 +325,18 @@ export default function CreatePage() {
     if (submitting) return
     if (!validate()) return
 
-    if (mode === 'qr') {
-      // QR creation needs the QrCode write path, which doesn't exist yet.
-      toast('QR design is not wired up yet')
+    if (mode === 'qr' && step === 'details') {
+      // Details are valid, so move to the design step rather than
+      // submitting — the code can't be created before it's styled.
+      setStep('design')
+      return
+    }
+
+    if (mode === 'qr' && step === 'design') {
+      // TODO: needs POST /api/qrcodes. The QrCode model exists and now
+      // carries a domainId, but nothing writes to it yet, so this stops
+      // here rather than pretending to save.
+      toast('Creating QR codes needs its endpoint first')
       return
     }
 
@@ -391,12 +410,20 @@ export default function CreatePage() {
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <BackButton />
+          <BackButton
+            onBack={
+              mode === 'qr' && step === 'design'
+                ? () => setStep('details')
+                : undefined
+            }
+          />
           <p
             className='para-md'
             style={{ color: 'var(--text-strong)', margin: 0 }}
           >
-            What do you want to create?
+            {mode === 'qr' && step === 'design'
+              ? 'Design your QR code'
+              : 'What do you want to create?'}
           </p>
         </div>
 
@@ -406,130 +433,145 @@ export default function CreatePage() {
             { id: 'qr', label: 'Create a QR code' },
           ]}
           activeId={mode}
-          onChange={setMode}
+          onChange={(next) => {
+            setMode(next)
+            setStep('details')
+          }}
           padX='14px'
         />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <FieldLabel label='Destination'>
-            <Inputfield
-              lefticon={<LinkIcon />}
-              placeholder='https://example.com/your-page'
-              value={destination}
-              onChange={(e) => {
-                setDestination(e.target.value)
-                clearError('destination')
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreate()
-              }}
-              error={Boolean(errors.destination)}
-              shaking={Boolean(shaking.destination)}
-            />
-          </FieldLabel>
-
+        {mode === 'qr' && step === 'design' ? (
+          <QrDesigner
+            color={qr.color}
+            markerColor={qr.markerColor}
+            pattern={qr.pattern}
+            branding={qr.branding}
+            onChange={setQr}
+          />
+        ) : (
           <div
-            style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
           >
-            <FieldLabel label='Domain' width='170px'>
-              <Dropdown
-                fullWidth
-                align='left'
-                trigger={
-                  // Inputfield as the trigger so the domain matches the
-                  // other two exactly rather than a second control that
-                  // only looks similar. onChange is a no-op: it's a
-                  // picker, and a controlled input whose value never
-                  // changes is read-only in practice.
-                  <Inputfield
-                    value={domain}
-                    onChange={() => {}}
-                    righticon={<ChevronIcon />}
-                  />
-                }
-              >
-                <DropdownMenu width='220px'>
-                  {domains.map((d) => (
-                    <DropdownOption
-                      key={d.hostname}
-                      selected={domain === d.hostname}
-                      onClick={() => setDomain(d.hostname)}
-                    >
-                      {d.hostname}
-                    </DropdownOption>
-                  ))}
-                </DropdownMenu>
-              </Dropdown>
-            </FieldLabel>
-
-            <FieldLabel
-              label='Slug'
-              hint='(Optional)'
-              action={
-                <Tooltip label='Generate slug'>
-                  <button
-                    type='button'
-                    onClick={regenerateSlug}
-                    aria-label='Generate slug'
-                    className='slug-regen'
-                    style={{
-                      display: 'flex',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <SparkleIcon />
-                  </button>
-                </Tooltip>
-              }
-            >
+            <FieldLabel label='Destination'>
               <Inputfield
-                placeholder='swift-otter'
-                value={slug}
+                lefticon={<LinkIcon />}
+                placeholder='https://example.com/your-page'
+                value={destination}
                 onChange={(e) => {
-                  setSlug(e.target.value)
-                  clearError('slug')
+                  setDestination(e.target.value)
+                  clearError('destination')
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleCreate()
                 }}
-                error={Boolean(errors.slug)}
-                shaking={Boolean(shaking.slug)}
-                swapping={swappingSlug}
+                error={Boolean(errors.destination)}
+                shaking={Boolean(shaking.destination)}
               />
             </FieldLabel>
-          </div>
 
-          <p
-            className='para-xs'
-            style={{ color: 'var(--text-soft)', margin: 0 }}
-          >
-            Leave the slug blank and we&rsquo;ll generate one. Only verified
-            domains show up here,{' '}
-            <button
-              type='button'
-              onClick={() => {
-                // TODO: no domains screen exists yet.
-                toast('Domain management is not built yet')
-              }}
-              className='label-xs'
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                color: 'var(--text-strong)',
-                fontFamily: 'var(--font-sans)',
-              }}
+            <div
+              style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}
             >
-              manage domains
-            </button>
-            .
-          </p>
-        </div>
+              <FieldLabel label='Domain' width='170px'>
+                <Dropdown
+                  fullWidth
+                  align='left'
+                  trigger={
+                    // Inputfield as the trigger so the domain matches the
+                    // other two exactly rather than a second control that
+                    // only looks similar. onChange is a no-op: it's a
+                    // picker, and a controlled input whose value never
+                    // changes is read-only in practice.
+                    <Inputfield
+                      value={domain}
+                      onChange={() => {}}
+                      righticon={<ChevronIcon />}
+                    />
+                  }
+                >
+                  <DropdownMenu width='220px'>
+                    {domains.map((d) => (
+                      <DropdownOption
+                        key={d.hostname}
+                        selected={domain === d.hostname}
+                        onClick={() => setDomain(d.hostname)}
+                      >
+                        {d.hostname}
+                      </DropdownOption>
+                    ))}
+                  </DropdownMenu>
+                </Dropdown>
+              </FieldLabel>
+
+              <FieldLabel
+                label='Slug'
+                hint='(Optional)'
+                action={
+                  <Tooltip label='Generate slug'>
+                    <button
+                      type='button'
+                      onClick={regenerateSlug}
+                      aria-label='Generate slug'
+                      className='slug-regen'
+                      style={{
+                        display: 'flex',
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <SparkleIcon />
+                    </button>
+                  </Tooltip>
+                }
+              >
+                <Inputfield
+                  placeholder='swift-otter'
+                  value={slug}
+                  onChange={(e) => {
+                    setSlug(e.target.value)
+                    clearError('slug')
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreate()
+                  }}
+                  error={Boolean(errors.slug)}
+                  shaking={Boolean(shaking.slug)}
+                  swapping={swappingSlug}
+                />
+              </FieldLabel>
+            </div>
+
+            <p
+              className='para-xs'
+              style={{ color: 'var(--text-soft)', margin: 0 }}
+            >
+              Leave the slug blank and we&rsquo;ll generate one. Only verified
+              domains show up here,{' '}
+              <button
+                type='button'
+                onClick={() => {
+                  // TODO: no domains screen exists yet.
+                  toast('Domain management is not built yet')
+                }}
+                className='label-xs'
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  color: 'var(--text-strong)',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
+                manage domains
+              </button>
+              .
+            </p>
+          </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button
@@ -555,9 +597,11 @@ export default function CreatePage() {
           >
             {submitting
               ? 'Creating…'
-              : mode === 'qr'
-                ? 'Design QR code'
-                : 'Create link'}
+              : mode === 'link'
+                ? 'Create link'
+                : step === 'details'
+                  ? 'Design QR code'
+                  : 'Create QR code'}
           </button>
         </div>
       </div>

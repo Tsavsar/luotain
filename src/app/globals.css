@@ -1652,3 +1652,27 @@ html {
     transform: scale(1.14);
   }
 }
+
+/* --- QR designer --- */
+.qr-swatch,
+.qr-pattern {
+  transition:
+    box-shadow 0.15s ease,
+    transform 160ms ease-out;
+}
+.qr-swatch:active,
+.qr-pattern:active {
+  transform: scale(0.94);
+}
+.qr-pattern svg {
+  display: block;
+}
+.qr-upload {
+  transition: opacity 0.15s ease;
+}
+.qr-upload:hover {
+  opacity: 0.65;
+}
+.qr-preview-action:disabled {
+  opacity: 0.5;
+}

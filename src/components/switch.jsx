@@ -14,11 +14,19 @@ export default function Switch({
   label,
   disabled,
   tone = 'success',
+  // 'sm' matches the 29x16 toggle in the QR designer, which sits in a
+  // dense settings row rather than as a standalone control.
+  size = 'md',
+  // Keeps `label` for assistive tech but renders no visible text — for
+  // rows where a nearby heading is already the visible label and
+  // repeating it would just be noise on screen.
+  hideLabel = false,
 }) {
-  const WIDTH = 34
-  const HEIGHT = 20
-  const KNOB = 14
-  const PAD = 3
+  const sm = size === 'sm'
+  const WIDTH = sm ? 29 : 34
+  const HEIGHT = sm ? 16 : 20
+  const KNOB = sm ? 12 : 14
+  const PAD = 2
 
   const onColor =
     tone === 'primary' ? 'var(--primary-base)' : 'var(--success-base)'
@@ -76,7 +84,7 @@ export default function Switch({
         />
       </span>
 
-      {label ? (
+      {label && !hideLabel ? (
         <span
           className='para-xs'
           style={{ color: 'var(--text-sub)', whiteSpace: 'nowrap' }}
