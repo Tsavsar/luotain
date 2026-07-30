@@ -132,29 +132,56 @@ function UploadIcon() {
 // Deterministic module grid. Seeded so a given set of choices always
 // renders the same preview — a pattern that reshuffled on every keystroke
 // would look like the code itself was changing.
-function useModules(seed, size) {
+function useModules(seed, size, hasLogo) {
   return useMemo(() => {
     let s = seed
     const rnd = () => {
       s = (s * 1103515245 + 12345) & 0x7fffffff
       return s / 0x7fffffff
     }
+
     const cells = []
+    const timing = []
+    const mid = size / 2
+    // Only cleared when branding is actually on. Reserving the centre
+    // regardless left a blank patch in the middle of an unbranded code,
+    // which was a good part of why the spacing looked off.
+    const logoHalf = hasLogo ? 3.5 : 0
+
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
         const inFinder =
           (x < 7 && y < 7) || (x > size - 8 && y < 7) || (x < 7 && y > size - 8)
-        // Cleared for the logo when branding is on — real encoders raise
-        // the error-correction level to survive this, which is why a
-        // centre cut-out is viable at all.
-        const mid = size / 2
-        const inLogo = Math.abs(x - mid) < 3.5 && Math.abs(y - mid) < 3.5
-        if (inFinder || inLogo) continue
+        // The separator ring: real codes keep one blank module around
+        // each finder, and without it the finders bled straight into the
+        // surrounding noise.
+        const inSeparator =
+          (x < 8 && y < 8) || (x > size - 9 && y < 8) || (x < 8 && y > size - 9)
+        const inLogo =
+          hasLogo &&
+          Math.abs(x - mid) < logoHalf &&
+          Math.abs(y - mid) < logoHalf
+
+        // Timing patterns: the alternating row and column that run
+        // between the finders. Fixed, not random — they're the strongest
+        // visual cue that this is a QR rather than static.
+        const isTimingRow = y === 6 && x >= 8 && x <= size - 9
+        const isTimingCol = x === 6 && y >= 8 && y <= size - 9
+        if (isTimingRow || isTimingCol) {
+          if ((isTimingRow ? x : y) % 2 === 0) timing.push([x, y])
+          continue
+        }
+
+        if (inFinder || inSeparator || inLogo) continue
         if (rnd() > 0.5) cells.push([x, y])
       }
     }
-    return cells
-  }, [seed, size])
+
+    // Alignment block, bottom right. One more piece of real QR anatomy.
+    const ax = size - 9
+    const ay = size - 9
+    return { cells, timing, alignment: [ax, ay] }
+  }, [seed, size, hasLogo])
 }
 
 function Module({ x, y, pattern, color }) {
@@ -228,7 +255,7 @@ function Finder({ x, y, pattern, color }) {
         width={5}
         height={5}
         rx={Math.max(0, rx - 0.7)}
-        fill='#f7f7f7'
+        fill='#ffffff'
       />
       <rect
         x={x + 2}
@@ -244,8 +271,18 @@ function Finder({ x, y, pattern, color }) {
 
 function QrPreview({ color, markerColor, pattern, branding }) {
   const SIZE = 25
-  const modules = useModules(1337, SIZE)
+  // The quiet zone. A real QR needs clear space around it to be
+  // scannable at all, and its absence was the main reason this looked
+  // cramped — modules ran right to the edge of the render. Four modules
+  // is the spec's own minimum.
+  const QUIET = 4
+  const TOTAL = SIZE + QUIET * 2
+  const { cells, timing, alignment } = useModules(1337, SIZE, branding)
 
+  // The code is drawn on its own white card rather than straight onto the
+  // panel's grey. That's not decoration either: a QR needs a light quiet
+  // zone, and grey right up to the modules is what a scanner struggles
+  // with.
   return (
     <div
       style={{
@@ -259,24 +296,77 @@ function QrPreview({ color, markerColor, pattern, branding }) {
         overflow: 'hidden',
       }}
     >
-      <div style={{ position: 'relative', width: '132px', height: '132px' }}>
+      <div
+        style={{
+          position: 'relative',
+          width: '148px',
+          height: '148px',
+          borderRadius: '10px',
+          background: '#ffffff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
         <svg
-          viewBox={`0 0 ${SIZE} ${SIZE}`}
-          width='132'
-          height='132'
+          viewBox={`${-QUIET} ${-QUIET} ${TOTAL} ${TOTAL}`}
+          width='148'
+          height='148'
           role='img'
           aria-label='QR code preview'
           style={{ display: 'block' }}
         >
-          {modules.map(([x, y]) => (
+          {cells.map(([x, y]) => (
             <Module
-              key={`${x}-${y}`}
+              key={`m-${x}-${y}`}
               x={x}
               y={y}
               pattern={pattern}
               color={color}
             />
           ))}
+          {timing.map(([x, y]) => (
+            <Module
+              key={`t-${x}-${y}`}
+              x={x}
+              y={y}
+              pattern={pattern}
+              color={color}
+            />
+          ))}
+          {/* Alignment block — 5x5 with a single centre module, same
+              anatomy as the finders but smaller and unringed. */}
+          <g>
+            <rect
+              x={alignment[0]}
+              y={alignment[1]}
+              width={5}
+              height={5}
+              rx={
+                pattern === 'dots' || pattern === 'classy'
+                  ? 1.6
+                  : pattern === 'rounded'
+                    ? 1.1
+                    : 0
+              }
+              fill={markerColor}
+            />
+            <rect
+              x={alignment[0] + 1}
+              y={alignment[1] + 1}
+              width={3}
+              height={3}
+              fill='#ffffff'
+            />
+            <rect
+              x={alignment[0] + 2}
+              y={alignment[1] + 2}
+              width={1}
+              height={1}
+              fill={markerColor}
+            />
+          </g>
           <Finder x={0} y={0} pattern={pattern} color={markerColor} />
           <Finder x={SIZE - 7} y={0} pattern={pattern} color={markerColor} />
           <Finder x={0} y={SIZE - 7} pattern={pattern} color={markerColor} />

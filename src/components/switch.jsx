@@ -29,12 +29,21 @@ export default function Switch({
   const sm = size === 'sm'
   const WIDTH = sm ? 29 : 34
   const HEIGHT = sm ? 16 : 20
-  // Every measurement derives from the height, taken from the design's
-  // own percentages: the knob is 80% of the track and the padding is
-  // 10% either side. One number to change if the size ever moves.
-  const PAD = HEIGHT * 0.1
-  const KNOB = HEIGHT * 0.8
-  const TRAVEL = WIDTH - KNOB - PAD * 2
+  const BORDER = 1
+
+  // Everything derives from the track's INNER height, not its outer one.
+  // That distinction is the whole fix: the track has a 1px border with
+  // box-sizing border-box, and an absolutely positioned child is placed
+  // against the padding box — inside the border. Sizing the knob off the
+  // outer height meant border + pad + knob + pad + border came to 18px
+  // inside a 16px track, so the knob overflowed the bottom edge and sat
+  // visibly low rather than centred.
+  const INNER = HEIGHT - BORDER * 2
+  // The design's own percentages, now applied to the right number: knob
+  // at 80% of the track, padding at 10% either side.
+  const PAD = INNER * 0.1
+  const KNOB = INNER * 0.8
+  const TRAVEL = WIDTH - BORDER * 2 - KNOB - PAD * 2
   // 37.5% of the knob, matching the design's inset-31.25% on each side.
   const DOT = KNOB * 0.375
 
