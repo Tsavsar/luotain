@@ -1722,3 +1722,11 @@ html {
 .qr-lightbox-download:active {
   transform: scale(0.96);
 }
+
+/* QR field action on the link detail page. */
+.qr-field-action {
+  transition: opacity 0.15s ease;
+}
+.qr-field-action:hover {
+  opacity: 0.65;
+}

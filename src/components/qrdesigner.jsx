@@ -513,7 +513,7 @@ function QrPreview({ color, markerColor, pattern, branding, onExpand }) {
 // whole subtree sixty times a second for a value nothing else reads.
 // Lerping toward the target rather than snapping to it is what gives it
 // weight — jumping to the exact cursor angle feels twitchy and cheap.
-function QrLightbox({ open, onClose, shortUrl, ...qr }) {
+export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
   const [canPortal, setCanPortal] = useState(false)
   const [entered, setEntered] = useState(false)
   const cardRef = useRef(null)

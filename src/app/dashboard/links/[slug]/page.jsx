@@ -28,7 +28,30 @@ import {
 import { shortUrlFor } from '@/lib/shortlink'
 import LogoMark from '@/components/logomark'
 import Alert, { AlertAction, AlertInfoIcon } from '@/components/alert'
+import Modal from '@/components/modal'
+import QrDesigner, { QrLightbox } from '@/components/qrdesigner'
 import { RECOVERY_WINDOW_DAYS, daysSinceDeleted } from '@/lib/linkrecovery'
+
+function EyeIcon() {
+  return (
+    <svg
+      width='18'
+      height='18'
+      viewBox='0 0 18 18'
+      fill='none'
+      aria-hidden='true'
+    >
+      <path
+        d='M1.8 9s2.7-4.5 7.2-4.5S16.2 9 16.2 9s-2.7 4.5-7.2 4.5S1.8 9 1.8 9Z'
+        stroke='currentColor'
+        strokeWidth='1.4'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <circle cx='9' cy='9' r='1.9' stroke='currentColor' strokeWidth='1.4' />
+    </svg>
+  )
+}
 
 // ─── One labelled field in the details block ───
 // Node 73:6014 / 73:6017 / 73:6006 are all the same shape: a soft
@@ -143,6 +166,18 @@ export default function LinkDetailPage() {
   const [activeFilters, setActiveFilters] = useState([])
   const [collapsingAlert, setCollapsingAlert] = useState(false)
   const [recovering, setRecovering] = useState(false)
+  // QR state. `hasQr` starts from the link's own record, so the field
+  // shows the right thing on load rather than always starting at
+  // "Generate".
+  const [designingQr, setDesigningQr] = useState(false)
+  const [viewingQr, setViewingQr] = useState(false)
+  const [savingQr, setSavingQr] = useState(false)
+  const [qr, setQr] = useState({
+    color: '#000000',
+    markerColor: '#000000',
+    pattern: 'square',
+    branding: true,
+  })
 
   // Which link this page is about. Matched on slug rather than id for
   // the reason spelled out in slugOf(): mock ids contain a slash and
@@ -289,6 +324,9 @@ export default function LinkDetailPage() {
   // A deleted link still renders its whole page — just archived. The
   // route serves it deliberately (see the comment there); anything
   // past the recovery window 404s instead and lands in loadError.
+  const [qrCreatedLocally, setQrCreatedLocally] = useState(false)
+  const hasQr = Boolean(link?.hasQrCode) || qrCreatedLocally
+
   const isDeleted = Boolean(link?.deletedAt)
   const deletedDaysAgo = link?.deletedAt ? daysSinceDeleted(link.deletedAt) : 0
   const daysLeft = Math.max(0, RECOVERY_WINDOW_DAYS - deletedDaysAgo)
@@ -351,6 +389,41 @@ export default function LinkDetailPage() {
       console.error('[LinkDetailPage]', err)
       toast.error(`Couldn't recover ${link.shortUrl}`)
       setRecovering(false)
+    }
+  }
+
+  async function handleCreateQr() {
+    if (!link || savingQr) return
+    setSavingQr(true)
+
+    if (useMockData) {
+      // Nothing to write to — mock links aren't database rows.
+      setQrCreatedLocally(true)
+      setDesigningQr(false)
+      setSavingQr(false)
+      toast(`QR code created for ${link.shortUrl} (mock, not saved)`)
+      return
+    }
+
+    try {
+      // TODO: POST /api/qrcodes doesn't exist yet. The QrCode model is
+      // there and now carries a domainId, but nothing writes to it, so
+      // this fails honestly rather than flipping the field to "View QR
+      // code" for something that was never saved.
+      const res = await fetch('/api/qrcodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkId: link.id, ...qr }),
+      })
+      if (!res.ok) throw new Error(`qr create failed: ${res.status}`)
+      setQrCreatedLocally(true)
+      setDesigningQr(false)
+      toast('QR code created')
+    } catch (err) {
+      console.error('[LinkDetailPage]', err)
+      toast.error('Creating QR codes needs its endpoint first')
+    } finally {
+      setSavingQr(false)
     }
   }
 
@@ -649,32 +722,54 @@ export default function LinkDetailPage() {
                     </DetailField>
 
                     <DetailField label='QR Code' width='150px'>
-                      <button
-                        onClick={() => {
-                          // TODO: wire up QR generation — the QrCode model
-                          // exists in the schema, but nothing writes to it yet.
-                          toast('QR code generation is coming soon')
-                        }}
-                        className='para-sm'
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          padding: 0,
-                          margin: 0,
-                          cursor: 'pointer',
-                          color: 'var(--text-strong)',
-                          textAlign: 'left',
-                          // Dotted underline per Figma (node 79:6150) — reads
-                          // as an action rather than a plain value.
-                          textDecoration: 'underline',
-                          textDecorationStyle: 'dotted',
-                          textDecorationColor: 'var(--text-soft)',
-                          textUnderlineOffset: '3px',
-                          fontFamily: 'var(--font-sans)',
-                        }}
-                      >
-                        Generate QR code
-                      </button>
+                      {/* Two states. Before: "Generate QR code" with the dotted
+                    underline (node 79:6150). After: "View QR code" with
+                    an eye (node 87:1274) — plain, no underline, because
+                    it's no longer offering to make something. */}
+                      {hasQr ? (
+                        <button
+                          onClick={() => setViewingQr(true)}
+                          className='para-sm qr-field-action'
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            margin: 0,
+                            cursor: 'pointer',
+                            color: 'var(--text-strong)',
+                            fontFamily: 'var(--font-sans)',
+                          }}
+                        >
+                          View QR code
+                          <EyeIcon />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setDesigningQr(true)}
+                          className='para-sm'
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            margin: 0,
+                            cursor: 'pointer',
+                            color: 'var(--text-strong)',
+                            textAlign: 'left',
+                            // Dotted underline per Figma (node 79:6150) — reads
+                            // as an action rather than a plain value.
+                            textDecoration: 'underline',
+                            textDecorationStyle: 'dotted',
+                            textDecorationColor: 'var(--text-soft)',
+                            textUnderlineOffset: '3px',
+                            fontFamily: 'var(--font-sans)',
+                          }}
+                        >
+                          Generate QR code
+                        </button>
+                      )}
                     </DetailField>
                   </div>
                 </div>
@@ -792,6 +887,97 @@ export default function LinkDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Designing a QR from here skips the destination, domain and slug
+          entirely — the link already has all three, so asking again would
+          be asking for something we're holding. Straight to the styling. */}
+      <Modal
+        open={designingQr}
+        onClose={() => setDesigningQr(false)}
+        maxWidth='480px'
+        labelledBy='qr-designer-title'
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <p
+              id='qr-designer-title'
+              className='label-md'
+              style={{ color: 'var(--text-strong)', margin: 0 }}
+            >
+              Design your QR code
+            </p>
+            <p
+              className='para-sm'
+              style={{ color: 'var(--text-sub)', margin: 0 }}
+            >
+              For {link?.shortUrl}
+            </p>
+          </div>
+
+          <QrDesigner
+            color={qr.color}
+            markerColor={qr.markerColor}
+            pattern={qr.pattern}
+            branding={qr.branding}
+            shortUrl={link?.shortUrl}
+            onChange={setQr}
+          />
+
+          <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+            <button
+              type='button'
+              onClick={() => setDesigningQr(false)}
+              className='create-secondary'
+              style={{
+                flex: '1 0 0',
+                padding: '10px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--bg-surface)',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '14px',
+                letterSpacing: '0.28px',
+                color: 'var(--bg-weak)',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type='button'
+              onClick={handleCreateQr}
+              disabled={savingQr}
+              className='create-submit'
+              style={{
+                flex: '1 0 0',
+                padding: '10px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--text-strong)',
+                border: 'none',
+                cursor: savingQr ? 'default' : 'pointer',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '14px',
+                letterSpacing: '0.28px',
+                color: 'var(--bg-default)',
+              }}
+            >
+              {savingQr ? 'Creating…' : 'Create code'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Viewing an existing code goes straight to the lightbox — no
+          designer, since there's nothing to decide. */}
+      <QrLightbox
+        open={viewingQr}
+        onClose={() => setViewingQr(false)}
+        shortUrl={link?.shortUrl}
+        color={qr.color}
+        markerColor={qr.markerColor}
+        pattern={qr.pattern}
+        branding={qr.branding}
+      />
 
       <DeleteConfirmModal
         open={pendingDelete.link !== null}

@@ -36,6 +36,9 @@ export default function Modal({
   // — pass the trigger element's center. Optional: with nothing
   // passed, this behaves exactly as before (plain center scale).
   origin,
+  // Confirmations are 360px; a panel with controls in it needs more.
+  // Optional so every existing modal is untouched.
+  maxWidth = '360px',
 }) {
   const [rendered, setRendered] = useState(open)
   const [entered, setEntered] = useState(false)
@@ -182,7 +185,7 @@ export default function Modal({
           position: 'relative',
           zIndex: 1,
           width: '100%',
-          maxWidth: '360px',
+          maxWidth,
           background: 'var(--bg-default)',
           border: '1px solid var(--stroke-soft)',
           borderRadius: '24px',
