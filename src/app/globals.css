@@ -1695,7 +1695,7 @@ html {
     background 0.15s ease;
 }
 .create-secondary:hover {
-  background: var(--bg-surface) !important;
+  background: var(--bg-subtle) !important;
 }
 .create-secondary:active {
   transform: scale(0.97);

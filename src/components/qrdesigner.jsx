@@ -294,15 +294,16 @@ function QrPreview({ color, markerColor, pattern, branding }) {
   // scannable at all, and its absence was the main reason this looked
   // cramped — modules ran right to the edge of the render. Four modules
   // is the spec's own minimum.
-  // Quiet zone trimmed from 4 modules to 2. The white card it sits on
-  // already reads as clear space against the grey panel, so 4 was
-  // effectively padding inside padding — and it was costing module size
-  // for nothing.
-  const QUIET = 2
+  // Expressed as card size plus the white margin inside it, rather than
+  // as a quiet zone in modules — those are the two things worth tuning,
+  // and deriving the module count from them keeps the code filling the
+  // card instead of the card sizing itself around the code.
+  const CARD = 160
+  const MARGIN = 4 // px of white between the code and the card edge
+  const codePx = CARD - MARGIN * 2
+  const unit = codePx / SIZE // px per module
+  const QUIET = MARGIN / unit // the same margin, in module units
   const TOTAL = SIZE + QUIET * 2
-  // The card fills the 180px preview box with 2px to spare, rather than
-  // floating at 148px with a band of grey above and below it.
-  const CARD = 176
   const RENDER = CARD
   const { cells, timing, alignment } = useModules(1337, SIZE, branding)
 
@@ -310,7 +311,6 @@ function QrPreview({ color, markerColor, pattern, branding }) {
   // alignment with the modules if any of these change.
   const LOGO_SPAN = 7 // same module footprint as a finder
   const LOGO_PADDING = 6 // px of clear space inside the box
-  const unit = RENDER / TOTAL // px per module
   const logoBoxPx = LOGO_SPAN * unit
   // Distance from the svg's own left edge, which starts at -QUIET.
   const logoOffsetPx = (SIZE - LOGO_SPAN + QUIET) * unit
@@ -347,7 +347,7 @@ function QrPreview({ color, markerColor, pattern, branding }) {
           position: 'relative',
           width: `${CARD}px`,
           height: `${CARD}px`,
-          borderRadius: '10px',
+          borderRadius: '8px',
           background: '#ffffff',
           display: 'flex',
           alignItems: 'center',
@@ -501,16 +501,15 @@ function expandHex(digits) {
 }
 
 function ColorRow({ label, value, onChange }) {
-  // Raw text while the field is focused. Null means "not editing", so the
-  // input shows the committed value. Without this, typing would fight the
-  // parent: every keystroke would be normalised and written back, and a
-  // half-typed code like "fa7" would either be rejected or expanded out
-  // from under the cursor.
+  // Raw text while focused. Null means "not editing", so the field shows
+  // the committed value. Without it, every keystroke would be normalised
+  // and written back and a half-typed code would be reformatted out from
+  // under the cursor.
   const [draft, setDraft] = useState(null)
 
   // The value as-is, NOT looked up in the palette. This used to be
   // QR_COLORS.find(...) || QR_COLORS[0], which meant any hex outside the
-  // preset list silently became black — custom colours couldn't work at
+  // nine presets silently became black — custom colours couldn't work at
   // all, whatever the input did.
   const hex = value || '#000000'
   const preset = QR_COLORS.find(
@@ -520,9 +519,11 @@ function ColorRow({ label, value, onChange }) {
   const digits = draft !== null ? draft : hex.replace('#', '').toUpperCase()
 
   function handleInput(e) {
-    // Anything that isn't a hex digit is dropped rather than rejected,
-    // which means a pasted "#FA7319" or "fa7319ff" lands correctly
-    // instead of erroring.
+    // The # is stripped along with everything else non-hex and then
+    // re-added on render, so it's always present without being a separate
+    // element. Keeps the design's single "#000000" string while making it
+    // impossible to delete the #. Also means a pasted "#FA7319" or
+    // "fa7319ff" lands correctly rather than erroring.
     const cleaned = e.target.value
       .replace(/[^0-9a-fA-F]/g, '')
       .slice(0, 6)
@@ -531,22 +532,19 @@ function ColorRow({ label, value, onChange }) {
 
     // Six digits only while typing. Committing three as well would mean
     // "fa7319" passes through a valid shorthand at three characters, so
-    // the code would flash #ffaa77 on the way to #fa7319 — a visible
-    // flicker for every full code anyone types. Shorthand still works,
-    // it just lands on blur or Enter instead.
+    // the code would flash #ffaa77 on the way — a visible flicker on
+    // every full code anyone types. Shorthand still works, on blur.
     if (cleaned.length === 6) {
       onChange(`#${cleaned.toLowerCase()}`)
     }
   }
 
   function handleBlur() {
-    // Shorthand resolves here rather than mid-typing.
     if (draft && draft.length === 3) {
       onChange(`#${expandHex(draft).toLowerCase()}`)
     }
-    // Dropping the draft snaps the field back to whatever is actually
-    // committed — so an abandoned half-typed code doesn't sit there
-    // looking like the current value.
+    // Dropping the draft snaps back to what's actually committed, so an
+    // abandoned half-typed code doesn't sit there looking current.
     setDraft(null)
   }
 
@@ -565,12 +563,16 @@ function ColorRow({ label, value, onChange }) {
       >
         {label}
       </p>
+      {/* The pill and all nine swatches are SIBLINGS of one
+          justify-between row, per node 150:1122. Nesting the swatches in
+          their own flex container with a gap is what pushed the last one
+          onto a second line: pill + 9x30px + fixed gaps exceeds 440px,
+          whereas justify-between distributes whatever space is left. */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '8px',
           width: '100%',
         }}
       >
@@ -582,7 +584,7 @@ function ColorRow({ label, value, onChange }) {
             flexShrink: 0,
             background: 'var(--bg-surface)',
             borderRadius: '24px',
-            padding: '2px 12px 2px 2px',
+            padding: '2px 16px 2px 2px',
           }}
         >
           <span
@@ -591,22 +593,13 @@ function ColorRow({ label, value, onChange }) {
               width: '30px',
               height: '30px',
               flexShrink: 0,
-              borderRadius: 'var(--radius-full)',
+              borderRadius: '21px',
               background: hex,
               transition: 'background 0.15s ease',
             }}
           />
-          {/* The # is static rather than part of the input: it's always
-              required, so letting someone delete it only creates a state
-              where the field looks wrong and has to be corrected. */}
-          <span
-            className='label-xs'
-            style={{ color: 'var(--text-soft)', userSelect: 'none' }}
-          >
-            #
-          </span>
           <input
-            value={digits}
+            value={`#${digits}`}
             onChange={handleInput}
             onBlur={handleBlur}
             onFocus={(e) => e.target.select()}
@@ -618,12 +611,12 @@ function ColorRow({ label, value, onChange }) {
             spellCheck='false'
             autoCapitalize='none'
             autoCorrect='off'
-            maxLength={6}
+            maxLength={7}
             className='label-xs hex-input'
             style={{
-              // Fixed width for six characters — sized to the content and
-              // the field would resize on every keystroke.
-              width: '58px',
+              // Fixed width for "#000000" — sized to content and the pill
+              // would resize on every keystroke.
+              width: '62px',
               border: 'none',
               outline: 'none',
               background: 'transparent',
@@ -631,32 +624,21 @@ function ColorRow({ label, value, onChange }) {
               margin: 0,
               color: 'var(--text-strong)',
               fontFamily: 'var(--font-sans)',
-              letterSpacing: '0.6px',
             }}
           />
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            flexWrap: 'wrap',
-            justifyContent: 'flex-end',
-          }}
-        >
-          {QR_COLORS.map((c) => (
-            <Swatch
-              key={c.id}
-              hex={c.hex}
-              label={`${label}: ${c.id}`}
-              // Nothing is selected while a custom hex is in play, which
-              // is the honest state — none of the presets is what's set.
-              selected={preset?.id === c.id}
-              onSelect={() => onChange(c.hex)}
-            />
-          ))}
-        </div>
+        {QR_COLORS.map((c) => (
+          <Swatch
+            key={c.id}
+            hex={c.hex}
+            label={`${label}: ${c.id}`}
+            // Nothing selected while a custom hex is set, which is the
+            // honest state — none of the presets is what's applied.
+            selected={preset?.id === c.id}
+            onSelect={() => onChange(c.hex)}
+          />
+        ))}
       </div>
     </div>
   )

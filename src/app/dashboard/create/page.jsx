@@ -594,15 +594,15 @@ export default function CreatePage() {
                 justifyContent: 'center',
                 padding: '8px 20px',
                 borderRadius: 'var(--radius-full)',
-                background: 'var(--bg-default)',
-                border: '1px solid var(--stroke-soft)',
-                boxShadow: 'var(--shadow-xs)',
+                // bg-surface grey, no border, no shadow — node 149:977.
+                background: 'var(--bg-surface)',
+                border: 'none',
                 cursor: 'pointer',
                 fontFamily: 'var(--font-sans)',
                 fontSize: '14px',
                 lineHeight: '20px',
                 letterSpacing: '0.28px',
-                color: 'var(--text-strong)',
+                color: 'var(--bg-weak)',
               }}
             >
               Back
