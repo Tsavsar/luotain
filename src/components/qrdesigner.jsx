@@ -109,6 +109,10 @@ function CopyIcon() {
   )
 }
 
+// The real asset. Its #5C5C5C is --text-sub in the token set, but this
+// uses currentColor instead so it follows the button's own colour — the
+// Upload button fades back when branding is off, and a fixed stroke
+// would stay full strength while the label beside it dimmed.
 function UploadIcon() {
   return (
     <svg
@@ -116,12 +120,27 @@ function UploadIcon() {
       height='18'
       viewBox='0 0 18 18'
       fill='none'
+      xmlns='http://www.w3.org/2000/svg'
       aria-hidden='true'
     >
       <path
-        d='M9 12.5V4M6 7 9 4l3 3M3.5 13.5h11'
+        d='M5.40039 6.3002L9.00039 2.7002L12.6004 6.3002'
         stroke='currentColor'
-        strokeWidth='1.4'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M9 10.8002V2.7002'
+        stroke='currentColor'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M15.3002 11.7002V12.6002C15.3002 14.0915 14.0915 15.3002 12.6002 15.3002H5.4002C3.9089 15.3002 2.7002 14.0915 2.7002 12.6002V11.7002'
+        stroke='currentColor'
+        strokeWidth='1.5'
         strokeLinecap='round'
         strokeLinejoin='round'
       />
@@ -142,11 +161,12 @@ function useModules(seed, size, hasLogo) {
 
     const cells = []
     const timing = []
-    const mid = size / 2
-    // Only cleared when branding is actually on. Reserving the centre
-    // regardless left a blank patch in the middle of an unbranded code,
-    // which was a good part of why the spacing looked off.
-    const logoHalf = hasLogo ? 3.5 : 0
+    // The logo sits in the bottom-right corner — the one corner a QR
+    // leaves empty, since the spec only puts finders in the other three.
+    // Same footprint as a finder, so it reads as the fourth one rather
+    // than as something dropped on top.
+    const LOGO_SPAN = 7
+    const logoFrom = size - LOGO_SPAN
 
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
@@ -157,10 +177,9 @@ function useModules(seed, size, hasLogo) {
         // surrounding noise.
         const inSeparator =
           (x < 8 && y < 8) || (x > size - 9 && y < 8) || (x < 8 && y > size - 9)
-        const inLogo =
-          hasLogo &&
-          Math.abs(x - mid) < logoHalf &&
-          Math.abs(y - mid) < logoHalf
+        // One module of clearance beyond the box itself, so modules
+        // don't sit flush against its edge.
+        const inLogo = hasLogo && x >= logoFrom - 1 && y >= logoFrom - 1
 
         // Timing patterns: the alternating row and column that run
         // between the finders. Fixed, not random — they're the strongest
@@ -277,7 +296,27 @@ function QrPreview({ color, markerColor, pattern, branding }) {
   // is the spec's own minimum.
   const QUIET = 4
   const TOTAL = SIZE + QUIET * 2
+  const RENDER = 148
   const { cells, timing, alignment } = useModules(1337, SIZE, branding)
+
+  // Logo box geometry, all derived from the grid so it can't drift out of
+  // alignment with the modules if any of these change.
+  const LOGO_SPAN = 7 // same module footprint as a finder
+  const LOGO_PADDING = 6 // px of clear space inside the box
+  const unit = RENDER / TOTAL // px per module
+  const logoBoxPx = LOGO_SPAN * unit
+  // Distance from the svg's own left edge, which starts at -QUIET.
+  const logoOffsetPx = (SIZE - LOGO_SPAN + QUIET) * unit
+  const logoIconPx = logoBoxPx - LOGO_PADDING * 2
+
+  // Matches the finder radius for the current pattern, so the box reads
+  // as part of the same family rather than a foreign shape.
+  const logoRadius =
+    pattern === 'dots' || pattern === 'classy'
+      ? 2.2 * unit
+      : pattern === 'rounded'
+        ? 1.6 * unit
+        : 0
 
   // The code is drawn on its own white card rather than straight onto the
   // panel's grey. That's not decoration either: a QR needs a light quiet
@@ -336,37 +375,41 @@ function QrPreview({ color, markerColor, pattern, branding }) {
             />
           ))}
           {/* Alignment block — 5x5 with a single centre module, same
-              anatomy as the finders but smaller and unringed. */}
-          <g>
-            <rect
-              x={alignment[0]}
-              y={alignment[1]}
-              width={5}
-              height={5}
-              rx={
-                pattern === 'dots' || pattern === 'classy'
-                  ? 1.6
-                  : pattern === 'rounded'
-                    ? 1.1
-                    : 0
-              }
-              fill={markerColor}
-            />
-            <rect
-              x={alignment[0] + 1}
-              y={alignment[1] + 1}
-              width={3}
-              height={3}
-              fill='#ffffff'
-            />
-            <rect
-              x={alignment[0] + 2}
-              y={alignment[1] + 2}
-              width={1}
-              height={1}
-              fill={markerColor}
-            />
-          </g>
+              anatomy as the finders but smaller and unringed. Hidden when
+              branding is on: it sits in the bottom-right region the logo
+              now occupies, and drawing both would just be a collision. */}
+          {!branding ? (
+            <g>
+              <rect
+                x={alignment[0]}
+                y={alignment[1]}
+                width={5}
+                height={5}
+                rx={
+                  pattern === 'dots' || pattern === 'classy'
+                    ? 1.6
+                    : pattern === 'rounded'
+                      ? 1.1
+                      : 0
+                }
+                fill={markerColor}
+              />
+              <rect
+                x={alignment[0] + 1}
+                y={alignment[1] + 1}
+                width={3}
+                height={3}
+                fill='#ffffff'
+              />
+              <rect
+                x={alignment[0] + 2}
+                y={alignment[1] + 2}
+                width={1}
+                height={1}
+                fill={markerColor}
+              />
+            </g>
+          ) : null}
           <Finder x={0} y={0} pattern={pattern} color={markerColor} />
           <Finder x={SIZE - 7} y={0} pattern={pattern} color={markerColor} />
           <Finder x={0} y={SIZE - 7} pattern={pattern} color={markerColor} />
@@ -376,19 +419,27 @@ function QrPreview({ color, markerColor, pattern, branding }) {
           <div
             style={{
               position: 'absolute',
-              inset: 0,
+              left: `${logoOffsetPx}px`,
+              top: `${logoOffsetPx}px`,
+              width: `${logoBoxPx}px`,
+              height: `${logoBoxPx}px`,
+              // White, not transparent: the box is clear space in the
+              // code, and the modules cleared behind it need something
+              // light there for the same reason the quiet zone does.
+              background: '#ffffff',
+              borderRadius: `${logoRadius}px`,
+              padding: `${LOGO_PADDING}px`,
+              boxSizing: 'border-box',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               pointerEvents: 'none',
             }}
           >
-            {/* Takes the marker colour rather than Luotain orange. A
-                third hue in the middle fights the other two, and the
-                centre is where error correction is already working
-                hardest to cover the cut-out — a coherent two-colour
-                code reads more reliably than three competing ones. */}
-            <LogoMark size={30} color={markerColor} />
+            {/* Marker colour rather than Luotain orange — a third hue
+                fights the other two, and sitting where a finder would,
+                matching them is what makes it read as belonging. */}
+            <LogoMark size={logoIconPx} color={markerColor} />
           </div>
         ) : null}
       </div>
