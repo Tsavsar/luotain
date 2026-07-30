@@ -310,6 +310,83 @@ function Finder({ x, y, pattern, color }) {
   )
 }
 
+// ─── useTilt ───
+// Shared by the small preview and the full lightbox, because two copies
+// of a rAF loop is two things to keep in step.
+//
+// Writes straight to the element's style rather than into state: at 60fps
+// a state update per frame would re-render the subtree sixty times a
+// second for a value nothing else reads. And it lerps toward the target
+// instead of snapping — jumping to the exact cursor angle feels twitchy;
+// trailing slightly is what reads as weight.
+function useTilt({
+  max,
+  ease = 0.12,
+  perspective = 700,
+  origin = 'element',
+  extra,
+}) {
+  const nodeRef = useRef(null)
+  const target = useRef({ rx: 0, ry: 0 })
+  // Held in a ref so changing the callback doesn't restart the loop.
+  const extraRef = useRef(extra)
+  extraRef.current = extra
+
+  useEffect(() => {
+    const reduced = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches
+    if (reduced) {
+      // A card pitching around under the cursor is exactly the motion
+      // this setting exists to switch off, so it renders flat.
+      if (nodeRef.current) nodeRef.current.style.transform = 'none'
+      extraRef.current?.(0, 0)
+      return
+    }
+
+    let rx = 0
+    let ry = 0
+    let id
+    function loop() {
+      rx += (target.current.rx - rx) * ease
+      ry += (target.current.ry - ry) * ease
+      if (nodeRef.current) {
+        nodeRef.current.style.transform = `perspective(${perspective}px) rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`
+      }
+      extraRef.current?.(rx, ry)
+      id = requestAnimationFrame(loop)
+    }
+    id = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(id)
+  }, [ease, perspective])
+
+  function onMove(e) {
+    if (origin === 'viewport') {
+      // Measured from the centre of the screen, so the tilt keeps
+      // responding while the cursor is out over the scrim.
+      const cx = window.innerWidth / 2
+      const cy = window.innerHeight / 2
+      target.current = {
+        rx: -((e.clientY - cy) / cy) * max,
+        ry: ((e.clientX - cx) / cx) * max,
+      }
+      return
+    }
+    // Element-relative: the tilt is proportional to where in this box the
+    // cursor is, which is what you want for something inline on a page.
+    const r = e.currentTarget.getBoundingClientRect()
+    const px = (e.clientX - r.left) / r.width - 0.5
+    const py = (e.clientY - r.top) / r.height - 0.5
+    target.current = { rx: -py * 2 * max, ry: px * 2 * max }
+  }
+
+  function onLeave() {
+    target.current = { rx: 0, ry: 0 }
+  }
+
+  return { nodeRef, onMove, onLeave }
+}
+
 // ─── QrCode ───
 // The renderer, extracted so the preview and the lightbox draw the same
 // code at different sizes rather than one duplicating the other.
@@ -472,10 +549,24 @@ function QrPreview({ color, markerColor, pattern, branding, onExpand }) {
   const BOX_PAD = 20 // clear space between the card and the holder edge
   const CARD = BOX - BOX_PAD * 2
 
+  // 9 degrees, against the lightbox's 18. Deliberately restrained: this
+  // is a control in a panel, not the hero, and the holder only leaves
+  // 20px of clearance — a bigger angle would push the card's corners
+  // into the edge. Element-relative, so the tilt tracks where in this box
+  // the cursor is rather than where it is on screen.
+  const { nodeRef, onMove, onLeave } = useTilt({
+    max: 9,
+    ease: 0.14,
+    perspective: 520,
+    origin: 'element',
+  })
+
   return (
     <button
       type='button'
       onClick={onExpand}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
       aria-label='Expand QR code'
       className='qr-preview-holder'
       style={{
@@ -492,15 +583,34 @@ function QrPreview({ color, markerColor, pattern, branding, onExpand }) {
         overflow: 'hidden',
       }}
     >
-      <QrCode
-        color={color}
-        markerColor={markerColor}
-        pattern={pattern}
-        branding={branding}
-        card={CARD}
-        margin={4}
-        radius={8}
-      />
+      <div
+        ref={nodeRef}
+        style={{
+          transformStyle: 'preserve-3d',
+          willChange: 'transform',
+          borderRadius: '8px',
+          // Same shadow trick as the lightbox but static — at this scale a
+          // shifting shadow is more fuss than it's worth, while some
+          // shadow is what stops the card looking painted on.
+          boxShadow: '0 8px 20px -6px rgba(0, 0, 0, 0.18)',
+        }}
+      >
+        {/* Lifted off the card's plane. This is the parallax: at 14px
+            closer to the viewer, the code sweeps further than the card's
+            own edges as it rotates. Smaller lift than the lightbox's 26px,
+            in proportion to the smaller card. */}
+        <div style={{ transform: 'translateZ(14px)', borderRadius: '8px' }}>
+          <QrCode
+            color={color}
+            markerColor={markerColor}
+            pattern={pattern}
+            branding={branding}
+            card={CARD}
+            margin={4}
+            radius={8}
+          />
+        </div>
+      </div>
     </button>
   )
 }
@@ -516,10 +626,8 @@ function QrPreview({ color, markerColor, pattern, branding, onExpand }) {
 export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
   const [canPortal, setCanPortal] = useState(false)
   const [entered, setEntered] = useState(false)
-  const cardRef = useRef(null)
   const glossRef = useRef(null)
   const shadowRef = useRef(null)
-  const target = useRef({ rx: 0, ry: 0 })
 
   useEffect(() => setCanPortal(true), [])
 
@@ -552,80 +660,40 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  // The tilt loop.
-  useEffect(() => {
-    if (!open) return
-    const reduced = window.matchMedia(
-      '(prefers-reduced-motion: reduce)'
-    ).matches
-    if (reduced) {
-      // No tilt at all. A card that pitches around under the cursor is
-      // exactly the kind of motion this setting exists to switch off.
-      if (cardRef.current) cardRef.current.style.transform = 'none'
-      return
-    }
-
-    let rx = 0
-    let ry = 0
-    let id
-
-    function loop() {
-      // 0.12 rather than 0.09. With a bigger angle the old easing felt
-      // sluggish — the card was still catching up after the cursor had
-      // stopped. Still short of 1, so it trails rather than being welded
-      // to the pointer.
-      rx += (target.current.rx - rx) * 0.12
-      ry += (target.current.ry - ry) * 0.12
-
-      if (cardRef.current) {
-        // Shorter perspective (700 vs 1100) exaggerates the foreshortening
-        // — the far edge shrinks harder, which is most of what makes the
-        // rotation read as depth rather than a skew.
-        cardRef.current.style.transform = `perspective(700px) rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`
-      }
+  // Same hook the preview uses, at nearly double the angle and measured
+  // from the viewport rather than the element — so the tilt keeps
+  // responding while the cursor is out over the scrim.
+  const {
+    nodeRef: cardRef,
+    onMove,
+    onLeave,
+  } = useTilt({
+    max: 18,
+    ease: 0.12,
+    perspective: 700,
+    origin: 'viewport',
+    extra: (rx, ry) => {
       if (glossRef.current) {
-        // Slides opposite to the tilt, and further than before. This is
-        // what sells it as a surface catching light rather than an image
-        // being rotated.
-        // No translateZ here any more — the clipper above owns the depth,
-        // and this only slides within it.
+        // Slides opposite to the tilt, which is what sells it as a
+        // surface catching light rather than an image being rotated.
         glossRef.current.style.transform = `translate3d(${(-ry * 6).toFixed(2)}%, ${(rx * 6).toFixed(2)}%, 0)`
       }
       if (shadowRef.current) {
-        // The shadow leans away from the tilt, so the light stays in one
-        // place instead of the card appearing lit from wherever it
-        // happens to be facing. Translated rather than re-drawn: animating
-        // box-shadow itself repaints every frame, a transform composites.
+        // Leans away from the tilt so the light stays in one place
+        // instead of the card looking lit from wherever it faces.
+        // Translated rather than re-drawn: animating box-shadow repaints
+        // every frame, a transform composites.
         shadowRef.current.style.transform = `translate3d(${(ry * 1.6).toFixed(2)}px, ${(-rx * 1.6).toFixed(2)}px, 0)`
       }
-      id = requestAnimationFrame(loop)
-    }
-    id = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(id)
-  }, [open])
-
-  function handleMove(e) {
-    // 18 degrees. 11 was tasteful and barely noticeable; this is meant to
-    // be felt.
-    const MAX = 18 // degrees
-    const cx = window.innerWidth / 2
-    const cy = window.innerHeight / 2
-    // Measured from the centre of the viewport rather than the card, so
-    // the tilt keeps responding when the cursor is out over the scrim.
-    target.current = {
-      rx: -((e.clientY - cy) / cy) * MAX,
-      ry: ((e.clientX - cx) / cx) * MAX,
-    }
-  }
+    },
+  })
 
   if (!open || !canPortal) return null
 
   const content = (
     <div
-      onMouseMove={handleMove}
-      onMouseLeave={() => {
-        target.current = { rx: 0, ry: 0 }
-      }}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
       style={{
         position: 'fixed',
         inset: 0,
