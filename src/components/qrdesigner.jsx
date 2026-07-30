@@ -289,7 +289,16 @@ function Finder({ x, y, pattern, color }) {
 }
 
 function QrPreview({ color, markerColor, pattern, branding }) {
-  const SIZE = 25
+  // 33 modules, version 4. A short link is only ~20 characters, which
+  // fits version 2 (25) at normal error correction — but punching a logo
+  // out of the middle means raising correction to H to survive the loss,
+  // and that pushes the version up. So the denser grid isn't cosmetic,
+  // it's what a code with a logo in it actually looks like.
+  //
+  // It reads better too: the finder is always 7 modules, so at 33 it's
+  // 21% of the width rather than 28%, which is the proportion that makes
+  // a real code look like one.
+  const SIZE = 33
   // The quiet zone. A real QR needs clear space around it to be
   // scannable at all, and its absence was the main reason this looked
   // cramped — modules ran right to the edge of the render. Four modules
@@ -298,7 +307,12 @@ function QrPreview({ color, markerColor, pattern, branding }) {
   // as a quiet zone in modules — those are the two things worth tuning,
   // and deriving the module count from them keeps the code filling the
   // card instead of the card sizing itself around the code.
-  const CARD = 160
+  // Derived from the grey holder rather than typed in, so the breathing
+  // room around the card is the thing being set — which is what actually
+  // matters visually, and it stays correct if the holder height changes.
+  const BOX = 180 // the grey preview area's height
+  const BOX_PAD = 20 // clear space between the card and the holder edge
+  const CARD = BOX - BOX_PAD * 2
   const MARGIN = 4 // px of white between the code and the card edge
   const codePx = CARD - MARGIN * 2
   const unit = codePx / SIZE // px per module
@@ -310,7 +324,10 @@ function QrPreview({ color, markerColor, pattern, branding }) {
   // Logo box geometry, all derived from the grid so it can't drift out of
   // alignment with the modules if any of these change.
   const LOGO_SPAN = 7 // same module footprint as a finder
-  const LOGO_PADDING = 6 // px of clear space inside the box
+  // 5px, not 6. At 33 modules the box is 32px rather than 43px, so the
+  // same 6px was taking a noticeably bigger bite out of it and the mark
+  // came out cramped.
+  const LOGO_PADDING = 5
   const logoBoxPx = LOGO_SPAN * unit
   // Distance from the svg's own left edge, which starts at -QUIET.
   const logoOffsetPx = (SIZE - LOGO_SPAN + QUIET) * unit
@@ -333,7 +350,7 @@ function QrPreview({ color, markerColor, pattern, branding }) {
     <div
       style={{
         width: '100%',
-        height: '180px',
+        height: `${BOX}px`,
         borderRadius: '12px',
         background: 'var(--bg-surface)',
         display: 'flex',
