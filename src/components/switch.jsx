@@ -1,9 +1,14 @@
 'use client'
 
 // ─── Switch ───
-// A real toggle rather than a button that reports state in its label.
-// Built as its own component because the theme control in the dashboard
-// layout is currently a button too and wants exactly this.
+// Node 455:1046. A real toggle rather than a button that reports its
+// state in its own label.
+//
+// The detailing matters at this size and isn't decoration: the track
+// border and the inset top highlight give the track depth so the knob
+// reads as sitting IN it rather than on top, and the small dot inside
+// the knob is what makes the on state legible at 16px tall, where the
+// track colour alone is a sliver.
 //
 // A real <button> with role='switch' and aria-checked, so it's
 // keyboard-operable and announced as a toggle with an on/off state
@@ -14,22 +19,33 @@ export default function Switch({
   label,
   disabled,
   tone = 'success',
-  // 'sm' matches the 29x16 toggle in the QR designer, which sits in a
-  // dense settings row rather than as a standalone control.
+  // 'sm' is the 29x16 from the design, for dense settings rows. 'md' is
+  // the same proportions scaled up for standalone use.
   size = 'md',
   // Keeps `label` for assistive tech but renders no visible text — for
-  // rows where a nearby heading is already the visible label and
-  // repeating it would just be noise on screen.
+  // rows where a nearby heading is already the visible label.
   hideLabel = false,
 }) {
   const sm = size === 'sm'
   const WIDTH = sm ? 29 : 34
   const HEIGHT = sm ? 16 : 20
-  const KNOB = sm ? 12 : 14
-  const PAD = 2
+  // Every measurement derives from the height, taken from the design's
+  // own percentages: the knob is 80% of the track and the padding is
+  // 10% either side. One number to change if the size ever moves.
+  const PAD = HEIGHT * 0.1
+  const KNOB = HEIGHT * 0.8
+  const TRAVEL = WIDTH - KNOB - PAD * 2
+  // 37.5% of the knob, matching the design's inset-31.25% on each side.
+  const DOT = KNOB * 0.375
 
-  const onColor =
+  const activeColor =
     tone === 'primary' ? 'var(--primary-base)' : 'var(--success-base)'
+  const activeBorder =
+    tone === 'primary' ? 'var(--primary-dark)' : 'var(--success-dark)'
+  const activeGlow =
+    tone === 'primary'
+      ? '0px 0px 0px 1px rgba(250, 115, 25, 0.04), 0px 1px 3px 0px rgba(250, 115, 25, 0.2)'
+      : '0px 0px 0px 1px rgba(31, 193, 107, 0.04), 0px 1px 3px 0px rgba(31, 193, 107, 0.2)'
 
   return (
     <button
@@ -59,10 +75,27 @@ export default function Switch({
           width: `${WIDTH}px`,
           height: `${HEIGHT}px`,
           borderRadius: 'var(--radius-full)',
-          background: checked ? onColor : 'var(--bg-subtle)',
-          transition: 'background 0.2s ease',
+          background: checked ? activeColor : 'var(--bg-subtle)',
+          border: `1px solid ${checked ? activeBorder : 'var(--stroke-soft)'}`,
+          boxShadow: checked ? activeGlow : 'none',
+          boxSizing: 'border-box',
+          transition:
+            'background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
         }}
       >
+        {/* Inset highlight along the top edge. Painted as its own layer
+            rather than a second box-shadow on the track, so it doesn't
+            have to be re-declared alongside the on-state glow. */}
+        <span
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 'inherit',
+            boxShadow: 'inset 1px 3px 2px 0px rgba(255, 255, 255, 0.12)',
+            pointerEvents: 'none',
+          }}
+        />
+
         <span
           style={{
             position: 'absolute',
@@ -71,17 +104,30 @@ export default function Switch({
             width: `${KNOB}px`,
             height: `${KNOB}px`,
             borderRadius: 'var(--radius-full)',
-            background: 'white',
-            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.15)',
+            background: '#ffffff',
+            border: '0.75px solid var(--bg-layer)',
+            boxShadow: '0px 10px 20px 3px rgba(0, 0, 0, 0.04)',
+            boxSizing: 'border-box',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             // Moved with transform rather than by animating `left`:
             // transform is composited, so the knob doesn't trigger
             // layout on every frame of the slide.
-            transform: checked
-              ? `translateX(${WIDTH - KNOB - PAD * 2}px)`
-              : 'translateX(0)',
+            transform: checked ? `translateX(${TRAVEL}px)` : 'translateX(0)',
             transition: 'transform 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
           }}
-        />
+        >
+          <span
+            style={{
+              width: `${DOT}px`,
+              height: `${DOT}px`,
+              borderRadius: 'var(--radius-full)',
+              background: checked ? activeColor : 'var(--bg-muted)',
+              transition: 'background 0.2s ease',
+            }}
+          />
+        </span>
       </span>
 
       {label && !hideLabel ? (

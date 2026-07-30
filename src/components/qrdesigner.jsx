@@ -293,7 +293,12 @@ function QrPreview({ color, markerColor, pattern, branding }) {
               pointerEvents: 'none',
             }}
           >
-            <LogoMark size={30} />
+            {/* Takes the marker colour rather than Luotain orange. A
+                third hue in the middle fights the other two, and the
+                centre is where error correction is already working
+                hardest to cover the cut-out — a coherent two-colour
+                code reads more reliably than three competing ones. */}
+            <LogoMark size={30} color={markerColor} />
           </div>
         ) : null}
       </div>
@@ -540,6 +545,9 @@ export default function QrDesigner({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {/* Previews the mark as it will actually appear in the
+                  code, marker colour and all — a fixed orange tile here
+                  would contradict what the preview above is showing. */}
               <span
                 style={{
                   width: '36px',
@@ -550,13 +558,19 @@ export default function QrDesigner({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  opacity: branding ? 1 : 0.4,
+                  transition: 'opacity 0.2s ease',
                 }}
               >
-                <LogoMark size={22} />
+                <LogoMark size={22} color={markerColor} />
               </span>
               <p
                 className='para-xs'
-                style={{ color: 'var(--text-strong)', margin: 0 }}
+                style={{
+                  color: branding ? 'var(--text-strong)' : 'var(--text-soft)',
+                  margin: 0,
+                  transition: 'color 0.2s ease',
+                }}
               >
                 Luotain branding
               </p>
@@ -564,6 +578,7 @@ export default function QrDesigner({
 
             <button
               type='button'
+              disabled={!branding}
               onClick={() => {
                 // TODO: needs somewhere to put the file. Uploading a
                 // custom logo means storage plus a column on QrCode, and
@@ -578,13 +593,17 @@ export default function QrDesigner({
                 background: 'none',
                 border: 'none',
                 padding: 0,
-                cursor: 'pointer',
+                cursor: branding ? 'pointer' : 'not-allowed',
                 borderRadius: 'var(--radius-full)',
                 color: 'var(--text-strong)',
                 fontFamily: 'var(--font-sans)',
                 fontSize: '14px',
                 lineHeight: '20px',
                 letterSpacing: '0.28px',
+                // Nothing to replace while branding is off — the row is
+                // describing something the code isn't showing.
+                opacity: branding ? 1 : 0.4,
+                transition: 'opacity 0.2s ease',
               }}
             >
               Upload
