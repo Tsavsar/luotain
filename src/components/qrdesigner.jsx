@@ -587,7 +587,9 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
         // Slides opposite to the tilt, and further than before. This is
         // what sells it as a surface catching light rather than an image
         // being rotated.
-        glossRef.current.style.transform = `translate3d(${(-ry * 6).toFixed(2)}%, ${(rx * 6).toFixed(2)}%, 0) translateZ(60px)`
+        // No translateZ here any more — the clipper above owns the depth,
+        // and this only slides within it.
+        glossRef.current.style.transform = `translate3d(${(-ry * 6).toFixed(2)}%, ${(rx * 6).toFixed(2)}%, 0)`
       }
       if (shadowRef.current) {
         // The shadow leans away from the tilt, so the light stays in one
@@ -755,21 +757,39 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
             <QrCode {...qr} card={300} margin={12} radius={20} />
           </div>
 
+          {/* The highlight needs its own clipping layer. overflow:hidden
+              can't go on the card itself — that flattens preserve-3d and
+              the parallax dies with it. So the clipper is a child: it
+              still participates in the card's 3D space (it carries the
+              translateZ), while clipping the beam inside it.
+              Without this the beam sat at inset -45% with nothing
+              containing it, and spilled across the whole screen. */}
           <div
-            ref={glossRef}
             aria-hidden='true'
             style={{
               position: 'absolute',
-              inset: '-45%',
-              background:
-                'linear-gradient(115deg, rgba(255,255,255,0) 36%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0) 64%)',
+              inset: 0,
+              borderRadius: '20px',
+              overflow: 'hidden',
               pointerEvents: 'none',
-              willChange: 'transform',
               // Highest plane of the three, so the highlight travels
               // furthest of anything on the card.
               transform: 'translateZ(60px)',
             }}
-          />
+          >
+            <div
+              ref={glossRef}
+              style={{
+                position: 'absolute',
+                // Oversized so the beam can travel without its ends
+                // showing, now that something is actually clipping it.
+                inset: '-60%',
+                background:
+                  'linear-gradient(115deg, rgba(255,255,255,0) 44%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0) 56%)',
+                willChange: 'transform',
+              }}
+            />
+          </div>
         </div>
       </div>
 
