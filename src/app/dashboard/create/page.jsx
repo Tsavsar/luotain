@@ -445,6 +445,11 @@ export default function CreatePage() {
             markerColor={qr.markerColor}
             pattern={qr.pattern}
             branding={qr.branding}
+            // Only passed once there's a complete URL to show. With a
+            // blank slug this would read "luot.link/" and the copy button
+            // would hand over a dead link — better to show nothing than
+            // something wrong.
+            shortUrl={slug.trim() ? `${domain}/${slug.trim()}` : null}
             onChange={setQr}
           />
         ) : (

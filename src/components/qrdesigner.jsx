@@ -1,9 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Switch from '@/components/switch'
 import Tooltip from '@/components/tooltip'
 import LogoMark from '@/components/logomark'
+import { toast } from '@/components/toast'
 
 // ─── QrDesigner ───
 // Node 149:941. Step two of the QR flow: once a destination exists, this
@@ -113,6 +115,26 @@ function CopyIcon() {
 // uses currentColor instead so it follows the button's own colour — the
 // Upload button fades back when branding is off, and a fixed stroke
 // would stay full strength while the label beside it dimmed.
+function ExpandIcon() {
+  return (
+    <svg
+      width='16'
+      height='16'
+      viewBox='0 0 16 16'
+      fill='none'
+      aria-hidden='true'
+    >
+      <path
+        d='M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5 9 7M2.5 13.5 7 9'
+        stroke='currentColor'
+        strokeWidth='1.4'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
 function UploadIcon() {
   return (
     <svg
@@ -288,48 +310,46 @@ function Finder({ x, y, pattern, color }) {
   )
 }
 
-function QrPreview({ color, markerColor, pattern, branding }) {
-  // 33 modules, version 4. A short link is only ~20 characters, which
-  // fits version 2 (25) at normal error correction — but punching a logo
-  // out of the middle means raising correction to H to survive the loss,
-  // and that pushes the version up. So the denser grid isn't cosmetic,
-  // it's what a code with a logo in it actually looks like.
-  //
-  // It reads better too: the finder is always 7 modules, so at 33 it's
-  // 21% of the width rather than 28%, which is the proportion that makes
-  // a real code look like one.
-  const SIZE = 33
-  // The quiet zone. A real QR needs clear space around it to be
-  // scannable at all, and its absence was the main reason this looked
-  // cramped — modules ran right to the edge of the render. Four modules
-  // is the spec's own minimum.
-  // Expressed as card size plus the white margin inside it, rather than
-  // as a quiet zone in modules — those are the two things worth tuning,
-  // and deriving the module count from them keeps the code filling the
-  // card instead of the card sizing itself around the code.
-  // Derived from the grey holder rather than typed in, so the breathing
-  // room around the card is the thing being set — which is what actually
-  // matters visually, and it stays correct if the holder height changes.
-  const BOX = 180 // the grey preview area's height
-  const BOX_PAD = 20 // clear space between the card and the holder edge
-  const CARD = BOX - BOX_PAD * 2
-  const MARGIN = 4 // px of white between the code and the card edge
-  const codePx = CARD - MARGIN * 2
-  const unit = codePx / SIZE // px per module
-  const QUIET = MARGIN / unit // the same margin, in module units
+// ─── QrCode ───
+// The renderer, extracted so the preview and the lightbox draw the same
+// code at different sizes rather than one duplicating the other.
+//
+// 33 modules, version 4. A short link is only ~20 characters, which fits
+// version 2 (25) at normal error correction — but punching a logo out of
+// the middle means raising correction to H to survive the loss, and that
+// pushes the version up. So the denser grid isn't cosmetic, it's what a
+// code with a logo in it actually looks like. It reads better too: the
+// finder is always 7 modules, so at 33 it's 21% of the width rather than
+// 28%, which is the proportion that makes a real code look like one.
+const QR_SIZE = 33
+
+function QrCode({
+  color,
+  markerColor,
+  pattern,
+  branding,
+  card,
+  margin,
+  radius = 8,
+}) {
+  const SIZE = QR_SIZE
+  // Expressed as card size plus the white margin inside it rather than a
+  // quiet zone in modules — those are the two things worth tuning, and
+  // deriving the module count from them keeps the code filling the card
+  // instead of the card sizing itself around the code.
+  const codePx = card - margin * 2
+  const unit = codePx / SIZE
+  const QUIET = margin / unit
   const TOTAL = SIZE + QUIET * 2
-  const RENDER = CARD
   const { cells, timing, alignment } = useModules(1337, SIZE, branding)
 
-  // Logo box geometry, all derived from the grid so it can't drift out of
+  // Logo geometry, all derived from the grid so it can't drift out of
   // alignment with the modules if any of these change.
   const LOGO_SPAN = 7 // same module footprint as a finder
-  // 5px, not 6. At 33 modules the box is 32px rather than 43px, so the
-  // same 6px was taking a noticeably bigger bite out of it and the mark
-  // came out cramped.
-  const LOGO_PADDING = 5
+  // Scaled with the card rather than fixed, so the mark keeps the same
+  // proportion whether it's rendered at 140px or 300px.
+  const LOGO_PADDING = Math.max(3, unit * 1.25)
   const logoBoxPx = LOGO_SPAN * unit
-  // Distance from the svg's own left edge, which starts at -QUIET.
   const logoOffsetPx = (SIZE - LOGO_SPAN + QUIET) * unit
   const logoIconPx = logoBoxPx - LOGO_PADDING * 2
 
@@ -342,133 +362,393 @@ function QrPreview({ color, markerColor, pattern, branding }) {
         ? 1.6 * unit
         : 0
 
-  // The code is drawn on its own white card rather than straight onto the
-  // panel's grey. That's not decoration either: a QR needs a light quiet
-  // zone, and grey right up to the modules is what a scanner struggles
-  // with.
   return (
+    // Drawn on its own white card rather than straight onto whatever is
+    // behind it: a QR needs a light quiet zone, and a coloured surface
+    // right up to the modules is what a scanner struggles with.
     <div
+      style={{
+        position: 'relative',
+        width: `${card}px`,
+        height: `${card}px`,
+        borderRadius: `${radius}px`,
+        background: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <svg
+        viewBox={`${-QUIET} ${-QUIET} ${TOTAL} ${TOTAL}`}
+        width={card}
+        height={card}
+        role='img'
+        aria-label='QR code preview'
+        style={{ display: 'block' }}
+      >
+        {cells.map(([x, y]) => (
+          <Module
+            key={`m-${x}-${y}`}
+            x={x}
+            y={y}
+            pattern={pattern}
+            color={color}
+          />
+        ))}
+        {timing.map(([x, y]) => (
+          <Module
+            key={`t-${x}-${y}`}
+            x={x}
+            y={y}
+            pattern={pattern}
+            color={color}
+          />
+        ))}
+        {!branding ? (
+          <g>
+            <rect
+              x={alignment[0]}
+              y={alignment[1]}
+              width={5}
+              height={5}
+              rx={
+                pattern === 'dots' || pattern === 'classy'
+                  ? 1.6
+                  : pattern === 'rounded'
+                    ? 1.1
+                    : 0
+              }
+              fill={markerColor}
+            />
+            <rect
+              x={alignment[0] + 1}
+              y={alignment[1] + 1}
+              width={3}
+              height={3}
+              fill='#ffffff'
+            />
+            <rect
+              x={alignment[0] + 2}
+              y={alignment[1] + 2}
+              width={1}
+              height={1}
+              fill={markerColor}
+            />
+          </g>
+        ) : null}
+        <Finder x={0} y={0} pattern={pattern} color={markerColor} />
+        <Finder x={SIZE - 7} y={0} pattern={pattern} color={markerColor} />
+        <Finder x={0} y={SIZE - 7} pattern={pattern} color={markerColor} />
+      </svg>
+
+      {branding ? (
+        <div
+          style={{
+            position: 'absolute',
+            left: `${logoOffsetPx}px`,
+            top: `${logoOffsetPx}px`,
+            width: `${logoBoxPx}px`,
+            height: `${logoBoxPx}px`,
+            background: '#ffffff',
+            borderRadius: `${logoRadius}px`,
+            padding: `${LOGO_PADDING}px`,
+            boxSizing: 'border-box',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <LogoMark size={logoIconPx} color={markerColor} />
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function QrPreview({ color, markerColor, pattern, branding, onExpand }) {
+  const BOX = 180 // the grey preview area's height
+  const BOX_PAD = 20 // clear space between the card and the holder edge
+  const CARD = BOX - BOX_PAD * 2
+
+  return (
+    <button
+      type='button'
+      onClick={onExpand}
+      aria-label='Expand QR code'
+      className='qr-preview-holder'
       style={{
         width: '100%',
         height: `${BOX}px`,
         borderRadius: '12px',
         background: 'var(--bg-surface)',
+        border: 'none',
+        padding: 0,
+        cursor: 'zoom-in',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
       }}
     >
-      <div
-        style={{
-          position: 'relative',
-          width: `${CARD}px`,
-          height: `${CARD}px`,
-          borderRadius: '8px',
-          background: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <svg
-          viewBox={`${-QUIET} ${-QUIET} ${TOTAL} ${TOTAL}`}
-          width={CARD}
-          height={CARD}
-          role='img'
-          aria-label='QR code preview'
-          style={{ display: 'block' }}
-        >
-          {cells.map(([x, y]) => (
-            <Module
-              key={`m-${x}-${y}`}
-              x={x}
-              y={y}
-              pattern={pattern}
-              color={color}
-            />
-          ))}
-          {timing.map(([x, y]) => (
-            <Module
-              key={`t-${x}-${y}`}
-              x={x}
-              y={y}
-              pattern={pattern}
-              color={color}
-            />
-          ))}
-          {/* Alignment block — 5x5 with a single centre module, same
-              anatomy as the finders but smaller and unringed. Hidden when
-              branding is on: it sits in the bottom-right region the logo
-              now occupies, and drawing both would just be a collision. */}
-          {!branding ? (
-            <g>
-              <rect
-                x={alignment[0]}
-                y={alignment[1]}
-                width={5}
-                height={5}
-                rx={
-                  pattern === 'dots' || pattern === 'classy'
-                    ? 1.6
-                    : pattern === 'rounded'
-                      ? 1.1
-                      : 0
-                }
-                fill={markerColor}
-              />
-              <rect
-                x={alignment[0] + 1}
-                y={alignment[1] + 1}
-                width={3}
-                height={3}
-                fill='#ffffff'
-              />
-              <rect
-                x={alignment[0] + 2}
-                y={alignment[1] + 2}
-                width={1}
-                height={1}
-                fill={markerColor}
-              />
-            </g>
-          ) : null}
-          <Finder x={0} y={0} pattern={pattern} color={markerColor} />
-          <Finder x={SIZE - 7} y={0} pattern={pattern} color={markerColor} />
-          <Finder x={0} y={SIZE - 7} pattern={pattern} color={markerColor} />
-        </svg>
+      <QrCode
+        color={color}
+        markerColor={markerColor}
+        pattern={pattern}
+        branding={branding}
+        card={CARD}
+        margin={4}
+        radius={8}
+      />
+    </button>
+  )
+}
 
-        {branding ? (
-          <div
+// ─── QrLightbox ───
+// Tap the preview and the code opens full-size, tilting with the cursor.
+//
+// The tilt is written straight to the element's style in a rAF loop, not
+// held in state: at 60fps a state update per frame would re-render this
+// whole subtree sixty times a second for a value nothing else reads.
+// Lerping toward the target rather than snapping to it is what gives it
+// weight — jumping to the exact cursor angle feels twitchy and cheap.
+function QrLightbox({ open, onClose, shortUrl, ...qr }) {
+  const [canPortal, setCanPortal] = useState(false)
+  const [entered, setEntered] = useState(false)
+  const cardRef = useRef(null)
+  const glossRef = useRef(null)
+  const target = useRef({ rx: 0, ry: 0 })
+
+  useEffect(() => setCanPortal(true), [])
+
+  useEffect(() => {
+    if (!open) {
+      setEntered(false)
+      return
+    }
+    // One frame at the pre-animation position so the entrance has
+    // somewhere to animate FROM, same as the modal.
+    const raf = requestAnimationFrame(() => setEntered(true))
+    return () => cancelAnimationFrame(raf)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    function onKey(e) {
+      if (e.key === 'Escape') onClose?.()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  // The tilt loop.
+  useEffect(() => {
+    if (!open) return
+    const reduced = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches
+    if (reduced) {
+      // No tilt at all. A card that pitches around under the cursor is
+      // exactly the kind of motion this setting exists to switch off.
+      if (cardRef.current) cardRef.current.style.transform = 'none'
+      return
+    }
+
+    let rx = 0
+    let ry = 0
+    let id
+
+    function loop() {
+      // 0.09 is deliberately unhurried — high enough to keep up, low
+      // enough that the card trails the cursor slightly instead of being
+      // welded to it.
+      rx += (target.current.rx - rx) * 0.09
+      ry += (target.current.ry - ry) * 0.09
+      if (cardRef.current) {
+        cardRef.current.style.transform = `perspective(1100px) rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`
+      }
+      if (glossRef.current) {
+        // The highlight slides opposite to the tilt, which is what sells
+        // it as a surface catching light rather than a rotating image.
+        glossRef.current.style.transform = `translate3d(${(-ry * 3.4).toFixed(2)}%, ${(rx * 3.4).toFixed(2)}%, 0)`
+      }
+      id = requestAnimationFrame(loop)
+    }
+    id = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(id)
+  }, [open])
+
+  function handleMove(e) {
+    const MAX = 11 // degrees
+    const cx = window.innerWidth / 2
+    const cy = window.innerHeight / 2
+    // Measured from the centre of the viewport rather than the card, so
+    // the tilt keeps responding when the cursor is out over the scrim.
+    target.current = {
+      rx: -((e.clientY - cy) / cy) * MAX,
+      ry: ((e.clientX - cx) / cx) * MAX,
+    }
+  }
+
+  if (!open || !canPortal) return null
+
+  const content = (
+    <div
+      onMouseMove={handleMove}
+      onMouseLeave={() => {
+        target.current = { rx: 0, ry: 0 }
+      }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 240,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '20px',
+        padding: '24px',
+      }}
+    >
+      <div
+        onClick={onClose}
+        aria-hidden='true'
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(10, 10, 10, 0.82)',
+          backdropFilter: 'blur(6px)',
+          opacity: entered ? 1 : 0,
+          transition: 'opacity 0.25s ease',
+        }}
+      />
+
+      {/* Short link + copy, above the code. */}
+      {shortUrl ? (
+        <div
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 8px 6px 14px',
+            borderRadius: 'var(--radius-full)',
+            background: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            opacity: entered ? 1 : 0,
+            transform: entered ? 'translateY(0)' : 'translateY(6px)',
+            transition: 'opacity 0.3s ease 0.05s, transform 0.3s ease 0.05s',
+          }}
+        >
+          <span className='para-sm' style={{ color: '#ffffff' }}>
+            {shortUrl}
+          </span>
+          <button
+            type='button'
+            onClick={() => {
+              navigator.clipboard?.writeText(shortUrl)
+              toast('Link copied to clipboard')
+            }}
+            aria-label='Copy short link'
+            className='qr-lightbox-action'
             style={{
-              position: 'absolute',
-              left: `${logoOffsetPx}px`,
-              top: `${logoOffsetPx}px`,
-              width: `${logoBoxPx}px`,
-              height: `${logoBoxPx}px`,
-              // White, not transparent: the box is clear space in the
-              // code, and the modules cleared behind it need something
-              // light there for the same reason the quiet zone does.
-              background: '#ffffff',
-              borderRadius: `${logoRadius}px`,
-              padding: `${LOGO_PADDING}px`,
-              boxSizing: 'border-box',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              pointerEvents: 'none',
+              width: '26px',
+              height: '26px',
+              borderRadius: 'var(--radius-full)',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#ffffff',
             }}
           >
-            {/* Marker colour rather than Luotain orange — a third hue
-                fights the other two, and sitting where a finder would,
-                matching them is what makes it read as belonging. */}
-            <LogoMark size={logoIconPx} color={markerColor} />
-          </div>
-        ) : null}
+            <CopyIcon />
+          </button>
+        </div>
+      ) : null}
+
+      {/* The card. preserve-3d so the gloss tilts with it rather than
+          staying flat on top. */}
+      <div
+        ref={cardRef}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'relative',
+          transformStyle: 'preserve-3d',
+          willChange: 'transform',
+          borderRadius: '20px',
+          overflow: 'hidden',
+          boxShadow: '0 40px 80px -20px rgba(0, 0, 0, 0.6)',
+          opacity: entered ? 1 : 0,
+          // Scale is animated on a wrapper-free element that the rAF loop
+          // also writes to, so it's applied via a separate CSS transition
+          // on opacity only — the loop owns transform outright to avoid
+          // the two fighting over the same property.
+          transition: 'opacity 0.3s ease',
+        }}
+      >
+        <QrCode {...qr} card={300} margin={12} radius={20} />
+        <div
+          ref={glossRef}
+          aria-hidden='true'
+          style={{
+            position: 'absolute',
+            inset: '-40%',
+            background:
+              'linear-gradient(115deg, rgba(255,255,255,0) 38%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 62%)',
+            pointerEvents: 'none',
+            willChange: 'transform',
+          }}
+        />
       </div>
+
+      <button
+        type='button'
+        onClick={() => {
+          // TODO: needs the real encoder. Downloading this render would
+          // hand someone a code that scans to nothing.
+          toast('Download is available once the code is created')
+        }}
+        className='qr-lightbox-download'
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '10px 18px',
+          borderRadius: 'var(--radius-full)',
+          background: 'rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          cursor: 'pointer',
+          color: '#ffffff',
+          fontFamily: 'var(--font-sans)',
+          fontSize: '14px',
+          lineHeight: '20px',
+          letterSpacing: '0.28px',
+          opacity: entered ? 1 : 0,
+          transform: entered ? 'translateY(0)' : 'translateY(6px)',
+          transition: 'opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s',
+        }}
+      >
+        <DownloadIcon />
+        Download
+      </button>
     </div>
   )
+
+  return createPortal(content, document.body)
 }
 
 function Swatch({ hex, selected, onSelect, label }) {
@@ -666,8 +946,11 @@ export default function QrDesigner({
   markerColor,
   pattern,
   branding,
+  shortUrl,
   onChange,
 }) {
+  const [expanded, setExpanded] = useState(false)
+
   function set(key, val) {
     onChange({ color, markerColor, pattern, branding, [key]: val })
   }
@@ -720,11 +1003,11 @@ export default function QrDesigner({
                   <DownloadIcon />
                 </button>
               </Tooltip>
-              <Tooltip label='Available once created'>
+              <Tooltip label='Expand'>
                 <button
                   type='button'
-                  disabled
-                  aria-label='Copy QR code'
+                  onClick={() => setExpanded(true)}
+                  aria-label='Expand QR code'
                   className='qr-preview-action'
                   style={{
                     display: 'flex',
@@ -732,16 +1015,27 @@ export default function QrDesigner({
                     border: 'none',
                     padding: 0,
                     color: 'var(--text-soft)',
-                    cursor: 'not-allowed',
+                    cursor: 'pointer',
                   }}
                 >
-                  <CopyIcon />
+                  <ExpandIcon />
                 </button>
               </Tooltip>
             </div>
           </div>
 
           <QrPreview
+            color={color}
+            markerColor={markerColor}
+            pattern={pattern}
+            branding={branding}
+            onExpand={() => setExpanded(true)}
+          />
+
+          <QrLightbox
+            open={expanded}
+            onClose={() => setExpanded(false)}
+            shortUrl={shortUrl}
             color={color}
             markerColor={markerColor}
             pattern={pattern}

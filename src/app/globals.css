@@ -1700,3 +1700,25 @@ html {
 .create-secondary:active {
   transform: scale(0.97);
 }
+
+/* --- QR lightbox --- */
+.qr-preview-holder {
+  transition: background 0.2s ease;
+}
+.qr-preview-holder:hover {
+  background: var(--bg-subtle) !important;
+}
+.qr-lightbox-action,
+.qr-lightbox-download {
+  transition:
+    background 0.15s ease,
+    transform 160ms ease-out;
+}
+.qr-lightbox-action:hover,
+.qr-lightbox-download:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+.qr-lightbox-action:active,
+.qr-lightbox-download:active {
+  transform: scale(0.96);
+}
