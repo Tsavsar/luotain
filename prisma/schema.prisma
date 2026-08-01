@@ -12,6 +12,15 @@ model User {
   email         String?      @unique
   emailVerified DateTime?
   image         String?
+
+  // Powers "Last updated" on the account settings page. An explicit
+  // column rather than Prisma's @updatedAt, because @updatedAt fires on
+  // ANY write to this row — a session refresh or an emailVerified change
+  // would bump it, and the settings page would then claim the profile was
+  // edited when nothing on that page changed. This is set only by the
+  // handler that saves those fields, so it means exactly what the label
+  // says. Null = never edited.
+  profileUpdatedAt DateTime?
   accounts      Account[]
   sessions      Session[]
   memberships   Membership[]

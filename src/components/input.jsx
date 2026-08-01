@@ -11,6 +11,12 @@ export default function Inputfield({
   error,
   shaking,
   onKeyDown,
+  // Read-only rather than disabled: the value still needs to be
+  // selectable and copyable (an email address especially), and a disabled
+  // input is skipped by keyboard navigation and often unreadable to
+  // screen readers. This looks inert and can't be typed into, but the text
+  // is still reachable.
+  readOnly = false,
   // Blurs and fades JUST the text while a value is being replaced
   // programmatically — the create form's "generate slug" uses it so the
   // swap reads as a soft change instead of the characters snapping to
@@ -35,14 +41,14 @@ export default function Inputfield({
         backgroundColor: 'var(--bg-default)',
         border: error
           ? '1px solid var(--error-base)'
-          : focused
+          : focused && !readOnly
             ? '1px solid var(--primary-base)'
-            : hovered
+            : hovered && !readOnly
               ? '1px solid var(--stroke-medium)'
               : '1px solid var(--stroke-soft)',
         boxShadow: error
           ? 'var(--focus-error)'
-          : focused
+          : focused && !readOnly
             ? 'var(--focus-active)'
             : 'var(--shadow-xs)',
         display: 'flex',
@@ -79,6 +85,7 @@ export default function Inputfield({
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
+        readOnly={readOnly}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={{
@@ -88,7 +95,12 @@ export default function Inputfield({
           background: 'transparent',
           fontFamily: 'var(--font-sans)',
           fontSize: '14px',
-          color: value.length > 0 ? 'var(--text-strong)' : 'var(--text-soft)',
+          color: readOnly
+            ? 'var(--text-sub)'
+            : value.length > 0
+              ? 'var(--text-strong)'
+              : 'var(--text-soft)',
+          cursor: readOnly ? 'default' : 'text',
           // Enough blur that the characters are unreadable mid-swap, so
           // the old and new values are never both legible.
           filter: swapping ? 'blur(5px)' : 'none',

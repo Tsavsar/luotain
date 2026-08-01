@@ -15,7 +15,13 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { email },
-    select: { id: true, name: true, email: true, image: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+      profileUpdatedAt: true,
+    },
   })
   if (!user) {
     return Response.json({ error: 'User not found' }, { status: 404 })
@@ -26,11 +32,9 @@ export async function GET() {
       name: user.name || '',
       email: user.email || '',
       image: user.image || null,
-      // NOTE: the design shows "Last updated: Never", and there's no way
-      // to do better yet — User has no updatedAt column. Adding
-      // `updatedAt DateTime @updatedAt` to the model would make this real;
-      // until then it's honestly null rather than a fabricated date.
-      updatedAt: null,
+      // Null until the profile has actually been saved once, which is what
+      // renders as "Never".
+      profileUpdatedAt: user.profileUpdatedAt,
     },
   })
 }
@@ -71,8 +75,15 @@ export async function PATCH(request) {
 
   const user = await prisma.user.update({
     where: { email },
-    data: { name },
-    select: { name: true, email: true, image: true },
+    // Stamped here rather than by @updatedAt, so it tracks changes to the
+    // fields this page owns instead of any write to the row.
+    data: { name, profileUpdatedAt: new Date() },
+    select: {
+      name: true,
+      email: true,
+      image: true,
+      profileUpdatedAt: true,
+    },
   })
 
   return Response.json({
@@ -80,7 +91,7 @@ export async function PATCH(request) {
       name: user.name || '',
       email: user.email || '',
       image: user.image || null,
-      updatedAt: null,
+      profileUpdatedAt: user.profileUpdatedAt,
     },
   })
 }
