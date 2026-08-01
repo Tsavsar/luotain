@@ -1498,7 +1498,9 @@ html {
    work correctly on touch, not just mouse. Transform only, so this
    never competes with each button's own background transition. */
 .modal-btn {
-  transition: transform 160ms ease-out, background 0.15s ease;
+  transition:
+    transform 160ms ease-out,
+    background 0.15s ease;
 }
 .modal-btn:active {
   transform: scale(0.97);
@@ -1560,7 +1562,9 @@ html {
   filter: grayscale(1);
   opacity: 0.7;
   pointer-events: none;
-  transition: filter 0.35s ease, opacity 0.35s ease;
+  transition:
+    filter 0.35s ease,
+    opacity 0.35s ease;
 }
 
 /* The alert's collapse when a link is recovered — height and opacity
@@ -1570,7 +1574,10 @@ html {
   overflow: hidden;
   max-height: 200px;
   opacity: 1;
-  transition: max-height 0.25s ease, opacity 0.2s ease, margin-bottom 0.25s ease;
+  transition:
+    max-height 0.25s ease,
+    opacity 0.2s ease,
+    margin-bottom 0.25s ease;
 }
 .alert-collapse.is-collapsing {
   max-height: 0;
@@ -1605,7 +1612,9 @@ html {
 
 /* --- Create flow --- */
 .create-submit {
-  transition: transform 160ms ease-out, opacity 0.15s ease;
+  transition:
+    transform 160ms ease-out,
+    opacity 0.15s ease;
 }
 .create-submit:active:not(:disabled) {
   transform: scale(0.97);
@@ -1647,7 +1656,9 @@ html {
 /* --- QR designer --- */
 .qr-swatch,
 .qr-pattern {
-  transition: box-shadow 0.15s ease, transform 160ms ease-out;
+  transition:
+    box-shadow 0.15s ease,
+    transform 160ms ease-out;
 }
 .qr-swatch:active,
 .qr-pattern:active {
@@ -1679,7 +1690,9 @@ html {
 /* Secondary footer action — press feedback matched to .create-submit so
    the two buttons in a footer respond identically. */
 .create-secondary {
-  transition: transform 160ms ease-out, background 0.15s ease;
+  transition:
+    transform 160ms ease-out,
+    background 0.15s ease;
 }
 .create-secondary:hover {
   background: var(--bg-subtle) !important;
@@ -1697,7 +1710,9 @@ html {
 }
 .qr-lightbox-action,
 .qr-lightbox-download {
-  transition: background 0.15s ease, transform 160ms ease-out;
+  transition:
+    background 0.15s ease,
+    transform 160ms ease-out;
 }
 .qr-lightbox-action:hover,
 .qr-lightbox-download:hover {
@@ -1778,5 +1793,50 @@ html {
      the thumb moves, it just doesn't bounce. */
   .switch-thumb {
     animation: none !important;
+  }
+}
+
+/* --- Icon swap ---
+   The outgoing icon fades out while shrinking and blurring; the incoming
+   one arrives the same way in reverse. Adapted from transitions.dev.
+
+   inline-grid with both icons in the same grid area is what makes this
+   work without absolute positioning: they stack, and the wrapper still
+   sizes itself to them rather than collapsing to zero.
+
+   Reduced motion drops the transition, so the icon changes instantly —
+   the state is still communicated, just without the movement. */
+.icon-swap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+.icon-swap .icon-swap-item {
+  grid-area: 1 / 1;
+  display: flex;
+  transition:
+    opacity 250ms ease-in-out,
+    filter 250ms ease-in-out,
+    transform 250ms ease-in-out;
+  will-change: opacity, filter, transform;
+}
+.icon-swap[data-state='a'] .icon-swap-item[data-icon='a'],
+.icon-swap[data-state='b'] .icon-swap-item[data-icon='b'] {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+.icon-swap[data-state='a'] .icon-swap-item[data-icon='b'],
+.icon-swap[data-state='b'] .icon-swap-item[data-icon='a'] {
+  opacity: 0;
+  filter: blur(2px);
+  transform: scale(0.25);
+  /* Non-interactive while hidden — a fully transparent icon still
+     catches clicks otherwise. */
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .icon-swap .icon-swap-item {
+    transition: none !important;
   }
 }

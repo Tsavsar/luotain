@@ -6,6 +6,7 @@ import Switch from '@/components/switch'
 import Tooltip from '@/components/tooltip'
 import LogoMark from '@/components/logomark'
 import { toast } from '@/components/toast'
+import CopyButton from '@/components/copybutton'
 
 // ─── QrDesigner ───
 // Node 149:941. Step two of the QR flow: once a destination exists, this
@@ -739,29 +740,20 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
           <span className='para-sm' style={{ color: '#ffffff' }}>
             {shortUrl}
           </span>
-          <button
-            type='button'
-            onClick={() => {
-              navigator.clipboard?.writeText(shortUrl)
-              toast('Link copied to clipboard')
-            }}
-            aria-label='Copy short link'
+          <CopyButton
+            value={shortUrl}
+            icon={<CopyIcon />}
+            label='Copy short link'
+            toastMessage='Link copied to clipboard'
             className='qr-lightbox-action'
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
               width: '26px',
               height: '26px',
               borderRadius: 'var(--radius-full)',
               background: 'rgba(255, 255, 255, 0.1)',
-              border: 'none',
-              cursor: 'pointer',
               color: '#ffffff',
             }}
-          >
-            <CopyIcon />
-          </button>
+          />
         </div>
       ) : null}
 

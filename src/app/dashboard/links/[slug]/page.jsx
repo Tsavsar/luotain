@@ -29,6 +29,7 @@ import { shortUrlFor } from '@/lib/shortlink'
 import LogoMark from '@/components/logomark'
 import Alert, { AlertAction, AlertInfoIcon } from '@/components/alert'
 import Modal from '@/components/modal'
+import CopyButton from '@/components/copybutton'
 import QrDesigner, { QrLightbox } from '@/components/qrdesigner'
 import { RECOVERY_WINDOW_DAYS, daysSinceDeleted } from '@/lib/linkrecovery'
 
@@ -664,23 +665,12 @@ export default function LinkDetailPage() {
                       >
                         {shortUrl}
                       </p>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard?.writeText(shortUrl)
-                          toast('Link copied to clipboard')
-                        }}
-                        title='Copy'
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          background: 'none',
-                          border: 'none',
-                          padding: 0,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <CopyIcon />
-                      </button>
+                      <CopyButton
+                        value={shortUrl}
+                        icon={<CopyIcon />}
+                        label='Copy link'
+                        toastMessage='Link copied to clipboard'
+                      />
                     </div>
                   </DetailField>
 

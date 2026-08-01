@@ -1,11 +1,11 @@
 'use client'
 
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import EmptyStateIcon from './emptystateicon'
 import CountryFlag from './countryflag'
 import SourceIcon from './sourceicon'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
-import { toast } from './toast'
+import CopyButton from './copybutton'
 
 function ChevronIcon() {
   return (
@@ -226,13 +226,14 @@ function DataRow({
   isFiltered,
 }) {
   const [hovered, setHovered] = useState(false)
+  // The copy button only exists while this row is hovered, so a check
+  // that lingers for 1.6s would be unmounted the moment the cursor
+  // leaves — the swap would flash and vanish. This keeps the row's
+  // actions mounted just long enough for it to be seen.
+  const [justCopied, setJustCopied] = useState(false)
+  const copiedTimer = useRef(null)
+  useEffect(() => () => clearTimeout(copiedTimer.current), [])
   const pct = maxValue > 0 ? value / maxValue : 0
-
-  function handleCopy(e) {
-    e.stopPropagation()
-    navigator.clipboard?.writeText(label)
-    toast('Link copied to clipboard')
-  }
 
   return (
     <div
@@ -322,22 +323,23 @@ function DataRow({
           flexShrink: 0,
         }}
       >
-        {(hovered || isFiltered) && (
+        {(hovered || isFiltered || justCopied) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {isLink && (
-              <button
-                onClick={handleCopy}
-                title='Copy'
-                style={{
-                  display: 'flex',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
+              <CopyButton
+                value={label}
+                icon={<CopyIcon />}
+                label='Copy link'
+                toastMessage='Link copied to clipboard'
+                onCopied={() => {
+                  setJustCopied(true)
+                  clearTimeout(copiedTimer.current)
+                  copiedTimer.current = setTimeout(
+                    () => setJustCopied(false),
+                    1800
+                  )
                 }}
-              >
-                <CopyIcon />
-              </button>
+              />
             )}
             <button
               onClick={(e) => {

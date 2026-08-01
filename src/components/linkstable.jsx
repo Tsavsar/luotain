@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import EmptyStateIcon from './emptystateicon'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
-import { toast } from './toast'
 import DeleteConfirmModal from './deleteconfirmmodal'
+import CopyButton from './copybutton'
 import {
   formatRowDate,
   hostnameOf,
@@ -197,26 +197,16 @@ function LinkRow({ link, zIndex, onOpen, onEdit, onDuplicate, onDelete }) {
         >
           {link.shortUrl}
         </p>
-        <button
-          onClick={(e) => {
-            // The row itself now navigates on click, so this has to
-            // stop here — copying a link shouldn't also open it.
-            e.stopPropagation()
-            navigator.clipboard?.writeText(link.shortUrl)
-            toast('Link copied to clipboard')
-          }}
-          title='Copy'
-          style={{
-            display: 'flex',
-            flexShrink: 0,
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
-          }}
-        >
-          <CopyIcon />
-        </button>
+        {/* Shared CopyButton — it swaps to a check on success and stops
+            the click from reaching the row's navigation, which this used
+            to have to do itself. */}
+        <CopyButton
+          value={link.shortUrl}
+          icon={<CopyIcon />}
+          label='Copy link'
+          toastMessage='Link copied to clipboard'
+          style={{ flexShrink: 0 }}
+        />
       </div>
 
       <div
