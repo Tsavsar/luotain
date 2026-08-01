@@ -60,6 +60,10 @@ export async function GET(request, { params }) {
       shortUrl: shortUrlFor(link.shortCode, link.domain.hostname),
       destination: link.destinationUrl,
       title: link.title,
+      // The link preview box asks for this. It was in the schema and read
+      // by the page, but never actually sent — so the preview could only
+      // ever show its fallback, whatever was scraped.
+      ogImageUrl: link.ogImageUrl,
       clicks: link._count.clicks,
       createdAt: link.createdAt,
       // null for a live link. Drives the archived state on the page.

@@ -137,7 +137,10 @@ export default function TrashPage() {
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          paddingTop: '36px',
+          // 0 — the layout header already carries 24px below it. Matched
+          // to the link detail page so moving between the two doesn't
+          // shift the content up and down.
+          paddingTop: 0,
           paddingBottom: '24px',
         }}
       >

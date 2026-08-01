@@ -122,10 +122,23 @@ export function AlertAction({ onClick, children, disabled }) {
 // an info glyph is standard enough to draw rather than hotlink an asset
 // URL that expires in 7 days. Filled rather than outlined to match the
 // drop shadow the design puts on it, which only reads on a solid shape.
-export function AlertInfoIcon() {
+//
+// `tone` defaults to error. On this alert the surface is neutral grey
+// and the icon is the only thing carrying urgency — the same principle
+// the card variant follows, one spot of colour rather than a tinted
+// background. A grey icon on a grey bar reads as an aside; permanent
+// deletion in two days is not an aside.
+export function AlertInfoIcon({ tone = 'error' }) {
+  const fill =
+    {
+      error: 'var(--error-base)',
+      neutral: 'var(--text-sub)',
+      success: 'var(--success-base)',
+    }[tone] || 'var(--error-base)'
+
   return (
     <svg width='16' height='16' viewBox='0 0 16 16' fill='none'>
-      <circle cx='8' cy='8' r='7' fill='var(--text-sub)' />
+      <circle cx='8' cy='8' r='7' fill={fill} />
       <rect x='7.25' y='6.75' width='1.5' height='5' rx='0.75' fill='white' />
       <circle cx='8' cy='4.9' r='0.85' fill='white' />
     </svg>

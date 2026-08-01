@@ -487,8 +487,11 @@ export default function LinkDetailPage() {
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          paddingTop: '36px',
-          paddingBottom: '32px',
+          // 0, not 36 — the layout's header section already carries 24px
+          // of bottom padding, so 36 here stacked into a 60px gap above
+          // Back. Same fix the create page needed.
+          paddingTop: 0,
+          paddingBottom: '24px',
         }}
       >
         <div
