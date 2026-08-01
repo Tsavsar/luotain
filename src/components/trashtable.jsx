@@ -147,6 +147,7 @@ function TrashRow({ item, zIndex, onViewDetails, onRecover }) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => onViewDetails?.(item)}
       style={{
         position: 'relative',
         zIndex,
@@ -155,6 +156,7 @@ function TrashRow({ item, zIndex, onViewDetails, onRecover }) {
         width: '100%',
         alignItems: 'center',
         padding: '4px 0',
+        cursor: 'pointer',
       }}
     >
       {/* Same hover-background-as-its-own-layer trick as the main
@@ -244,6 +246,10 @@ function TrashRow({ item, zIndex, onViewDetails, onRecover }) {
           than gated behind a hover state that doesn't reliably fire
           on touch. */}
       <div
+        // Stops menu clicks reaching the row's own handler — otherwise
+        // opening the menu, or choosing Recover inside it, would
+        // navigate to the detail page at the same time.
+        onClick={(e) => e.stopPropagation()}
         style={{
           position: 'absolute',
           right: 0,
