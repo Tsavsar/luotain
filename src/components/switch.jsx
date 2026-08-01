@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+
 // ─── Switch ───
 // Node 455:1046. A real toggle rather than a button that reports its
 // state in its own label.
@@ -26,6 +28,11 @@ export default function Switch({
   // rows where a nearby heading is already the visible label.
   hideLabel = false,
 }) {
+  // Set on the first interaction, never unset. Until then the keyframes
+  // are off, so a switch that mounts in the off state doesn't play its
+  // return bounce on page load.
+  const [interacted, setInteracted] = useState(false)
+
   const sm = size === 'sm'
   const WIDTH = sm ? 29 : 34
   const HEIGHT = sm ? 16 : 20
@@ -63,7 +70,10 @@ export default function Switch({
       aria-checked={checked}
       aria-label={label}
       disabled={disabled}
-      onClick={() => onChange?.(!checked)}
+      onClick={() => {
+        setInteracted(true)
+        onChange?.(!checked)
+      }}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -78,9 +88,20 @@ export default function Switch({
     >
       <span
         aria-hidden='true'
+        className={`switch-track${interacted ? ' is-init' : ''}`}
+        data-on={checked ? 'true' : 'false'}
         style={{
           position: 'relative',
           flexShrink: 0,
+          // Read by the bounce keyframes in globals.css. Travel has to
+          // come from here because it differs per size.
+          '--switch-travel': `${TRAVEL}px`,
+          // Overshoot scaled to the size rather than fixed at 1px — on the
+          // small switch a fixed overshoot is proportionally twice the
+          // bounce of the medium one.
+          '--switch-overshoot': `${(TRAVEL * 0.07).toFixed(2)}px`,
+          '--switch-settle': '0px',
+          '--switch-dur': '350ms',
           width: `${WIDTH}px`,
           height: `${HEIGHT}px`,
           borderRadius: 'var(--radius-full)',
@@ -106,6 +127,7 @@ export default function Switch({
         />
 
         <span
+          className='switch-thumb'
           style={{
             position: 'absolute',
             top: `${PAD}px`,
@@ -120,11 +142,11 @@ export default function Switch({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            // Moved with transform rather than by animating `left`:
-            // transform is composited, so the knob doesn't trigger
-            // layout on every frame of the slide.
-            transform: checked ? `translateX(${TRAVEL}px)` : 'translateX(0)',
-            transition: 'transform 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
+            // Movement lives in CSS now — see .switch-thumb in
+            // globals.css. It's driven by `translate` and keyframes rather
+            // than a transform transition, because a transition can only
+            // ease between two points and the bounce needs to overshoot
+            // past the target and come back.
           }}
         >
           <span
