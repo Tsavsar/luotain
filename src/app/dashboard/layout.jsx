@@ -42,7 +42,11 @@ function DashboardShell({ children }) {
   // highlighted on nothing or wrongly highlighted as Links.
   const hideNav =
     pathname?.startsWith('/dashboard/links/') ||
-    pathname?.startsWith('/dashboard/create')
+    pathname?.startsWith('/dashboard/create') ||
+    // Settings has its own sidebar nav — the top tab row alongside it
+    // would be two navigations competing, and none of the three tabs
+    // corresponds to a settings section anyway.
+    pathname?.startsWith('/dashboard/settings')
 
   // Create is a single-task page: the header drops to just the logo and
   // the profile, and narrows to match the form's own 440px column

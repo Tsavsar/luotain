@@ -1840,3 +1840,45 @@ html {
     transition: none !important;
   }
 }
+
+/* --- Settings --- */
+.settings-nav-option {
+  transition: background 0.15s ease;
+}
+.settings-nav-option:hover {
+  background: var(--bg-surface);
+}
+.settings-nav-option.is-active {
+  background: var(--bg-surface);
+}
+/* Danger items get a red tint on hover rather than the neutral grey, so
+   the destructive ones stay distinguishable at the moment of clicking. */
+.settings-nav-option.is-danger:hover,
+.settings-nav-option.is-danger.is-active {
+  background: var(--error-mute);
+}
+.settings-icon-btn {
+  transition: opacity 0.15s ease;
+}
+.settings-icon-btn:hover {
+  opacity: 0.6;
+}
+.settings-save {
+  transition:
+    transform 160ms ease-out,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+.settings-save:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* The sidebar and panel stack on mobile — a 170px nav beside a panel
+   doesn't fit a phone, and the nav is short enough to sit above the
+   content rather than needing to collapse. */
+@media (max-width: 768px) {
+  .settings-shell {
+    flex-direction: column;
+    gap: 28px !important;
+  }
+}
