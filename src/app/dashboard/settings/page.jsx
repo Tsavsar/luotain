@@ -128,6 +128,11 @@ function AvatarRow({ image, name, onUpload, onRemove }) {
         width: '100%',
         background: 'var(--bg-surface)',
         borderRadius: '24px',
+        // 20px on the right against the input fields' 8px, kept from the
+        // design. Now that this row and the fields share a width the
+        // difference is visible, but it's justified: this is a 62px pill
+        // with a 24px radius, so its corner curve is far deeper than an
+        // input's — icons at 8px would sit inside that curve.
         padding: '10px 20px 10px 10px',
         boxSizing: 'border-box',
       }}
@@ -317,13 +322,22 @@ export default function SettingsGeneralPage() {
         General settings
       </p>
 
+      {/* One width for the whole group, set once here. The design has the
+          avatar row at the panel's full 504px and the inputs at 360, which
+          leaves the row overhanging the fields below it — everything is
+          360 so the left and right edges line up.
+
+          Set on the container rather than repeated on each child, which is
+          how the mismatch happened in the first place. */}
       <div
+        className='settings-field-group'
         style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '12px',
           alignItems: 'flex-start',
           width: '100%',
+          maxWidth: '360px',
         }}
       >
         <AvatarRow
@@ -342,7 +356,7 @@ export default function SettingsGeneralPage() {
         {/* 360px, not the panel's full 504 — per the design, and it keeps
             the fields at a comfortable reading width rather than stretching
             a name field across the whole panel. */}
-        <div style={{ width: '100%', maxWidth: '360px' }}>
+        <div style={{ width: '100%' }}>
           <Inputfield
             lefticon={<PersonIcon />}
             placeholder={loaded ? 'Your name' : ''}
@@ -361,7 +375,7 @@ export default function SettingsGeneralPage() {
             neither is confirmed. An input that looks editable and either
             silently fails or locks someone out is worse than one that
             says why not. */}
-        <div style={{ width: '100%', maxWidth: '360px' }}>
+        <div style={{ width: '100%' }}>
           <Tooltip label='Email is your sign-in address'>
             <div style={{ width: '100%', opacity: 0.7 }}>
               <Inputfield
