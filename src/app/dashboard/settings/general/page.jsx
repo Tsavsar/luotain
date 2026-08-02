@@ -61,21 +61,28 @@ function MailIcon() {
       height='20'
       viewBox='0 0 20 20'
       fill='none'
+      xmlns='http://www.w3.org/2000/svg'
       aria-hidden='true'
     >
-      <rect
-        x='2.6'
-        y='4.6'
-        width='14.8'
-        height='10.8'
-        rx='2.2'
+      <path
+        d='M9 17V15'
         stroke='currentColor'
         strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
       />
       <path
-        d='m3.4 6.4 5.5 4.1a1.8 1.8 0 0 0 2.2 0l5.5-4.1'
+        d='M15 6C15 7.654 13.654 9 12 9C11.448 9 11 8.552 11 8C11 7.448 11.448 7 12 7C12.552 7 13 6.551 13 6V5.816C12.153 5.514 11.481 4.845 11.178 4H6C3.794 4 2 5.794 2 8V13.5C2 14.878 3.122 16 4.5 16H15.5C16.878 16 18 14.878 18 13.5V8C18 6.95 17.585 6 16.92 5.286C16.398 5.725 15.734 6 15 6ZM8 14H4.5C4.224 14 4 13.776 4 13.5V8C4 6.897 4.897 6 6 6C7.103 6 8 6.897 8 8V14Z'
+        fill='currentColor'
+      />
+      <path
+        d='M15 1H12C11.4477 1 11 1.44772 11 2V3C11 3.55228 11.4477 4 12 4H15C15.5523 4 16 3.55228 16 3V2C16 1.44772 15.5523 1 15 1Z'
+        fill='currentColor'
+      />
+      <path
+        d='M12 3V6'
         stroke='currentColor'
-        strokeWidth='1.5'
+        strokeWidth='2'
         strokeLinecap='round'
         strokeLinejoin='round'
       />
@@ -340,14 +347,9 @@ export default function SettingsGeneralPage() {
         General settings
       </p>
 
-      {/* Everything fills the panel. The design has the avatar row at the
-          panel's full width and the inputs at 360, so the row overhangs the
-          fields below it — matching them at the panel width rather than the
-          narrower one, since capping at 360 left a third of the panel empty
-          and the fields looking stranded.
-
-          Set once on the container rather than per child, which is how the
-          mismatch happened in the first place. */}
+      {/* 360px for the upload row and both fields alike. Set once on the
+          container rather than per child, which is how the two drifted apart
+          in the first place. */}
       <div
         className='settings-field-group'
         style={{
@@ -356,6 +358,7 @@ export default function SettingsGeneralPage() {
           gap: '12px',
           alignItems: 'flex-start',
           width: '100%',
+          maxWidth: '360px',
         }}
       >
         <AvatarRow
@@ -394,7 +397,7 @@ export default function SettingsGeneralPage() {
             silently fails or locks someone out is worse than one that
             says why not. */}
         <div style={{ width: '100%' }}>
-          <Tooltip label='Email is your sign-in address'>
+          <Tooltip label='Contact support to change your email'>
             <div style={{ width: '100%' }}>
               <Inputfield
                 lefticon={<MailIcon />}

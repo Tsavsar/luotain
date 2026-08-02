@@ -41,16 +41,26 @@ export default function Inputfield({
         backgroundColor: 'var(--bg-default)',
         border: error
           ? '1px solid var(--error-base)'
-          : focused && !readOnly
-            ? '1px solid var(--primary-base)'
-            : hovered && !readOnly
-              ? '1px solid var(--stroke-medium)'
-              : '1px solid var(--stroke-soft)',
+          : readOnly
+            ? // Transparent rather than none: no visible stroke, but the box
+              // keeps its 1px so a read-only field is exactly as tall as an
+              // editable one beside it. Dropping the border outright would
+              // make it 2px shorter and the two would no longer line up.
+              '1px solid transparent'
+            : focused
+              ? '1px solid var(--primary-base)'
+              : hovered
+                ? '1px solid var(--stroke-medium)'
+                : '1px solid var(--stroke-soft)',
         boxShadow: error
           ? 'var(--focus-error)'
-          : focused && !readOnly
-            ? 'var(--focus-active)'
-            : 'var(--shadow-xs)',
+          : readOnly
+            ? // Flat. The shadow lifts a field off the page to say "you can
+              // type here", which is the opposite of what this one means.
+              'none'
+            : focused
+              ? 'var(--focus-active)'
+              : 'var(--shadow-xs)',
         display: 'flex',
         alignItems: 'center',
         padding: '10px 8px 10px 14px',
@@ -68,8 +78,12 @@ export default function Inputfield({
       {lefticon ? (
         <div
           style={{
-            color:
-              focused || value.length > 0
+            // Read-only greys the icon too. A read-only field always has a
+            // value, so the rule below would push its icon to text-strong
+            // and leave a dark icon sitting beside grey text.
+            color: readOnly
+              ? 'var(--text-sub)'
+              : focused || value.length > 0
                 ? 'var(--text-strong)'
                 : 'var(--text-soft)',
             display: 'flex',
