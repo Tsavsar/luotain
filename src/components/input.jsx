@@ -38,7 +38,12 @@ export default function Inputfield({
         width: '100%',
         height: 'fit-content',
         borderRadius: 'var(--radius-lg)',
-        backgroundColor: 'var(--bg-default)',
+        // Filled rather than white, which is the conventional signal for a
+        // field you can read but not edit. --bg-layer (#f5f5f5) rather than
+        // --bg-surface (#f7f7f7): one step further from white, so it reads
+        // as inert beside the editable field. At two hex values from white,
+        // surface looked like an editable field with a tint.
+        backgroundColor: readOnly ? 'var(--bg-layer)' : 'var(--bg-default)',
         border: error
           ? '1px solid var(--error-base)'
           : readOnly

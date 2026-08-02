@@ -35,20 +35,28 @@ function PersonIcon() {
       height='20'
       viewBox='0 0 20 20'
       fill='none'
+      xmlns='http://www.w3.org/2000/svg'
       aria-hidden='true'
     >
-      <circle
-        cx='10'
-        cy='6.8'
-        r='3.1'
-        stroke='currentColor'
-        strokeWidth='1.5'
-      />
+      {/* The asset ships with #D1D1D1, which is exactly --bg-muted — but
+          currentColor here instead, so it follows Inputfield's own icon
+          logic: soft when empty, strong once there's a value, grey when
+          read-only. A fixed fill would ignore all three. */}
       <path
-        d='M4.2 16.4c0-2.8 2.6-4.6 5.8-4.6s5.8 1.8 5.8 4.6'
+        d='M10 8C11.3807 8 12.5 6.88071 12.5 5.5C12.5 4.11929 11.3807 3 10 3C8.61929 3 7.5 4.11929 7.5 5.5C7.5 6.88071 8.61929 8 10 8Z'
+        fill='currentColor'
         stroke='currentColor'
         strokeWidth='1.5'
         strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M14.6642 16.455C15.6112 16.234 16.1332 15.152 15.6552 14.305C14.5412 12.332 12.4282 11 10.0002 11C7.57219 11 5.45919 12.332 4.34519 14.305C3.86719 15.152 4.38919 16.234 5.33619 16.455C8.44619 17.182 11.5552 17.182 14.6652 16.455H14.6642Z'
+        fill='currentColor'
+        stroke='currentColor'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
       />
     </svg>
   )
