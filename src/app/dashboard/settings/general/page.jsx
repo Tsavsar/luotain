@@ -148,11 +148,9 @@ function AvatarRow({ image, name, onUpload, onRemove }) {
         width: '100%',
         background: 'var(--bg-surface)',
         borderRadius: '24px',
-        // 20px on the right against the input fields' 8px, kept from the
-        // design. Now that this row and the fields share a width the
-        // difference is visible, but it's justified: this is a 62px pill
-        // with a 24px radius, so its corner curve is far deeper than an
-        // input's — icons at 8px would sit inside that curve.
+        // 20px on the right against the fields' 8px, kept from the design:
+        // this is a 62px pill with a 24px radius, so its corner curve is far
+        // deeper than an input's and icons at 8px would sit inside it.
         padding: '10px 20px 10px 10px',
         boxSizing: 'border-box',
       }}
@@ -342,13 +340,14 @@ export default function SettingsGeneralPage() {
         General settings
       </p>
 
-      {/* One width for the whole group, set once here. The design has the
-          avatar row at the panel's full 504px and the inputs at 360, which
-          leaves the row overhanging the fields below it — everything is
-          360 so the left and right edges line up.
+      {/* Everything fills the panel. The design has the avatar row at the
+          panel's full width and the inputs at 360, so the row overhangs the
+          fields below it — matching them at the panel width rather than the
+          narrower one, since capping at 360 left a third of the panel empty
+          and the fields looking stranded.
 
-          Set on the container rather than repeated on each child, which is
-          how the mismatch happened in the first place. */}
+          Set once on the container rather than per child, which is how the
+          mismatch happened in the first place. */}
       <div
         className='settings-field-group'
         style={{
@@ -357,7 +356,6 @@ export default function SettingsGeneralPage() {
           gap: '12px',
           alignItems: 'flex-start',
           width: '100%',
-          maxWidth: '360px',
         }}
       >
         <AvatarRow

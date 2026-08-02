@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import GeneratedAvatar from './generatedavatar'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
@@ -168,6 +168,7 @@ function OrgDropdown({ orgName, allOrgs = [], activeOrgId }) {
 // ─── ProfileDropdown ─── matches Figma node 87:2323
 function ProfileDropdown({ userImage }) {
   const router = useRouter()
+  const pathname = usePathname()
 
   async function handleLogout() {
     await fetch('/api/logout', { method: 'POST' })
@@ -199,7 +200,18 @@ function ProfileDropdown({ userImage }) {
       }
     >
       <DropdownMenu width='180px'>
-        <DropdownOption onClick={() => router.push('/dashboard/settings')}>
+        <DropdownOption
+          onClick={() =>
+            // ?from= tells the settings page where to return to. Without it
+            // its Back button has nothing to go to but the dashboard, since
+            // it deliberately doesn't walk browser history — moving between
+            // settings sections would otherwise make Back step through the
+            // tabs instead of leaving.
+            router.push(
+              `/dashboard/settings?from=${encodeURIComponent(pathname || '/dashboard/analytics')}`
+            )
+          }
+        >
           Settings
         </DropdownOption>
         <DropdownOption onClick={() => router.push('/dashboard/billing')}>

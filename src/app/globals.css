@@ -1873,12 +1873,16 @@ html {
   transform: scale(0.97);
 }
 
-/* The sidebar and panel stack on mobile — a 170px nav beside a panel
-   doesn't fit a phone, and the nav is short enough to sit above the
-   content rather than needing to collapse. */
-@media (max-width: 768px) {
-  .settings-shell {
-    flex-direction: column;
-    gap: 28px !important;
+/* Mobile settings list rows. Whole-row press feedback rather than a hover
+   tint — on touch there's no hover, and the row is the tap target. */
+.settings-list-option {
+  transition: background 0.15s ease;
+}
+.settings-list-option:active {
+  background: var(--bg-subtle);
+}
+@media (hover: hover) {
+  .settings-list-option:hover {
+    background: var(--bg-subtle);
   }
 }

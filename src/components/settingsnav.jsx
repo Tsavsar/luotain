@@ -12,13 +12,17 @@ import { usePathname } from 'next/navigation'
 // to keep in sync.
 //
 // Both groups contain a "General", so the label can't identify a section —
-// account general is /dashboard/settings, org general is
+// account general is /dashboard/settings/general, org general is
 // /dashboard/settings/organization.
+//
+// Account General is NOT the index route, deliberately. On mobile the index
+// is the list of sections, and it can't also be a panel — so every section
+// including General has its own route and the index is purely the list.
 export const SETTINGS_GROUPS = [
   {
     label: 'Account settings',
     items: [
-      { label: 'General', href: '/dashboard/settings' },
+      { label: 'General', href: '/dashboard/settings/general' },
       {
         label: 'Connected accounts',
         href: '/dashboard/settings/connected-accounts',
@@ -48,6 +52,67 @@ export const SETTINGS_GROUPS = [
     ],
   },
 ]
+
+function ChevronRight() {
+  return (
+    <svg
+      width='16'
+      height='16'
+      viewBox='0 0 16 16'
+      fill='none'
+      aria-hidden='true'
+    >
+      <path
+        d='M6 4l4 4-4 4'
+        stroke='currentColor'
+        strokeWidth='1.4'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
+// The mobile row. Taller, full width, with a chevron — it's a destination
+// you tap into, not a tab you switch between, and it needs a real touch
+// target rather than the sidebar's 28px.
+function ListOption({ item }) {
+  return (
+    <Link
+      href={item.href}
+      className='settings-list-option'
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '10px',
+        width: '100%',
+        padding: '14px 14px',
+        boxSizing: 'border-box',
+        borderRadius: '12px',
+        textDecoration: 'none',
+      }}
+    >
+      <span
+        className='para-sm'
+        style={{
+          color: item.danger ? 'var(--error-base)' : 'var(--text-strong)',
+        }}
+      >
+        {item.label}
+      </span>
+      <span
+        style={{
+          display: 'flex',
+          flexShrink: 0,
+          color: item.danger ? 'var(--error-base)' : 'var(--text-soft)',
+        }}
+      >
+        <ChevronRight />
+      </span>
+    </Link>
+  )
+}
 
 function NavOption({ item, active }) {
   return (
@@ -89,8 +154,9 @@ function NavOption({ item, active }) {
   )
 }
 
-export default function SettingsNav() {
+export default function SettingsNav({ variant = 'sidebar' }) {
   const pathname = usePathname()
+  const isList = variant === 'list'
 
   // Longest match wins, so /dashboard/settings/organization doesn't also
   // light up /dashboard/settings. Exact-match-only would break as soon as
@@ -104,11 +170,11 @@ export default function SettingsNav() {
     <nav
       aria-label='Settings'
       style={{
-        width: '170px',
+        width: isList ? '100%' : '170px',
         flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',
-        gap: '21px',
+        gap: isList ? '24px' : '21px',
         alignItems: 'flex-start',
       }}
     >
@@ -123,21 +189,32 @@ export default function SettingsNav() {
             width: '100%',
           }}
         >
-          <p
-            style={{
-              margin: 0,
-              width: '100%',
-              // 10px, below the smallest type token — a group heading in a
-              // sidebar this narrow, deliberately quiet.
-              fontFamily: 'var(--font-sans)',
-              fontSize: '10px',
-              lineHeight: 1.3,
-              letterSpacing: '0.2px',
-              color: 'var(--text-soft)',
-            }}
-          >
-            {group.label}
-          </p>
+          {isList ? (
+            <p
+              className='para-xs'
+              style={{ margin: 0, width: '100%', color: 'var(--text-soft)' }}
+            >
+              {group.label}
+            </p>
+          ) : (
+            <p
+              style={{
+                margin: 0,
+                width: '100%',
+                // 10px, below the smallest type token — a group heading in a
+                // sidebar this narrow, deliberately quiet. On mobile it goes
+                // up to para-xs, where there's room and 10px would be
+                // needlessly hard to read.
+                fontFamily: 'var(--font-sans)',
+                fontSize: '10px',
+                lineHeight: 1.3,
+                letterSpacing: '0.2px',
+                color: 'var(--text-soft)',
+              }}
+            >
+              {group.label}
+            </p>
+          )}
 
           <div
             style={{
@@ -145,17 +222,38 @@ export default function SettingsNav() {
               flexDirection: 'column',
               alignItems: 'flex-start',
               width: '100%',
-              background: 'var(--bg-default)',
+              // The list gets a surface and dividers so the rows read as one
+              // grouped control rather than floating text.
+              background: isList ? 'var(--bg-surface)' : 'var(--bg-default)',
               borderRadius: '14px',
+              overflow: isList ? 'hidden' : undefined,
             }}
           >
-            {group.items.map((item) => (
-              <NavOption
-                key={item.href}
-                item={item}
-                active={item.href === activeHref}
-              />
-            ))}
+            {group.items.map((item, i) =>
+              isList ? (
+                <div key={item.href} style={{ width: '100%' }}>
+                  {i > 0 ? (
+                    <div
+                      aria-hidden='true'
+                      style={{
+                        height: '1px',
+                        // Inset so the divider doesn't run into the rounded
+                        // corners of the group.
+                        margin: '0 14px',
+                        background: 'var(--stroke-soft)',
+                      }}
+                    />
+                  ) : null}
+                  <ListOption item={item} />
+                </div>
+              ) : (
+                <NavOption
+                  key={item.href}
+                  item={item}
+                  active={item.href === activeHref}
+                />
+              )
+            )}
           </div>
         </div>
       ))}
