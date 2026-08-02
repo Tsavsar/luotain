@@ -405,7 +405,7 @@ export default function SettingsGeneralPage() {
             silently fails or locks someone out is worse than one that
             says why not. */}
         <div style={{ width: '100%' }}>
-          <Tooltip label='Contact support to change your email'>
+          <Tooltip label='Contact support to change your email' fullWidth>
             <div style={{ width: '100%' }}>
               <Inputfield
                 lefticon={<MailIcon />}

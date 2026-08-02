@@ -19,7 +19,18 @@ import { createPortal } from 'react-dom'
 // A tooltip that appears half-cut is worse than none.
 const DELAY_MS = 250
 
-export default function Tooltip({ label, children, placement = 'top' }) {
+export default function Tooltip({
+  label,
+  children,
+  placement = 'top',
+  // The anchor is inline-flex so it shrink-wraps its child, which is right
+  // for an icon button — it shouldn't stretch. But when the child IS a
+  // full-width control, that shrink-wrap collapses it: a child at width
+  // 100% resolves against the shrunken anchor rather than the column, so
+  // the control comes out narrower than its siblings. Opt-in so no existing
+  // tooltip changes shape.
+  fullWidth = false,
+}) {
   const [open, setOpen] = useState(false)
   const [canPortal, setCanPortal] = useState(false)
   const anchorRef = useRef(null)
@@ -127,7 +138,10 @@ export default function Tooltip({ label, children, placement = 'top' }) {
       onMouseLeave={hide}
       onFocus={show}
       onBlur={hide}
-      style={{ display: 'inline-flex' }}
+      style={{
+        display: fullWidth ? 'flex' : 'inline-flex',
+        width: fullWidth ? '100%' : undefined,
+      }}
     >
       {children}
       {open && canPortal ? createPortal(bubble, document.body) : null}
