@@ -102,6 +102,40 @@ function DashboardShell({ children }) {
     guard()
   }, [router])
 
+  // The user's own profile. /api/dashboard-info answers "which org am I
+  // in" and carries no name or avatar seed, so without this the header
+  // avatar fell back to a default gradient while settings showed the real
+  // one — they were reading different sources.
+  useEffect(() => {
+    if (checking) return
+    let cancelled = false
+
+    function loadProfile() {
+      fetch('/api/me')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (cancelled || !data?.user) return
+          setUserName(data.user.name || '')
+          setAvatarSeed(data.user.avatarSeed || null)
+          setUserImage(data.user.image || null)
+        })
+        .catch(() => {})
+    }
+
+    loadProfile()
+
+    // Re-read when the profile is saved elsewhere. The settings page lives
+    // inside this layout but can't reach up into its state, and a context
+    // for one value that changes rarely is more machinery than it's worth.
+    // An event keeps them decoupled: settings announces, anything that
+    // renders an avatar listens.
+    window.addEventListener('luotain:profile-updated', loadProfile)
+    return () => {
+      cancelled = true
+      window.removeEventListener('luotain:profile-updated', loadProfile)
+    }
+  }, [checking])
+
   useEffect(() => {
     if (checking) return
 
@@ -109,10 +143,13 @@ function DashboardShell({ children }) {
       try {
         const res = await fetch('/api/dashboard-info')
         const data = await res.json()
-        setOrgName(data.orgName)
         setAllOrgs(data.allOrgs || [])
         setActiveOrgId(data.activeOrgId)
-        setUserImage(data.userImage)
+        // Deliberately NOT setting the avatar here. /api/me owns it —
+        // two fetches writing the same state raced, and this one won, so
+        // removing a photo in settings left the old one in the header and
+        // the gradient never got a chance to render.
+        setOrgName(data.orgName)
       } catch (err) {
         setOrgName('Your Organization')
       }

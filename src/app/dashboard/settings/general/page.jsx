@@ -615,6 +615,9 @@ export default function SettingsGeneralPage() {
       setDraft(next)
       setSaved(next)
       setProfileUpdatedAt(data.user.profileUpdatedAt)
+      // Tells the dashboard layout to re-read the profile, so the header
+      // avatar updates without a reload.
+      window.dispatchEvent(new Event('luotain:profile-updated'))
       toast('Changes saved')
     } catch (err) {
       console.error('[SettingsGeneral]', err)
