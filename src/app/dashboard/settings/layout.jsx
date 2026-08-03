@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import BackButton from '@/components/backbutton'
 import SettingsNav from '@/components/settingsnav'
 import useIsMobile from '@/components/useismobile'
+import { SettingsNavSkeleton } from '@/components/settingsskeleton'
 
 // ─── Settings layout ───
 // Two layouts, one route tree.
@@ -43,9 +44,53 @@ export default function SettingsLayout({ children }) {
       from && from.startsWith('/') ? from : '/dashboard/analytics'
   }
 
-  // Null until the media query has been read. Rendering either layout
-  // before then would flash the wrong one.
-  if (isMobile === null) return null
+  // Null until the media query has been read on the client. This used to
+  // return null, which meant the entire settings area — sidebar included —
+  // rendered nothing until after mount. That was the single biggest cause
+  // of the page feeling slow: a guaranteed blank frame before any of the
+  // three sequential waits (auth check, media query, data fetch) had even
+  // started on the last one.
+  //
+  // The shell renders immediately now. Only the nav is deferred, because
+  // that's the one part that genuinely differs between the two layouts —
+  // and the skeleton is the same width, so nothing moves when it resolves.
+  if (isMobile === null) {
+    return (
+      <div
+        className='dashboard-section dashboard-section-3 dashboard-page-padding'
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          paddingTop: 0,
+          paddingBottom: '64px',
+        }}
+      >
+        <div
+          style={{
+            width: '100%',
+            maxWidth: '720px',
+            display: 'flex',
+            gap: '46px',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '21px',
+              flexShrink: 0,
+            }}
+          >
+            <BackButton />
+            <SettingsNavSkeleton />
+          </div>
+          <div style={{ flex: '1 0 0', minWidth: 0 }}>{children}</div>
+        </div>
+      </div>
+    )
+  }
 
   if (isMobile) {
     return (

@@ -6,6 +6,7 @@ import DashboardMenu from '@/components/dashboardmenu'
 import DashboardNav from '@/components/dashboardnav'
 import DashboardSkeleton from '@/components/dashboardskeleton'
 import { ToastStack } from '@/components/toast'
+import { getProfile } from '@/lib/profilecache'
 import { MotionConfig } from 'motion/react'
 import Switch from '@/components/switch'
 import {
@@ -110,29 +111,34 @@ function DashboardShell({ children }) {
     if (checking) return
     let cancelled = false
 
-    function loadProfile() {
-      fetch('/api/me')
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (cancelled || !data?.user) return
-          setUserName(data.user.name || '')
-          setAvatarSeed(data.user.avatarSeed || null)
-          setUserImage(data.user.image || null)
+    function loadProfile(force) {
+      // Shared with the settings panels — the same profile was being
+      // fetched twice on every settings visit.
+      getProfile({ force })
+        .then((user) => {
+          if (cancelled || !user) return
+          setUserName(user.name || '')
+          setAvatarSeed(user.avatarSeed || null)
+          setUserImage(user.image || null)
         })
         .catch(() => {})
     }
 
     loadProfile()
 
+    // A save has to bypass the cache, or the header would keep showing the
+    // profile from before the edit.
+    const onUpdated = () => loadProfile(true)
+
     // Re-read when the profile is saved elsewhere. The settings page lives
     // inside this layout but can't reach up into its state, and a context
     // for one value that changes rarely is more machinery than it's worth.
     // An event keeps them decoupled: settings announces, anything that
     // renders an avatar listens.
-    window.addEventListener('luotain:profile-updated', loadProfile)
+    window.addEventListener('luotain:profile-updated', onUpdated)
     return () => {
       cancelled = true
-      window.removeEventListener('luotain:profile-updated', loadProfile)
+      window.removeEventListener('luotain:profile-updated', onUpdated)
     }
   }, [checking])
 

@@ -287,10 +287,17 @@ export default function ConnectedAccountsPage() {
         Connected accounts
       </p>
 
-      {/* Nothing rendered until the real state is known. Showing cards in a
-          default state and correcting them a moment later would flash
-          "Connect Google" at someone who signed up with Google. */}
-      {data ? (
+      {/* A skeleton until the real state is known, not the cards in a
+          default state — that would flash "Connect Google" at someone who
+          signed up with Google. Same footprint, so nothing moves. */}
+      {!data ? (
+        <div
+          className='connect-cards'
+          style={{ display: 'flex', gap: '8px', width: '100%' }}
+        >
+          <SettingsCardsSkeletonCards />
+        </div>
+      ) : (
         <div
           className='connect-cards'
           style={{
@@ -314,7 +321,34 @@ export default function ConnectedAccountsPage() {
             )
           )}
         </div>
-      ) : null}
+      )}
     </div>
+  )
+}
+
+// Just the two card blocks — the heading above is already real, so the
+// skeleton shouldn't render its own.
+function SettingsCardsSkeletonCards() {
+  return (
+    <>
+      <div
+        className='skeleton-pulse'
+        style={{
+          flex: '1 0 0',
+          height: '86px',
+          borderRadius: 'var(--radius-xl)',
+          background: 'var(--bg-surface)',
+        }}
+      />
+      <div
+        className='skeleton-pulse'
+        style={{
+          flex: '1 0 0',
+          height: '86px',
+          borderRadius: 'var(--radius-xl)',
+          background: 'var(--bg-surface)',
+        }}
+      />
+    </>
   )
 }

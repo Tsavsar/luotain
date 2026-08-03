@@ -5,6 +5,8 @@ import Inputfield from '@/components/input'
 import Tooltip from '@/components/tooltip'
 import GradientAvatar from '@/components/gradientavatar'
 import Alert, { AlertAction, AlertInfoIcon } from '@/components/alert'
+import { SettingsGeneralSkeleton } from '@/components/settingsskeleton'
+import { getProfile, primeProfile } from '@/lib/profilecache'
 import { toast } from '@/components/toast'
 
 // ─── Account → General ───
@@ -427,22 +429,20 @@ export default function SettingsGeneralPage() {
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/me')
-      .then((res) => {
-        if (!res.ok) throw new Error(`profile fetch failed: ${res.status}`)
-        return res.json()
-      })
-      .then((data) => {
+    // Served from cache when the layout has already read it, so arriving
+    // at settings from anywhere in the dashboard is instant.
+    getProfile()
+      .then((user) => {
         if (cancelled) return
         const next = {
-          name: data.user.name,
-          image: data.user.image,
-          avatarSeed: data.user.avatarSeed,
+          name: user.name,
+          image: user.image,
+          avatarSeed: user.avatarSeed,
         }
         setDraft(next)
         setSaved(next)
-        setEmail(data.user.email)
-        setProfileUpdatedAt(data.user.profileUpdatedAt)
+        setEmail(user.email)
+        setProfileUpdatedAt(user.profileUpdatedAt)
         setLoaded(true)
       })
       .catch((err) => {
@@ -615,8 +615,11 @@ export default function SettingsGeneralPage() {
       setDraft(next)
       setSaved(next)
       setProfileUpdatedAt(data.user.profileUpdatedAt)
-      // Tells the dashboard layout to re-read the profile, so the header
-      // avatar updates without a reload.
+      // Written straight into the cache rather than left to be re-fetched:
+      // the response already IS the new profile.
+      primeProfile(data.user)
+      // Tells the dashboard layout to re-read, so the header avatar updates
+      // without a reload.
       window.dispatchEvent(new Event('luotain:profile-updated'))
       toast('Changes saved')
     } catch (err) {
@@ -626,6 +629,11 @@ export default function SettingsGeneralPage() {
       setSaving(false)
     }
   }
+
+  // The form's shape, at the real sizes, so nothing shifts when it fills
+  // in. Rendering the empty form instead would show blank fields that then
+  // populate, which reads as the page having loaded wrong.
+  if (!loaded) return <SettingsGeneralSkeleton />
 
   return (
     <div
