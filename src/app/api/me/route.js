@@ -68,6 +68,14 @@ export async function PATCH(request) {
   // can't silently wipe someone's photo.
   const removeImage = body?.removeImage === true
   const rerollAvatar = body?.rerollAvatar === true
+  // A data URL, produced by the client after resizing. Stored inline
+  // rather than in object storage: an avatar resized to 256px is tens of
+  // kilobytes, which a TEXT column handles fine, and it means no bucket,
+  // no signed URLs and no second service to keep alive. Worth revisiting
+  // if avatars ever get larger than this.
+  const image = typeof body?.image === 'string' ? body.image : null
+  const avatarSeed =
+    typeof body?.avatarSeed === 'string' ? body.avatarSeed : null
 
   const name = String(body?.name ?? '').trim()
   if (!name) {
@@ -83,6 +91,26 @@ export async function PATCH(request) {
     )
   }
 
+  if (image !== null) {
+    // Only images, and only data URLs. Accepting an arbitrary http URL here
+    // would let someone point the avatar at a tracking pixel or a host they
+    // control, which then loads for every viewer of that profile.
+    if (!/^data:image\/(png|jpeg|webp);base64,/.test(image)) {
+      return Response.json(
+        { error: 'That file type is not supported', field: 'image' },
+        { status: 400 }
+      )
+    }
+    // ~1.4MB of base64, which is roughly 1MB of image. The client resizes
+    // well below this; the cap is here for anything that bypasses it.
+    if (image.length > 1_400_000) {
+      return Response.json(
+        { error: 'That image is too large', field: 'image' },
+        { status: 400 }
+      )
+    }
+  }
+
   const user = await prisma.user.update({
     where: { email },
     data: {
@@ -91,10 +119,12 @@ export async function PATCH(request) {
       // the fields this page owns instead of any write to the row.
       profileUpdatedAt: new Date(),
       ...(removeImage ? { image: null } : {}),
-      // A random seed rather than anything derived from the user, so
-      // re-rolling actually produces a different gradient — deriving it
-      // from the id would return the same one every time.
-      ...(rerollAvatar
+      ...(image !== null ? { image } : {}),
+      // The seed is generated client-side so the preview and the saved
+      // value are the same gradient — generating it here would mean the
+      // person sees one gradient before saving and a different one after.
+      ...(avatarSeed ? { avatarSeed } : {}),
+      ...(rerollAvatar && !avatarSeed
         ? { avatarSeed: Math.random().toString(36).slice(2, 12) }
         : {}),
     },

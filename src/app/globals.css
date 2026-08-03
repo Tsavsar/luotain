@@ -1886,3 +1886,101 @@ html {
     background: var(--bg-subtle);
   }
 }
+
+/* --- Avatar blur swap ---
+   Same idea as the slug regenerate: the old avatar blurs out, the new one
+   lands while it's unreadable, then blurs back. A hard cut between two
+   gradients reads as a glitch rather than a change. */
+.avatar-swap {
+  filter: blur(0);
+  opacity: 1;
+  transition:
+    filter 0.14s ease,
+    opacity 0.14s ease;
+}
+.avatar-swap.is-swapping {
+  filter: blur(6px);
+  opacity: 0.45;
+}
+
+/* --- Dice roll ---
+   Shake and spin together. A plain rotation reads as a loading spinner;
+   the wobble is what makes it read as a die being thrown. */
+@keyframes diceRoll {
+  0% {
+    transform: rotate(0deg) translateX(0);
+  }
+  20% {
+    transform: rotate(-90deg) translateX(-2px);
+  }
+  40% {
+    transform: rotate(-180deg) translateX(2px);
+  }
+  60% {
+    transform: rotate(-270deg) translateX(-1.5px);
+  }
+  80% {
+    transform: rotate(-330deg) translateX(1px);
+  }
+  100% {
+    transform: rotate(-360deg) translateX(0);
+  }
+}
+.dice-roll {
+  animation: diceRoll 0.6s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+
+/* --- Unsaved changes banner ---
+   Collapsed to zero height rather than unmounted, so it drops down instead
+   of appearing. max-height is animatable where height:auto isn't; 80px is
+   comfortably above the banner's real height without making the transition
+   feel slack. */
+.unsaved-banner {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: -18px;
+  pointer-events: none;
+  transition:
+    max-height 0.28s cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 0.2s ease,
+    margin-top 0.28s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.unsaved-banner.is-open {
+  max-height: 80px;
+  opacity: 1;
+  /* Cancels the negative margin above, so the gap only exists when the
+     banner does — otherwise there'd be a permanent hole in the layout. */
+  margin-top: 0;
+  pointer-events: auto;
+}
+@keyframes unsavedShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-6px);
+  }
+  30% {
+    transform: translateX(5px);
+  }
+  45% {
+    transform: translateX(-4px);
+  }
+  60% {
+    transform: translateX(3px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+.unsaved-banner.is-shaking {
+  animation: unsavedShake 0.4s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dice-roll,
+  .unsaved-banner.is-shaking {
+    animation: none !important;
+  }
+}

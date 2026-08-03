@@ -113,8 +113,6 @@ function DashboardShell({ children }) {
         setAllOrgs(data.allOrgs || [])
         setActiveOrgId(data.activeOrgId)
         setUserImage(data.userImage)
-        setUserName(data.userName || '')
-        setAvatarSeed(data.avatarSeed || null)
       } catch (err) {
         setOrgName('Your Organization')
       }
