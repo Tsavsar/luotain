@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Inputfield from '@/components/input'
 import Tooltip from '@/components/tooltip'
+import GradientAvatar from '@/components/gradientavatar'
 import { toast } from '@/components/toast'
 
 // ─── Account → General ───
@@ -98,6 +99,59 @@ function MailIcon() {
   )
 }
 
+// Uses the project's existing .btn-spinner keyframes rather than a second
+// spin animation. The gap in the ring is what makes rotation legible — a
+// full ring spinning looks static.
+function Spinner({ size = 14 }) {
+  return (
+    <svg
+      className='btn-spinner'
+      width={size}
+      height={size}
+      viewBox='0 0 16 16'
+      fill='none'
+      aria-hidden='true'
+    >
+      <circle
+        cx='8'
+        cy='8'
+        r='6'
+        stroke='currentColor'
+        strokeWidth='2'
+        strokeLinecap='round'
+        strokeDasharray='28'
+        strokeDashoffset='9'
+        opacity='0.9'
+      />
+    </svg>
+  )
+}
+
+function DiceIcon() {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 20 20'
+      fill='none'
+      aria-hidden='true'
+    >
+      <rect
+        x='3.2'
+        y='3.2'
+        width='13.6'
+        height='13.6'
+        rx='3.4'
+        stroke='currentColor'
+        strokeWidth='1.5'
+      />
+      <circle cx='7.2' cy='7.2' r='1.15' fill='currentColor' />
+      <circle cx='12.8' cy='12.8' r='1.15' fill='currentColor' />
+      <circle cx='12.8' cy='7.2' r='1.15' fill='currentColor' />
+    </svg>
+  )
+}
+
 function UploadIcon() {
   return (
     <svg
@@ -151,9 +205,7 @@ function TrashIcon() {
   )
 }
 
-function AvatarRow({ image, name, onUpload, onRemove }) {
-  const initial = (name || '?').trim().charAt(0).toUpperCase()
-
+function AvatarRow({ image, name, seed, busy, onUpload, onRemove, onReroll }) {
   return (
     <div
       style={{
@@ -185,35 +237,42 @@ function AvatarRow({ image, name, onUpload, onRemove }) {
           }}
         />
       ) : (
-        // Initial rather than a generic silhouette — the design shows a
-        // photo, and with none set an initial at least identifies the
-        // account.
-        <div
-          aria-hidden='true'
-          style={{
-            width: '42px',
-            height: '42px',
-            flexShrink: 0,
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--bg-subtle)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-sub)',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '16px',
-            letterSpacing: '0.32px',
-          }}
-        >
-          {initial}
-        </div>
+        // No photo means a generated gradient rather than a grey circle.
+        // It's derived from the seed, so it's stable across sessions and
+        // devices without anything being uploaded.
+        <GradientAvatar seed={seed} name={name} size={42} />
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Only offered when there's no photo — re-rolling a gradient
+            nobody can see would do nothing visible. */}
+        {!image ? (
+          <Tooltip label='New gradient'>
+            <button
+              type='button'
+              onClick={onReroll}
+              disabled={busy}
+              aria-label='Generate a new gradient'
+              className='settings-icon-btn'
+              style={{
+                display: 'flex',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: busy ? 'default' : 'pointer',
+                color: 'var(--text-sub)',
+              }}
+            >
+              <DiceIcon />
+            </button>
+          </Tooltip>
+        ) : null}
+
         <Tooltip label='Upload a photo'>
           <button
             type='button'
             onClick={onUpload}
+            disabled={busy}
             aria-label='Upload a photo'
             className='settings-icon-btn'
             style={{
@@ -221,7 +280,7 @@ function AvatarRow({ image, name, onUpload, onRemove }) {
               background: 'none',
               border: 'none',
               padding: 0,
-              cursor: 'pointer',
+              cursor: busy ? 'default' : 'pointer',
               color: 'var(--text-sub)',
             }}
           >
@@ -229,14 +288,15 @@ function AvatarRow({ image, name, onUpload, onRemove }) {
           </button>
         </Tooltip>
 
-        {/* Only offered when there's actually a photo to remove — the
-            design shows both icons unconditionally, but "remove" with
-            nothing to remove is a button that can only disappoint. */}
+        {/* Only when there's actually a photo to remove — the design shows
+            both icons unconditionally, but "remove" with nothing to remove
+            is a button that can only disappoint. */}
         {image ? (
           <Tooltip label='Remove photo'>
             <button
               type='button'
               onClick={onRemove}
+              disabled={busy}
               aria-label='Remove photo'
               className='settings-icon-btn'
               style={{
@@ -244,7 +304,7 @@ function AvatarRow({ image, name, onUpload, onRemove }) {
                 background: 'none',
                 border: 'none',
                 padding: 0,
-                cursor: 'pointer',
+                cursor: busy ? 'default' : 'pointer',
                 color: 'var(--text-sub)',
               }}
             >
@@ -264,8 +324,12 @@ export default function SettingsGeneralPage() {
     name: '',
     email: '',
     image: null,
+    avatarSeed: null,
     profileUpdatedAt: null,
   })
+  // Separate from `saving` so the avatar actions don't put the Save button
+  // into a loading state, and vice versa.
+  const [avatarBusy, setAvatarBusy] = useState(false)
   // What was last persisted, so "has anything changed" is a real
   // comparison rather than a flag someone has to remember to set.
   const [saved, setSaved] = useState({ name: '' })
@@ -304,6 +368,37 @@ export default function SettingsGeneralPage() {
     setShaking(true)
     timers.current.push(setTimeout(() => setShaking(false), 320))
     timers.current.push(setTimeout(() => setErrored(false), 2000))
+  }
+
+  // Removing a photo and re-rolling are both a PATCH with a flag, so they
+  // share one path. Name is sent along because the endpoint requires it —
+  // it's the same update either way.
+  async function patchAvatar(payload, successMessage) {
+    if (avatarBusy) return
+    setAvatarBusy(true)
+    try {
+      const res = await fetch('/api/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: user.name.trim() || saved.name,
+          ...payload,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data?.error || "Couldn't update your avatar")
+        return
+      }
+      setUser(data.user)
+      setSaved({ name: data.user.name })
+      toast(successMessage)
+    } catch (err) {
+      console.error('[SettingsGeneral]', err)
+      toast.error("Couldn't update your avatar")
+    } finally {
+      setAvatarBusy(false)
+    }
   }
 
   async function handleSave() {
@@ -372,14 +467,16 @@ export default function SettingsGeneralPage() {
         <AvatarRow
           image={user.image}
           name={user.name}
+          seed={user.avatarSeed}
+          busy={avatarBusy}
           onUpload={() => {
-            // TODO: needs somewhere to put the file. Avatar upload means
-            // storage plus a write to User.image, and neither exists yet.
+            // TODO: needs somewhere to put the file. Upload means storage
+            // plus a write to User.image, and neither exists yet. Removing
+            // and re-rolling are real, because neither needs storage.
             toast('Photo upload is not built yet')
           }}
-          onRemove={() => {
-            toast('Photo upload is not built yet')
-          }}
+          onRemove={() => patchAvatar({ removeImage: true }, 'Photo removed')}
+          onReroll={() => patchAvatar({ rerollAvatar: true }, 'New gradient')}
         />
 
         {/* 360px, not the panel's full 504 — per the design, and it keeps
@@ -444,7 +541,14 @@ export default function SettingsGeneralPage() {
           transition: 'background 0.2s ease, color 0.2s ease',
         }}
       >
-        {saving ? 'Saving…' : 'Save changes'}
+        {saving ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Spinner size={13} />
+            Saving
+          </span>
+        ) : (
+          'Save changes'
+        )}
       </button>
 
       <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>

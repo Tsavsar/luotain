@@ -6,6 +6,7 @@ import { signOut } from 'next-auth/react'
 import GeneratedAvatar from './generatedavatar'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import LogoMark from './logomark'
+import GradientAvatar from './gradientavatar'
 
 function OrgChevronIcon() {
   return (
@@ -166,7 +167,7 @@ function OrgDropdown({ orgName, allOrgs = [], activeOrgId }) {
 }
 
 // ─── ProfileDropdown ─── matches Figma node 87:2323
-function ProfileDropdown({ userImage }) {
+function ProfileDropdown({ userImage, userName, avatarSeed }) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -186,15 +187,19 @@ function ProfileDropdown({ userImage }) {
             borderRadius: 'var(--radius-full)',
             overflow: 'hidden',
             flexShrink: 0,
-            background: 'var(--bg-subtle)',
           }}
         >
-          {userImage && (
+          {userImage ? (
             <img
               src={userImage}
               alt=''
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
+          ) : (
+            // Was a flat --bg-subtle circle, which read as a missing image.
+            // Same gradient as the settings page, from the same seed, so
+            // the avatar is consistent wherever it appears.
+            <GradientAvatar seed={avatarSeed} name={userName} size={32} />
           )}
         </div>
       }
@@ -242,6 +247,8 @@ export default function DashboardMenu({
   allOrgs,
   activeOrgId,
   userImage,
+  userName,
+  avatarSeed,
   compact = false,
   maxWidth = '720px',
 }) {
@@ -311,7 +318,11 @@ export default function DashboardMenu({
           </button>
         )}
 
-        <ProfileDropdown userImage={userImage} />
+        <ProfileDropdown
+          userImage={userImage}
+          userName={userName}
+          avatarSeed={avatarSeed}
+        />
       </div>
     </div>
   )

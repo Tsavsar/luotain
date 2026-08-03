@@ -58,6 +58,8 @@ function DashboardShell({ children }) {
   const [allOrgs, setAllOrgs] = useState([])
   const [activeOrgId, setActiveOrgId] = useState(null)
   const [userImage, setUserImage] = useState(null)
+  const [userName, setUserName] = useState('')
+  const [avatarSeed, setAvatarSeed] = useState(null)
   // Testing-only theme override — reads whatever's already on <html>
   // (your real [data-theme] mechanism from globals.css) so this
   // starts in sync, then just flips that same attribute directly.
@@ -111,6 +113,8 @@ function DashboardShell({ children }) {
         setAllOrgs(data.allOrgs || [])
         setActiveOrgId(data.activeOrgId)
         setUserImage(data.userImage)
+        setUserName(data.userName || '')
+        setAvatarSeed(data.avatarSeed || null)
       } catch (err) {
         setOrgName('Your Organization')
       }
@@ -153,6 +157,8 @@ function DashboardShell({ children }) {
             allOrgs={allOrgs}
             activeOrgId={activeOrgId}
             userImage={userImage}
+            userName={userName}
+            avatarSeed={avatarSeed}
             compact={compactHeader}
             maxWidth={compactHeader ? '440px' : '720px'}
           />
