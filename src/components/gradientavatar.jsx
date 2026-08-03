@@ -40,38 +40,150 @@ function slice(h, shift, mod) {
   return (((h >>> shift) % mod) + mod) % mod
 }
 
-// Pastel: high lightness, restrained saturation. Two hues rather than
-// three — a third stop at this lightness turns to mud in the middle.
+// ─── Families ───
+// Weighted rather than uniform. Pastels stay the majority so a list of
+// avatars reads as one palette; the rest exist so it isn't monotonous.
 //
-// The hue offset is kept between 30 and 85 degrees deliberately. Wider
-// (complementary) pairings read as garish at pastel lightness, and
-// narrower than 30 barely reads as a gradient at all.
-export function gradientFor(seed) {
-  const h = hash(String(seed || 'luotain'))
+// Weights are cumulative out of 100, checked in order.
+const FAMILIES = [
+  { id: 'pastel', upTo: 52 },
+  { id: 'silver', upTo: 64 },
+  { id: 'gold', upTo: 76 },
+  { id: 'graphite', upTo: 86 },
+  { id: 'ink', upTo: 93 },
+  { id: 'jewel', upTo: 100 },
+]
 
+function familyFor(h) {
+  const roll = slice(h, 3, 100)
+  return FAMILIES.find((f) => roll < f.upTo)?.id || 'pastel'
+}
+
+// Metallics get a third stop. Two flat greys read as concrete; what makes
+// silver look like silver is a bright band running through it, and gold is
+// the same trick warmer. The middle stop is that sheen.
+function build(family, h) {
   const hue = slice(h, 0, 360)
-  const spread = 30 + slice(h, 9, 56) // 30–85°
-  // Alternating direction, so the palette doesn't drift one way around
-  // the wheel and cluster.
-  const hue2 = (hue + (h & 1 ? spread : -spread) + 360) % 360
-
   const angle = slice(h, 17, 360)
 
-  // Saturation and lightness vary slightly per seed so avatars in a list
-  // aren't all identically washed out, but stay inside a pastel band.
-  const sat1 = 62 + slice(h, 5, 14) // 62–75%
-  const sat2 = 58 + slice(h, 13, 14) // 58–71%
-  const light1 = 78 + slice(h, 21, 7) // 78–84%
-  const light2 = 70 + slice(h, 25, 7) // 70–76%
+  if (family === 'silver') {
+    // Barely-there hue, cool. Fully desaturated greys look dead, so a
+    // couple of percent of blue keeps it metallic rather than flat.
+    const base = 205 + slice(h, 5, 30) // 205–235, cool
+    const sat = 6 + slice(h, 9, 7) // 6–12%
+    return {
+      stops: [
+        `hsl(${base} ${sat}% ${62 + slice(h, 21, 6)}%)`,
+        `hsl(${base} ${sat + 4}% ${88 + slice(h, 25, 5)}%)`,
+        `hsl(${base} ${sat}% ${68 + slice(h, 13, 7)}%)`,
+      ],
+      angle,
+      lightness: 74,
+    }
+  }
+
+  if (family === 'gold') {
+    const base = 38 + slice(h, 5, 14) // 38–52, warm
+    return {
+      stops: [
+        `hsl(${base} ${52 + slice(h, 9, 12)}% ${56 + slice(h, 21, 6)}%)`,
+        `hsl(${base + 6} ${64 + slice(h, 13, 10)}% ${80 + slice(h, 25, 6)}%)`,
+        `hsl(${base - 4} ${48 + slice(h, 11, 12)}% ${58 + slice(h, 19, 7)}%)`,
+      ],
+      angle,
+      lightness: 66,
+    }
+  }
+
+  if (family === 'graphite') {
+    const base = 210 + slice(h, 5, 40)
+    const sat = 4 + slice(h, 9, 8)
+    return {
+      // Top stop capped at 34%. Measured rather than guessed: at 58% the
+      // light initial only reached 2.92:1, and 34% is the highest
+      // lightness at which white still clears 3:1 across every hue.
+      stops: [
+        `hsl(${base} ${sat}% ${20 + slice(h, 21, 8)}%)`,
+        `hsl(${base} ${sat + 3}% ${28 + slice(h, 25, 7)}%)`,
+      ],
+      angle,
+      lightness: 26,
+    }
+  }
+
+  if (family === 'ink') {
+    // Near-black, but never pure. A true #000 avatar reads as a rendering
+    // failure rather than a choice, and it kills the gradient entirely.
+    const base = 220 + slice(h, 5, 40)
+    return {
+      stops: [
+        `hsl(${base} ${8 + slice(h, 9, 8)}% ${10 + slice(h, 21, 6)}%)`,
+        `hsl(${base} ${6 + slice(h, 13, 8)}% ${24 + slice(h, 25, 8)}%)`,
+      ],
+      angle,
+      lightness: 18,
+    }
+  }
+
+  if (family === 'jewel') {
+    // Saturated mid-darks. The counterweight to the pastels — without
+    // something with real colour in it, the whole set reads washed out.
+    const spread = 24 + slice(h, 9, 40)
+    const hue2 = (hue + (h & 1 ? spread : -spread) + 360) % 360
+    return {
+      // Same 34% ceiling as graphite, for the same measured reason. Jewel
+      // keeps its saturation, which is what stops it reading as another
+      // grey — it's darker than it is dull.
+      stops: [
+        `hsl(${hue} ${58 + slice(h, 5, 16)}% ${22 + slice(h, 21, 8)}%)`,
+        `hsl(${hue2} ${54 + slice(h, 13, 16)}% ${28 + slice(h, 25, 7)}%)`,
+      ],
+      angle,
+      lightness: 26,
+    }
+  }
+
+  // Pastel. High lightness, restrained saturation.
+  //
+  // The hue offset stays between 30 and 85 degrees deliberately: wider
+  // (complementary) pairings read as garish at this lightness, and
+  // narrower than 30 barely reads as a gradient at all.
+  const spread = 30 + slice(h, 9, 56)
+  // Alternating direction so the palette doesn't drift one way around the
+  // wheel and cluster.
+  const hue2 = (hue + (h & 1 ? spread : -spread) + 360) % 360
+  const light1 = 78 + slice(h, 21, 7)
+  const light2 = 70 + slice(h, 25, 7)
+  return {
+    stops: [
+      `hsl(${hue} ${62 + slice(h, 5, 14)}% ${light1}%)`,
+      `hsl(${hue2} ${58 + slice(h, 13, 14)}% ${light2}%)`,
+    ],
+    angle,
+    lightness: (light1 + light2) / 2,
+  }
+}
+
+export function gradientFor(seed) {
+  const h = hash(String(seed || 'luotain'))
+  const family = familyFor(h)
+  const { stops, angle, lightness } = build(family, h)
+  const hue = slice(h, 0, 360)
 
   return {
-    from: `hsl(${hue} ${sat1}% ${light1}%)`,
-    to: `hsl(${hue2} ${sat2}% ${light2}%)`,
+    family,
+    stops,
     angle,
-    // Dark ink from the same hue rather than flat grey — it belongs to the
-    // gradient instead of sitting on top of it, and at this lightness a
-    // dark foreground is the only thing that stays readable.
-    ink: `hsl(${hue} 42% 26%)`,
+    css: `linear-gradient(${angle}deg, ${stops.join(', ')})`,
+    // Ink flips with the background rather than being fixed — a dark
+    // family would otherwise render an unreadable dark initial on a dark
+    // circle. Threshold at 55 rather than 50 because a mid-grey takes dark
+    // text better than light.
+    //
+    // The target is 3:1, not 4.5:1: an initial at 40% of the avatar's size
+    // is large-scale text, which is the threshold that actually applies.
+    // Every family's stop ranges above were set from that measurement.
+    ink: lightness > 55 ? `hsl(${hue} 42% 22%)` : '#ffffff',
   }
 }
 
@@ -93,7 +205,7 @@ export default function GradientAvatar({
   style,
 }) {
   const resolved = seedFor({ seed, id, name })
-  const { from, to, angle, ink } = gradientFor(resolved)
+  const { css, ink } = gradientFor(resolved)
   const initial = (name || '').trim().charAt(0).toUpperCase()
 
   return (
@@ -104,7 +216,7 @@ export default function GradientAvatar({
         height: `${size}px`,
         flexShrink: 0,
         borderRadius: 'var(--radius-full)',
-        background: `linear-gradient(${angle}deg, ${from}, ${to})`,
+        background: css,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
