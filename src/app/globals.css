@@ -1984,3 +1984,35 @@ html {
     animation: none !important;
   }
 }
+
+/* --- Connect card ---
+   The whole card is the button, so the feedback is on the card rather than
+   a link inside it. */
+.connect-card {
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.connect-card:hover:not(:disabled) {
+  border-color: var(--stroke-medium) !important;
+  background: var(--bg-light) !important;
+}
+.connect-card:active:not(:disabled) {
+  background: var(--bg-surface) !important;
+}
+.connect-card .connect-arrow {
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+/* Nudges along its own diagonal — the glyph points up-right, so moving it
+   that way reads as following the arrow rather than drifting. */
+.connect-card:hover:not(:disabled) .connect-arrow {
+  transform: translate(2px, -2px);
+}
+
+/* Side by side doesn't fit a phone: two cards at 50% each leave no room for
+   an email address. */
+@media (max-width: 768px) {
+  .connect-cards {
+    flex-direction: column;
+  }
+}

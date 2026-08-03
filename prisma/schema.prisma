@@ -54,6 +54,15 @@ model Account {
   id_token          String? @db.Text
   session_state     String?
 
+  // When the provider was linked. NextAuth's own schema doesn't include
+  // this, but the connected-accounts screen shows "Connected 12th August,
+  // 2025" — without it that line can only be invented.
+  //
+  // Defaulted to now() so existing rows get a value rather than being
+  // excluded, though for accounts linked before this column existed the
+  // date is the migration date, not the real one. Honest about that below.
+  createdAt DateTime @default(now())
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
