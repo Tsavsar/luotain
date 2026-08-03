@@ -13,6 +13,19 @@ model User {
   emailVerified DateTime?
   image         String?
 
+  // Seed for the generated gradient avatar, used whenever `image` is null
+  // — which is the default, and what someone falls back to after deleting
+  // an uploaded photo.
+  //
+  // A seed rather than a rendered image: the gradient is derived from this
+  // string at render time, so there's no file to store, no CDN, nothing to
+  // break, and it draws instantly. Re-rolling is just writing a new value.
+  //
+  // Nullable, and null falls back to the record's id — so every existing
+  // user has a stable avatar with no backfill, and this is only written
+  // once someone deliberately re-rolls.
+  avatarSeed String?
+
   // Powers "Last updated" on the account settings page. An explicit
   // column rather than Prisma's @updatedAt, because @updatedAt fires on
   // ANY write to this row — a session refresh or an emailVerified change
@@ -65,6 +78,11 @@ model VerificationToken {
 model Organization {
   id        String       @id @default(cuid())
   name      String
+  // An org's logo, once uploads exist. Null today for every org.
+  image     String?
+  // Same gradient treatment as User — an org without a logo gets one
+  // derived from its own id rather than a grey square.
+  avatarSeed String?
   createdAt DateTime     @default(now())
   members   Membership[]
   links     Link[]
