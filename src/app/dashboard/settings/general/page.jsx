@@ -410,6 +410,10 @@ export default function SettingsGeneralPage() {
   const [errored, setErrored] = useState(false)
   const [avatarSwapping, setAvatarSwapping] = useState(false)
   const [diceRolling, setDiceRolling] = useState(false)
+  // Only shown once someone actually tries to leave. Standing open the
+  // whole time you're typing is nagging — the Save button already says
+  // there's something to save. This is a reaction, not a status readout.
+  const [warnOpen, setWarnOpen] = useState(false)
   const [warnShaking, setWarnShaking] = useState(false)
 
   const fileRef = useRef(null)
@@ -488,13 +492,20 @@ export default function SettingsGeneralPage() {
 
       e.preventDefault()
       e.stopPropagation()
-      // Re-shake on every attempt. A banner that's already visible and
-      // does nothing when you try again reads as broken.
+      setWarnOpen(true)
+      // Re-shakes on every attempt. A banner that's already open and does
+      // nothing when you try again reads as broken.
       setWarnShaking(true)
       timers.current.push(setTimeout(() => setWarnShaking(false), 400))
     }
     document.addEventListener('click', onClick, true)
     return () => document.removeEventListener('click', onClick, true)
+  }, [dirty])
+
+  // Saving or discarding resolves it, so the banner closes on its own
+  // rather than lingering after the reason for it is gone.
+  useEffect(() => {
+    if (!dirty) setWarnOpen(false)
   }, [dirty])
 
   function flagError() {
@@ -634,7 +645,7 @@ export default function SettingsGeneralPage() {
           each attempt to leave. The same Alert as the deleted-link notice,
           so an inline warning looks the same wherever it appears. */}
       <div
-        className={`unsaved-banner${dirty ? ' is-open' : ''}${warnShaking ? ' is-shaking' : ''}`}
+        className={`unsaved-banner${warnOpen ? ' is-open' : ''}${warnShaking ? ' is-shaking' : ''}`}
         style={{ width: '100%', maxWidth: '360px' }}
       >
         <Alert
