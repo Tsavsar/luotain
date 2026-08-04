@@ -1,0 +1,120 @@
+import { prisma } from '@/lib/prisma'
+import { getCurrentUserEmail } from '@/lib/session'
+import { cookies } from 'next/headers'
+
+// The cookie NextAuth stores the session token in. Two names, because it's
+// prefixed with __Secure- over HTTPS and isn't in local development.
+async function currentSessionToken() {
+  const store = await cookies()
+  return (
+    store.get('__Secure-next-auth.session-token')?.value ||
+    store.get('next-auth.session-token')?.value ||
+    null
+  )
+}
+
+// GET /api/me/sessions
+export async function GET() {
+  const email = await getCurrentUserEmail()
+  if (!email) {
+    return Response.json({ error: 'Not signed in' }, { status: 401 })
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  })
+  if (!user) {
+    return Response.json({ error: 'User not found' }, { status: 404 })
+  }
+
+  const token = await currentSessionToken()
+
+  const sessions = await prisma.session.findMany({
+    where: {
+      userId: user.id,
+      // Expired sessions aren't active, and showing them would imply
+      // someone still has access when they don't.
+      expires: { gt: new Date() },
+    },
+    orderBy: { lastActiveAt: 'desc' },
+    select: {
+      id: true,
+      sessionToken: true,
+      userAgent: true,
+      city: true,
+      country: true,
+      lastActiveAt: true,
+      createdAt: true,
+    },
+  })
+
+  return Response.json({
+    sessions: sessions.map((s) => ({
+      id: s.id,
+      userAgent: s.userAgent,
+      city: s.city,
+      country: s.country,
+      lastActiveAt: s.lastActiveAt,
+      createdAt: s.createdAt,
+      // Compared server-side and the token itself never leaves — sending
+      // session tokens to the browser so it could compare them would hand
+      // out working credentials for every one of this user's devices.
+      isCurrent: Boolean(token) && s.sessionToken === token,
+    })),
+  })
+}
+
+// DELETE /api/me/sessions  { id }
+export async function DELETE(request) {
+  const email = await getCurrentUserEmail()
+  if (!email) {
+    return Response.json({ error: 'Not signed in' }, { status: 401 })
+  }
+
+  let body
+  try {
+    body = await request.json()
+  } catch {
+    return Response.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  const id = String(body?.id || '')
+  if (!id) {
+    return Response.json({ error: 'Missing session id' }, { status: 400 })
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  })
+  if (!user) {
+    return Response.json({ error: 'User not found' }, { status: 404 })
+  }
+
+  const session = await prisma.session.findUnique({
+    where: { id },
+    select: { id: true, userId: true, sessionToken: true },
+  })
+
+  // Scoped to the caller's own sessions. Without this check anyone could
+  // sign out any user on the service by guessing an id.
+  if (!session || session.userId !== user.id) {
+    return Response.json({ error: 'Session not found' }, { status: 404 })
+  }
+
+  const token = await currentSessionToken()
+  if (token && session.sessionToken === token) {
+    // Signing yourself out from a list of devices is almost always a
+    // mis-tap. The proper sign-out is in the profile menu, and refusing
+    // here is friendlier than logging someone out mid-task.
+    return Response.json(
+      { error: "That's this device — use Log out instead" },
+      { status: 400 }
+    )
+  }
+
+  await prisma.session.delete({ where: { id } })
+
+  return Response.json({ success: true })
+}

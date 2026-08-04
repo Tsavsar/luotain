@@ -2036,3 +2036,18 @@ html {
     max-width: 100%;
   }
 }
+
+/* Sign out, per session row. */
+.session-signout {
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 160ms ease-out;
+}
+.session-signout:hover:not(:disabled) {
+  background: var(--error-mute) !important;
+  color: var(--error-base) !important;
+}
+.session-signout:active:not(:disabled) {
+  transform: scale(0.97);
+}

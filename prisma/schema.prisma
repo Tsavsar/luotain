@@ -73,7 +73,32 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Everything the sessions screen shows. NextAuth's own Session model has
+  // none of it — without these columns "Chrome on macOS · Lagos, Nigeria ·
+  // Active now" can only be invented.
+  //
+  // The raw user-agent rather than a parsed device name: parsing rules go
+  // stale as browsers change, and keeping the original means a session
+  // recorded today can be re-parsed correctly by better rules later.
+  userAgent String?
+  // Coarse location, resolved at sign-in from the request. Stored as text
+  // rather than coordinates — the screen shows "Lagos, Nigeria", and
+  // keeping anything more precise than that would be collecting more than
+  // is needed.
+  city    String?
+  country String?
+  // Deliberately NOT storing the IP address itself. It's the most
+  // identifying thing in the request and the screen never displays it, so
+  // there's no reason to keep it once the city and country are resolved.
+
+  // Drives "Active now" vs "Last active 2 hours ago".
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
