@@ -2016,3 +2016,23 @@ html {
     flex-direction: column;
   }
 }
+
+/* --- Settings field width ---
+   360px on desktop, where the panel is 504 wide and a full-width name
+   field would be a very long line for a short value. On mobile the whole
+   column is already narrower than 360 would leave comfortable, so capping
+   it just strands empty space to the right.
+
+   In CSS rather than inline because an inline max-width can't be undone by
+   a media query. */
+.settings-field-group,
+.unsaved-banner {
+  width: 100%;
+  max-width: 360px;
+}
+@media (max-width: 768px) {
+  .settings-field-group,
+  .unsaved-banner {
+    max-width: 100%;
+  }
+}

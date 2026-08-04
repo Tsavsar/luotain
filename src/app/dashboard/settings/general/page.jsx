@@ -657,7 +657,9 @@ export default function SettingsGeneralPage() {
           so an inline warning looks the same wherever it appears. */}
       <div
         className={`unsaved-banner${warnOpen ? ' is-open' : ''}${warnShaking ? ' is-shaking' : ''}`}
-        style={{ width: '100%', maxWidth: '360px' }}
+        // Width is in CSS, not here — an inline cap can't be undone by a
+        // media query, and this needs to go full width on mobile.
+        style={{ width: '100%' }}
       >
         <Alert
           variant='inline'
@@ -679,7 +681,6 @@ export default function SettingsGeneralPage() {
           gap: '12px',
           alignItems: 'flex-start',
           width: '100%',
-          maxWidth: '360px',
         }}
       >
         {/* Hidden input rather than a styled file control — file inputs
