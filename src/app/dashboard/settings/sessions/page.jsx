@@ -128,8 +128,12 @@ function SessionRow({ session, onSignOut, busy }) {
               position: 'absolute',
               right: '-2px',
               bottom: '-2px',
-              width: '14px',
-              height: '14px',
+              // 16px, up from 14. The Safari mark carries a compass dial
+              // whose tick marks are sub-pixel at 10px — a couple of extra
+              // pixels is the difference between a recognisable browser and
+              // a coloured dot.
+              width: '16px',
+              height: '16px',
               borderRadius: 'var(--radius-full)',
               background: '#ffffff',
               border: '1px solid var(--stroke-soft)',
@@ -139,7 +143,7 @@ function SessionRow({ session, onSignOut, busy }) {
               color: 'var(--text-sub)',
             }}
           >
-            <BrowserMark size={10} />
+            <BrowserMark size={12} />
           </span>
         </div>
 
