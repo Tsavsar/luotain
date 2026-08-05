@@ -50,6 +50,22 @@ export function Dropdown({
   // only be resolved after mounting on the client.
   useEffect(() => setCanPortal(true), [])
 
+  // Every close path goes through here — outside click, Escape, and an
+  // option being picked — so none of them can skip the exit.
+  const beginClose = useCallback(() => {
+    setOpen((isOpen) => {
+      if (!isOpen) return false
+      setClosing(true)
+      clearTimeout(closeTimer.current)
+      // Matches EXIT_MS below. The class has to be cleared as well as the
+      // panel unmounted: without it the next open would start from the
+      // closing scale rather than the resting pre-open one, which reads as
+      // the menu flinching before it appears.
+      closeTimer.current = setTimeout(() => setClosing(false), EXIT_MS)
+      return false
+    })
+  }, [])
+
   // ─── Close on outside click ───
   useEffect(() => {
     function handleClickOutside(e) {
@@ -136,22 +152,6 @@ export function Dropdown({
       window.removeEventListener('scroll', position, true)
     }
   }, [open, align, sideOffset, offsetX, offsetY])
-
-  // Every close path goes through here — outside click, Escape, and an
-  // option being picked — so none of them can skip the exit.
-  const beginClose = useCallback(() => {
-    setOpen((isOpen) => {
-      if (!isOpen) return false
-      setClosing(true)
-      clearTimeout(closeTimer.current)
-      // Matches EXIT_MS below. The class has to be cleared as well as the
-      // panel unmounted: without it the next open would start from the
-      // closing scale rather than the resting pre-open one, which reads as
-      // the menu flinching before it appears.
-      closeTimer.current = setTimeout(() => setClosing(false), EXIT_MS)
-      return false
-    })
-  }, [])
 
   useEffect(() => () => clearTimeout(closeTimer.current), [])
 
