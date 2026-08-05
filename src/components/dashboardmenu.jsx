@@ -218,10 +218,14 @@ function ProfileDropdown({ userImage, userName, avatarSeed }) {
         >
           Settings
         </DropdownOption>
-        <DropdownOption onClick={() => router.push('/dashboard/billing')}>
+        <DropdownOption
+          onClick={() => router.push('/dashboard/settings/billing')}
+        >
           Upgrade plan
         </DropdownOption>
-        <DropdownOption onClick={() => router.push('/dashboard/contact')}>
+        <DropdownOption
+          onClick={() => router.push('/dashboard/settings/contact')}
+        >
           Contact
         </DropdownOption>
         <DropdownOption onClick={handleLogout} danger>
