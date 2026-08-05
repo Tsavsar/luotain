@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { SHORT_DOMAIN, shortUrlFor } from '@/lib/shortlink'
 import { isRecoverable } from '@/lib/linkrecovery'
+import { linkLimitReason, customSlugReason } from '@/lib/plans'
 
 // Both methods for /api/links live here — Next.js resolves every verb
 // for a path from one route.js, so the list and the create can't be
@@ -207,9 +208,49 @@ export async function POST(request) {
     )
   }
 
+  // ─── Plan limits ───
+  // Enforced here, server-side, not just in the UI. The interface hides what
+  // a plan can't do, but the endpoint is what actually protects it — a
+  // hand-rolled request would otherwise bypass every limit.
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { plan: true },
+  })
+
+  const linkCount = await prisma.link.count({
+    // Trashed links still count. They're recoverable for 30 days, so the slug
+    // and the record both still exist — not counting them would let someone
+    // sit permanently above their limit by cycling links through the trash.
+    where: { organizationId },
+  })
+
+  const limitReason = linkLimitReason(org?.plan, linkCount)
+  if (limitReason) {
+    return Response.json(
+      { error: limitReason, code: 'LINK_LIMIT', plan: org?.plan },
+      // 402, not 403: this isn't a permissions problem, it's a billing one,
+      // and the client can tell them apart to decide whether to show the
+      // upgrade card.
+      { status: 402 }
+    )
+  }
+
   const requestedSlug = String(body?.slug || '').trim()
 
   if (requestedSlug) {
+    const slugReason = customSlugReason(org?.plan)
+    if (slugReason) {
+      return Response.json(
+        {
+          error: slugReason,
+          code: 'CUSTOM_SLUG',
+          plan: org?.plan,
+          field: 'slug',
+        },
+        { status: 402 }
+      )
+    }
+
     if (!SLUG_PATTERN.test(requestedSlug)) {
       return Response.json(
         {

@@ -144,9 +144,23 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// Plans. An enum so the database itself rejects an invalid tier — a bad
+// plan value is a billing problem, and it shouldn't rely on every write path
+// remembering to validate. Limits per tier live in src/lib/plans.js, which is
+// what both the API and the UI read.
+enum Plan {
+  FREE
+  STARTER
+  PRO
+}
+
 model Organization {
   id        String       @id @default(cuid())
   name      String
+  // On the org, not the User: links, domains and billing are all org-scoped,
+  // and a user in two orgs can legitimately be on a paid plan in one and free
+  // in the other.
+  plan      Plan         @default(FREE)
   // An org's logo, once uploads exist. Null today for every org.
   image     String?
   // Same gradient treatment as User — an org without a logo gets one

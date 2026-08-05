@@ -366,6 +366,15 @@ export default function CreatePage() {
       const data = await res.json()
 
       if (!res.ok) {
+        // 402 is a billing limit, not a validation error. Worth separating:
+        // shaking the slug field for "custom slugs are a Pro feature" would
+        // suggest the slug is malformed, when the problem is the plan.
+        if (res.status === 402) {
+          if (data?.field) flagError({ [data.field]: true })
+          toast.error(data.error)
+          setSubmitting(false)
+          return
+        }
         // The server names which field failed, so the shake and border
         // land on that field rather than the person having to work out
         // which input the message refers to.

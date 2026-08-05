@@ -28,6 +28,81 @@ function MockDataToggle() {
   )
 }
 
+// A testing switch for plan-gated UI, sitting with the mock-data toggle.
+//
+// Two states rather than three, deliberately: what needs exercising is free
+// versus paid, and a three-way control for a binary question is more fiddly
+// than useful. Switching to paid picks PRO because it's the tier with every
+// capability turned on — Starter's gates are a subset of Free's.
+//
+// Renders nothing unless the endpoint is enabled, so it disappears the moment
+// ALLOW_PLAN_TOGGLE is removed rather than sitting there failing.
+function PlanToggle() {
+  const [plan, setPlan] = useState(null)
+  const [available, setAvailable] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/plan')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return
+        setPlan(d.plan)
+        // Probes with a no-op switch to the CURRENT plan: if the route is
+        // disabled it 404s and the toggle hides itself, and if it's enabled
+        // nothing has changed.
+        return fetch('/api/plan', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: d.plan }),
+        }).then((r) => {
+          if (!cancelled) setAvailable(r.ok)
+        })
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (!available || !plan) return null
+
+  const paid = plan !== 'FREE'
+
+  async function toggle() {
+    if (busy) return
+    setBusy(true)
+    const next = paid ? 'FREE' : 'PRO'
+    try {
+      const res = await fetch('/api/plan', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: next }),
+      })
+      if (res.ok) {
+        setPlan(next)
+        // Reloaded rather than announced by event: plan changes what several
+        // pages render and what the API allows, and a plan switch during
+        // testing is worth a clean slate over a partial refresh.
+        window.location.reload()
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Switch
+      checked={paid}
+      onChange={toggle}
+      disabled={busy}
+      tone='primary'
+      label={paid ? 'Pro' : 'Free'}
+    />
+  )
+}
+
 function DashboardShell({ children }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -246,6 +321,17 @@ function DashboardShell({ children }) {
           }}
         >
           <MockDataToggle />
+
+          <span
+            aria-hidden='true'
+            style={{
+              width: '1px',
+              height: '16px',
+              background: 'rgba(255, 255, 255, 0.15)',
+            }}
+          />
+
+          <PlanToggle />
 
           <span
             aria-hidden='true'
