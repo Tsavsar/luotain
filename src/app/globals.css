@@ -1935,21 +1935,14 @@ html {
 }
 
 /* --- Settings --- */
-.settings-nav-option {
-  transition: background 0.15s ease;
-}
-.settings-nav-option:hover {
-  background: var(--bg-surface);
-}
-/* No .is-active rule — the sliding indicator behind the options owns the
-   active background now. Both would paint two highlights, one sliding into
-   place and one appearing instantly underneath it. */
+/* No background rules on the options at all — hover OR active. The single
+   sliding indicator behind them owns both: it rests on the active item and
+   follows the cursor on hover.
 
-/* Danger items get a red tint on hover rather than the neutral grey, so the
-   destructive ones stay distinguishable at the moment of clicking. */
-.settings-nav-option.is-danger:hover {
-  background: var(--error-mute);
-}
+   A CSS :hover background here would paint instantly underneath the
+   indicator that's still sliding toward the same row, so you'd see the
+   destination fill in before the highlight arrived. The danger tint moved
+   into the indicator for the same reason. */
 .settings-icon-btn {
   transition: opacity 0.15s ease;
 }

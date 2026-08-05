@@ -115,16 +115,19 @@ function ListOption({ item }) {
   )
 }
 
-function NavOption({ item, active, innerRef }) {
+function NavOption({ item, active, innerRef, onHover }) {
   return (
     <Link
       ref={innerRef}
+      onMouseEnter={onHover}
       href={item.href}
       aria-current={active ? 'page' : undefined}
       // No is-active class any more — the sliding indicator behind these owns
       // the active background. Leaving both would paint two highlights, one
       // sliding and one appearing instantly underneath it.
-      className={`settings-nav-option${item.danger ? ' is-danger' : ''}`}
+      // No className: the indicator behind these owns every background, and
+      // the danger colour is set on the label below. A class that styles
+      // nothing is a hook someone will later assume is doing something.
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -176,27 +179,37 @@ function NavOption({ item, active, innerRef }) {
 function SidebarGroup({ group, activeHref }) {
   const itemRefs = useRef({})
   const [pill, setPill] = useState({ top: 0, height: 0, ready: false })
+  // Which item the cursor is over, if any. One indicator serves both states:
+  // it sits on the active item at rest and follows the cursor on hover,
+  // returning when you leave.
+  //
+  // That's deliberately not two layers. A separate hover highlight on top of
+  // the active one means two things visible at once — and the moment you
+  // hover the active item itself, they'd sit exactly on top of each other,
+  // which reads as a rendering glitch rather than a state.
+  const [hovered, setHovered] = useState(null)
 
   const activeInGroup = group.items.some((i) => i.href === activeHref)
+  // Hover wins while it exists, because it's the thing the cursor is
+  // pointing at.
+  const target = hovered || (activeInGroup ? activeHref : null)
 
   useLayoutEffect(() => {
-    if (!activeInGroup) {
-      // Not cleared to zero — leaving the size alone means that when this
-      // group becomes active again the indicator fades in at the right place
-      // rather than growing from the top edge.
-      setPill((p) => ({ ...p, ready: p.ready }))
-      return
-    }
-    const el = itemRefs.current[activeHref]
+    if (!target) return
+    const el = itemRefs.current[target]
     if (el) {
       setPill({ top: el.offsetTop, height: el.offsetHeight, ready: true })
     }
-  }, [activeHref, activeInGroup])
+  }, [target])
 
-  const activeItem = group.items.find((i) => i.href === activeHref)
+  const targetItem = group.items.find((i) => i.href === target)
 
   return (
     <div
+      // Measured off the hovered element's own rect rather than tracked by
+      // index, so it works whatever height a row happens to be — the same
+      // approach the dropdowns use.
+      onMouseLeave={() => setHovered(null)}
       style={{
         position: 'relative',
         display: 'flex',
@@ -218,12 +231,14 @@ function SidebarGroup({ group, activeHref }) {
           top: `${pill.top}px`,
           height: `${pill.height}px`,
           borderRadius: '8px',
-          background: activeItem?.danger
+          // Danger items tint red, so the destructive ones stay
+          // distinguishable at the moment the cursor is on them.
+          background: targetItem?.danger
             ? 'var(--error-mute)'
             : 'var(--bg-surface)',
-          opacity: activeInGroup ? 1 : 0,
+          opacity: target ? 1 : 0,
           transition: pill.ready
-            ? 'top 0.25s var(--ease-out), height 0.25s var(--ease-out), opacity 0.15s ease, background 0.15s ease'
+            ? 'top var(--duration-modal) var(--ease-out), height var(--duration-modal) var(--ease-out), opacity var(--duration-fast) ease, background var(--duration-fast) ease'
             : 'none',
           pointerEvents: 'none',
           zIndex: 0,
@@ -235,6 +250,7 @@ function SidebarGroup({ group, activeHref }) {
           key={item.href}
           item={item}
           active={item.href === activeHref}
+          onHover={() => setHovered(item.href)}
           innerRef={(el) => {
             if (el) itemRefs.current[item.href] = el
             else delete itemRefs.current[item.href]
