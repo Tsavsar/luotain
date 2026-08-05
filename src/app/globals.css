@@ -106,6 +106,36 @@
   --radius-xl: 16px;
   --radius-full: 9999px;
 
+  /* --- Motion ---
+     Eight distinct cubic-beziers were hardcoded across the codebase before
+     these existed, and two pairs of them were near-duplicates doing the same
+     job: (0.22, 1, 0.36, 1) used 32 times against (0.23, 1, 0.32, 1) used 9,
+     differing by 0.01 — visually identical, two names for one intent. Same
+     with three separate overshoot curves. That's the drift tokens prevent.
+
+     --ease-out is Emil's published curve. It's the default for anything
+     entering or exiting, which is most UI. --ease-in-out is for things
+     moving on screen. --ease-spring overshoots and is only for deliberate
+     bounce (the switch thumb). Nothing here uses ease-in: it starts slow at
+     exactly the moment the eye is on the element, which is what makes an
+     interface feel sluggish. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Defined but not yet called: nothing in the app currently MOVES rather
+     than enters or exits. Kept as vocabulary so the next thing that does
+     reaches for this instead of inventing a curve. */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-spring: cubic-bezier(0.34, 1.35, 0.64, 1);
+  /* Sharper than --ease-out, for exits — an element leaving should clear the
+     screen faster than it arrived. */
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Durations, banded by what's animating. UI stays under 300ms; past that
+     it reads as waiting rather than responding. */
+  --duration-press: 160ms; /* button press feedback */
+  --duration-fast: 150ms; /* colour, opacity, hover */
+  --duration-panel: 200ms; /* dropdowns, page sections, selects */
+  --duration-modal: 250ms; /* modals, drawers, sliding indicators */
+
   /* --- Typography --- */
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -684,9 +714,9 @@ input:focus-visible {
   transform-origin: center;
   opacity: 0;
   animation:
-    checkFade 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-    checkRotate 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-    checkRise 0.4s cubic-bezier(0.34, 1.35, 0.64, 1) forwards;
+    checkFade 0.4s var(--ease-out) forwards,
+    checkRotate 0.4s var(--ease-out) forwards,
+    checkRise 0.4s var(--ease-spring) forwards;
 }
 .check-reveal svg {
   display: block;
@@ -700,7 +730,7 @@ input:focus-visible {
 .check-reveal svg path {
   stroke-dasharray: 19;
   stroke-dashoffset: 19;
-  animation: checkDraw 0.4s cubic-bezier(0.22, 1, 0.36, 1) 80ms forwards;
+  animation: checkDraw 0.4s var(--ease-out) 80ms forwards;
 }
 @keyframes checkDraw {
   to {
@@ -712,19 +742,19 @@ input:focus-visible {
 @keyframes shake {
   0% {
     transform: translateX(0);
-    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    animation-timing-function: var(--ease-out);
   }
   28.57% {
     transform: translateX(6px);
-    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    animation-timing-function: var(--ease-out);
   }
   57.14% {
     transform: translateX(-6px);
-    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    animation-timing-function: var(--ease-out);
   }
   78.57% {
     transform: translateX(4px);
-    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    animation-timing-function: var(--ease-out);
   }
   100% {
     transform: translateX(0);
@@ -767,8 +797,7 @@ input:focus-visible {
   }
 }
 .slide-up {
-  animation: toastIn var(--toast-open-dur) cubic-bezier(0.22, 1, 0.36, 1)
-    forwards;
+  animation: toastIn var(--toast-open-dur) var(--ease-out) forwards;
 }
 
 @keyframes toastOut {
@@ -785,7 +814,7 @@ input:focus-visible {
   }
 }
 .slide-down {
-  animation: toastOut var(--toast-close-dur) cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: toastOut var(--toast-close-dur) var(--ease-exit) forwards;
 }
 
 /* --- Map dots: ambient + hover pulse (Map.jsx) --- */
@@ -824,7 +853,11 @@ input:focus-visible {
   }
 }
 .legal-content-reveal {
-  animation: contentFadeUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  /* Was 0.4s on Material's standard curve — the only place either appeared.
+     Brought onto the shared ease-out at panel duration: 400ms is past the
+     point where an entrance reads as waiting, and one project shouldn't
+     carry two easing vocabularies. */
+  animation: contentFadeUp var(--duration-panel) var(--ease-out) both;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1018,7 +1051,14 @@ html {
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* Delays have to go too, not just durations. Without this, staggered
+       elements still waited out their delay while invisible and then
+       snapped in — slower AND jerkier than having no animation at all,
+       which is the opposite of what someone asking for reduced motion
+       wants. */
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
     scroll-behavior: auto !important;
   }
 
@@ -1063,7 +1103,7 @@ html {
   }
 }
 .icon-pop {
-  animation: iconPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: iconPop var(--duration-modal) var(--ease-spring);
 }
 
 /* --- Dashboard card grid: 2x2 -> single column on mobile ---
@@ -1124,32 +1164,50 @@ html {
   }
 }
 .dashboard-section {
-  animation: dashboardSectionIn 300ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  /* 200ms, not 300. The skill's band for a panel-sized element is
+     150–250ms, and this fires on every navigation. */
+  animation: dashboardSectionIn var(--duration-panel) var(--ease-out) both;
 }
+/* Stagger delays.
+   Two things were wrong here and both cost time on every navigation.
+
+   First, sections 1 and 2 live in the dashboard LAYOUT, which persists
+   across navigation — they animate once, on first load, and never again.
+   Sections 3+ live in the pages and remount every time. But section-3's
+   delay was 100ms, timed as though 1 and 2 were animating alongside it. So
+   every navigation opened with 100ms of nothing on screen.
+
+   Second, the steps were 50ms over seven sections, so the link detail page's
+   last block didn't settle until ~600ms after arrival. Navigation happens
+   tens of times a day, which per the frequency rule means reduce, not
+   embellish.
+
+   Now: page sections start at 0 and step 30ms, and the duration is 200ms —
+   so the first block is immediate and the last settles at 320ms rather than
+   600ms. Stagger still reads as a cascade; it just no longer gates the page
+   on itself. */
 .dashboard-section-1 {
   animation-delay: 0ms;
 }
 .dashboard-section-2 {
   animation-delay: 50ms;
 }
+/* Page sections re-base to 0 — they're the first thing that animates on a
+   navigation. */
 .dashboard-section-3 {
-  animation-delay: 100ms;
+  animation-delay: 0ms;
 }
 .dashboard-section-4 {
-  animation-delay: 150ms;
+  animation-delay: 30ms;
 }
 .dashboard-section-5 {
-  animation-delay: 200ms;
+  animation-delay: 60ms;
 }
-/* 6 and 7 continue the same 50ms cadence — the link detail page has
-   five stacked content sections (back row, link meta, stats, chart,
-   cards) where other pages have three, and without these it fell off
-   the end of the stagger and every section animated in at once. */
 .dashboard-section-6 {
-  animation-delay: 250ms;
+  animation-delay: 90ms;
 }
 .dashboard-section-7 {
-  animation-delay: 300ms;
+  animation-delay: 120ms;
 }
 
 /* --- Dropdowns: shared across Date, card filters, Org, Profile --- */
@@ -1172,7 +1230,35 @@ html {
   }
 }
 .dropdown-panel {
-  animation: dropdownIn 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: dropdownIn 0.15s var(--ease-out);
+}
+/* The exit. Every dropdown used to scale in and then vanish on a single
+   frame, which is the direction people watch most closely — they've just
+   clicked something and are looking straight at it.
+
+   110ms against the 150ms enter: asymmetric on purpose. Entering is the
+   system responding and wants to be seen; leaving is acknowledgement and
+   shouldn't be waited on.
+
+   `forwards` matters — without it the panel would snap back to full scale
+   for the frame between the animation ending and React unmounting it. */
+.dropdown-panel.is-closing {
+  animation: dropdownOut 0.11s var(--ease-exit) forwards;
+  /* Non-interactive on the way out. A menu that's fading away shouldn't
+     still be catching clicks. */
+  pointer-events: none;
+}
+@keyframes dropdownOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    /* 0.97, not 0.9. On exit a large collapse reads as the menu being
+       sucked away; a small one reads as it stepping back. */
+    transform: scale(0.97);
+  }
 }
 
 /* --- Page loader: logo cycling through three grays --- */
@@ -1355,7 +1441,8 @@ html {
   --digit-distance: 8px;
   --digit-stagger: 70ms;
   --digit-blur: 2px;
-  --digit-ease: cubic-bezier(0.34, 1.45, 0.64, 1);
+  /* Aliased to the shared spring rather than a fourth overshoot curve. */
+  --digit-ease: var(--ease-spring);
   --digit-dir-x: 0;
   --digit-dir-y: 1;
 }
@@ -1490,7 +1577,7 @@ html {
   }
 }
 .filter-pill-enter {
-  animation: filterPillIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: filterPillIn 0.3s var(--ease-out);
 }
 
 /* Modal buttons — press feedback needs a real :active pseudo-class
@@ -1499,7 +1586,7 @@ html {
    never competes with each button's own background transition. */
 .modal-btn {
   transition:
-    transform 160ms ease-out,
+    transform var(--duration-press) ease-out,
     background 0.15s ease;
 }
 .modal-btn:active {
@@ -1586,10 +1673,18 @@ html {
 }
 
 .alert-action {
-  transition: opacity 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform var(--duration-press) ease-out;
 }
 .alert-action:hover:not(:disabled) {
   opacity: 0.6;
+}
+/* Press feedback. It's the action on "Recover this link" and "Discard
+   changes" — both consequential, and both were the one interactive control
+   in the app that didn't acknowledge being pressed. */
+.alert-action:active:not(:disabled) {
+  transform: scale(0.96);
 }
 .alert-action:disabled {
   opacity: 0.5;
@@ -1613,7 +1708,7 @@ html {
 /* --- Create flow --- */
 .create-submit {
   transition:
-    transform 160ms ease-out,
+    transform var(--duration-press) ease-out,
     opacity 0.15s ease;
 }
 .create-submit:active:not(:disabled) {
@@ -1658,7 +1753,7 @@ html {
 .qr-pattern {
   transition:
     box-shadow 0.15s ease,
-    transform 160ms ease-out;
+    transform var(--duration-press) ease-out;
 }
 .qr-swatch:active,
 .qr-pattern:active {
@@ -1691,7 +1786,7 @@ html {
    the two buttons in a footer respond identically. */
 .create-secondary {
   transition:
-    transform 160ms ease-out,
+    transform var(--duration-press) ease-out,
     background 0.15s ease;
 }
 .create-secondary:hover {
@@ -1712,7 +1807,7 @@ html {
 .qr-lightbox-download {
   transition:
     background 0.15s ease,
-    transform 160ms ease-out;
+    transform var(--duration-press) ease-out;
 }
 .qr-lightbox-action:hover,
 .qr-lightbox-download:hover {
@@ -1753,12 +1848,10 @@ html {
   translate: var(--switch-travel) 0;
 }
 .switch-track.is-init[data-on='true'] .switch-thumb {
-  animation: switchThumbOn var(--switch-dur, 350ms)
-    cubic-bezier(0.34, 1.35, 0.64, 1) both;
+  animation: switchThumbOn var(--switch-dur, 350ms) var(--ease-spring) both;
 }
 .switch-track.is-init[data-on='false'] .switch-thumb {
-  animation: switchThumbOff var(--switch-dur, 350ms)
-    cubic-bezier(0.34, 1.35, 0.64, 1) both;
+  animation: switchThumbOff var(--switch-dur, 350ms) var(--ease-spring) both;
 }
 @keyframes switchThumbOn {
   0% {
@@ -1848,13 +1941,13 @@ html {
 .settings-nav-option:hover {
   background: var(--bg-surface);
 }
-.settings-nav-option.is-active {
-  background: var(--bg-surface);
-}
-/* Danger items get a red tint on hover rather than the neutral grey, so
-   the destructive ones stay distinguishable at the moment of clicking. */
-.settings-nav-option.is-danger:hover,
-.settings-nav-option.is-danger.is-active {
+/* No .is-active rule — the sliding indicator behind the options owns the
+   active background now. Both would paint two highlights, one sliding into
+   place and one appearing instantly underneath it. */
+
+/* Danger items get a red tint on hover rather than the neutral grey, so the
+   destructive ones stay distinguishable at the moment of clicking. */
+.settings-nav-option.is-danger:hover {
   background: var(--error-mute);
 }
 .settings-icon-btn {
@@ -1865,7 +1958,7 @@ html {
 }
 .settings-save {
   transition:
-    transform 160ms ease-out,
+    transform var(--duration-press) ease-out,
     background 0.2s ease,
     color 0.2s ease;
 }
@@ -1942,9 +2035,9 @@ html {
   margin-top: -18px;
   pointer-events: none;
   transition:
-    max-height 0.28s cubic-bezier(0.23, 1, 0.32, 1),
+    max-height 0.28s var(--ease-out),
     opacity 0.2s ease,
-    margin-top 0.28s cubic-bezier(0.23, 1, 0.32, 1);
+    margin-top 0.28s var(--ease-out);
 }
 .unsaved-banner.is-open {
   max-height: 80px;
@@ -2001,12 +2094,20 @@ html {
   background: var(--bg-surface) !important;
 }
 .connect-card .connect-arrow {
-  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 200ms var(--ease-out);
 }
 /* Nudges along its own diagonal — the glyph points up-right, so moving it
-   that way reads as following the arrow rather than drifting. */
-.connect-card:hover:not(:disabled) .connect-arrow {
-  transform: translate(2px, -2px);
+   that way reads as following the arrow rather than drifting.
+
+   Gated behind a real pointer: touch devices fire :hover on tap, so on a
+   phone this would nudge the arrow and leave it nudged until you tapped
+   something else. It's the only hover rule here that moves anything — the
+   others just change colour, where a lingering tap state reads as a
+   highlight rather than a bug. */
+@media (hover: hover) and (pointer: fine) {
+  .connect-card:hover:not(:disabled) .connect-arrow {
+    transform: translate(2px, -2px);
+  }
 }
 
 /* Side by side doesn't fit a phone: two cards at 50% each leave no room for
@@ -2042,7 +2143,7 @@ html {
   transition:
     background 0.15s ease,
     color 0.15s ease,
-    transform 160ms ease-out;
+    transform var(--duration-press) ease-out;
 }
 .session-signout:hover:not(:disabled) {
   background: var(--error-mute) !important;

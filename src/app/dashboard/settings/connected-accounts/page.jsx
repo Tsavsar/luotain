@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { signIn } from 'next-auth/react'
 import GradientAvatar from '@/components/gradientavatar'
-import { GoogleIcon, GithubIcon } from '@/components/brandicons'
 import { toast } from '@/components/toast'
 
 // ─── Account → Connected accounts ───
@@ -34,9 +33,29 @@ function ArrowIcon() {
   )
 }
 
+// The same assets the auth pages use — /public/assets/googlelogo.svg and
+// githublogo.svg. Those already existed; I'd written inline SVG copies of
+// both, which was a third version of a mark the project already had.
+//
+// Driven off the provider id so a new provider is a file plus a line, not a
+// new component.
+const PROVIDER_LOGOS = {
+  google: '/assets/googlelogo.svg',
+  github: '/assets/githublogo.svg',
+}
+
 function ProviderIcon({ id, size = 20 }) {
-  if (id === 'google') return <GoogleIcon size={size} />
-  return <GithubIcon size={size} />
+  const src = PROVIDER_LOGOS[id]
+  if (!src) return null
+  return (
+    <img
+      src={src}
+      alt=''
+      width={size}
+      height={size}
+      style={{ width: `${size}px`, height: `${size}px`, display: 'block' }}
+    />
+  )
 }
 
 function formatConnectedAt(iso) {
