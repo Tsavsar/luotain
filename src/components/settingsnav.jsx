@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useLayoutEffect, useRef, useState } from 'react'
 
 // ─── SettingsNav ───
 // Node 87:2714. Two groups of links down the left of the settings pages.
@@ -114,12 +115,16 @@ function ListOption({ item }) {
   )
 }
 
-function NavOption({ item, active }) {
+function NavOption({ item, active, innerRef }) {
   return (
     <Link
+      ref={innerRef}
       href={item.href}
       aria-current={active ? 'page' : undefined}
-      className={`settings-nav-option${active ? ' is-active' : ''}${item.danger ? ' is-danger' : ''}`}
+      // No is-active class any more — the sliding indicator behind these owns
+      // the active background. Leaving both would paint two highlights, one
+      // sliding and one appearing instantly underneath it.
+      className={`settings-nav-option${item.danger ? ' is-danger' : ''}`}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -133,6 +138,9 @@ function NavOption({ item, active }) {
         boxSizing: 'content-box',
         borderRadius: '8px',
         textDecoration: 'none',
+        // Above the indicator, which sits at zIndex 0 behind the options.
+        position: 'relative',
+        zIndex: 1,
       }}
     >
       <span
@@ -151,6 +159,89 @@ function NavOption({ item, active }) {
         {item.label}
       </span>
     </Link>
+  )
+}
+
+// One group's worth of sidebar options, with a sliding indicator behind the
+// active one.
+//
+// Follows DashboardNav's pattern rather than a parallel one: measure the
+// active element's offsetTop/offsetHeight, position an absolute layer, and
+// hold transitions off until the first measured paint so it doesn't slide in
+// from zero on load.
+//
+// Per group rather than one for the whole nav, because only one group has an
+// active item at a time and a single indicator would have to travel across
+// the gap between groups — which reads as the highlight escaping the list.
+function SidebarGroup({ group, activeHref }) {
+  const itemRefs = useRef({})
+  const [pill, setPill] = useState({ top: 0, height: 0, ready: false })
+
+  const activeInGroup = group.items.some((i) => i.href === activeHref)
+
+  useLayoutEffect(() => {
+    if (!activeInGroup) {
+      // Not cleared to zero — leaving the size alone means that when this
+      // group becomes active again the indicator fades in at the right place
+      // rather than growing from the top edge.
+      setPill((p) => ({ ...p, ready: p.ready }))
+      return
+    }
+    const el = itemRefs.current[activeHref]
+    if (el) {
+      setPill({ top: el.offsetTop, height: el.offsetHeight, ready: true })
+    }
+  }, [activeHref, activeInGroup])
+
+  const activeItem = group.items.find((i) => i.href === activeHref)
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        width: '100%',
+        background: 'var(--bg-default)',
+        borderRadius: '14px',
+      }}
+    >
+      <div
+        aria-hidden='true'
+        style={{
+          position: 'absolute',
+          // Matches the options' own negative margin, so the indicator lines
+          // up with their padded box rather than the text.
+          left: '-10px',
+          right: '-10px',
+          top: `${pill.top}px`,
+          height: `${pill.height}px`,
+          borderRadius: '8px',
+          background: activeItem?.danger
+            ? 'var(--error-mute)'
+            : 'var(--bg-surface)',
+          opacity: activeInGroup ? 1 : 0,
+          transition: pill.ready
+            ? 'top 0.25s var(--ease-out), height 0.25s var(--ease-out), opacity 0.15s ease, background 0.15s ease'
+            : 'none',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
+
+      {group.items.map((item) => (
+        <NavOption
+          key={item.href}
+          item={item}
+          active={item.href === activeHref}
+          innerRef={(el) => {
+            if (el) itemRefs.current[item.href] = el
+            else delete itemRefs.current[item.href]
+          }}
+        />
+      ))}
+    </div>
   )
 }
 
@@ -216,21 +307,21 @@ export default function SettingsNav({ variant = 'sidebar' }) {
             </p>
           )}
 
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              width: '100%',
-              // The list gets a surface and dividers so the rows read as one
-              // grouped control rather than floating text.
-              background: isList ? 'var(--bg-surface)' : 'var(--bg-default)',
-              borderRadius: '14px',
-              overflow: isList ? 'hidden' : undefined,
-            }}
-          >
-            {group.items.map((item, i) =>
-              isList ? (
+          {isList ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                width: '100%',
+                // The list gets a surface and dividers so the rows read as
+                // one grouped control rather than floating text.
+                background: 'var(--bg-surface)',
+                borderRadius: '14px',
+                overflow: 'hidden',
+              }}
+            >
+              {group.items.map((item, i) => (
                 <div key={item.href} style={{ width: '100%' }}>
                   {i > 0 ? (
                     <div
@@ -246,15 +337,11 @@ export default function SettingsNav({ variant = 'sidebar' }) {
                   ) : null}
                   <ListOption item={item} />
                 </div>
-              ) : (
-                <NavOption
-                  key={item.href}
-                  item={item}
-                  active={item.href === activeHref}
-                />
-              )
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <SidebarGroup group={group} activeHref={activeHref} />
+          )}
         </div>
       ))}
     </nav>

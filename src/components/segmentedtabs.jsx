@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 
 const DUR = 300
-const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
+const EASE = 'var(--ease-out)'
 
 // Wraps an item's icon so it only EXISTS visually on the active
 // segment. Width and margin collapse to 0 while it fades and

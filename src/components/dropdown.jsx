@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  useCallback,
   useState,
   useRef,
   useLayoutEffect,
@@ -12,6 +13,11 @@ import { createPortal } from 'react-dom'
 
 // Closest the panel is ever allowed to sit to the edge of the screen.
 const SCREEN_MARGIN = 12
+
+// Exit is faster than the 150ms enter. Asymmetric on purpose: entering is
+// the system responding to you and wants to be seen; leaving is
+// acknowledgement and shouldn't be waited on.
+const EXIT_MS = 110
 
 export function Dropdown({
   trigger,
@@ -30,9 +36,15 @@ export function Dropdown({
   fullWidth = false,
 }) {
   const [open, setOpen] = useState(false)
+  // Kept mounted through the exit animation. Previously the panel unmounted
+  // the instant it closed, so every dropdown in the app scaled in over 150ms
+  // and then vanished on a single frame — the one direction anyone actually
+  // watches closely, since they've just clicked something.
+  const [closing, setClosing] = useState(false)
   const [canPortal, setCanPortal] = useState(false)
   const ref = useRef(null)
   const panelRef = useRef(null)
+  const closeTimer = useRef(null)
 
   // document.body doesn't exist during SSR, so the portal target can
   // only be resolved after mounting on the client.
@@ -48,7 +60,7 @@ export function Dropdown({
       // the option's own handler ever ran.
       const inTrigger = ref.current?.contains(e.target)
       const inPanel = panelRef.current?.contains(e.target)
-      if (!inTrigger && !inPanel) setOpen(false)
+      if (!inTrigger && !inPanel) beginClose()
     }
     if (open) {
       document.addEventListener('mousedown', handleClickOutside)
@@ -56,7 +68,9 @@ export function Dropdown({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [open])
+    // beginClose is stable (useCallback with no deps), so this only exists
+    // to keep the dependency list honest.
+  }, [open, beginClose])
 
   // ─── Position the panel ───
   // The panel is portaled to document.body and positioned `fixed`,
@@ -123,12 +137,30 @@ export function Dropdown({
     }
   }, [open, align, sideOffset, offsetX, offsetY])
 
-  const close = () => setOpen(false)
+  // Every close path goes through here — outside click, Escape, and an
+  // option being picked — so none of them can skip the exit.
+  const beginClose = useCallback(() => {
+    setOpen((isOpen) => {
+      if (!isOpen) return false
+      setClosing(true)
+      clearTimeout(closeTimer.current)
+      // Matches EXIT_MS below. The class has to be cleared as well as the
+      // panel unmounted: without it the next open would start from the
+      // closing scale rather than the resting pre-open one, which reads as
+      // the menu flinching before it appears.
+      closeTimer.current = setTimeout(() => setClosing(false), EXIT_MS)
+      return false
+    })
+  }, [])
+
+  useEffect(() => () => clearTimeout(closeTimer.current), [])
+
+  const close = beginClose
 
   const panel = (
     <div
       ref={panelRef}
-      className='dropdown-panel'
+      className={`dropdown-panel${closing ? ' is-closing' : ''}`}
       style={{
         position: 'fixed',
         // Real values are written by the layout effect above, which
@@ -153,7 +185,7 @@ export function Dropdown({
     >
       {/* --- Trigger --- */}
       <div
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => (open ? beginClose() : setOpen(true))}
         className={
           triggerHover ? `dropdown-trigger${open ? ' is-open' : ''}` : ''
         }
@@ -162,7 +194,9 @@ export function Dropdown({
         {trigger}
       </div>
 
-      {open && canPortal ? createPortal(panel, document.body) : null}
+      {(open || closing) && canPortal
+        ? createPortal(panel, document.body)
+        : null}
     </div>
   )
 }
@@ -180,7 +214,7 @@ export function Dropdown({
 // it would make a destructive option look identical to a normal
 // one until the moment it's clicked. data-danger on each item is
 // how the highlight knows which tint to become as it slides onto it.
-const HIGHLIGHT_EASE = 'cubic-bezier(0.23, 1, 0.32, 1)'
+const HIGHLIGHT_EASE = 'var(--ease-out)'
 
 export function DropdownMenu({ children, width = '220px', close }) {
   const containerRef = useRef(null)

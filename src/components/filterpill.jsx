@@ -124,7 +124,7 @@ export default function FilterPill({ filters, onRemove, onClearAll }) {
         // before the transition below — without this read, both
         // style writes collapse into one frame and nothing animates.
         child.getBoundingClientRect()
-        child.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
+        child.style.transition = 'transform 0.3s var(--ease-out)'
         child.style.transform = ''
       }
     }

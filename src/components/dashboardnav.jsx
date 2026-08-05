@@ -183,7 +183,7 @@ export default function DashboardNav() {
             background: 'var(--bg-surface)',
             borderRadius: 'var(--radius-lg)',
             transition: pillStyle.ready
-              ? 'left 0.25s cubic-bezier(0.22, 1, 0.36, 1), width 0.25s cubic-bezier(0.22, 1, 0.36, 1)'
+              ? 'left 0.25s var(--ease-out), width 0.25s var(--ease-out)'
               : 'none',
             zIndex: 0,
           }}
@@ -208,7 +208,7 @@ export default function DashboardNav() {
                 borderRadius: 'var(--radius-lg)',
                 textDecoration: 'none',
                 color: isActive ? 'var(--text-strong)' : 'var(--text-soft)',
-                transition: 'color 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+                transition: 'color 0.25s var(--ease-out)',
               }}
             >
               <div

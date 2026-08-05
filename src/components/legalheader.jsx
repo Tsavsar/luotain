@@ -64,7 +64,7 @@ function TabIcon({ active, children }) {
         transform: active ? 'scale(1)' : 'scale(0.6)',
         overflow: 'hidden',
         transition:
-          'width 0.3s cubic-bezier(0.22, 1, 0.36, 1), margin-right 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+          'width 0.3s var(--ease-out), margin-right 0.3s var(--ease-out), opacity 0.2s ease, transform 0.3s var(--ease-out)',
       }}
     >
       {children}
@@ -175,7 +175,7 @@ export default function LegalHeader() {
               borderRadius: 'var(--radius-full)',
               background: 'var(--bg-surface)',
               transition: pillReady
-                ? 'left 0.3s cubic-bezier(0.22, 1, 0.36, 1), width 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
+                ? 'left 0.3s var(--ease-out), width 0.3s var(--ease-out)'
                 : 'none',
               zIndex: 0,
             }}

@@ -336,7 +336,7 @@ export default function ChartContainer({ data, compareSeries }) {
                     width={hoveredIdx !== null ? 1 : N}
                     style={{
                       transition:
-                        'x 0.3s cubic-bezier(0.22, 1, 0.36, 1), width 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                        'x 0.3s var(--ease-out), width 0.3s var(--ease-out)',
                     }}
                   />
                 </clipPath>
@@ -459,7 +459,7 @@ export default function ChartContainer({ data, compareSeries }) {
                   top: 0,
                   bottom: 0,
                   pointerEvents: 'none',
-                  transition: 'left 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                  transition: 'left 0.3s var(--ease-out)',
                   zIndex: 1,
                 }}
               >
@@ -470,7 +470,7 @@ export default function ChartContainer({ data, compareSeries }) {
                     top: 0,
                     height: `${activeDotTop - 4}px`,
                     borderLeft: '1px dashed var(--bg-subtle)',
-                    transition: 'height 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                    transition: 'height 0.3s var(--ease-out)',
                   }}
                 />
                 <div
@@ -482,7 +482,7 @@ export default function ChartContainer({ data, compareSeries }) {
                     height: '6px',
                     borderRadius: 'var(--radius-full)',
                     background: 'var(--primary-base)',
-                    transition: 'top 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                    transition: 'top 0.3s var(--ease-out)',
                   }}
                 />
                 <div
@@ -493,7 +493,7 @@ export default function ChartContainer({ data, compareSeries }) {
                     height: `${AXIS_BASELINE - activeDotTop - 4}px`,
                     borderLeft: '1.5px solid var(--primary-base)',
                     transition:
-                      'top 0.3s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                      'top 0.3s var(--ease-out), height 0.3s var(--ease-out)',
                   }}
                 />
               </div>
@@ -516,7 +516,7 @@ export default function ChartContainer({ data, compareSeries }) {
                 top: 0,
                 bottom: 0,
                 pointerEvents: 'none',
-                transition: 'left 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                transition: 'left 0.3s var(--ease-out)',
                 zIndex: 1,
               }}
             >
@@ -540,7 +540,7 @@ export default function ChartContainer({ data, compareSeries }) {
                     height: '6px',
                     borderRadius: 'var(--radius-full)',
                     background: dot.color,
-                    transition: 'top 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                    transition: 'top 0.3s var(--ease-out)',
                   }}
                 />
               ))}
@@ -708,7 +708,7 @@ export default function ChartContainer({ data, compareSeries }) {
                 opacity: hoveredIdx !== null ? 1 : 0,
                 visibility: hoveredIdx !== null ? 'visible' : 'hidden',
                 transition:
-                  'left 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease, visibility 0.2s',
+                  'left 0.3s var(--ease-out), opacity 0.2s ease, visibility 0.2s',
               }}
             >
               <div

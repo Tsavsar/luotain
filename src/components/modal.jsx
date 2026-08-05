@@ -20,7 +20,7 @@ import { createPortal } from 'react-dom'
 //   without it, closing just snaps the element away mid-transition.
 const ENTER_MS = 200
 const EXIT_MS = 150
-const ENTER_EASE = 'cubic-bezier(0.23, 1, 0.32, 1)' // emil-design-eng's strong ease-out
+const ENTER_EASE = 'var(--ease-out)' // emil-design-eng's strong ease-out
 const EXIT_EASE = 'ease'
 
 const FOCUSABLE_SELECTOR =

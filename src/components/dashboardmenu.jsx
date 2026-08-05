@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import GeneratedAvatar from './generatedavatar'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import LogoMark from './logomark'
 import GradientAvatar from './gradientavatar'
@@ -88,7 +87,7 @@ function OrgDropdown({ orgName, allOrgs = [], activeOrgId }) {
       trigger={
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <GeneratedAvatar name={orgName} size={24} />
+            <GradientAvatar name={orgName} size={24} />
             {/* Hidden on mobile via CSS — keeps just the avatar +
                 chevron in the compact top row */}
             <p
@@ -129,7 +128,7 @@ function OrgDropdown({ orgName, allOrgs = [], activeOrgId }) {
               borderRadius: 'var(--radius-md)',
             }}
           >
-            <GeneratedAvatar name={org.name} size={20} />
+            <GradientAvatar name={org.name} size={20} />
             <p
               className='para-sm'
               style={{ color: 'var(--text-strong)', margin: 0, flex: 1 }}
@@ -265,7 +264,7 @@ export default function DashboardMenu({
         // The layout keeps this mounted across navigation, so going to
         // create actually animates the collapse from 720 to 440 rather
         // than snapping to it.
-        transition: 'max-width 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+        transition: 'max-width 0.3s var(--ease-out)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

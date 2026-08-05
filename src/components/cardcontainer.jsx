@@ -285,8 +285,7 @@ function DataRow({
           // smaller — so a long label on a high-value row still
           // respects the ceiling instead of overriding it.
           minWidth: `max(38px, min(calc(${pct} * (100% - 48px)), calc(100% - 100px)))`,
-          transition:
-            'min-width 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease',
+          transition: 'min-width 0.4s var(--ease-out), background 0.15s ease',
         }}
       >
         {iconType === 'flag' && (
@@ -459,7 +458,7 @@ export function Card({
         // before the transition below — without this read, both
         // style writes collapse into one frame and nothing animates.
         child.getBoundingClientRect()
-        child.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
+        child.style.transition = 'transform 0.3s var(--ease-out)'
         child.style.transform = ''
       }
     }
