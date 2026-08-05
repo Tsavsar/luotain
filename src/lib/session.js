@@ -58,24 +58,33 @@ export async function setAppSession(email) {
   // would then correctly reject — locking someone out of the sign-in they
   // just completed.
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    })
-
-    if (user) {
-      const ctx = await requestContext()
-      await prisma.appSession.create({
-        data: {
-          jti,
-          userId: user.id,
-          userAgent: ctx.userAgent,
-          city: ctx.city,
-          country: ctx.country,
-          expiresAt,
-        },
-      })
-    }
+    // Same timeout treatment as the read path, for the same reason: without
+    // it, an unreachable database would hang the sign-in itself rather than
+    // just failing to record the session. Recording is worth having; it is
+    // not worth blocking someone from signing in.
+    await Promise.race([
+      (async () => {
+        const user = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true },
+        })
+        if (!user) return
+        const ctx = await requestContext()
+        await prisma.appSession.create({
+          data: {
+            jti,
+            userId: user.id,
+            userAgent: ctx.userAgent,
+            city: ctx.city,
+            country: ctx.country,
+            expiresAt,
+          },
+        })
+      })(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('session record timed out')), 2500)
+      ),
+    ])
   } catch (err) {
     // A failure here means the session won't be listed or revocable, which
     // is bad — but blocking sign-in over it is worse. Logged so it's visible
@@ -122,10 +131,28 @@ export async function getCurrentUserEmail() {
   if (!decoded.jti) return decoded.email
 
   try {
-    const session = await prisma.appSession.findUnique({
-      where: { jti: decoded.jti },
-      select: { id: true, expiresAt: true, lastActiveAt: true },
-    })
+    // Raced against a timeout, not just wrapped in try/catch.
+    //
+    // This is the important part: getCurrentUserEmail runs on EVERY
+    // authenticated request, and it used to be pure signature verification
+    // with no database access. Adding a lookup put every page behind a
+    // database round trip — and a catch only helps if the query THROWS. An
+    // unreachable or slow pooler makes Prisma hang instead, which takes the
+    // whole page down with it rather than degrading.
+    //
+    // 1.5s is well beyond a healthy query (single-digit milliseconds on an
+    // indexed unique column) and well inside a page's patience. Past that,
+    // fall through to trusting the signature: revocation is briefly delayed,
+    // which is a far better failure than the app not loading.
+    const session = await Promise.race([
+      prisma.appSession.findUnique({
+        where: { jti: decoded.jti },
+        select: { id: true, expiresAt: true, lastActiveAt: true },
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('session lookup timed out')), 1500)
+      ),
+    ])
 
     // Deleted means revoked. This is the line that makes "Sign out" on
     // another device actually do something.
@@ -149,10 +176,10 @@ export async function getCurrentUserEmail() {
 
     return decoded.email
   } catch (err) {
-    // If the database is unreachable, fall back to trusting the signature.
-    // The alternative is signing every user out during an outage, which
-    // turns a degraded database into a total one.
-    console.error('getCurrentUserEmail: session lookup failed', err)
+    // Unreachable, slow, or timed out — fall back to trusting the signature.
+    // The alternative is signing every user out during a database blip,
+    // which turns a degraded database into a total outage.
+    console.error('getCurrentUserEmail: session lookup failed', err.message)
     return decoded.email
   }
 }
