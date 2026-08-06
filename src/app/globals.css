@@ -1809,9 +1809,12 @@ html {
     background 0.15s ease,
     transform var(--duration-press) ease-out;
 }
+/* Steps toward grey, not toward white — the scrim behind these is white now,
+   so a lighter hover was moving them TOWARD the background rather than away
+   from it, which reads as the control disappearing on hover. */
 .qr-lightbox-action:hover,
 .qr-lightbox-download:hover {
-  background: rgba(255, 255, 255, 0.18) !important;
+  background: var(--bg-surface) !important;
 }
 .qr-lightbox-action:active,
 .qr-lightbox-download:active {
@@ -2144,4 +2147,30 @@ html {
 }
 .session-signout:active:not(:disabled) {
   transform: scale(0.97);
+}
+
+/* --- Plan card --- */
+.plan-cta {
+  transition:
+    transform var(--duration-press) ease-out,
+    background var(--duration-fast) ease;
+}
+.plan-cta:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.billing-toggle-option {
+  transition:
+    background var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+
+/* Three 230px columns plus two 32px gaps is 754px — wider than a phone, and
+   wider than a small laptop once the card's own padding is counted. They stack
+   rather than scroll horizontally: a pricing table you have to swipe sideways
+   hides the comparison, which is the only reason the table exists. */
+@media (max-width: 900px) {
+  .plan-columns {
+    flex-direction: column;
+    gap: 28px !important;
+  }
 }

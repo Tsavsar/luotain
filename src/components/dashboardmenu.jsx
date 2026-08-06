@@ -6,6 +6,7 @@ import { signOut } from 'next-auth/react'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import LogoMark from './logomark'
 import GradientAvatar from './gradientavatar'
+import PlanCard from './plancard'
 
 function OrgChevronIcon() {
   return (
@@ -167,6 +168,7 @@ function OrgDropdown({ orgName, allOrgs = [], activeOrgId }) {
 
 // ─── ProfileDropdown ─── matches Figma node 87:2323
 function ProfileDropdown({ userImage, userName, avatarSeed }) {
+  const [plansOpen, setPlansOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -176,63 +178,68 @@ function ProfileDropdown({ userImage, userName, avatarSeed }) {
   }
 
   return (
-    <Dropdown
-      align='right'
-      trigger={
-        <div
-          style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: 'var(--radius-full)',
-            overflow: 'hidden',
-            flexShrink: 0,
-          }}
-        >
-          {userImage ? (
-            <img
-              src={userImage}
-              alt=''
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            // Was a flat --bg-subtle circle, which read as a missing image.
-            // Same gradient as the settings page, from the same seed, so
-            // the avatar is consistent wherever it appears.
-            <GradientAvatar seed={avatarSeed} name={userName} size={32} />
-          )}
-        </div>
-      }
-    >
-      <DropdownMenu width='180px'>
-        <DropdownOption
-          onClick={() =>
-            // ?from= tells the settings page where to return to. Without it
-            // its Back button has nothing to go to but the dashboard, since
-            // it deliberately doesn't walk browser history — moving between
-            // settings sections would otherwise make Back step through the
-            // tabs instead of leaving.
-            router.push(
-              `/dashboard/settings?from=${encodeURIComponent(pathname || '/dashboard/analytics')}`
-            )
-          }
-        >
-          Settings
-        </DropdownOption>
-        <DropdownOption
-          onClick={() => router.push('/dashboard/settings/billing')}
-        >
-          Upgrade plan
-        </DropdownOption>
-        <DropdownOption
-          onClick={() => router.push('/dashboard/settings/contact')}
-        >
-          Contact
-        </DropdownOption>
-        <DropdownOption onClick={handleLogout} danger>
-          Log out
-        </DropdownOption>
-      </DropdownMenu>
-    </Dropdown>
+    <>
+      <Dropdown
+        align='right'
+        trigger={
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: 'var(--radius-full)',
+              overflow: 'hidden',
+              flexShrink: 0,
+            }}
+          >
+            {userImage ? (
+              <img
+                src={userImage}
+                alt=''
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              // Was a flat --bg-subtle circle, which read as a missing image.
+              // Same gradient as the settings page, from the same seed, so
+              // the avatar is consistent wherever it appears.
+              <GradientAvatar seed={avatarSeed} name={userName} size={32} />
+            )}
+          </div>
+        }
+      >
+        <DropdownMenu width='180px'>
+          <DropdownOption
+            onClick={() =>
+              // ?from= tells the settings page where to return to. Without it
+              // its Back button has nothing to go to but the dashboard, since
+              // it deliberately doesn't walk browser history — moving between
+              // settings sections would otherwise make Back step through the
+              // tabs instead of leaving.
+              router.push(
+                `/dashboard/settings?from=${encodeURIComponent(pathname || '/dashboard/analytics')}`
+              )
+            }
+          >
+            Settings
+          </DropdownOption>
+          <DropdownOption onClick={() => setPlansOpen(true)}>
+            Upgrade plan
+          </DropdownOption>
+          <DropdownOption
+            onClick={() => router.push('/dashboard/settings/contact')}
+          >
+            Contact
+          </DropdownOption>
+          <DropdownOption onClick={handleLogout} danger>
+            Log out
+          </DropdownOption>
+        </DropdownMenu>
+      </Dropdown>
+
+      {/* Mounted alongside the dropdown rather than inside it — the dropdown
+          unmounts its panel on close, which would take the card with it the
+          instant the menu item was clicked. */}
+      <PlanCard open={plansOpen} onClose={() => setPlansOpen(false)} />
+    </>
   )
 }
 

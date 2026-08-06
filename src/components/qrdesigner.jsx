@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import Switch from '@/components/switch'
 import Tooltip from '@/components/tooltip'
 import LogoMark from '@/components/logomark'
 import { toast } from '@/components/toast'
 import CopyButton from '@/components/copybutton'
+import Lightbox from '@/components/lightbox'
 
 // ─── QrDesigner ───
 // Node 149:941. Step two of the QR flow: once a destination exists, this
@@ -625,41 +625,22 @@ function QrPreview({ color, markerColor, pattern, branding, onExpand }) {
 // Lerping toward the target rather than snapping to it is what gives it
 // weight — jumping to the exact cursor angle feels twitchy and cheap.
 export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
-  const [canPortal, setCanPortal] = useState(false)
   const [entered, setEntered] = useState(false)
   const glossRef = useRef(null)
   const shadowRef = useRef(null)
 
-  useEffect(() => setCanPortal(true), [])
-
+  // Mirrors the shell's own entrance so the pieces inside can stagger against
+  // it. The shell owns the scrim, the escape key and the scroll lock — see
+  // Lightbox; keeping a second copy of those here was the duplication that
+  // made the overlay change a two-file edit.
   useEffect(() => {
     if (!open) {
       setEntered(false)
       return
     }
-    // One frame at the pre-animation position so the entrance has
-    // somewhere to animate FROM, same as the modal.
     const raf = requestAnimationFrame(() => setEntered(true))
     return () => cancelAnimationFrame(raf)
   }, [open])
-
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return
-    function onKey(e) {
-      if (e.key === 'Escape') onClose?.()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
 
   // Same hook the preview uses, at nearly double the angle and measured
   // from the viewport rather than the element — so the tilt keeps
@@ -689,37 +670,13 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
     },
   })
 
-  if (!open || !canPortal) return null
-
-  const content = (
-    <div
+  return (
+    <Lightbox
+      open={open}
+      onClose={onClose}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 240,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '20px',
-        padding: '24px',
-      }}
     >
-      <div
-        onClick={onClose}
-        aria-hidden='true'
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(10, 10, 10, 0.82)',
-          backdropFilter: 'blur(6px)',
-          opacity: entered ? 1 : 0,
-          transition: 'opacity 0.25s ease',
-        }}
-      />
-
       {/* Short link + copy, above the code. */}
       {shortUrl ? (
         <div
@@ -730,14 +687,15 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
             gap: '8px',
             padding: '6px 8px 6px 14px',
             borderRadius: 'var(--radius-full)',
-            background: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'var(--bg-default)',
+            border: '1px solid var(--stroke-soft)',
+            boxShadow: 'var(--shadow-xs)',
             opacity: entered ? 1 : 0,
             transform: entered ? 'translateY(0)' : 'translateY(6px)',
             transition: 'opacity 0.3s ease 0.05s, transform 0.3s ease 0.05s',
           }}
         >
-          <span className='para-sm' style={{ color: '#ffffff' }}>
+          <span className='para-sm' style={{ color: 'var(--text-strong)' }}>
             {shortUrl}
           </span>
           <CopyButton
@@ -750,8 +708,8 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
               width: '26px',
               height: '26px',
               borderRadius: 'var(--radius-full)',
-              background: 'rgba(255, 255, 255, 0.1)',
-              color: '#ffffff',
+              background: 'var(--bg-surface)',
+              color: 'var(--text-strong)',
             }}
           />
         </div>
@@ -776,7 +734,7 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
             position: 'absolute',
             inset: '6%',
             borderRadius: '24px',
-            background: 'rgba(0, 0, 0, 0.55)',
+            background: 'rgba(0, 0, 0, 0.16)',
             filter: 'blur(38px)',
             willChange: 'transform',
             opacity: entered ? 1 : 0,
@@ -796,6 +754,9 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
             transformStyle: 'preserve-3d',
             willChange: 'transform',
             borderRadius: '20px',
+            // Its own edge, because a white card on a white scrim has no
+            // boundary — the old dark overlay was doing that job.
+            border: '1px solid var(--stroke-soft)',
             opacity: entered ? 1 : 0,
             // The loop owns transform outright, so only opacity is
             // transitioned here — the two writing to the same property
@@ -868,10 +829,11 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
           gap: '8px',
           padding: '10px 18px',
           borderRadius: 'var(--radius-full)',
-          background: 'rgba(255, 255, 255, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
+          background: 'var(--bg-default)',
+          border: '1px solid var(--stroke-soft)',
+          boxShadow: 'var(--shadow-xs)',
           cursor: 'pointer',
-          color: '#ffffff',
+          color: 'var(--text-strong)',
           fontFamily: 'var(--font-sans)',
           fontSize: '14px',
           lineHeight: '20px',
@@ -884,10 +846,8 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
         <DownloadIcon />
         Download
       </button>
-    </div>
+    </Lightbox>
   )
-
-  return createPortal(content, document.body)
 }
 
 function Swatch({ hex, selected, onSelect, label }) {
