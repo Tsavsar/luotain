@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Lightbox from '@/components/lightbox'
+import SegmentedTabs from '@/components/segmentedtabs'
+import AnimatedNumber from '@/components/animatednumber'
 import {
   PLANS,
   PLAN_ORDER,
@@ -31,7 +33,7 @@ function CheckIcon() {
     >
       <path
         d='M3.4 8.4 6.3 11.3 12.6 5'
-        stroke='var(--text-sub)'
+        stroke='var(--primary-base)'
         strokeWidth='1.5'
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -64,49 +66,25 @@ function DashIcon() {
 
 function BillingToggle({ annual, onChange }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        gap: '2px',
-        alignItems: 'flex-start',
-        padding: '3px',
-        borderRadius: '9px',
-        background: 'var(--bg-surface)',
-        flexShrink: 0,
-      }}
-    >
-      {[
-        { id: false, label: 'Monthly' },
-        { id: true, label: 'Annually (save 20%)' },
-      ].map((opt) => (
-        <button
-          key={opt.label}
-          type='button'
-          onClick={() => onChange(opt.id)}
-          aria-pressed={annual === opt.id}
-          className='billing-toggle-option'
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '5px 14px',
-            borderRadius: '6px',
-            border: 'none',
-            background: annual === opt.id ? 'var(--bg-default)' : 'transparent',
-            color:
-              annual === opt.id ? 'var(--text-strong)' : 'var(--text-soft)',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '12px',
-            lineHeight: '16px',
-            letterSpacing: '0.24px',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
+    <SegmentedTabs
+      items={[
+        { id: 'monthly', label: 'Monthly' },
+        // The discount in orange, so the reason to switch is the thing that
+        // catches the eye rather than the word "Annually".
+        {
+          id: 'annual',
+          label: (
+            <>
+              Annually{' '}
+              <span style={{ color: 'var(--primary-base)' }}>(save 20%)</span>
+            </>
+          ),
+        },
+      ]}
+      activeId={annual ? 'annual' : 'monthly'}
+      onChange={(id) => onChange(id === 'annual')}
+      padX='14px'
+    />
   )
 }
 
@@ -168,11 +146,23 @@ function PlanColumn({ plan, current, annual, linkCount, onUpgrade, busy }) {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <div style={{ display: 'flex', gap: '2px', alignItems: 'flex-end' }}>
+            {/* AnimatedNumber rather than a count-up, deliberately. Counting
+                $5 to $48 would display 6, 7, 8 … 47 on the way — prices that
+                don't exist, on a pricing table. The digit cascade animates the
+                change without ever showing a wrong figure, and it's already
+                the treatment stats values use, so numbers behave the same way
+                across the app. */}
             <p
               className='label-lg'
-              style={{ color: 'var(--text-strong)', margin: 0 }}
+              style={{
+                color: 'var(--text-strong)',
+                margin: 0,
+                display: 'flex',
+                alignItems: 'baseline',
+              }}
             >
-              ${price}
+              <span>$</span>
+              <AnimatedNumber value={price} />
             </p>
             <p
               className='para-xs'

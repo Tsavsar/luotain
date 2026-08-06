@@ -2158,11 +2158,6 @@ html {
 .plan-cta:active:not(:disabled) {
   transform: scale(0.97);
 }
-.billing-toggle-option {
-  transition:
-    background var(--duration-fast) ease,
-    color var(--duration-fast) ease;
-}
 
 /* Three 230px columns plus two 32px gaps is 754px — wider than a phone, and
    wider than a small laptop once the card's own padding is counted. They stack
