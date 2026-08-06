@@ -75,8 +75,13 @@ function BillingToggle({ annual, onChange }) {
           id: 'annual',
           label: (
             <>
-              Annually{' '}
-              <span style={{ color: 'var(--primary-base)' }}>(save 20%)</span>
+              Annually
+              {/* Margin rather than a {' '} text node: whitespace between JSX
+                  siblings is collapsible, and inside a flex-centred label it
+                  was rendering tight. A margin can't be collapsed away. */}
+              <span style={{ color: 'var(--primary-base)', marginLeft: '5px' }}>
+                (save 20%)
+              </span>
             </>
           ),
         },
