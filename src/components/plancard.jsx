@@ -180,67 +180,75 @@ function PlanColumn({ plan, current, annual, linkCount, onUpgrade, busy }) {
               {period}
             </p>
           </div>
-          <p
-            style={{
-              margin: 0,
-              fontFamily: 'var(--font-sans)',
-              fontSize: '10px',
-              lineHeight: 1.35,
-              letterSpacing: '0.2px',
-              color: 'var(--text-soft)',
-            }}
-          >
-            {note}
-          </p>
+          {/* Note and usage on one line, separated by a dot. Usage belongs up
+              here with the price rather than under the button: it's context
+              for the plan, and it reads before the decision instead of after
+              it. Only shown on the plan you're actually on — "0 of 5 used" on
+              a tier you haven't bought is meaningless. */}
+          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: 'var(--font-sans)',
+                fontSize: '10px',
+                lineHeight: 1.35,
+                letterSpacing: '0.2px',
+                color: 'var(--text-soft)',
+              }}
+            >
+              {note}
+            </p>
+            {isCurrent && usageLabel(plan.id, linkCount) ? (
+              <>
+                <span
+                  aria-hidden='true'
+                  style={{
+                    width: '3px',
+                    height: '3px',
+                    flexShrink: 0,
+                    borderRadius: 'var(--radius-full)',
+                    background: 'var(--bg-muted)',
+                  }}
+                />
+                <p
+                  style={{
+                    margin: 0,
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '10px',
+                    lineHeight: 1.35,
+                    letterSpacing: '0.2px',
+                    // Red at the limit, since that's the moment it stops being
+                    // information and becomes the reason to upgrade.
+                    color:
+                      plan.maxLinks !== null && linkCount >= plan.maxLinks
+                        ? 'var(--error-base)'
+                        : 'var(--text-soft)',
+                  }}
+                >
+                  {usageLabel(plan.id, linkCount)}
+                </p>
+              </>
+            ) : null}
+          </div>
         </div>
 
         {isCurrent ? (
           <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
-              gap: '4px',
-              alignItems: 'flex-start',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-lg)',
+              background: 'var(--bg-layer)',
+              color: 'var(--text-strong)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '12px',
+              lineHeight: '16px',
+              letterSpacing: '0.24px',
             }}
           >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px 16px',
-                borderRadius: 'var(--radius-lg)',
-                background: 'var(--bg-layer)',
-                color: 'var(--text-strong)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '12px',
-                lineHeight: '16px',
-                letterSpacing: '0.24px',
-              }}
-            >
-              Current plan
-            </div>
-            {/* Usage against the limit, which is the thing that actually
-                prompts an upgrade — "Current plan" alone tells you nothing
-                about whether you're near the ceiling. Omitted on unlimited
-                tiers, where there's no fraction to show. */}
-            {usageLabel(plan.id, linkCount) ? (
-              <p
-                style={{
-                  margin: 0,
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '10px',
-                  lineHeight: 1.35,
-                  letterSpacing: '0.2px',
-                  color:
-                    plan.maxLinks !== null && linkCount >= plan.maxLinks
-                      ? 'var(--error-base)'
-                      : 'var(--text-soft)',
-                }}
-              >
-                {usageLabel(plan.id, linkCount)}
-              </p>
-            ) : null}
+            Current plan
           </div>
         ) : (
           <button
