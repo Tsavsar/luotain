@@ -241,8 +241,18 @@ model Link {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  createdById String
-  createdBy   User   @relation(fields: [createdById], references: [id])
+  // Nullable, and SetNull on delete. Two reasons, and the first is that
+  // without this "delete account" simply fails: a required relation with no
+  // onDelete defaults to restrict, so deleting anyone who had ever created a
+  // link raised a foreign key error.
+  //
+  // The second is why SetNull rather than Cascade. A link belongs to the
+  // ORGANISATION, not to whoever happened to create it — cascading would mean
+  // a teammate leaving takes their links with them, silently breaking every
+  // URL they'd made for the team. "Created by" is attribution, and attribution
+  // is what's lost when someone leaves, not the work.
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   qrCodes QrCode[]
   clicks  Click[]

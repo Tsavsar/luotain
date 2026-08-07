@@ -2169,3 +2169,15 @@ html {
     gap: 28px !important;
   }
 }
+
+/* Delete account. No :hover lightening — a destructive button shouldn't get
+   friendlier as the cursor approaches it. It darkens instead. */
+.delete-account-btn {
+  transition: transform var(--duration-press) ease-out;
+}
+.delete-account-btn:hover:not(:disabled) {
+  background: var(--error-dark) !important;
+}
+.delete-account-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
