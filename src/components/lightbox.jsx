@@ -17,6 +17,12 @@ import { createPortal } from 'react-dom'
 // consequence worth knowing: a white card on a white scrim has no edge, so
 // anything rendered in here needs its own border or shadow to separate from
 // the background. The QR card and the plan card both carry one.
+// Exits faster than it enters. An entrance is introducing something and can
+// take its time; an exit is getting out of the way, and matching the
+// entrance's duration makes dismissing feel sluggish. 180 against the 250ms
+// entrance.
+const EXIT_MS = 180
+
 export default function Lightbox({
   open,
   onClose,
@@ -30,19 +36,37 @@ export default function Lightbox({
   gap = '20px',
 }) {
   const [canPortal, setCanPortal] = useState(false)
+  // Whether anything is on screen at all. Set true when opened, and only
+  // cleared AFTER the exit has finished — this is what keeps the overlay
+  // mounted long enough to animate out.
+  //
+  // It has to be its own state rather than derived from a `closing` flag set
+  // in an effect. That was my first attempt and it silently did nothing:
+  // effects run after render, so on the render where `open` flipped false the
+  // flag was still false, the guard below returned null, and the component
+  // unmounted before the effect could ever set it. The exit was unreachable.
+  const [visible, setVisible] = useState(false)
+  // Drives the actual transitions. Children read this, so flipping it to false
+  // reverses whatever they're already transitioning on.
   const [entered, setEntered] = useState(false)
 
   useEffect(() => setCanPortal(true), [])
 
   useEffect(() => {
-    if (!open) {
-      setEntered(false)
-      return
+    if (open) {
+      setVisible(true)
+      // One frame at the pre-animation position, so the entrance has somewhere
+      // to animate FROM.
+      const raf = requestAnimationFrame(() => setEntered(true))
+      return () => cancelAnimationFrame(raf)
     }
-    // One frame at the pre-animation position, so the entrance has somewhere
-    // to animate FROM.
-    const raf = requestAnimationFrame(() => setEntered(true))
-    return () => cancelAnimationFrame(raf)
+
+    // Nothing to exit from if it was never open — this also fires on mount.
+    if (!visible) return
+
+    setEntered(false)
+    const timer = setTimeout(() => setVisible(false), EXIT_MS)
+    return () => clearTimeout(timer)
   }, [open])
 
   useEffect(() => {
@@ -63,7 +87,9 @@ export default function Lightbox({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  if (!open || !canPortal) return null
+  // Keyed off `visible`, not `open`. `open` going false starts the exit; this
+  // is what stays true until it's finished.
+  if (!visible || !canPortal) return null
 
   const content = (
     <div
@@ -103,13 +129,20 @@ export default function Lightbox({
           backdropFilter: 'blur(14px) saturate(120%)',
           WebkitBackdropFilter: 'blur(14px) saturate(120%)',
           opacity: entered ? 1 : 0,
-          transition: 'opacity var(--duration-modal) var(--ease-out)',
+          transition: entered
+            ? 'opacity var(--duration-modal) var(--ease-out)'
+            : `opacity ${EXIT_MS}ms var(--ease-exit)`,
         }}
       />
 
       {/* `entered` is handed to children so each can stagger its own parts
-          against the same entrance rather than running its own timer. */}
-      {typeof children === 'function' ? children({ entered }) : children}
+          against the same entrance rather than running its own timer.
+          `exitMs` comes with it so their exits match the shell's — a child
+          transitioning out over 250ms while the shell unmounts at 180 would be
+          cut off part-way through. */}
+      {typeof children === 'function'
+        ? children({ entered, exitMs: EXIT_MS })
+        : children}
     </div>
   )
 
