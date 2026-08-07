@@ -9,42 +9,6 @@ import { getProfile } from '@/lib/profilecache'
 // ─── Account → Delete account ───
 // Node 87:3160.
 
-function MailIcon() {
-  return (
-    <svg
-      width='20'
-      height='20'
-      viewBox='0 0 20 20'
-      fill='none'
-      xmlns='http://www.w3.org/2000/svg'
-      aria-hidden='true'
-    >
-      <path
-        d='M9 17V15'
-        stroke='currentColor'
-        strokeWidth='1.5'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-      <path
-        d='M15 6C15 7.654 13.654 9 12 9C11.448 9 11 8.552 11 8C11 7.448 11.448 7 12 7C12.552 7 13 6.551 13 6V5.816C12.153 5.514 11.481 4.845 11.178 4H6C3.794 4 2 5.794 2 8V13.5C2 14.878 3.122 16 4.5 16H15.5C16.878 16 18 14.878 18 13.5V8C18 6.95 17.585 6 16.92 5.286C16.398 5.725 15.734 6 15 6ZM8 14H4.5C4.224 14 4 13.776 4 13.5V8C4 6.897 4.897 6 6 6C7.103 6 8 6.897 8 8V14Z'
-        fill='currentColor'
-      />
-      <path
-        d='M15 1H12C11.4477 1 11 1.44772 11 2V3C11 3.55228 11.4477 4 12 4H15C15.5523 4 16 3.55228 16 3V2C16 1.44772 15.5523 1 15 1Z'
-        fill='currentColor'
-      />
-      <path
-        d='M12 3V6'
-        stroke='currentColor'
-        strokeWidth='2'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-    </svg>
-  )
-}
-
 function Spinner({ size = 13 }) {
   return (
     <svg
@@ -187,8 +151,11 @@ export default function DeleteAccountPage() {
 
       <div className='settings-field-group' style={{ width: '100%' }}>
         <Inputfield
-          lefticon={<MailIcon />}
-          placeholder={email || 'your@email.com'}
+          // No icon and no placeholder. The instruction directly above the
+          // field already says what to type, so a hint inside it is the same
+          // sentence twice — and a greyed-out copy of your own email sitting
+          // in the box invites clicking rather than typing, which is the one
+          // thing this field exists to prevent.
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
           onKeyDown={(e) => {
@@ -198,6 +165,7 @@ export default function DeleteAccountPage() {
           }}
           error={errored}
           shaking={shaking}
+          tone='error'
         />
       </div>
 

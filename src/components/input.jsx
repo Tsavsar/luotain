@@ -17,6 +17,11 @@ export default function Inputfield({
   // screen readers. This looks inert and can't be typed into, but the text
   // is still reachable.
   readOnly = false,
+  // Recolours the focus ring. Separate from `error`, which means "this value
+  // is invalid" and paints a red border at rest — this field isn't invalid
+  // while it's being typed, it's just destructive, and the focus state is
+  // where that belongs.
+  tone = 'default',
   // Blurs and fades JUST the text while a value is being replaced
   // programmatically — the create form's "generate slug" uses it so the
   // swap reads as a soft change instead of the characters snapping to
@@ -53,7 +58,9 @@ export default function Inputfield({
               // make it 2px shorter and the two would no longer line up.
               '1px solid transparent'
             : focused
-              ? '1px solid var(--primary-base)'
+              ? tone === 'error'
+                ? '1px solid var(--error-base)'
+                : '1px solid var(--primary-base)'
               : hovered
                 ? '1px solid var(--stroke-medium)'
                 : '1px solid var(--stroke-soft)',
@@ -64,7 +71,9 @@ export default function Inputfield({
               // type here", which is the opposite of what this one means.
               'none'
             : focused
-              ? 'var(--focus-active)'
+              ? tone === 'error'
+                ? 'var(--focus-error)'
+                : 'var(--focus-active)'
               : 'var(--shadow-xs)',
         display: 'flex',
         alignItems: 'center',
