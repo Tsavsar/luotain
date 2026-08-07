@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { getCurrentUserEmail } from '@/lib/session'
+import { getCurrentUserEmail, clearAppSession } from '@/lib/session'
 
 // GET /api/me — the signed-in user's own profile.
 //
@@ -147,4 +147,85 @@ export async function PATCH(request) {
       profileUpdatedAt: user.profileUpdatedAt,
     },
   })
+}
+
+// DELETE /api/me
+//
+// Deletes the signed-in user's account. Confirmed by typing the account's own
+// email, which the client checks too — but the check here is the one that
+// counts, since the client's is just a courtesy.
+export async function DELETE(request) {
+  const email = await getCurrentUserEmail()
+  if (!email) {
+    return Response.json({ error: 'Not signed in' }, { status: 401 })
+  }
+
+  let body
+  try {
+    body = await request.json()
+  } catch {
+    return Response.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  // Case-insensitive and trimmed: requiring someone to match capitalisation on
+  // their own address adds no safety, it just makes a deliberate action feel
+  // broken.
+  const typed = String(body?.email || '')
+    .trim()
+    .toLowerCase()
+  if (typed !== email.toLowerCase()) {
+    return Response.json(
+      { error: "That doesn't match your email address", field: 'email' },
+      { status: 400 }
+    )
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  })
+  if (!user) {
+    return Response.json({ error: 'User not found' }, { status: 404 })
+  }
+
+  // Organisations where this person is the ONLY member have to go with them.
+  // Memberships cascade on user delete, but the organisation itself doesn't —
+  // so without this, a solo user's org survives with no members at all,
+  // holding their links, domains and click history, reachable by nobody and
+  // impossible to clean up through the app.
+  //
+  // Orgs with other members are left alone: those belong to the team, not to
+  // the person leaving.
+  const memberships = await prisma.membership.findMany({
+    where: { userId: user.id },
+    select: { organizationId: true },
+  })
+
+  const soloOrgIds = []
+  for (const m of memberships) {
+    const count = await prisma.membership.count({
+      where: { organizationId: m.organizationId },
+    })
+    if (count === 1) soloOrgIds.push(m.organizationId)
+  }
+
+  // One transaction. A partial delete is the worst outcome here — an account
+  // that's half gone can neither be used nor recovered.
+  await prisma.$transaction([
+    // Orgs first. Cascades take their links, QR codes, clicks and domains.
+    ...(soloOrgIds.length
+      ? [prisma.organization.deleteMany({ where: { id: { in: soloOrgIds } } })]
+      : []),
+    // Then the user. Cascades take accounts, sessions and memberships; links
+    // in shared orgs survive with their creator set to null, which is why
+    // Link.createdById is nullable.
+    prisma.user.delete({ where: { id: user.id } }),
+  ])
+
+  // The session row is already gone via cascade, but the cookie isn't — and a
+  // cookie pointing at a deleted account would leave someone on a dashboard
+  // that 401s on every request rather than at the sign-in page.
+  await clearAppSession()
+
+  return Response.json({ success: true })
 }
