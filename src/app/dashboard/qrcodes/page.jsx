@@ -8,7 +8,6 @@ import { useMockDataState } from '@/components/mockdatacontext'
 import { getMockQrCodes } from '@/lib/mockAnalytics'
 import StatsCards from '@/components/statscards'
 import { QrTable, QrCards, QrGallery } from '@/components/qrviews'
-import SegmentedTabs from '@/components/segmentedtabs'
 import useFlip from '@/components/useflip'
 
 // ─── QR codes ───
@@ -532,57 +531,63 @@ export default function QrCodesPage() {
                 paddingBottom: '14px',
               }}
             >
-              {/* SegmentedTabs with its track on, so this reads as a standard
-                  segmented control rather than bare tabs. The container is a
-                  prop rather than a wrapper here, so the pill inverts to sit
-                  ON the track — a wrapper would have left a grey pill on a grey
-                  background. */}
-              <SegmentedTabs
-                items={[
-                  {
-                    id: 'table',
-                    label: (
-                      <span
-                        aria-label='Table'
-                        title='Table'
-                        style={{ display: 'flex' }}
-                      >
-                        <TableIcon />
-                      </span>
-                    ),
-                  },
-                  {
-                    id: 'cards',
-                    label: (
-                      <span
-                        aria-label='Cards'
-                        title='Cards'
-                        style={{ display: 'flex' }}
-                      >
-                        <CardsIcon />
-                      </span>
-                    ),
-                  },
-                  {
-                    id: 'gallery',
-                    label: (
-                      <span
-                        aria-label='Gallery'
-                        title='Gallery'
-                        style={{ display: 'flex' }}
-                      >
-                        <GalleryIcon />
-                      </span>
-                    ),
-                  },
-                ]}
-                activeId={view}
-                onChange={changeView}
-                // 8px, not 4: with a track around them the segments need room
-                // to not look cramped against its edge.
-                padX='8px'
-                container
-              />
+              {/* The original hand-rolled control, kept local to this page.
+                  SegmentedTabs measures its pill with offsetLeft against its own
+                  container, so putting padding on that container shifted every
+                  measurement by the padding — the pill came out wide and
+                  offset. Rather than patch the shared component's measurement
+                  for one caller, this page keeps its own three buttons.
+
+                  No sliding pill as a result. Worth being straight about that
+                  trade: the shared component slides but has no track, this has a
+                  track but doesn't slide, and the track is what you asked for. */}
+              <div
+                role='group'
+                aria-label='Layout'
+                style={{
+                  display: 'flex',
+                  gap: '2px',
+                  padding: '3px',
+                  borderRadius: '10px',
+                  background: 'var(--bg-surface)',
+                }}
+              >
+                {[
+                  { id: 'table', label: 'Table', Icon: TableIcon },
+                  { id: 'cards', label: 'Cards', Icon: CardsIcon },
+                  { id: 'gallery', label: 'Gallery', Icon: GalleryIcon },
+                ].map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    type='button'
+                    onClick={() => changeView(id)}
+                    // Labelled for assistive tech even though only the icon
+                    // shows — three unlabelled glyphs are meaningless to a
+                    // screen reader, and aria-pressed is what conveys which is
+                    // active.
+                    aria-label={label}
+                    aria-pressed={view === id}
+                    title={label}
+                    className='qr-view-option'
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '32px',
+                      height: '28px',
+                      borderRadius: '7px',
+                      border: 'none',
+                      background:
+                        view === id ? 'var(--bg-default)' : 'transparent',
+                      color:
+                        view === id ? 'var(--text-strong)' : 'var(--text-soft)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Icon />
+                  </button>
+                ))}
+              </div>
             </div>
           ) : null}
 

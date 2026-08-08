@@ -594,10 +594,11 @@ export function QrGallery({ codes, onOpen, register }) {
               position: 'relative',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
+              // flex-start, not center. The column is now exactly the code's
+              // width, so centring has nothing to centre within — and it made
+              // the label's left edge drift away from the code's.
+              alignItems: 'flex-start',
               gap: '10px',
-              // Vertical only, so the leftmost tile's code starts at the
-              // column edge like everything else.
               padding: '8px 0',
               background: 'none',
               border: 'none',
@@ -642,7 +643,10 @@ export function QrGallery({ codes, onOpen, register }) {
                 display: 'flex',
                 gap: '5px',
                 alignItems: 'center',
-                maxWidth: '100%',
+                // Capped at the code's width so a long label ellipsizes rather
+                // than widening the tile past its column and breaking the
+                // alignment this whole change is for.
+                maxWidth: '124px',
                 minWidth: 0,
               }}
             >

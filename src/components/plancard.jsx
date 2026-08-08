@@ -89,10 +89,6 @@ function BillingToggle({ annual, onChange }) {
       activeId={annual ? 'annual' : 'monthly'}
       onChange={(id) => onChange(id === 'annual')}
       padX='14px'
-      // Same control, same treatment. It had a hand-rolled track before it
-      // moved to SegmentedTabs, and losing it there was an accident rather
-      // than a decision.
-      container
     />
   )
 }

@@ -48,14 +48,6 @@ export default function SegmentedTabs({
   onChange,
   linkAs: LinkAs = 'a',
   padX = '16px',
-  // A track behind the segments, which is what makes this read as a standard
-  // segmented control rather than tabs.
-  //
-  // Off by default: the legal-page and create-flow usages deliberately sit bare
-  // on the page, and the negative margin below is there so a bare one optically
-  // aligns with the content above it. With a container that alignment reverses —
-  // the track's own edge is what should line up — so this switches both.
-  container = false,
 }) {
   const itemRefs = useRef(new Map())
   const [pill, setPill] = useState({ left: 0, width: 0 })
@@ -109,21 +101,12 @@ export default function SegmentedTabs({
       style={{
         position: 'relative',
         display: 'inline-flex',
-        gap: container ? '2px' : '8px',
-        // Bare: cancels the first segment's own left padding so the label
-        // optically aligns with content above and below, using the SAME value
-        // as the padding itself. One number, so it can't drift out of sync.
-        //
-        // With a container there's nothing to cancel — the track's edge is the
-        // alignment, so the offset would push it out of line instead.
-        marginLeft: container ? 0 : `calc(-1 * ${padX})`,
-        ...(container
-          ? {
-              padding: '3px',
-              borderRadius: 'var(--radius-lg)',
-              background: 'var(--bg-surface)',
-            }
-          : {}),
+        gap: '8px',
+        // Cancels the first segment's own left padding so the label
+        // optically aligns with content above and below, using the
+        // SAME value as the padding itself. One number, so it can't
+        // drift out of sync with itself.
+        marginLeft: `calc(-1 * ${padX})`,
       }}
     >
       <div
@@ -134,11 +117,8 @@ export default function SegmentedTabs({
           bottom: 0,
           left: `${pill.left}px`,
           width: `${pill.width}px`,
-          borderRadius: container ? 'var(--radius-md)' : 'var(--radius-full)',
-          // Inverted when there's a track: the pill has to be lighter than what
-          // it sits on. Grey on grey would be invisible.
-          background: container ? 'var(--bg-default)' : 'var(--bg-surface)',
-          boxShadow: container ? 'var(--shadow-xs)' : 'none',
+          borderRadius: 'var(--radius-full)',
+          background: 'var(--bg-surface)',
           transition:
             ready && !reduced
               ? `left ${DUR}ms ${EASE}, width ${DUR}ms ${EASE}`

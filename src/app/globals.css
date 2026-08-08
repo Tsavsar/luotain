@@ -2095,13 +2095,21 @@ html {
 /* auto-fill rather than a fixed count: the gallery is about scanning by eye, so
    it should use whatever width it's given rather than leaving gaps at
    in-between sizes. */
+/* Columns sized to the code itself (124px), not stretched with 1fr.
+   With minmax(140px, 1fr) the columns grew to ~162px and each tile centred its
+   code inside that, so the first code sat ~19px in from the page's left edge
+   while the layout switcher above it started at 0. Fixed columns mean the code
+   IS the column, so the first one lines up with everything else on the page and
+   the hover layer is the only thing that overhangs. */
 .qr-grid-gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  /* Same reason as above — 4px let neighbouring highlights overlap entirely. */
+  grid-template-columns: repeat(auto-fill, 124px);
   column-gap: 24px;
   row-gap: 8px;
   width: 100%;
+  /* Packs left rather than distributing the leftover space, which would
+     reintroduce the same offset by another route. */
+  justify-content: start;
 }
 @media (max-width: 768px) {
   .qr-grid-cards {
@@ -2204,4 +2212,13 @@ html {
 .qr-field-action:disabled,
 .qr-preview-action:disabled {
   opacity: 0.5;
+}
+
+/* The layout switcher's segments. Its own control rather than SegmentedTabs —
+   see the note in the page. Colour is set inline per state; this is just the
+   transition, folded in with everything else that fades. */
+.qr-view-option {
+  transition:
+    background var(--duration-fast) ease,
+    color var(--duration-fast) ease;
 }
