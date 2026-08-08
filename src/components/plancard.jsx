@@ -89,6 +89,10 @@ function BillingToggle({ annual, onChange }) {
       activeId={annual ? 'annual' : 'monthly'}
       onChange={(id) => onChange(id === 'annual')}
       padX='14px'
+      // Same control, same treatment. It had a hand-rolled track before it
+      // moved to SegmentedTabs, and losing it there was an accident rather
+      // than a decision.
+      container
     />
   )
 }
@@ -336,7 +340,7 @@ export default function PlanCard({ open, onClose }) {
 
   return (
     <Lightbox open={open} onClose={onClose} labelledBy='plan-card-title'>
-      {({ entered }) => (
+      {({ entered, exitMs }) => (
         <div
           onClick={(e) => e.stopPropagation()}
           style={{
@@ -357,8 +361,10 @@ export default function PlanCard({ open, onClose }) {
             transform: entered
               ? 'translateY(0) scale(1)'
               : 'translateY(8px) scale(0.985)',
-            transition:
-              'opacity var(--duration-modal) var(--ease-out), transform var(--duration-modal) var(--ease-out)',
+            // Asymmetric, matching the shell: slower in, quicker out.
+            transition: entered
+              ? 'opacity var(--duration-modal) var(--ease-out), transform var(--duration-modal) var(--ease-out)'
+              : `opacity ${exitMs}ms var(--ease-exit), transform ${exitMs}ms var(--ease-exit)`,
           }}
         >
           <div

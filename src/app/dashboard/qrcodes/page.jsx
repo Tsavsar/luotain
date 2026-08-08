@@ -532,10 +532,11 @@ export default function QrCodesPage() {
                 paddingBottom: '14px',
               }}
             >
-              {/* Still SegmentedTabs — the sliding pill, measurement and
-                  reduced-motion handling all come from it. Only the sizing
-                  changed: padX 10px made it wide and airy next to a dense
-                  table, and 4px brings it back to the compact original. */}
+              {/* SegmentedTabs with its track on, so this reads as a standard
+                  segmented control rather than bare tabs. The container is a
+                  prop rather than a wrapper here, so the pill inverts to sit
+                  ON the track — a wrapper would have left a grey pill on a grey
+                  background. */}
               <SegmentedTabs
                 items={[
                   {
@@ -577,7 +578,10 @@ export default function QrCodesPage() {
                 ]}
                 activeId={view}
                 onChange={changeView}
-                padX='4px'
+                // 8px, not 4: with a track around them the segments need room
+                // to not look cramped against its edge.
+                padX='8px'
+                container
               />
             </div>
           ) : null}

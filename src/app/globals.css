@@ -2084,7 +2084,12 @@ html {
 .qr-grid-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  /* 24px, not 8. The hover layer inside each card hangs 8px past both sides, so
+     at an 8px gap the two columns' highlights overlapped in the middle — two
+     rectangles fighting over the same 8px. 24 leaves 8px clear between them,
+     which is the same breathing room the overhang gives at the outer edges. */
+  column-gap: 24px;
+  row-gap: 4px;
   width: 100%;
 }
 /* auto-fill rather than a fixed count: the gallery is about scanning by eye, so
@@ -2092,8 +2097,10 @@ html {
    in-between sizes. */
 .qr-grid-gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  /* Same reason as above — 4px let neighbouring highlights overlap entirely. */
+  column-gap: 24px;
+  row-gap: 8px;
   width: 100%;
 }
 @media (max-width: 768px) {
