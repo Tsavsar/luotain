@@ -26,10 +26,24 @@ const ERROR_CORRECTION = 'H'
 
 // Returns { size, isDark(x, y) } — the grid dimension and a lookup, which is
 // the shape the renderer already expects.
+// Never throws. QRCode.create('') raises "No input text", and this runs during
+// render — so an empty or missing value took the whole designer down with it
+// rather than degrading. Anything falsy falls back to the site, which is a valid
+// code and a sensible thing for a preview with nothing to encode yet.
+const FALLBACK = 'https://luotain.app'
+
 export function encodeQr(text) {
-  const qr = QRCode.create(String(text || ''), {
-    errorCorrectionLevel: ERROR_CORRECTION,
-  })
+  const value = String(text ?? '').trim() || FALLBACK
+
+  let qr
+  try {
+    qr = QRCode.create(value, { errorCorrectionLevel: ERROR_CORRECTION })
+  } catch (err) {
+    // A URL long enough to exceed even version 40 at H correction would land
+    // here. Falling back beats an exception during render.
+    console.error('[encodeQr] could not encode', value, err)
+    qr = QRCode.create(FALLBACK, { errorCorrectionLevel: ERROR_CORRECTION })
+  }
 
   const size = qr.modules.size
   const data = qr.modules.data
