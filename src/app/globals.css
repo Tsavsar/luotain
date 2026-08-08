@@ -2237,9 +2237,3 @@ html {
 .qr-row:active {
   transform: scale(0.995);
 }
-
-.qr-view-option {
-  transition:
-    background var(--duration-fast) ease,
-    color var(--duration-fast) ease;
-}
