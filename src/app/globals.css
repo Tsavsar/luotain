@@ -2181,3 +2181,33 @@ html {
 .delete-account-btn:active:not(:disabled) {
   transform: scale(0.97);
 }
+
+/* --- QR codes page ---
+   Two columns on desktop, one on mobile. Cards have no container or border, as
+   asked — the code itself provides the visual weight, and a box around
+   something that already reads as a discrete object is redundant. Hover is what
+   makes them feel tappable instead. */
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+@media (max-width: 768px) {
+  .qr-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.qr-card {
+  transition:
+    background var(--duration-fast) ease,
+    transform var(--duration-press) ease-out;
+}
+@media (hover: hover) and (pointer: fine) {
+  .qr-card:hover {
+    background: var(--bg-surface) !important;
+  }
+}
+.qr-card:active {
+  transform: scale(0.99);
+}

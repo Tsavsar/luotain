@@ -378,7 +378,7 @@ function useTilt({
 // code with a logo in it actually looks like. It reads better too: the
 // finder is always 7 modules, so at 33 it's 21% of the width rather than
 // 28%, which is the proportion that makes a real code look like one.
-function QrCode({
+export function QrCode({
   color,
   markerColor,
   pattern,

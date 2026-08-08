@@ -1,3 +1,4 @@
+import { SHORT_DOMAIN } from '@/lib/shortlink'
 // ─── Mock analytics data layer ───
 //
 // Architecture note: this models a pool of individual click/scan
@@ -749,6 +750,80 @@ const DOMAINS = [
   { hostname: 'l.shatermt.com', verified: true, isDefault: false },
   { hostname: 'pending.example.com', verified: false, isDefault: false },
 ]
+
+// ─── QR codes ───
+// Attached to links from the pool above rather than invented, so a mock QR
+// always points at a link that exists — and two of them share a link, which is
+// the case the whole design exists for: separate placements tracking
+// independently.
+//
+// Scans are a share of that link's clicks rather than a made-up number, so the
+// totals on this page can't contradict the ones on the links page.
+const QR_CODES = [
+  {
+    id: 'qr-store-window',
+    label: 'Store window',
+    shortCode: 'sw-summer',
+    linkUrl: 'luot.link/summer-sale',
+    color: '#fa7319',
+    markerColor: '#fa7319',
+    pattern: 'rounded',
+    branding: true,
+    scanShare: 0.42,
+  },
+  {
+    id: 'qr-business-card',
+    label: 'Business card',
+    shortCode: 'bc-summer',
+    linkUrl: 'luot.link/summer-sale',
+    color: '#000000',
+    markerColor: '#000000',
+    pattern: 'square',
+    branding: true,
+    scanShare: 0.09,
+  },
+  {
+    id: 'qr-conference',
+    label: 'Conference booth',
+    shortCode: 'cb-quick',
+    linkUrl: 'luot.link/quick-fox',
+    color: '#7d52f4',
+    markerColor: '#47c2ff',
+    pattern: 'dots',
+    branding: true,
+    scanShare: 0.31,
+  },
+]
+
+export function getMockQrCodes(sessionDeleted = []) {
+  const clicksOnly = getEventPool().filter((e) => e.type === 'click')
+  const hidden = hiddenUrls(sessionDeleted)
+
+  return QR_CODES.map((q) => {
+    const meta = LINK_METADATA[q.linkUrl] || {}
+    const linkClicks = clicksOnly.filter((e) => e.linkUrl === q.linkUrl).length
+    return {
+      id: q.id,
+      label: q.label,
+      shortCode: q.shortCode,
+      scanUrl: `${SHORT_DOMAIN}/${q.shortCode}`,
+      color: q.color,
+      markerColor: q.markerColor,
+      pattern: q.pattern,
+      branding: q.branding,
+      scans: Math.round(linkClicks * q.scanShare),
+      createdAt: meta.createdAt || new Date().toISOString(),
+      link: {
+        id: q.linkUrl,
+        shortUrl: q.linkUrl,
+        destination: meta.destination || '',
+        // A QR outlives the link it points at — it's printed on things. The
+        // page shows that state rather than hiding the code.
+        deleted: hidden.has(q.linkUrl),
+      },
+    }
+  })
+}
 
 export function getMockDomains({ verifiedOnly = true } = {}) {
   return DOMAINS.filter((d) => (verifiedOnly ? d.verified : true)).map((d) => ({
