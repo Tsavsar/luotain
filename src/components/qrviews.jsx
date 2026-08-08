@@ -2,6 +2,13 @@
 
 import { useRef, useState } from 'react'
 import { QrCode } from '@/components/qrdesigner'
+import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
+import {
+  SortIcon,
+  MoreIcon,
+  formatRowDate,
+  COL_DATE,
+} from '@/components/linktablehelpers'
 
 // ─── QR code views ───
 // Three ways of looking at the same set, because they answer different
@@ -120,40 +127,143 @@ function ScanCount({ scans, dim }) {
 }
 
 // ─── Table ───
-export function QrTable({ codes, onOpen }) {
+// Built on the same helpers and treatment as the links table rather than a
+// bespoke one: the pill-shaped header cells on --bg-surface, the same fixed
+// column widths, the same SortIcon and sort behaviour, the same row menu.
+//
+// Not the literal LinksTable component, because that one's columns, sort keys
+// and row menu are hardcoded to links — reusing it would have meant
+// generalising 400 lines around a different data shape and a different set of
+// actions. Sharing the helpers gets the consistency without the abstraction.
+const COL_SCANS = '122px'
+const COL_LINK_COL = '220px'
+
+function TableHeader({ sortBy, sortDir, onSort }) {
+  const cellBase = {
+    display: 'flex',
+    alignItems: 'center',
+    background: 'var(--bg-surface)',
+    borderRadius: '6px',
+    padding: '4px 10px',
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
+      <div style={{ ...cellBase, flex: '1 0 0', minWidth: 0 }}>
+        <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
+          Code
+        </span>
+      </div>
+      <div style={{ ...cellBase, width: COL_LINK_COL, flexShrink: 0 }}>
+        <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
+          Link
+        </span>
+      </div>
+      <div
+        style={{
+          ...cellBase,
+          width: COL_SCANS,
+          flexShrink: 0,
+          justifyContent: 'space-between',
+          paddingRight: '4px',
+          cursor: 'pointer',
+        }}
+        onClick={() => onSort('scans')}
+      >
+        <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
+          Scans
+        </span>
+        <span style={{ display: 'flex' }}>
+          <SortIcon direction={sortBy === 'scans' ? sortDir : null} />
+        </span>
+      </div>
+      <div
+        style={{
+          ...cellBase,
+          width: COL_DATE,
+          flexShrink: 0,
+          justifyContent: 'space-between',
+          paddingRight: '4px',
+          cursor: 'pointer',
+        }}
+        onClick={() => onSort('date')}
+      >
+        <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
+          Date created
+        </span>
+        <span style={{ display: 'flex' }}>
+          <SortIcon direction={sortBy === 'date' ? sortDir : null} />
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function RowMenu({ code, onOpen, onEdit, onDelete }) {
+  return (
+    <Dropdown
+      align='right'
+      trigger={
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '24px',
+            height: '24px',
+            borderRadius: '6px',
+          }}
+        >
+          <MoreIcon />
+        </div>
+      }
+    >
+      <DropdownMenu width='160px'>
+        <DropdownOption onClick={() => onOpen?.(code)}>
+          View code
+        </DropdownOption>
+        <DropdownOption onClick={() => onEdit?.(code)}>Edit</DropdownOption>
+        <DropdownOption danger onClick={() => onDelete?.(code)}>
+          Delete
+        </DropdownOption>
+      </DropdownMenu>
+    </Dropdown>
+  )
+}
+
+export function QrTable({ codes, onOpen, onEdit, onDelete }) {
+  const [sortBy, setSortBy] = useState(null)
+  const [sortDir, setSortDir] = useState('desc')
   const { containerRef, onMouseMove, onMouseLeave, layer } =
     useSlidingHighlight()
 
+  function handleSort(key) {
+    if (sortBy === key) {
+      setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))
+    } else {
+      setSortBy(key)
+      setSortDir('desc')
+    }
+  }
+
+  const sorted = sortBy
+    ? [...codes].sort((a, b) => {
+        const dir = sortDir === 'desc' ? -1 : 1
+        if (sortBy === 'scans') return (a.scans - b.scans) * dir
+        return (new Date(a.createdAt) - new Date(b.createdAt)) * dir
+      })
+    : codes
+
   return (
-    <div style={{ width: '100%' }}>
-      {/* Column headers, matching the links table's treatment. */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '8px',
-          alignItems: 'center',
-          padding: '0 10px 8px',
-        }}
-      >
-        <span
-          className='para-xs'
-          style={{ color: 'var(--text-soft)', flex: '1 0 0' }}
-        >
-          Code
-        </span>
-        <span
-          className='para-xs'
-          style={{ color: 'var(--text-soft)', width: '180px', flexShrink: 0 }}
-        >
-          Link
-        </span>
-        <span
-          className='para-xs'
-          style={{ color: 'var(--text-soft)', width: '90px', flexShrink: 0 }}
-        >
-          Scans
-        </span>
-      </div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4px',
+        width: '100%',
+      }}
+    >
+      <TableHeader sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
 
       <div
         ref={containerRef}
@@ -162,31 +272,29 @@ export function QrTable({ codes, onOpen }) {
         style={{ position: 'relative', width: '100%' }}
       >
         {layer}
-        {codes.map((code) => {
+        {sorted.map((code, index) => {
           const deleted = code.link?.deleted
           return (
-            <button
+            <div
               key={code.id}
-              type='button'
               data-qr-row
               onClick={() => onOpen(code)}
               className='qr-row'
               style={{
                 position: 'relative',
-                zIndex: 1,
+                // Descending, so an open row menu sits above the rows below it
+                // — the same stacking the links table uses.
+                zIndex: sorted.length - index,
                 display: 'flex',
-                gap: '8px',
+                gap: '6px',
                 alignItems: 'center',
                 width: '100%',
                 padding: '10px',
-                background: 'none',
-                border: 'none',
                 cursor: 'pointer',
-                textAlign: 'left',
                 boxSizing: 'border-box',
               }}
             >
-              <span
+              <div
                 style={{
                   display: 'flex',
                   gap: '10px',
@@ -220,14 +328,14 @@ export function QrTable({ codes, onOpen }) {
                 >
                   {code.label}
                 </span>
-              </span>
+              </div>
 
-              <span
+              <div
                 style={{
                   display: 'flex',
                   gap: '5px',
                   alignItems: 'center',
-                  width: '180px',
+                  width: COL_LINK_COL,
                   flexShrink: 0,
                   minWidth: 0,
                   color: deleted ? 'var(--text-disabled)' : 'var(--text-soft)',
@@ -245,12 +353,36 @@ export function QrTable({ codes, onOpen }) {
                 >
                   {deleted ? 'Link deleted' : code.link?.shortUrl}
                 </span>
-              </span>
+              </div>
 
-              <span style={{ width: '90px', flexShrink: 0 }}>
+              <div style={{ width: COL_SCANS, flexShrink: 0 }}>
                 <ScanCount scans={code.scans} dim={deleted} />
-              </span>
-            </button>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: COL_DATE,
+                  flexShrink: 0,
+                }}
+              >
+                <span className='para-xs' style={{ color: 'var(--text-soft)' }}>
+                  {formatRowDate(code.createdAt)}
+                </span>
+                {/* Stops the click reaching the row, or opening the menu would
+                    also open the code. */}
+                <div onClick={(e) => e.stopPropagation()}>
+                  <RowMenu
+                    code={code}
+                    onOpen={onOpen}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                  />
+                </div>
+              </div>
+            </div>
           )
         })}
       </div>

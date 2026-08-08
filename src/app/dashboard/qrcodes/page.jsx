@@ -20,21 +20,55 @@ import { QrTable, QrCards, QrGallery } from '@/components/qrviews'
 // by side with different numbers — the comparison the separate slug exists for,
 // visible without any grouping UI.
 
+// The real assets. Their #e8e8e8 is swapped for currentColor so the switcher's
+// active and inactive colours reach them — a fixed fill would leave all three
+// looking identically selected.
 function TableIcon() {
   return (
     <svg
-      width='15'
-      height='15'
-      viewBox='0 0 16 16'
-      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+      width='18'
+      height='18'
+      viewBox='0 0 20 20'
       aria-hidden='true'
     >
-      <path
-        d='M2.4 4.2h11.2M2.4 8h11.2M2.4 11.8h11.2'
-        stroke='currentColor'
-        strokeWidth='1.4'
-        strokeLinecap='round'
-      />
+      <g fill='currentColor'>
+        <line
+          x1='3'
+          y1='13'
+          x2='17'
+          y2='13'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <line
+          x1='3'
+          y1='17'
+          x2='17'
+          y2='17'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <rect
+          x='3'
+          y='3'
+          width='14'
+          height='6'
+          rx='1.5'
+          ry='1.5'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+          fill='currentColor'
+        />
+      </g>
     </svg>
   )
 }
@@ -42,36 +76,62 @@ function TableIcon() {
 function CardsIcon() {
   return (
     <svg
-      width='15'
-      height='15'
-      viewBox='0 0 16 16'
-      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+      width='18'
+      height='18'
+      viewBox='0 0 20 20'
       aria-hidden='true'
     >
-      <rect
-        x='2.2'
-        y='3'
-        width='4'
-        height='4'
-        rx='1'
-        stroke='currentColor'
-        strokeWidth='1.3'
-      />
-      <rect
-        x='2.2'
-        y='9'
-        width='4'
-        height='4'
-        rx='1'
-        stroke='currentColor'
-        strokeWidth='1.3'
-      />
-      <path
-        d='M8 4.4h5.8M8 6h3.4M8 10.4h5.8M8 12h3.4'
-        stroke='currentColor'
-        strokeWidth='1.3'
-        strokeLinecap='round'
-      />
+      <g fill='currentColor'>
+        <rect
+          x='3'
+          y='4'
+          width='4'
+          height='4'
+          rx='1'
+          ry='1'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+          fill='currentColor'
+        />
+        <rect
+          x='3'
+          y='12'
+          width='4'
+          height='4'
+          rx='1'
+          ry='1'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+          fill='currentColor'
+        />
+        <line
+          x1='11'
+          y1='6'
+          x2='17'
+          y2='6'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <line
+          x1='11'
+          y1='14'
+          x2='17'
+          y2='14'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+      </g>
     </svg>
   )
 }
@@ -79,48 +139,92 @@ function CardsIcon() {
 function GalleryIcon() {
   return (
     <svg
-      width='15'
-      height='15'
-      viewBox='0 0 16 16'
-      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+      width='18'
+      height='18'
+      viewBox='0 0 20 20'
       aria-hidden='true'
     >
-      <rect
-        x='2.2'
-        y='2.2'
-        width='4.6'
-        height='4.6'
-        rx='1'
-        stroke='currentColor'
-        strokeWidth='1.3'
-      />
-      <rect
-        x='9.2'
-        y='2.2'
-        width='4.6'
-        height='4.6'
-        rx='1'
-        stroke='currentColor'
-        strokeWidth='1.3'
-      />
-      <rect
-        x='2.2'
-        y='9.2'
-        width='4.6'
-        height='4.6'
-        rx='1'
-        stroke='currentColor'
-        strokeWidth='1.3'
-      />
-      <rect
-        x='9.2'
-        y='9.2'
-        width='4.6'
-        height='4.6'
-        rx='1'
-        stroke='currentColor'
-        strokeWidth='1.3'
-      />
+      <g fill='currentColor'>
+        <path
+          d='m3,7v-1c0-1.6569,1.3431-3,3-3h1'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <path
+          d='m7,17h-1c-1.6569,0-3-1.3431-3-3v-1'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <path
+          d='m17,13v1c0,1.6569-1.3431,3-3,3h-1'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <path
+          d='m13,3h1c1.6569,0,3,1.3431,3,3v1'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <rect
+          x='6.5'
+          y='6.5'
+          width='2'
+          height='2'
+          fill='currentColor'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <rect
+          x='11.5'
+          y='6.5'
+          width='2'
+          height='2'
+          transform='translate(25 15) rotate(180)'
+          fill='currentColor'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <rect
+          x='6.5'
+          y='11.5'
+          width='2'
+          height='2'
+          fill='currentColor'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+        <rect
+          x='11.5'
+          y='11.5'
+          width='2'
+          height='2'
+          transform='translate(25 25) rotate(180)'
+          fill='currentColor'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+      </g>
     </svg>
   )
 }
@@ -182,7 +286,15 @@ function CardSkeleton() {
 export default function QrCodesPage() {
   const { useMockData, ready: mockReady, deletedUrls } = useMockDataState()
   const [codes, setCodes] = useState(null)
+  // Two pieces of state, not one. `viewing` is the code whose design the
+  // lightbox renders; `viewerOpen` is whether it's showing.
+  //
+  // Clearing `viewing` on close was a bug: every prop went undefined, QrCode
+  // fell back to its default URL, and a completely different little code
+  // rendered for the length of the exit animation. The design has to survive
+  // until the exit finishes, so only the boolean flips on close.
   const [viewing, setViewing] = useState(null)
+  const [viewerOpen, setViewerOpen] = useState(false)
   // The code being restyled, plus its working design. Held separately from
   // `viewing` so cancelling leaves the original untouched — editing in place
   // would mean a discarded change had already altered the card behind the
@@ -195,6 +307,18 @@ export default function QrCodesPage() {
   const [editing, setEditing] = useState(null)
   const [draft, setDraft] = useState(null)
   const [savingEdit, setSavingEdit] = useState(false)
+
+  function openViewer(code) {
+    setViewing(code)
+    setViewerOpen(true)
+  }
+
+  function closeViewer() {
+    setViewerOpen(false)
+    // `viewing` is deliberately left alone. It's cleared on the next open, and
+    // holding it means the exit animates the code that was actually being
+    // looked at.
+  }
 
   useEffect(() => {
     try {
@@ -258,7 +382,33 @@ export default function QrCodesPage() {
     })
     // The lightbox closes as the dialog opens — two overlays at once would
     // stack, and the designer contains its own preview anyway.
-    setViewing(null)
+    setViewerOpen(false)
+  }
+
+  async function handleDelete(code) {
+    // No confirmation dialog here yet, and that's a gap worth naming: deleting
+    // a QR is a one-way door — the slug frees immediately and anything already
+    // printed stops resolving. This should get the same confirm treatment links
+    // have before it ships.
+    if (useMockData) {
+      setCodes((prev) => prev.filter((c) => c.id !== code.id))
+      toast(`${code.label} deleted (mock, not saved)`)
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/qrcodes/${code.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        toast.error(data?.error || "Couldn't delete the QR code")
+        return
+      }
+      setCodes((prev) => prev.filter((c) => c.id !== code.id))
+      toast(`${code.label} deleted`)
+    } catch (err) {
+      console.error('[QrCodesPage]', err)
+      toast.error("Couldn't delete the QR code")
+    }
   }
 
   async function handleSaveEdit() {
@@ -309,21 +459,9 @@ export default function QrCodesPage() {
   // still gets scanned but can't send anyone anywhere, so counting it as active
   // would overstate what's actually working.
   const activeCount = loaded ? codes.filter((c) => !c.link?.deleted).length : 0
-  // The best performer, which is more use than a second count — it answers
-  // "which placement is working" without reading the list.
-  const topCode =
-    loaded && codes.length
-      ? codes.reduce((best, c) => (c.scans > best.scans ? c : best), codes[0])
-      : null
-
   const metrics = [
     { label: 'Total scans', value: loaded ? totalScans : undefined },
     { label: 'Active codes', value: loaded ? activeCount : undefined },
-    {
-      label: 'Top code',
-      value:
-        topCode && topCode.scans > 0 ? topCode.label : loaded ? '—' : undefined,
-    },
   ]
 
   return (
@@ -404,8 +542,8 @@ export default function QrCodesPage() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: '30px',
-                      height: '26px',
+                      width: '32px',
+                      height: '28px',
                       borderRadius: '7px',
                       border: 'none',
                       background:
@@ -455,11 +593,16 @@ export default function QrCodesPage() {
               </p>
             </div>
           ) : view === 'table' ? (
-            <QrTable codes={codes} onOpen={setViewing} />
+            <QrTable
+              codes={codes}
+              onOpen={openViewer}
+              onEdit={startEditing}
+              onDelete={handleDelete}
+            />
           ) : view === 'gallery' ? (
-            <QrGallery codes={codes} onOpen={setViewing} />
+            <QrGallery codes={codes} onOpen={openViewer} />
           ) : (
-            <QrCards codes={codes} onOpen={setViewing} />
+            <QrCards codes={codes} onOpen={openViewer} />
           )}
         </div>
       </div>
@@ -467,8 +610,8 @@ export default function QrCodesPage() {
       {/* The same lightbox the designer uses, so a code looks and behaves the
           same wherever it's opened from. */}
       <QrLightbox
-        open={Boolean(viewing)}
-        onClose={() => setViewing(null)}
+        open={viewerOpen}
+        onClose={closeViewer}
         shortUrl={viewing?.scanUrl}
         value={viewing ? `https://${viewing.scanUrl}` : undefined}
         color={viewing?.color}
