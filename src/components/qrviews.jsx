@@ -315,20 +315,10 @@ function QrRow({ code, zIndex, onOpen, onEdit, onDelete, register }) {
         >
           {code.label}
         </p>
-        {/* The same shared CopyButton the links table uses. What's copied is the
-            QR's own scan URL, not the link's — that's the URL the printed code
-            actually resolves to. */}
-        <CopyButton
-          value={`https://${code.scanUrl}`}
-          icon={<CopyIcon />}
-          label='Copy scan link'
-          toastMessage='Scan link copied to clipboard'
-          style={{ flexShrink: 0 }}
-        />
       </div>
 
       <div
-        style={{ ...cellBase, width: COL_TARGET, flexShrink: 0, gap: '4px' }}
+        style={{ ...cellBase, width: COL_TARGET, flexShrink: 0, gap: '6px' }}
       >
         {deleted ? (
           <span style={{ display: 'flex', color: 'var(--text-disabled)' }}>
@@ -351,6 +341,21 @@ function QrRow({ code, zIndex, onOpen, onEdit, onDelete, register }) {
         >
           {deleted ? 'Link deleted' : code.link?.shortUrl}
         </p>
+        {/* Beside the URL it copies, matching the links table. It was on the
+            Code column, which put a copy affordance next to a label that isn't
+            copyable — the thing worth copying is the link.
+
+            Hidden when the link is deleted: there's nothing to copy, and the
+            cell reads "Link deleted" rather than a URL. */}
+        {!deleted ? (
+          <CopyButton
+            value={code.link?.shortUrl}
+            icon={<CopyIcon />}
+            label='Copy link'
+            toastMessage='Link copied to clipboard'
+            style={{ flexShrink: 0 }}
+          />
+        ) : null}
       </div>
 
       <div style={{ ...cellBase, width: COL_SCANS, flexShrink: 0 }}>
