@@ -81,44 +81,48 @@ function randomSlug() {
 // Inputfield's own icon colour logic — that wrapper already shifts from
 // --text-soft to --text-strong on focus or once the field has a value,
 // and a hardcoded fill would sit there ignoring it.
+// The destination field's icon. #D1D1D1 in the asset is swapped for
+// currentColor so it follows Inputfield's own icon logic — soft when the field
+// is empty, strong once there's a value — which a fixed grey would ignore.
 function LinkIcon() {
   return (
     <svg
-      xmlns='http://www.w3.org/2000/svg'
       width='20'
       height='20'
       viewBox='0 0 20 20'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
       aria-hidden='true'
     >
-      <g fill='currentColor'>
-        <path
-          d='m11,6l-1.9645-1.9645c-1.3807-1.3807-3.6193-1.3807-5,0h0c-1.3807,1.3807-1.3807,3.6193,0,5l1.9645,1.9645'
-          fill='none'
-          stroke='currentColor'
-          strokeLinecap='round'
-          strokeLinejoin='round'
-          strokeWidth='2'
-        />
-        <path
-          d='m9,14l1.9645,1.9645c1.3807,1.3807,3.6193,1.3807,5,0h0c1.3807-1.3807,1.3807-3.6193,0-5l-1.9645-1.9645'
-          fill='none'
-          stroke='currentColor'
-          strokeLinecap='round'
-          strokeLinejoin='round'
-          strokeWidth='2'
-        />
-        <line
-          x1='12'
-          y1='12'
-          x2='8'
-          y2='8'
-          fill='none'
-          stroke='currentColor'
-          strokeLinecap='round'
-          strokeLinejoin='round'
-          strokeWidth='2'
-        />
-      </g>
+      <path
+        d='M10 17C8.6193 17 7.5 13.866 7.5 10C7.5 6.134 8.6193 3 10 3C11.1019 3 12.0373 4.9961 12.3701 7.7674'
+        stroke='currentColor'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M10 17C6.134 17 3 13.866 3 10C3 6.134 6.134 3 10 3C13.6244 3 16.6054 5.7545 16.9639 9.2843'
+        stroke='currentColor'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M3 10H8.5'
+        stroke='currentColor'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M11.5 11L17.5 13L14.5 14L13.5 17L11.5 11Z'
+        fill='currentColor'
+        stroke='currentColor'
+        strokeWidth='2'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
     </svg>
   )
 }
