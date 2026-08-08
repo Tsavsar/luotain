@@ -407,10 +407,9 @@ export default function LinkDetailPage() {
     }
 
     try {
-      // TODO: POST /api/qrcodes doesn't exist yet. The QrCode model is
-      // there and now carries a domainId, but nothing writes to it, so
-      // this fails honestly rather than flipping the field to "View QR
-      // code" for something that was never saved.
+      // Real now. The endpoint generates the QR's own slug — separate from
+      // the link's, so a scan can be attributed to this placement — and stores
+      // the design so it renders as the one that was created.
       const res = await fetch('/api/qrcodes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -422,7 +421,7 @@ export default function LinkDetailPage() {
       toast('QR code created')
     } catch (err) {
       console.error('[LinkDetailPage]', err)
-      toast.error('Creating QR codes needs its endpoint first')
+      toast.error("Couldn't create the QR code")
     } finally {
       setSavingQr(false)
     }

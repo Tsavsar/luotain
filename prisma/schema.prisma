@@ -303,6 +303,20 @@ model QrCode {
   linkId String
   link   Link   @relation(fields: [linkId], references: [id], onDelete: Cascade)
 
+  // The design, so a saved code renders as the one that was designed. Without
+  // these the designer's colours and pattern were discarded on save and every
+  // stored QR would come back plain black squares — the styling existed only
+  // as unsaved local state.
+  //
+  // Stored as the chosen values rather than a rendered image: an SVG or PNG
+  // would need file storage, couldn't be re-rendered at another size, and
+  // couldn't be restyled later without regenerating. Four short columns
+  // reproduce it exactly at any size.
+  color       String  @default("#000000")
+  markerColor String  @default("#000000")
+  pattern     String  @default("square")
+  branding    Boolean @default(true)
+
   clicks Click[]
 
   createdAt DateTime @default(now())
