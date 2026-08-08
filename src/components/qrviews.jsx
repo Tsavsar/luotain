@@ -3,10 +3,17 @@
 import { useRef, useState } from 'react'
 import { QrCode } from '@/components/qrdesigner'
 import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
+import CopyButton from '@/components/copybutton'
 import {
   SortIcon,
   MoreIcon,
+  CopyIcon,
+  DestinationIcon,
+  hostnameOf,
   formatRowDate,
+  COL_LINK,
+  COL_DESTINATION,
+  COL_CLICKS,
   COL_DATE,
 } from '@/components/linktablehelpers'
 
@@ -91,17 +98,25 @@ function useSlidingHighlight() {
       aria-hidden='true'
       style={{
         position: 'absolute',
-        left: 0,
-        right: 0,
+        // -8px each side and an 8px radius, matching the links table's hover
+        // layer exactly. It overhangs the row's real box purely visually, so
+        // the columns never shift — the same reasoning the links table
+        // documents. At rest the two are indistinguishable; this one just
+        // animates between rows.
+        left: '-8px',
+        right: '-8px',
         top: `${highlight.top}px`,
         height: `${highlight.height}px`,
-        borderRadius: '10px',
+        borderRadius: '8px',
         background: 'var(--bg-surface)',
         opacity: highlight.hidden ? 0 : 1,
         transition: highlight.animate
           ? 'top var(--duration-panel) var(--ease-out), height var(--duration-panel) var(--ease-out), opacity var(--duration-fast) ease'
           : 'opacity var(--duration-fast) ease',
         pointerEvents: 'none',
+        // 0 against the rows' own 1-and-up zIndex, so it's behind their
+        // content — the links table achieves the same with zIndex -1 on a
+        // per-row layer.
         zIndex: 0,
       }}
     />
@@ -127,16 +142,24 @@ function ScanCount({ scans, dim }) {
 }
 
 // ─── Table ───
-// Built on the same helpers and treatment as the links table rather than a
-// bespoke one: the pill-shaped header cells on --bg-surface, the same fixed
-// column widths, the same SortIcon and sort behaviour, the same row menu.
+// Mirrors LinksTable's row anatomy exactly, because the two sit one nav tab
+// apart and any difference reads as a bug. Specifically:
 //
-// Not the literal LinksTable component, because that one's columns, sort keys
-// and row menu are hardcoded to links — reusing it would have meant
-// generalising 400 lines around a different data shape and a different set of
-// actions. Sharing the helpers gets the consistency without the abstraction.
-const COL_SCANS = '122px'
-const COL_LINK_COL = '220px'
+//   row      padding 4px 0, gap 6px, its own zIndex passed in
+//   cells    padding 4px 10px, radius 6px, para-xs on --text-strong
+//   hover    its own layer hanging 8px past each side, at zIndex -1
+//   menu     absolutely positioned at right: 0, over the Date column's tail
+//   widths   the same COL_* constants
+//
+// My first version got nearly all of that wrong — 10px row padding, no cell
+// padding, para-sm and label-sm, the menu inside the date cell pushing its text.
+//
+// The one deliberate difference: the hover layer SLIDES between rows rather than
+// each row fading its own in. It lands in exactly the same place with the same
+// 8px overhang, so it looks identical at rest — it just animates between rows.
+const COL_CODE = COL_LINK
+const COL_TARGET = COL_DESTINATION
+const COL_SCANS = COL_CLICKS
 
 function TableHeader({ sortBy, sortDir, onSort }) {
   const cellBase = {
@@ -149,12 +172,12 @@ function TableHeader({ sortBy, sortDir, onSort }) {
 
   return (
     <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
-      <div style={{ ...cellBase, flex: '1 0 0', minWidth: 0 }}>
+      <div style={{ ...cellBase, width: COL_CODE, flexShrink: 0 }}>
         <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
           Code
         </span>
       </div>
-      <div style={{ ...cellBase, width: COL_LINK_COL, flexShrink: 0 }}>
+      <div style={{ ...cellBase, width: COL_TARGET, flexShrink: 0 }}>
         <span className='para-xs' style={{ color: 'var(--text-sub)' }}>
           Link
         </span>
@@ -231,6 +254,147 @@ function RowMenu({ code, onOpen, onEdit, onDelete }) {
   )
 }
 
+function QrRow({ code, zIndex, onOpen, onEdit, onDelete }) {
+  const deleted = code.link?.deleted
+
+  const cellBase = {
+    display: 'flex',
+    alignItems: 'center',
+    borderRadius: '6px',
+    padding: '4px 10px',
+  }
+
+  return (
+    <div
+      data-qr-row
+      onClick={() => onOpen?.(code)}
+      style={{
+        position: 'relative',
+        zIndex,
+        display: 'flex',
+        gap: '6px',
+        width: '100%',
+        alignItems: 'center',
+        padding: '4px 0',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ ...cellBase, width: COL_CODE, flexShrink: 0, gap: '10px' }}>
+        {/* Small but still the real code — even at 20px the colour and pattern
+            identify it faster than the label does. Sized to the row rather than
+            enlarging it: the links table's first cell is a line of text, and a
+            taller thumbnail here would make the two tables different heights. */}
+        <span
+          style={{ display: 'flex', flexShrink: 0, opacity: deleted ? 0.4 : 1 }}
+        >
+          <QrCode
+            value={`https://${code.scanUrl}`}
+            color={code.color}
+            markerColor={code.markerColor}
+            pattern={code.pattern}
+            branding={false}
+            card={20}
+            margin={1}
+            radius={4}
+          />
+        </span>
+        <p
+          className='para-xs'
+          style={{
+            flex: 1,
+            minWidth: 0,
+            color: deleted ? 'var(--text-sub)' : 'var(--text-strong)',
+            margin: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {code.label}
+        </p>
+        {/* The same shared CopyButton the links table uses. What's copied is the
+            QR's own scan URL, not the link's — that's the URL the printed code
+            actually resolves to. */}
+        <CopyButton
+          value={`https://${code.scanUrl}`}
+          icon={<CopyIcon />}
+          label='Copy scan link'
+          toastMessage='Scan link copied to clipboard'
+          style={{ flexShrink: 0 }}
+        />
+      </div>
+
+      <div
+        style={{ ...cellBase, width: COL_TARGET, flexShrink: 0, gap: '4px' }}
+      >
+        {deleted ? (
+          <span style={{ display: 'flex', color: 'var(--text-disabled)' }}>
+            <LinkOffIcon />
+          </span>
+        ) : (
+          <DestinationIcon domain={hostnameOf(code.link?.destination)} />
+        )}
+        <p
+          className='para-xs'
+          style={{
+            flex: 1,
+            minWidth: 0,
+            color: deleted ? 'var(--text-disabled)' : 'var(--text-strong)',
+            margin: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {deleted ? 'Link deleted' : code.link?.shortUrl}
+        </p>
+      </div>
+
+      <div style={{ ...cellBase, width: COL_SCANS, flexShrink: 0 }}>
+        <p
+          className='para-xs'
+          style={{
+            color: deleted ? 'var(--text-sub)' : 'var(--text-strong)',
+            margin: 0,
+          }}
+        >
+          {code.scans}
+        </p>
+      </div>
+
+      <div style={{ ...cellBase, width: COL_DATE, flexShrink: 0 }}>
+        <p
+          className='para-xs'
+          style={{ color: 'var(--text-strong)', margin: 0 }}
+        >
+          {formatRowDate(code.createdAt)}
+        </p>
+      </div>
+
+      {/* Absolutely positioned, exactly as the links table does it: it takes no
+          space in the row's flex layout, so it can't reflow the columns, and it
+          sits over the tail of the Date column, which date strings don't fill.
+          My first version put it inside the date cell, which pushed the date. */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'absolute',
+          right: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+        }}
+      >
+        <RowMenu
+          code={code}
+          onOpen={onOpen}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      </div>
+    </div>
+  )
+}
+
 export function QrTable({ codes, onOpen, onEdit, onDelete }) {
   const [sortBy, setSortBy] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
@@ -272,119 +436,18 @@ export function QrTable({ codes, onOpen, onEdit, onDelete }) {
         style={{ position: 'relative', width: '100%' }}
       >
         {layer}
-        {sorted.map((code, index) => {
-          const deleted = code.link?.deleted
-          return (
-            <div
-              key={code.id}
-              data-qr-row
-              onClick={() => onOpen(code)}
-              className='qr-row'
-              style={{
-                position: 'relative',
-                // Descending, so an open row menu sits above the rows below it
-                // — the same stacking the links table uses.
-                zIndex: sorted.length - index,
-                display: 'flex',
-                gap: '6px',
-                alignItems: 'center',
-                width: '100%',
-                padding: '10px',
-                cursor: 'pointer',
-                boxSizing: 'border-box',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '10px',
-                  alignItems: 'center',
-                  flex: '1 0 0',
-                  minWidth: 0,
-                }}
-              >
-                {/* Small but still the real code — even at 28px the colour and
-                    pattern identify it faster than the label does. */}
-                <span style={{ flexShrink: 0, opacity: deleted ? 0.4 : 1 }}>
-                  <QrCode
-                    value={`https://${code.scanUrl}`}
-                    color={code.color}
-                    markerColor={code.markerColor}
-                    pattern={code.pattern}
-                    branding={false}
-                    card={28}
-                    margin={2}
-                    radius={5}
-                  />
-                </span>
-                <span
-                  className='para-sm'
-                  style={{
-                    color: deleted ? 'var(--text-sub)' : 'var(--text-strong)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {code.label}
-                </span>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '5px',
-                  alignItems: 'center',
-                  width: COL_LINK_COL,
-                  flexShrink: 0,
-                  minWidth: 0,
-                  color: deleted ? 'var(--text-disabled)' : 'var(--text-soft)',
-                }}
-              >
-                {deleted ? <LinkOffIcon /> : null}
-                <span
-                  className='para-xs'
-                  style={{
-                    color: 'inherit',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {deleted ? 'Link deleted' : code.link?.shortUrl}
-                </span>
-              </div>
-
-              <div style={{ width: COL_SCANS, flexShrink: 0 }}>
-                <ScanCount scans={code.scans} dim={deleted} />
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  width: COL_DATE,
-                  flexShrink: 0,
-                }}
-              >
-                <span className='para-xs' style={{ color: 'var(--text-soft)' }}>
-                  {formatRowDate(code.createdAt)}
-                </span>
-                {/* Stops the click reaching the row, or opening the menu would
-                    also open the code. */}
-                <div onClick={(e) => e.stopPropagation()}>
-                  <RowMenu
-                    code={code}
-                    onOpen={onOpen}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                  />
-                </div>
-              </div>
-            </div>
-          )
-        })}
+        {sorted.map((code, index) => (
+          <QrRow
+            key={code.id}
+            code={code}
+            // Descending, so an open row menu sits above the rows below it —
+            // the same stacking the links table uses.
+            zIndex={sorted.length - index}
+            onOpen={onOpen}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        ))}
       </div>
     </div>
   )

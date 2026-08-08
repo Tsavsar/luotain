@@ -1584,14 +1584,6 @@ html {
    (inline styles can't express one), which is also what makes this
    work correctly on touch, not just mouse. Transform only, so this
    never competes with each button's own background transition. */
-.modal-btn {
-  transition:
-    transform var(--duration-press) ease-out,
-    background 0.15s ease;
-}
-.modal-btn:active {
-  transform: scale(0.97);
-}
 .modal-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -1672,20 +1664,12 @@ html {
   margin-bottom: 0 !important;
 }
 
-.alert-action {
-  transition:
-    opacity 0.15s ease,
-    transform var(--duration-press) ease-out;
-}
 .alert-action:hover:not(:disabled) {
   opacity: 0.6;
 }
 /* Press feedback. It's the action on "Recover this link" and "Discard
    changes" — both consequential, and both were the one interactive control
    in the app that didn't acknowledge being pressed. */
-.alert-action:active:not(:disabled) {
-  transform: scale(0.96);
-}
 .alert-action:disabled {
   opacity: 0.5;
 }
@@ -1706,14 +1690,6 @@ html {
 }
 
 /* --- Create flow --- */
-.create-submit {
-  transition:
-    transform var(--duration-press) ease-out,
-    opacity 0.15s ease;
-}
-.create-submit:active:not(:disabled) {
-  transform: scale(0.97);
-}
 .create-submit:disabled {
   opacity: 0.6;
 }
@@ -1749,27 +1725,8 @@ html {
 }
 
 /* --- QR designer --- */
-.qr-swatch,
-.qr-pattern {
-  transition:
-    box-shadow 0.15s ease,
-    transform var(--duration-press) ease-out;
-}
-.qr-swatch:active,
-.qr-pattern:active {
-  transform: scale(0.94);
-}
 .qr-pattern svg {
   display: block;
-}
-.qr-upload {
-  transition: opacity 0.15s ease;
-}
-.qr-upload:hover {
-  opacity: 0.65;
-}
-.qr-preview-action:disabled {
-  opacity: 0.5;
 }
 
 /* Hex input in the QR designer. Placeholder-ish colour while empty so an
@@ -1784,16 +1741,8 @@ html {
 
 /* Secondary footer action — press feedback matched to .create-submit so
    the two buttons in a footer respond identically. */
-.create-secondary {
-  transition:
-    transform var(--duration-press) ease-out,
-    background 0.15s ease;
-}
 .create-secondary:hover {
   background: var(--bg-subtle) !important;
-}
-.create-secondary:active {
-  transform: scale(0.97);
 }
 
 /* --- QR lightbox --- */
@@ -1803,12 +1752,6 @@ html {
 .qr-preview-holder:hover {
   background: var(--bg-subtle) !important;
 }
-.qr-lightbox-action,
-.qr-lightbox-download {
-  transition:
-    background 0.15s ease,
-    transform var(--duration-press) ease-out;
-}
 /* Steps toward grey, not toward white — the scrim behind these is white now,
    so a lighter hover was moving them TOWARD the background rather than away
    from it, which reads as the control disappearing on hover. */
@@ -1816,18 +1759,8 @@ html {
 .qr-lightbox-download:hover {
   background: var(--bg-surface) !important;
 }
-.qr-lightbox-action:active,
-.qr-lightbox-download:active {
-  transform: scale(0.96);
-}
 
 /* QR field action on the link detail page. */
-.qr-field-action {
-  transition: opacity 0.15s ease;
-}
-.qr-field-action:hover {
-  opacity: 0.65;
-}
 
 /* --- Switch thumb: double-bounce travel ---
    Overshoots past the end, swings back, settles. Adapted from
@@ -1946,21 +1879,6 @@ html {
    indicator that's still sliding toward the same row, so you'd see the
    destination fill in before the highlight arrived. The danger tint moved
    into the indicator for the same reason. */
-.settings-icon-btn {
-  transition: opacity 0.15s ease;
-}
-.settings-icon-btn:hover {
-  opacity: 0.6;
-}
-.settings-save {
-  transition:
-    transform var(--duration-press) ease-out,
-    background 0.2s ease,
-    color 0.2s ease;
-}
-.settings-save:active:not(:disabled) {
-  transform: scale(0.97);
-}
 
 /* Mobile settings list rows. Whole-row press feedback rather than a hover
    tint — on touch there's no hover, and the row is the tap target. */
@@ -2135,29 +2053,12 @@ html {
 }
 
 /* Sign out, per session row. */
-.session-signout {
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    transform var(--duration-press) ease-out;
-}
 .session-signout:hover:not(:disabled) {
   background: var(--error-mute) !important;
   color: var(--error-base) !important;
 }
-.session-signout:active:not(:disabled) {
-  transform: scale(0.97);
-}
 
 /* --- Plan card --- */
-.plan-cta {
-  transition:
-    transform var(--duration-press) ease-out,
-    background var(--duration-fast) ease;
-}
-.plan-cta:active:not(:disabled) {
-  transform: scale(0.97);
-}
 
 /* Three 230px columns plus two 32px gaps is 754px — wider than a phone, and
    wider than a small laptop once the card's own padding is counted. They stack
@@ -2172,14 +2073,8 @@ html {
 
 /* Delete account. No :hover lightening — a destructive button shouldn't get
    friendlier as the cursor approaches it. It darkens instead. */
-.delete-account-btn {
-  transition: transform var(--duration-press) ease-out;
-}
 .delete-account-btn:hover:not(:disabled) {
   background: var(--error-dark) !important;
-}
-.delete-account-btn:active:not(:disabled) {
-  transform: scale(0.97);
 }
 
 /* --- QR codes page ---
@@ -2211,29 +2106,86 @@ html {
    sliding element would have to travel diagonally between them, which reads as
    the highlight wandering rather than following. The TABLE gets the sliding
    highlight instead, because its rows are a single column — see qrviews.jsx. */
-.qr-card,
-.qr-tile {
-  transition:
-    background var(--duration-fast) ease,
-    transform var(--duration-press) ease-out;
-}
 @media (hover: hover) and (pointer: fine) {
   .qr-card:hover,
   .qr-tile:hover {
     background: var(--bg-surface) !important;
   }
 }
+
+/* No .qr-row rule. The rows have no hover background of their own — the sliding
+   layer behind them provides it — and no press scale either, because the links
+   table's rows don't have one and a table row that shrinks under the finger in
+   one place but not the other is exactly the inconsistency this page was meant
+   to remove. */
+
+/* --- Press feedback, once ---
+   This was eleven near-identical rules across the stylesheet, and they had
+   drifted to FOUR different values: 0.94, 0.96, 0.97 and 0.99. A button that
+   sinks a different amount depending on which page you're on is the kind of
+   inconsistency nobody reports but everybody feels.
+   
+   One rule, one value, every class listed. The class names are unchanged, so no
+   component had to be touched — the behaviour is shared without introducing yet
+   another class to remember to apply.
+   
+   0.97 because it was already the majority (7 of 11) and it's the right amount:
+   perceptible without the element appearing to jump backwards. */
+.modal-btn,
+.alert-action,
+.create-submit,
+.create-secondary,
+.settings-save,
+.session-signout,
+.plan-cta,
+.delete-account-btn,
+.qr-lightbox-download,
+.qr-lightbox-action,
+.qr-card,
+.qr-tile,
+.qr-swatch,
+.qr-pattern {
+  transition:
+    transform var(--duration-press) ease-out,
+    background var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    opacity var(--duration-fast) ease;
+}
+.modal-btn:active:not(:disabled),
+.alert-action:active:not(:disabled),
+.create-submit:active:not(:disabled),
+.create-secondary:active:not(:disabled),
+.settings-save:active:not(:disabled),
+.session-signout:active:not(:disabled),
+.plan-cta:active:not(:disabled),
+.delete-account-btn:active:not(:disabled),
+.qr-lightbox-download:active:not(:disabled),
+.qr-lightbox-action:active:not(:disabled),
 .qr-card:active,
-.qr-tile:active {
-  transform: scale(0.99);
+.qr-tile:active,
+.qr-swatch:active,
+.qr-pattern:active {
+  transform: scale(0.97);
 }
 
-/* The table's rows have no hover background of their own — the sliding layer
-   behind them provides it. Both would mean the destination filling in before
-   the highlight arrived. */
-.qr-row {
-  transition: transform var(--duration-press) ease-out;
+/* --- Icon-button hover fade, once ---
+   Same story: four classes fading to three different opacities (0.5, 0.6,
+   0.65). One value now. */
+.settings-icon-btn,
+.qr-upload,
+.qr-field-action,
+.qr-preview-action {
+  transition: opacity var(--duration-fast) ease;
 }
-.qr-row:active {
-  transform: scale(0.995);
+.settings-icon-btn:hover:not(:disabled),
+.qr-upload:hover:not(:disabled),
+.qr-field-action:hover:not(:disabled),
+.qr-preview-action:hover:not(:disabled) {
+  opacity: 0.6;
+}
+.settings-icon-btn:disabled,
+.qr-upload:disabled,
+.qr-field-action:disabled,
+.qr-preview-action:disabled {
+  opacity: 0.5;
 }
