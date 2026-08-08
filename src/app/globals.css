@@ -2183,31 +2183,63 @@ html {
 }
 
 /* --- QR codes page ---
-   Two columns on desktop, one on mobile. Cards have no container or border, as
-   asked — the code itself provides the visual weight, and a box around
-   something that already reads as a discrete object is redundant. Hover is what
-   makes them feel tappable instead. */
-.qr-grid {
+   No containers or borders on any of the three views, as asked — the code
+   itself provides the visual weight, and a box around something that already
+   reads as a discrete object is redundant. Hover carries the affordance. */
+.qr-grid-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   width: 100%;
 }
+/* auto-fill rather than a fixed count: the gallery is about scanning by eye, so
+   it should use whatever width it's given rather than leaving gaps at
+   in-between sizes. */
+.qr-grid-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 4px;
+  width: 100%;
+}
 @media (max-width: 768px) {
-  .qr-grid {
+  .qr-grid-cards {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-.qr-card {
+
+/* Cards and tiles keep their own hover background: they're a grid, so a single
+   sliding element would have to travel diagonally between them, which reads as
+   the highlight wandering rather than following. The TABLE gets the sliding
+   highlight instead, because its rows are a single column — see qrviews.jsx. */
+.qr-card,
+.qr-tile {
   transition:
     background var(--duration-fast) ease,
     transform var(--duration-press) ease-out;
 }
 @media (hover: hover) and (pointer: fine) {
-  .qr-card:hover {
+  .qr-card:hover,
+  .qr-tile:hover {
     background: var(--bg-surface) !important;
   }
 }
-.qr-card:active {
+.qr-card:active,
+.qr-tile:active {
   transform: scale(0.99);
+}
+
+/* The table's rows have no hover background of their own — the sliding layer
+   behind them provides it. Both would mean the destination filling in before
+   the highlight arrived. */
+.qr-row {
+  transition: transform var(--duration-press) ease-out;
+}
+.qr-row:active {
+  transform: scale(0.995);
+}
+
+.qr-view-option {
+  transition:
+    background var(--duration-fast) ease,
+    color var(--duration-fast) ease;
 }

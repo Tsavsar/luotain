@@ -49,6 +49,26 @@ function CheckIcon() {
   )
 }
 
+function PencilIcon() {
+  return (
+    <svg
+      width='16'
+      height='16'
+      viewBox='0 0 16 16'
+      fill='none'
+      aria-hidden='true'
+    >
+      <path
+        d='M10.6 2.6a1.4 1.4 0 0 1 2 2L6 11.2l-2.7.7.7-2.7 6.6-6.6Z'
+        stroke='currentColor'
+        strokeWidth='1.4'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
 function DownloadIcon() {
   return (
     <svg
@@ -609,7 +629,7 @@ function QrPreview({ color, markerColor, pattern, branding, value, onExpand }) {
 // whole subtree sixty times a second for a value nothing else reads.
 // Lerping toward the target rather than snapping to it is what gives it
 // weight — jumping to the exact cursor angle feels twitchy and cheap.
-export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
+export function QrLightbox({ open, onClose, shortUrl, onEdit, ...qr }) {
   const glossRef = useRef(null)
   const shadowRef = useRef(null)
 
@@ -798,49 +818,15 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
             </div>
           </div>
 
-          <button
-            type='button'
-            onClick={() => {
-              // Serialised straight from the rendered SVG rather than
-              // re-generated. What downloads is exactly what's on screen —
-              // colours, pattern, logo and all — which a second render path
-              // couldn't guarantee.
-              const svg = cardRef.current?.querySelector('svg')
-              if (!svg) return
-              const clone = svg.cloneNode(true)
-              // A standalone file needs the namespace declared; inside a document
-              // the browser infers it.
-              clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
-              const blob = new Blob(
-                ['<?xml version="1.0" encoding="UTF-8"?>\n', clone.outerHTML],
-                { type: 'image/svg+xml' }
-              )
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url
-              a.download = `${(shortUrl || 'qr-code').replace(/[^a-z0-9]+/gi, '-')}.svg`
-              a.click()
-              // Revoked, or the blob is held in memory for the life of the page.
-              URL.revokeObjectURL(url)
-              toast('QR code downloaded')
-            }}
-            className='qr-lightbox-download'
+          {/* Both actions in one row, sharing the entrance. Edit is secondary and
+          sits first: Download is the thing most people came for, so it keeps
+          the rightmost position where the eye finishes. */}
+          <div
             style={{
               position: 'relative',
               display: 'flex',
-              alignItems: 'center',
               gap: '8px',
-              padding: '10px 18px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--bg-default)',
-              border: '1px solid var(--stroke-soft)',
-              boxShadow: 'var(--shadow-xs)',
-              cursor: 'pointer',
-              color: 'var(--text-strong)',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '14px',
-              lineHeight: '20px',
-              letterSpacing: '0.28px',
+              alignItems: 'center',
               opacity: entered ? 1 : 0,
               transform: entered ? 'translateY(0)' : 'translateY(6px)',
               transition: entered
@@ -848,9 +834,81 @@ export function QrLightbox({ open, onClose, shortUrl, ...qr }) {
                 : `opacity ${exitMs}ms var(--ease-exit), transform ${exitMs}ms var(--ease-exit)`,
             }}
           >
-            <DownloadIcon />
-            Download
-          </button>
+            {onEdit ? (
+              <button
+                type='button'
+                onClick={onEdit}
+                className='qr-lightbox-download'
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 18px',
+                  borderRadius: 'var(--radius-full)',
+                  background: 'var(--bg-default)',
+                  border: '1px solid var(--stroke-soft)',
+                  boxShadow: 'var(--shadow-xs)',
+                  cursor: 'pointer',
+                  color: 'var(--text-strong)',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '14px',
+                  lineHeight: '20px',
+                  letterSpacing: '0.28px',
+                }}
+              >
+                <PencilIcon />
+                Edit
+              </button>
+            ) : null}
+
+            <button
+              type='button'
+              onClick={() => {
+                // Serialised straight from the rendered SVG rather than
+                // re-generated. What downloads is exactly what's on screen —
+                // colours, pattern, logo and all — which a second render path
+                // couldn't guarantee.
+                const svg = cardRef.current?.querySelector('svg')
+                if (!svg) return
+                const clone = svg.cloneNode(true)
+                // A standalone file needs the namespace declared; inside a document
+                // the browser infers it.
+                clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+                const blob = new Blob(
+                  ['<?xml version="1.0" encoding="UTF-8"?>\n', clone.outerHTML],
+                  { type: 'image/svg+xml' }
+                )
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `${(shortUrl || 'qr-code').replace(/[^a-z0-9]+/gi, '-')}.svg`
+                a.click()
+                // Revoked, or the blob is held in memory for the life of the page.
+                URL.revokeObjectURL(url)
+                toast('QR code downloaded')
+              }}
+              className='qr-lightbox-download'
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 18px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--bg-default)',
+                border: '1px solid var(--stroke-soft)',
+                boxShadow: 'var(--shadow-xs)',
+                cursor: 'pointer',
+                color: 'var(--text-strong)',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '14px',
+                lineHeight: '20px',
+                letterSpacing: '0.28px',
+              }}
+            >
+              <DownloadIcon />
+              Download
+            </button>
+          </div>
         </>
       )}
     </Lightbox>

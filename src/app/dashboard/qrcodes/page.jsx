@@ -1,9 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { QrCode, QrLightbox } from '@/components/qrdesigner'
+import QrDesigner, { QrCode, QrLightbox } from '@/components/qrdesigner'
+import Modal from '@/components/modal'
+import { toast } from '@/components/toast'
 import { useMockDataState } from '@/components/mockdatacontext'
 import { getMockQrCodes } from '@/lib/mockAnalytics'
+import StatsCards from '@/components/statscards'
+import { QrTable, QrCards, QrGallery } from '@/components/qrviews'
 
 // ─── QR codes ───
 //
@@ -16,153 +20,108 @@ import { getMockQrCodes } from '@/lib/mockAnalytics'
 // by side with different numbers — the comparison the separate slug exists for,
 // visible without any grouping UI.
 
-function LinkOffIcon() {
+function TableIcon() {
   return (
     <svg
-      width='13'
-      height='13'
-      viewBox='0 0 14 14'
+      width='15'
+      height='15'
+      viewBox='0 0 16 16'
       fill='none'
       aria-hidden='true'
     >
       <path
-        d='M5.6 8.4 8.4 5.6M4.9 6.3 3.9 7.3a2.1 2.1 0 0 0 3 3l1-1M9.1 7.7l1-1a2.1 2.1 0 0 0-3-3l-1 1'
+        d='M2.4 4.2h11.2M2.4 8h11.2M2.4 11.8h11.2'
         stroke='currentColor'
-        strokeWidth='1.2'
-        strokeLinecap='round'
-      />
-      <path
-        d='M1.6 1.6l10.8 10.8'
-        stroke='currentColor'
-        strokeWidth='1.2'
+        strokeWidth='1.4'
         strokeLinecap='round'
       />
     </svg>
   )
 }
 
-function StatBlock({ label, value }) {
+function CardsIcon() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <p className='para-xs' style={{ color: 'var(--text-soft)', margin: 0 }}>
-        {label}
-      </p>
-      <p
-        className='label-lg'
-        style={{ color: 'var(--text-strong)', margin: 0 }}
-      >
-        {value}
-      </p>
-    </div>
+    <svg
+      width='15'
+      height='15'
+      viewBox='0 0 16 16'
+      fill='none'
+      aria-hidden='true'
+    >
+      <rect
+        x='2.2'
+        y='3'
+        width='4'
+        height='4'
+        rx='1'
+        stroke='currentColor'
+        strokeWidth='1.3'
+      />
+      <rect
+        x='2.2'
+        y='9'
+        width='4'
+        height='4'
+        rx='1'
+        stroke='currentColor'
+        strokeWidth='1.3'
+      />
+      <path
+        d='M8 4.4h5.8M8 6h3.4M8 10.4h5.8M8 12h3.4'
+        stroke='currentColor'
+        strokeWidth='1.3'
+        strokeLinecap='round'
+      />
+    </svg>
   )
 }
 
-function QrCard({ code, onOpen }) {
-  const deleted = code.link?.deleted
-
+function GalleryIcon() {
   return (
-    <button
-      type='button'
-      onClick={() => onOpen(code)}
-      className='qr-card'
-      style={{
-        display: 'flex',
-        gap: '14px',
-        alignItems: 'center',
-        width: '100%',
-        background: 'none',
-        border: 'none',
-        borderRadius: '14px',
-        padding: '10px',
-        cursor: 'pointer',
-        textAlign: 'left',
-        boxSizing: 'border-box',
-      }}
+    <svg
+      width='15'
+      height='15'
+      viewBox='0 0 16 16'
+      fill='none'
+      aria-hidden='true'
     >
-      {/* The real encoded code, at its stored design. Dimmed when the link is
-          gone rather than hidden — the sticker still physically exists and
-          people will still scan it, so the code has to stay recognisable. */}
-      <div
-        style={{
-          flexShrink: 0,
-          opacity: deleted ? 0.4 : 1,
-          transition: 'opacity var(--duration-fast) ease',
-        }}
-      >
-        <QrCode
-          value={`https://${code.scanUrl}`}
-          color={code.color}
-          markerColor={code.markerColor}
-          pattern={code.pattern}
-          branding={code.branding}
-          card={72}
-          margin={4}
-          radius={10}
-        />
-      </div>
-
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '5px',
-          minWidth: 0,
-          flex: '1 0 0',
-        }}
-      >
-        {/* The label leads, not the URL. "Store window" is what you need to
-            find; the slug is machine-readable and means nothing to a person. */}
-        <p
-          className='para-sm'
-          style={{
-            margin: 0,
-            color: deleted ? 'var(--text-sub)' : 'var(--text-strong)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {code.label}
-        </p>
-
-        <div
-          style={{
-            display: 'flex',
-            gap: '5px',
-            alignItems: 'center',
-            minWidth: 0,
-            color: deleted ? 'var(--text-disabled)' : 'var(--text-soft)',
-          }}
-        >
-          {deleted ? <LinkOffIcon /> : null}
-          <span
-            className='para-xs'
-            style={{
-              color: 'inherit',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {deleted ? 'Link deleted' : code.link?.shortUrl}
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline' }}>
-          <span
-            className='label-sm'
-            style={{
-              color: deleted ? 'var(--text-sub)' : 'var(--text-strong)',
-            }}
-          >
-            {code.scans.toLocaleString()}
-          </span>
-          <span className='para-xs' style={{ color: 'var(--text-soft)' }}>
-            {code.scans === 1 ? 'scan' : 'scans'}
-          </span>
-        </div>
-      </div>
-    </button>
+      <rect
+        x='2.2'
+        y='2.2'
+        width='4.6'
+        height='4.6'
+        rx='1'
+        stroke='currentColor'
+        strokeWidth='1.3'
+      />
+      <rect
+        x='9.2'
+        y='2.2'
+        width='4.6'
+        height='4.6'
+        rx='1'
+        stroke='currentColor'
+        strokeWidth='1.3'
+      />
+      <rect
+        x='2.2'
+        y='9.2'
+        width='4.6'
+        height='4.6'
+        rx='1'
+        stroke='currentColor'
+        strokeWidth='1.3'
+      />
+      <rect
+        x='9.2'
+        y='9.2'
+        width='4.6'
+        height='4.6'
+        rx='1'
+        stroke='currentColor'
+        strokeWidth='1.3'
+      />
+    </svg>
   )
 }
 
@@ -224,6 +183,37 @@ export default function QrCodesPage() {
   const { useMockData, ready: mockReady, deletedUrls } = useMockDataState()
   const [codes, setCodes] = useState(null)
   const [viewing, setViewing] = useState(null)
+  // The code being restyled, plus its working design. Held separately from
+  // `viewing` so cancelling leaves the original untouched — editing in place
+  // would mean a discarded change had already altered the card behind the
+  // dialog.
+  // Which layout. Persisted, because it's a preference rather than a mode —
+  // having to re-pick it on every visit is the thing that makes a view switcher
+  // annoying instead of useful.
+  const [view, setView] = useState('cards')
+  const [range, setRange] = useState('Last 7 days')
+  const [editing, setEditing] = useState(null)
+  const [draft, setDraft] = useState(null)
+  const [savingEdit, setSavingEdit] = useState(false)
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('luotain:qr-view')
+      if (saved === 'table' || saved === 'cards' || saved === 'gallery') {
+        setView(saved)
+      }
+    } catch {
+      // Private browsing throws on access rather than returning null. The
+      // default view is a fine fallback.
+    }
+  }, [])
+
+  function changeView(next) {
+    setView(next)
+    try {
+      window.localStorage.setItem('luotain:qr-view', next)
+    } catch {}
+  }
 
   useEffect(() => {
     // Wait until the saved mock preference is known, or a reload with mock on
@@ -258,12 +248,83 @@ export default function QrCodesPage() {
     }
   }, [mockReady, useMockData, deletedUrls])
 
+  function startEditing(code) {
+    setEditing(code)
+    setDraft({
+      color: code.color,
+      markerColor: code.markerColor,
+      pattern: code.pattern,
+      branding: code.branding,
+    })
+    // The lightbox closes as the dialog opens — two overlays at once would
+    // stack, and the designer contains its own preview anyway.
+    setViewing(null)
+  }
+
+  async function handleSaveEdit() {
+    if (!editing || !draft || savingEdit) return
+    setSavingEdit(true)
+
+    if (useMockData) {
+      // Nothing to write to — mock codes aren't database rows. Applied locally
+      // so the change is visible, and honest about not persisting.
+      setCodes((prev) =>
+        prev.map((c) => (c.id === editing.id ? { ...c, ...draft } : c))
+      )
+      setEditing(null)
+      setSavingEdit(false)
+      toast(`${editing.label} updated (mock, not saved)`)
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/qrcodes/${editing.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data?.error || "Couldn't update the QR code")
+        return
+      }
+      // Merged rather than re-fetched: the response is the updated row, and a
+      // refetch would rebuild every card to change one.
+      setCodes((prev) =>
+        prev.map((c) => (c.id === editing.id ? { ...c, ...data.qrCode } : c))
+      )
+      setEditing(null)
+      toast(`${data.qrCode.label} updated`)
+    } catch (err) {
+      console.error('[QrCodesPage]', err)
+      toast.error("Couldn't update the QR code")
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
   const loaded = Array.isArray(codes)
   const totalScans = loaded ? codes.reduce((sum, c) => sum + c.scans, 0) : 0
   // Only codes whose link still resolves. A code pointing at a deleted link
   // still gets scanned but can't send anyone anywhere, so counting it as active
   // would overstate what's actually working.
   const activeCount = loaded ? codes.filter((c) => !c.link?.deleted).length : 0
+  // The best performer, which is more use than a second count — it answers
+  // "which placement is working" without reading the list.
+  const topCode =
+    loaded && codes.length
+      ? codes.reduce((best, c) => (c.scans > best.scans ? c : best), codes[0])
+      : null
+
+  const metrics = [
+    { label: 'Total scans', value: loaded ? totalScans : undefined },
+    { label: 'Active codes', value: loaded ? activeCount : undefined },
+    {
+      label: 'Top code',
+      value:
+        topCode && topCode.scans > 0 ? topCode.label : loaded ? '—' : undefined,
+    },
+  ]
 
   return (
     <>
@@ -274,25 +335,20 @@ export default function QrCodesPage() {
           display: 'flex',
           justifyContent: 'center',
           paddingTop: 0,
-          paddingBottom: '24px',
+          paddingBottom: 0,
         }}
       >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: '720px',
-            display: 'flex',
-            gap: '40px',
-            alignItems: 'flex-start',
-            flexWrap: 'wrap',
-          }}
-        >
-          <StatBlock
-            label='Total scans'
-            value={loaded ? totalScans.toLocaleString() : '—'}
-          />
-          <StatBlock label='Active codes' value={loaded ? activeCount : '—'} />
-        </div>
+        {/* The same component the links page uses, so the two pages read as one
+            app rather than two. Metrics differ because scans aren't clicks —
+            and there's no "unique scanners" here, deliberately: Click records no
+            visitor identifier, so it can't be computed, and a number that can't
+            be derived shouldn't be displayed. */}
+        <StatsCards
+          title='All QR codes'
+          metrics={metrics}
+          selectedRange={range}
+          onRangeChange={setRange}
+        />
       </div>
 
       <div
@@ -305,8 +361,69 @@ export default function QrCodesPage() {
         }}
       >
         <div style={{ width: '100%', maxWidth: '720px' }}>
+          {/* The switcher sits with the list, not the stats — it changes how
+              the list looks, and putting it up in the header would separate a
+              control from the thing it controls. */}
+          {loaded && codes.length > 0 ? (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                paddingBottom: '10px',
+              }}
+            >
+              <div
+                role='group'
+                aria-label='Layout'
+                style={{
+                  display: 'flex',
+                  gap: '2px',
+                  padding: '3px',
+                  borderRadius: '10px',
+                  background: 'var(--bg-surface)',
+                }}
+              >
+                {[
+                  { id: 'table', label: 'Table', Icon: TableIcon },
+                  { id: 'cards', label: 'Cards', Icon: CardsIcon },
+                  { id: 'gallery', label: 'Gallery', Icon: GalleryIcon },
+                ].map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    type='button'
+                    onClick={() => changeView(id)}
+                    // Labelled for assistive tech even though only the icon
+                    // shows — three unlabelled glyphs are meaningless to a
+                    // screen reader, and aria-pressed is what conveys which is
+                    // active.
+                    aria-label={label}
+                    aria-pressed={view === id}
+                    title={label}
+                    className='qr-view-option'
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '30px',
+                      height: '26px',
+                      borderRadius: '7px',
+                      border: 'none',
+                      background:
+                        view === id ? 'var(--bg-default)' : 'transparent',
+                      color:
+                        view === id ? 'var(--text-strong)' : 'var(--text-soft)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Icon />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           {!loaded ? (
-            <div className='qr-grid'>
+            <div className='qr-grid-cards'>
               <CardSkeleton />
               <CardSkeleton />
             </div>
@@ -337,12 +454,12 @@ export default function QrCodesPage() {
                 Open any link and choose Generate QR code to make one.
               </p>
             </div>
+          ) : view === 'table' ? (
+            <QrTable codes={codes} onOpen={setViewing} />
+          ) : view === 'gallery' ? (
+            <QrGallery codes={codes} onOpen={setViewing} />
           ) : (
-            <div className='qr-grid'>
-              {codes.map((code) => (
-                <QrCard key={code.id} code={code} onOpen={setViewing} />
-              ))}
-            </div>
+            <QrCards codes={codes} onOpen={setViewing} />
           )}
         </div>
       </div>
@@ -358,7 +475,86 @@ export default function QrCodesPage() {
         markerColor={viewing?.markerColor}
         pattern={viewing?.pattern}
         branding={viewing?.branding}
+        onEdit={viewing ? () => startEditing(viewing) : undefined}
       />
+
+      <Modal
+        open={Boolean(editing)}
+        onClose={() => setEditing(null)}
+        maxWidth='480px'
+        labelledBy='qr-edit-title'
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <p
+              id='qr-edit-title'
+              className='label-md'
+              style={{ color: 'var(--text-strong)', margin: 0 }}
+            >
+              Edit QR code
+            </p>
+            <p
+              className='para-sm'
+              style={{ color: 'var(--text-sub)', margin: 0 }}
+            >
+              {editing?.label}
+            </p>
+          </div>
+
+          {draft ? (
+            <QrDesigner
+              color={draft.color}
+              markerColor={draft.markerColor}
+              pattern={draft.pattern}
+              branding={draft.branding}
+              shortUrl={editing?.scanUrl}
+              onChange={setDraft}
+            />
+          ) : null}
+
+          <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+            <button
+              type='button'
+              onClick={() => setEditing(null)}
+              className='create-secondary'
+              style={{
+                flex: '1 0 0',
+                padding: '10px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--bg-surface)',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '14px',
+                letterSpacing: '0.28px',
+                color: 'var(--bg-weak)',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type='button'
+              onClick={handleSaveEdit}
+              disabled={savingEdit}
+              className='create-submit'
+              style={{
+                flex: '1 0 0',
+                padding: '10px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--text-strong)',
+                border: 'none',
+                cursor: savingEdit ? 'default' : 'pointer',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '14px',
+                letterSpacing: '0.28px',
+                color: 'var(--bg-default)',
+              }}
+            >
+              {savingEdit ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   )
 }
