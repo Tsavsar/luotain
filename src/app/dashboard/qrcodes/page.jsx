@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import QrDesigner, { QrCode, QrLightbox } from '@/components/qrdesigner'
 import Modal from '@/components/modal'
 import { toast } from '@/components/toast'
@@ -9,11 +9,7 @@ import { getMockQrCodes } from '@/lib/mockAnalytics'
 import StatsCards from '@/components/statscards'
 import { QrTable, QrCards, QrGallery } from '@/components/qrviews'
 import SegmentedTabs from '@/components/segmentedtabs'
-
-// Half the layout swap: out, change underneath, in. Short, because the content
-// isn't going anywhere — it's the same set of codes in a different shape, and a
-// long transition would make switching feel like loading.
-const SWAP_MS = 130
+import useFlip from '@/components/useflip'
 
 // ─── QR codes ───
 //
@@ -310,16 +306,14 @@ export default function QrCodesPage() {
   // annoying instead of useful.
   const [view, setView] = useState('cards')
   const [range, setRange] = useState('Last 7 days')
-  // The view actually on screen, which lags behind `view` during the swap.
+  // The morph. Items are tracked by id across all three layouts, so switching
+  // animates each code from where it was to where it lands rather than fading
+  // one screen out and another in.
   //
-  // Two states rather than one, for the same reason the lightbox needs them:
-  // swapping the layout in the same frame as the toggle means there's nothing
-  // left of the old one to animate out. This holds the outgoing view until its
-  // exit finishes, then renders the new one.
-  const [renderedView, setRenderedView] = useState('cards')
-  const [swapping, setSwapping] = useState(false)
-  const swapTimer = useRef(null)
-  useEffect(() => () => clearTimeout(swapTimer.current), [])
+  // This replaced a cross-fade plus a lagging `renderedView` state. Neither is
+  // needed: the layout changes in a single frame and the movement carries the
+  // change, so there's no outgoing view to hold on to.
+  const { capture, register } = useFlip(view)
   const [editing, setEditing] = useState(null)
   const [draft, setDraft] = useState(null)
   const [savingEdit, setSavingEdit] = useState(false)
@@ -341,10 +335,8 @@ export default function QrCodesPage() {
       const saved = window.localStorage.getItem('luotain:qr-view')
       if (saved === 'table' || saved === 'cards' || saved === 'gallery') {
         setView(saved)
-        // Both, and without a transition — this is the initial state, not a
-        // change. Seeding only `view` would open on cards and then visibly swap
-        // to the saved layout.
-        setRenderedView(saved)
+        // No morph on the initial read — there's no previous layout to animate
+        // from, and nothing has been measured.
       }
     } catch {
       // Private browsing throws on access rather than returning null. The
@@ -354,30 +346,14 @@ export default function QrCodesPage() {
 
   function changeView(next) {
     if (next === view) return
+    // Read every item's position BEFORE the layout changes. This has to happen
+    // here rather than in an effect — by the time an effect runs React has
+    // already committed the new layout and the old positions are gone.
+    capture()
     setView(next)
     try {
       window.localStorage.setItem('luotain:qr-view', next)
     } catch {}
-
-    const reduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    if (reduced) {
-      // The transition is collapsed to nothing by the global rule, so waiting
-      // out the timer would be dead time with no visual.
-      setRenderedView(next)
-      return
-    }
-
-    // Out, swap, in. Restarts rather than queueing if the toggle is hit again
-    // mid-swap, so a fast second choice lands rather than being swallowed.
-    clearTimeout(swapTimer.current)
-    setSwapping(true)
-    swapTimer.current = setTimeout(() => {
-      setRenderedView(next)
-      setSwapping(false)
-    }, SWAP_MS)
   }
 
   useEffect(() => {
@@ -550,15 +526,16 @@ export default function QrCodesPage() {
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'flex-end',
+                // Left, aligned with the table's first column rather than
+                // floating at the far end away from everything it affects.
+                justifyContent: 'flex-start',
                 paddingBottom: '14px',
               }}
             >
-              {/* The project's own SegmentedTabs rather than three hand-rolled
-                  buttons — it brings the sliding pill, the ResizeObserver
-                  measurement and the reduced-motion handling with it. Labels
-                  are the icons, and each carries a real aria-label since three
-                  unlabelled glyphs mean nothing to a screen reader. */}
+              {/* Still SegmentedTabs — the sliding pill, measurement and
+                  reduced-motion handling all come from it. Only the sizing
+                  changed: padX 10px made it wide and airy next to a dense
+                  table, and 4px brings it back to the compact original. */}
               <SegmentedTabs
                 items={[
                   {
@@ -600,73 +577,56 @@ export default function QrCodesPage() {
                 ]}
                 activeId={view}
                 onChange={changeView}
-                padX='10px'
+                padX='4px'
               />
             </div>
           ) : null}
 
-          {/* The swap. Slides down and fades as the old layout leaves, then the
-              new one arrives the same way — so the change reads as a change
-              rather than a jump cut between two unrelated screens.
-
-              Not a FLIP between layouts: table rows and gallery tiles share no
-              positions worth interpolating, and pretending they do produces
-              elements flying diagonally across the page. A short cross-fade is
-              the honest version of this transition. */}
-          <div
-            style={{
-              opacity: swapping ? 0 : 1,
-              transform: swapping ? 'translateY(6px)' : 'translateY(0)',
-              transition: swapping
-                ? `opacity ${SWAP_MS}ms var(--ease-exit), transform ${SWAP_MS}ms var(--ease-exit)`
-                : `opacity var(--duration-panel) var(--ease-out), transform var(--duration-panel) var(--ease-out)`,
-            }}
-          >
-            {!loaded ? (
-              <div className='qr-grid-cards'>
-                <CardSkeleton />
-                <CardSkeleton />
-              </div>
-            ) : codes.length === 0 ? (
-              <div
+          {!loaded ? (
+            <div className='qr-grid-cards'>
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+          ) : codes.length === 0 ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '64px 20px',
+              }}
+            >
+              <p
+                className='para-sm'
+                style={{ color: 'var(--text-strong)', margin: 0 }}
+              >
+                No QR codes yet
+              </p>
+              <p
+                className='para-xs'
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '64px 20px',
+                  color: 'var(--text-soft)',
+                  margin: 0,
+                  textAlign: 'center',
                 }}
               >
-                <p
-                  className='para-sm'
-                  style={{ color: 'var(--text-strong)', margin: 0 }}
-                >
-                  No QR codes yet
-                </p>
-                <p
-                  className='para-xs'
-                  style={{
-                    color: 'var(--text-soft)',
-                    margin: 0,
-                    textAlign: 'center',
-                  }}
-                >
-                  Open any link and choose Generate QR code to make one.
-                </p>
-              </div>
-            ) : renderedView === 'table' ? (
-              <QrTable
-                codes={codes}
-                onOpen={openViewer}
-                onEdit={startEditing}
-                onDelete={handleDelete}
-              />
-            ) : renderedView === 'gallery' ? (
-              <QrGallery codes={codes} onOpen={openViewer} />
-            ) : (
-              <QrCards codes={codes} onOpen={openViewer} />
-            )}
-          </div>
+                Open any link and choose Generate QR code to make one.
+              </p>
+            </div>
+          ) : view === 'table' ? (
+            <QrTable
+              codes={codes}
+              register={register}
+              onOpen={openViewer}
+              onEdit={startEditing}
+              onDelete={handleDelete}
+            />
+          ) : view === 'gallery' ? (
+            <QrGallery codes={codes} onOpen={openViewer} register={register} />
+          ) : (
+            <QrCards codes={codes} onOpen={openViewer} register={register} />
+          )}
         </div>
       </div>
 

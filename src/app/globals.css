@@ -2106,10 +2106,19 @@ html {
    sliding element would have to travel diagonally between them, which reads as
    the highlight wandering rather than following. The TABLE gets the sliding
    highlight instead, because its rows are a single column — see qrviews.jsx. */
+/* The hover paints on the layer inside each card, not on the card itself. That
+   layer hangs 8px past each side, so the highlight overflows the column while
+   the card's real box stays flush with it — which is what lets the content line
+   up with the table's columns and everything else on the page. */
+.qr-hover-layer {
+  background: transparent;
+  transition: background var(--duration-fast) ease;
+  pointer-events: none;
+}
 @media (hover: hover) and (pointer: fine) {
-  .qr-card:hover,
-  .qr-tile:hover {
-    background: var(--bg-surface) !important;
+  .qr-card:hover .qr-hover-layer,
+  .qr-tile:hover .qr-hover-layer {
+    background: var(--bg-surface);
   }
 }
 

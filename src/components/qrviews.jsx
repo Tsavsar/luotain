@@ -254,7 +254,7 @@ function RowMenu({ code, onOpen, onEdit, onDelete }) {
   )
 }
 
-function QrRow({ code, zIndex, onOpen, onEdit, onDelete }) {
+function QrRow({ code, zIndex, onOpen, onEdit, onDelete, register }) {
   const deleted = code.link?.deleted
 
   const cellBase = {
@@ -267,6 +267,9 @@ function QrRow({ code, zIndex, onOpen, onEdit, onDelete }) {
   return (
     <div
       data-qr-row
+      // Tracked for the layout morph — the same element identity in all three
+      // views, so FLIP can follow it from one to the next.
+      ref={register?.(code.id)}
       onClick={() => onOpen?.(code)}
       style={{
         position: 'relative',
@@ -395,7 +398,7 @@ function QrRow({ code, zIndex, onOpen, onEdit, onDelete }) {
   )
 }
 
-export function QrTable({ codes, onOpen, onEdit, onDelete }) {
+export function QrTable({ codes, onOpen, onEdit, onDelete, register }) {
   const [sortBy, setSortBy] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
   const { containerRef, onMouseMove, onMouseLeave, layer } =
@@ -440,6 +443,7 @@ export function QrTable({ codes, onOpen, onEdit, onDelete }) {
           <QrRow
             key={code.id}
             code={code}
+            register={register}
             // Descending, so an open row menu sits above the rows below it —
             // the same stacking the links table uses.
             zIndex={sorted.length - index}
@@ -454,7 +458,7 @@ export function QrTable({ codes, onOpen, onEdit, onDelete }) {
 }
 
 // ─── Cards ───
-export function QrCards({ codes, onOpen }) {
+export function QrCards({ codes, onOpen, register }) {
   return (
     <div className='qr-grid-cards'>
       {codes.map((code) => {
@@ -463,22 +467,43 @@ export function QrCards({ codes, onOpen }) {
           <button
             key={code.id}
             type='button'
+            ref={register?.(code.id)}
             onClick={() => onOpen(code)}
             className='qr-card'
             style={{
+              position: 'relative',
               display: 'flex',
               gap: '14px',
               alignItems: 'center',
               width: '100%',
               background: 'none',
               border: 'none',
-              borderRadius: '14px',
-              padding: '10px',
+              // No horizontal padding: the content starts at the column's own
+              // edge, so the first card lines up with the table's first column
+              // and with everything else on the page. The hover background
+              // hangs outside instead — see the layer below, the same trick the
+              // links table uses.
+              padding: '6px 0',
               cursor: 'pointer',
               textAlign: 'left',
               boxSizing: 'border-box',
             }}
           >
+            <span
+              aria-hidden='true'
+              className='qr-hover-layer'
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: '-8px',
+                right: '-8px',
+                borderRadius: '8px',
+                // Behind the content. The card's own zIndex keeps this
+                // self-contained rather than leaking behind its neighbours.
+                zIndex: -1,
+              }}
+            />
             <span
               style={{
                 flexShrink: 0,
@@ -553,7 +578,7 @@ export function QrCards({ codes, onOpen }) {
 // The code, large, with its name under it. No link and no scan count: this view
 // is for finding the right code by eye, and the numbers are what the other two
 // are for.
-export function QrGallery({ codes, onOpen }) {
+export function QrGallery({ codes, onOpen, register }) {
   return (
     <div className='qr-grid-gallery'>
       {codes.map((code) => {
@@ -562,21 +587,37 @@ export function QrGallery({ codes, onOpen }) {
           <button
             key={code.id}
             type='button'
+            ref={register?.(code.id)}
             onClick={() => onOpen(code)}
             className='qr-tile'
             style={{
+              position: 'relative',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: '10px',
-              padding: '12px',
+              // Vertical only, so the leftmost tile's code starts at the
+              // column edge like everything else.
+              padding: '8px 0',
               background: 'none',
               border: 'none',
-              borderRadius: '16px',
               cursor: 'pointer',
               boxSizing: 'border-box',
             }}
           >
+            <span
+              aria-hidden='true'
+              className='qr-hover-layer'
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: '-8px',
+                right: '-8px',
+                borderRadius: '10px',
+                zIndex: -1,
+              }}
+            />
             <span
               style={{
                 flexShrink: 0,
