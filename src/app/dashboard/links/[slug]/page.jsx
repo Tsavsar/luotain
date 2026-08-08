@@ -415,7 +415,22 @@ export default function LinkDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ linkId: link.id, ...qr }),
       })
-      if (!res.ok) throw new Error(`qr create failed: ${res.status}`)
+
+      // The response body is read whether it succeeded or not. This previously
+      // threw on `!res.ok` and showed a generic message, which discarded the
+      // one thing worth having — the endpoint says exactly what went wrong
+      // ("Link not found", "That link is in the trash", a Prisma error) and all
+      // of that was being thrown away.
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        console.error('[LinkDetailPage] qr create failed', res.status, data)
+        toast.error(
+          data?.error || `Couldn't create the QR code (${res.status})`
+        )
+        return
+      }
+
       setQrCreatedLocally(true)
       setDesigningQr(false)
       toast('QR code created')
