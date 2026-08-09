@@ -1145,9 +1145,7 @@ export default function QrDesigner({
             >
               Preview
             </p>
-            {/* Both disabled, which is the footnote below made actionable:
-                the preview encodes nothing, so letting someone download or
-                copy it would hand them a QR that scans to nothing. */}
+            {/* Both live now that the code really encodes. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               {/* Enabled now the code is real. Expanding first rather than
                   downloading from here: the lightbox holds the full-size
@@ -1156,7 +1154,12 @@ export default function QrDesigner({
               <Tooltip label='Expand to download'>
                 <button
                   type='button'
-                  onClick={onExpand}
+                  // setExpanded, not onExpand. `onExpand` is a prop of
+                  // QrPreview; this block is inside QrDesigner, where that
+                  // identifier doesn't exist — so the whole designer threw at
+                  // render, which took out both Generate and Edit and meant no
+                  // request ever reached the endpoint.
+                  onClick={() => setExpanded(true)}
                   aria-label='Download QR code'
                   className='qr-preview-action'
                   style={{
