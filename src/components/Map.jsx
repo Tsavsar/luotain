@@ -21,7 +21,9 @@ const DOTS = [
   { id: 13, x: 50, y: 32, flag: null },
   { id: 14, x: 43, y: 30, flag: null },
   // Africa
-  { id: 15, x: 47, y: 48, flag: '/assets/flags/spain.svg' },
+  // portugal, not spain — spain.svg isn't in the asset set, so this dot 404'd
+  // on every login page load. Same position, a flag that exists.
+  { id: 15, x: 47, y: 48, flag: '/assets/flags/portugal.svg' },
   { id: 16, x: 50, y: 58, flag: '/assets/flags/nigeria.svg' },
   { id: 17, x: 45, y: 62, flag: '/assets/flags/botswana.svg' },
   { id: 18, x: 53, y: 52, flag: null },
@@ -34,7 +36,9 @@ const DOTS = [
   { id: 23, x: 78, y: 28, flag: '/assets/flags/iran.svg' },
   { id: 24, x: 75, y: 36, flag: '/assets/flags/macau.svg' },
   { id: 25, x: 68, y: 40, flag: null },
-  { id: 26, x: 82, y: 22, flag: '/assets/flags/sri-lanka.svg' },
+  // india, not sri-lanka — same reason, and close enough on the map that the
+  // dot's position still reads.
+  { id: 26, x: 82, y: 22, flag: '/assets/flags/india.svg' },
   { id: 27, x: 85, y: 32, flag: null },
   // Southeast Asia
   { id: 28, x: 78, y: 50, flag: '/assets/flags/vanuatu.svg' },

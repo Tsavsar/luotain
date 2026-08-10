@@ -76,6 +76,22 @@ export default function LoginPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
+
+        // A 429 is the rate limiter doing its job, not a fault — so it isn't
+        // logged as an error, and the wait is turned into something readable.
+        // The endpoint sends retryAfter in seconds and it was being thrown
+        // away, leaving "please wait" with no indication of how long.
+        if (res.status === 429) {
+          const secs = Number(data.retryAfter) || 0
+          const wait =
+            secs >= 90
+              ? `${Math.ceil(secs / 60)} minutes`
+              : secs > 0
+                ? `${secs} seconds`
+                : 'a moment'
+          throw new Error(`A code was just sent. Try again in ${wait}.`)
+        }
+
         console.error('send-code failed:', data)
         throw new Error(data.error || 'Failed to send code')
       }
