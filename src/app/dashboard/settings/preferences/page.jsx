@@ -65,10 +65,7 @@ function Row({ label, description, children }) {
 function Group({ title, children }) {
   return (
     <div style={{ width: '100%' }}>
-      <p
-        className='para-xs'
-        style={{ color: 'var(--text-soft)', margin: '0 0 4px 0' }}
-      >
+      <p className='para-xs' style={{ color: 'var(--text-soft)', margin: 0 }}>
         {title}
       </p>
       <div
@@ -76,9 +73,6 @@ function Group({ title, children }) {
           display: 'flex',
           flexDirection: 'column',
           width: '100%',
-          // Dividers between rows rather than a card each — a settings list is
-          // one object, and nine bordered boxes read as nine unrelated ones.
-          borderTop: '1px solid var(--stroke-soft)',
         }}
       >
         {children}

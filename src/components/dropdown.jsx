@@ -12,6 +12,9 @@ import {
 import { createPortal } from 'react-dom'
 
 // Closest the panel is ever allowed to sit to the edge of the screen.
+// Below this a scrolling menu shows too little to be usable — better to
+// overflow slightly than to present a 40px window into a long list.
+const MIN_PANEL_HEIGHT = 160
 const SCREEN_MARGIN = 12
 
 // Exit is faster than the 150ms enter. Asymmetric on purpose: entering is
@@ -109,6 +112,31 @@ export function Dropdown({
     function position() {
       const a = anchor.getBoundingClientRect()
       const panelWidth = panel.offsetWidth
+
+      // The panel had no height cap, so a long menu just kept growing — the
+      // timezone picker's 40 rows came to about 1280px and ran clean off the
+      // screen with no way to reach the bottom of it.
+      //
+      // Capped against the space actually available on the side it will open,
+      // rather than a fixed max-height: a fixed number is either too tall on a
+      // laptop or wastes room on a desktop, and the measurement is already
+      // being taken here for the flip decision.
+      panel.style.maxHeight = 'none'
+      const naturalHeight = panel.offsetHeight
+      const spaceBelow =
+        window.innerHeight - (a.bottom + offsetY) - SCREEN_MARGIN
+      const spaceAbove = a.top - offsetY - SCREEN_MARGIN
+      // Opens wherever there's more room once the menu is taller than either
+      // side — otherwise it would flip to a side that's also too short.
+      const openUp = naturalHeight > spaceBelow && spaceAbove > spaceBelow
+      const available = openUp ? spaceAbove : spaceBelow
+      if (naturalHeight > available) {
+        panel.style.maxHeight = `${Math.max(available, MIN_PANEL_HEIGHT)}px`
+        panel.style.overflowY = 'auto'
+      } else {
+        panel.style.overflowY = 'visible'
+      }
+
       const panelHeight = panel.offsetHeight
 
       // Horizontal: align to the trigger, then clamp on-screen.
@@ -122,11 +150,11 @@ export function Dropdown({
       // Vertical: below the trigger normally, flipped above it when
       // there isn't room below AND there is room above — otherwise a
       // menu opened near the bottom of the screen would run off it.
+      // Reuses the decision made above, so the height cap and the direction
+      // can't disagree — capping for one side and then opening on the other
+      // would leave the menu overflowing again.
       const belowTop = a.bottom + offsetY
-      const noRoomBelow =
-        belowTop + panelHeight > window.innerHeight - SCREEN_MARGIN
-      const roomAbove = a.top - offsetY - panelHeight > SCREEN_MARGIN
-      const flip = noRoomBelow && roomAbove
+      const flip = openUp
 
       panel.style.left = `${left}px`
       panel.style.top = `${flip ? a.top - offsetY - panelHeight : belowTop}px`
@@ -143,6 +171,20 @@ export function Dropdown({
     }
 
     position()
+
+    // Bring the selected row into view. Only matters for menus long enough to
+    // scroll — for short ones there's nothing to scroll to, and the guard means
+    // this costs nothing there.
+    //
+    // Centred rather than scrolled to the top edge, so the rows either side are
+    // visible and you can see where you are in the list.
+    const selected = panel.querySelector('[data-dropdown-selected="true"]')
+    if (selected && panel.scrollHeight > panel.clientHeight) {
+      const s = selected.getBoundingClientRect()
+      const p = panel.getBoundingClientRect()
+      panel.scrollTop += s.top - p.top - (p.height - s.height) / 2
+    }
+
     window.addEventListener('resize', position)
     // capture: true so scrolling inside ANY scrollable ancestor
     // repositions the panel, not just scrolling the window itself.
@@ -342,6 +384,11 @@ export function DropdownOption({
     <div
       data-dropdown-item
       data-danger={danger ? 'true' : undefined}
+      // Read by the panel's open effect, which scrolls this into view when the
+      // menu is long enough to need it. An attribute rather than a ref, because
+      // the panel doesn't know how many options there are or which component
+      // rendered them.
+      data-dropdown-selected={selected ? 'true' : undefined}
       className={`dropdown-item${showSelected ? ' is-selected' : ''}${danger ? ' is-danger' : ''}`}
       onClick={(e) => {
         onClick?.(e)
