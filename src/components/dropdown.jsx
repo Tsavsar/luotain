@@ -121,8 +121,15 @@ export function Dropdown({
       // rather than a fixed max-height: a fixed number is either too tall on a
       // laptop or wastes room on a desktop, and the measurement is already
       // being taken here for the flip decision.
-      panel.style.maxHeight = 'none'
-      const naturalHeight = panel.offsetHeight
+      // scrollHeight, NOT offsetHeight with the cap removed. The previous
+      // version cleared maxHeight to measure, which was a real bug: this runs on
+      // every scroll event, so each gesture briefly removed the overflow, the
+      // browser clamped scrollTop to 0 because there was nothing to scroll, and
+      // the panel snapped back to the top. Scrolling appeared to do nothing.
+      //
+      // scrollHeight is the content's full height whether it's capped or not, so
+      // nothing has to be disturbed to read it.
+      const naturalHeight = panel.scrollHeight
       const spaceBelow =
         window.innerHeight - (a.bottom + offsetY) - SCREEN_MARGIN
       const spaceAbove = a.top - offsetY - SCREEN_MARGIN
@@ -134,6 +141,9 @@ export function Dropdown({
         panel.style.maxHeight = `${Math.max(available, MIN_PANEL_HEIGHT)}px`
         panel.style.overflowY = 'auto'
       } else {
+        // Cleared, not just left set. On a resize that opens up space a stale
+        // cap would keep the menu short with nothing to scroll.
+        panel.style.maxHeight = ''
         panel.style.overflowY = 'visible'
       }
 
@@ -170,6 +180,14 @@ export function Dropdown({
           : 'top left'
     }
 
+    // Ignores scrolls that originate inside the panel: it hasn't moved relative
+    // to its trigger, so there's nothing to recompute, and running the whole
+    // measurement on every wheel tick inside a long list is wasted work.
+    function onScroll(e) {
+      if (panel.contains(e.target)) return
+      position()
+    }
+
     position()
 
     // Bring the selected row into view. Only matters for menus long enough to
@@ -188,10 +206,10 @@ export function Dropdown({
     window.addEventListener('resize', position)
     // capture: true so scrolling inside ANY scrollable ancestor
     // repositions the panel, not just scrolling the window itself.
-    window.addEventListener('scroll', position, true)
+    window.addEventListener('scroll', onScroll, true)
     return () => {
       window.removeEventListener('resize', position)
-      window.removeEventListener('scroll', position, true)
+      window.removeEventListener('scroll', onScroll, true)
     }
   }, [open, align, sideOffset, offsetX, offsetY])
 

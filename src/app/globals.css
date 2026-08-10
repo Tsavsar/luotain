@@ -2263,28 +2263,26 @@ html {
     color var(--duration-fast) ease;
 }
 
-/* A scrolling dropdown panel. Thin rather than the platform default, which at
-   full width eats into the option rows and reads as a system control bolted onto
-   a designed menu. Only shows on the panels that actually scroll — a short menu
-   never overflows, so nothing renders. */
+/* A scrolling dropdown panel, with the scrollbar hidden.
+   
+   Hidden rather than styled thin: the panel is a narrow menu, so even an 8px
+   track eats into the option rows, and the list visibly having more below it is
+   already the affordance — the rows run to the edge rather than stopping short.
+   
+   All three engines need telling separately; there's no single property for it.
+   Scrolling itself is untouched: wheel, trackpad, touch and keyboard all still
+   work, only the indicator is gone. */
 .dropdown-panel {
-  scrollbar-width: thin;
-  scrollbar-color: var(--bg-subtle) transparent;
-  /* Stops a scroll gesture inside a long menu from continuing on to the page
-     once it reaches the end. */
+  /* Firefox */
+  scrollbar-width: none;
+  /* Legacy Edge and IE */
+  -ms-overflow-style: none;
+  /* Stops a scroll gesture reaching the end of the menu and carrying on to
+     scroll the page behind it. */
   overscroll-behavior: contain;
 }
+/* Chrome, Safari, and current Edge */
 .dropdown-panel::-webkit-scrollbar {
-  width: 8px;
-}
-.dropdown-panel::-webkit-scrollbar-track {
-  background: transparent;
-}
-.dropdown-panel::-webkit-scrollbar-thumb {
-  background: var(--bg-subtle);
-  border-radius: var(--radius-full);
-  /* Inset via a transparent border so the thumb doesn't touch the panel's
-     rounded edge. */
-  border: 2px solid transparent;
-  background-clip: content-box;
+  width: 0;
+  height: 0;
 }
