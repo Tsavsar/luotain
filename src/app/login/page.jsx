@@ -206,29 +206,46 @@ export default function LoginPage() {
           />
         </div>
 
+        {/* Two things were wrong here. The rules were a fixed 80px each, so the
+            divider spanned about 185px inside a 360px column and floated short
+            of both edges rather than reading as a divider. And they were
+            --bg-surface (#f7f7f7), a background colour — 3% off white, so the
+            lines were all but invisible.
+
+            flex: 1 makes each side fill whatever's left after the label, so it
+            spans the column at any width, and --stroke-soft is the token that
+            exists for hairlines. */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'row',
-            gap: '10px',
+            gap: '12px',
             alignItems: 'center',
+            width: '100%',
           }}
         >
           <div
             style={{
+              flex: 1,
               height: '1px',
-              width: '80px',
-              backgroundColor: 'var(--bg-surface)',
+              backgroundColor: 'var(--stroke-soft)',
             }}
           />
-          <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
+          <p
+            className='para-sm'
+            style={{
+              color: 'var(--text-soft)',
+              margin: 0,
+              flexShrink: 0,
+            }}
+          >
             or
           </p>
           <div
             style={{
+              flex: 1,
               height: '1px',
-              width: '80px',
-              backgroundColor: 'var(--bg-surface)',
+              backgroundColor: 'var(--stroke-soft)',
             }}
           />
         </div>

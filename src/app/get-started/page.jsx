@@ -205,34 +205,42 @@ export default function Getstarted() {
           />
         </div>
 
+        {/* Same fix as the login page, so the two match. The rules were a fixed
+            80px each — about 185px of divider inside a 360px column, floating
+            short of both edges — and --bg-surface, a background colour that's
+            3% off white and so barely visible as a line. flex: 1 fills the
+            column at any width; --stroke-soft is the hairline token.
+
+            The <p> also lost its wrapper div, which was doing nothing. */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'row',
-            gap: '10px',
-            justifyContent: 'center',
+            gap: '12px',
             alignItems: 'center',
+            width: '100%',
           }}
         >
           <div
             style={{
+              flex: 1,
               height: '1px',
-              width: '80px',
-              backgroundColor: 'var(--bg-surface)',
+              backgroundColor: 'var(--stroke-soft)',
             }}
-          ></div>
-          <div>
-            <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-              or
-            </p>
-          </div>
+          />
+          <p
+            className='para-sm'
+            style={{ color: 'var(--text-soft)', margin: 0, flexShrink: 0 }}
+          >
+            or
+          </p>
           <div
             style={{
+              flex: 1,
               height: '1px',
-              width: '80px',
-              backgroundColor: 'var(--bg-surface)',
+              backgroundColor: 'var(--stroke-soft)',
             }}
-          ></div>
+          />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
