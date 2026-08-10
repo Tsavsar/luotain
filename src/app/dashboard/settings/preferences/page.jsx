@@ -20,43 +20,62 @@ import {
 // find the button. The General page has a Save because a half-typed name
 // shouldn't persist; a switch has no half state.
 
-function Row({ label, description, children }) {
+// Node 106:555. The pattern is: a quiet label above, then a row with the current
+// state on the left and the action on the right.
+//
+// That's a better fit than what I had — label plus description on the left with
+// the control on the right. The description was doing two jobs at once,
+// explaining the setting AND standing in for its current value, and a switch
+// already says whether it's on. This separates them: the label names it, the
+// left side says where it stands, the right side is how you change it.
+function Row({ label, state, children }) {
   return (
     <div
       style={{
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '20px',
+        flexDirection: 'column',
+        gap: '12px',
         width: '100%',
-        padding: '14px 0',
+        padding: '16px 0',
       }}
     >
+      <p
+        className='para-xs'
+        style={{ color: 'var(--text-soft)', margin: 0, width: '100%' }}
+      >
+        {label}
+      </p>
+
       <div
         style={{
           display: 'flex',
-          flexDirection: 'column',
-          gap: '3px',
-          minWidth: 0,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          width: '100%',
         }}
       >
         <p
-          className='para-sm'
-          style={{ color: 'var(--text-strong)', margin: 0 }}
+          className='para-xs'
+          style={{
+            color: 'var(--text-sub)',
+            margin: 0,
+            minWidth: 0,
+          }}
         >
-          {label}
+          {state}
         </p>
-        {description ? (
-          <p
-            className='para-xs'
-            style={{ color: 'var(--text-soft)', margin: 0 }}
-          >
-            {description}
-          </p>
-        ) : null}
-      </div>
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-        {children}
+        <div
+          style={{
+            display: 'flex',
+            gap: '6px',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            flexShrink: 0,
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   )
@@ -244,7 +263,16 @@ export default function PreferencesPage() {
       </p>
 
       <Group title='Appearance'>
-        <Row label='Theme' description='System follows your device setting.'>
+        <Row
+          label='Theme'
+          state={
+            theme === 'system'
+              ? 'Following your device'
+              : theme === 'dark'
+                ? 'Dark'
+                : 'Light'
+          }
+        >
           <SegmentedTabs
             items={[
               { id: 'light', label: 'Light' },
@@ -259,11 +287,12 @@ export default function PreferencesPage() {
       </Group>
 
       <Group title='Analytics'>
+        {/* The state line spells out what the setting actually does, which
+            isn't obvious: it changes what counts as a day, so the same clicks
+            can move between dates. */}
         <Row
           label='Timezone'
-          // Spelled out because it isn't obvious: this changes what counts as a
-          // day, so the same clicks can move between dates.
-          description='Clicks are grouped by day in this timezone.'
+          state={`Clicks grouped by day in ${formatTimezone(prefs.timezone)}`}
         >
           <div style={{ width: '200px' }}>
             <Dropdown
@@ -297,7 +326,11 @@ export default function PreferencesPage() {
       <Group title='Email'>
         <Row
           label='Weekly digest'
-          description='How your links performed, once a week.'
+          state={
+            prefs.emailWeeklyDigest
+              ? 'Sent every Monday'
+              : 'Not receiving the digest'
+          }
         >
           <Switch
             size='sm'
@@ -311,7 +344,11 @@ export default function PreferencesPage() {
         </Row>
         <Row
           label='Traffic alerts'
-          description='When a link gets unusual traffic, up or down.'
+          state={
+            prefs.emailTrafficAlerts
+              ? 'Emailed on unusual traffic, up or down'
+              : 'No traffic alerts'
+          }
         >
           <Switch
             size='sm'
@@ -325,7 +362,9 @@ export default function PreferencesPage() {
         </Row>
         <Row
           label='Product updates'
-          description='New features and occasional news. No more than monthly.'
+          state={
+            prefs.emailProductUpdates ? 'Monthly at most' : 'Not subscribed'
+          }
         >
           <Switch
             size='sm'
@@ -342,7 +381,11 @@ export default function PreferencesPage() {
       <Group title='Defaults'>
         <Row
           label='Brand new QR codes'
-          description='Adds the Luotain mark to codes you create.'
+          state={
+            prefs.defaultQrBranding
+              ? 'New codes include the Luotain mark'
+              : 'New codes have no mark'
+          }
         >
           <Switch
             size='sm'
@@ -355,8 +398,12 @@ export default function PreferencesPage() {
           />
         </Row>
         <Row
-          label='Copy links with https://'
-          description='Off copies luot.link/abc instead.'
+          label='Copying links'
+          state={
+            prefs.copyWithScheme
+              ? 'Copies https://luot.link/abc'
+              : 'Copies luot.link/abc'
+          }
         >
           <Switch
             size='sm'

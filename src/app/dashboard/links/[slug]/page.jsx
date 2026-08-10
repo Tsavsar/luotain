@@ -765,12 +765,6 @@ export default function LinkDetailPage() {
                             cursor: 'pointer',
                             color: 'var(--text-strong)',
                             textAlign: 'left',
-                            // Dotted underline per Figma (node 79:6150) — reads
-                            // as an action rather than a plain value.
-                            textDecoration: 'underline',
-                            textDecorationStyle: 'dotted',
-                            textDecorationColor: 'var(--text-soft)',
-                            textUnderlineOffset: '3px',
                             fontFamily: 'var(--font-sans)',
                           }}
                         >

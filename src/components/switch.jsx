@@ -20,7 +20,10 @@ export default function Switch({
   onChange,
   label,
   disabled,
-  tone = 'success',
+  // Orange by default, because it's the brand colour and a toggle is the most
+  // common place the brand shows up in the UI. 'success' is still available for
+  // the cases where green genuinely means "good" rather than "on".
+  tone = 'primary',
   // 'sm' is the 29x16 from the design, for dense settings rows. 'md' is
   // the same proportions scaled up for standalone use.
   size = 'md',
@@ -50,8 +53,17 @@ export default function Switch({
   // at 80% of the track, padding at 10% either side.
   const PAD = INNER * 0.1
   const KNOB = INNER * 0.8
-  const TRAVEL = WIDTH - BORDER * 2 - KNOB - PAD * 2
-  // 37.5% of the knob, matching the design's inset-31.25% on each side.
+  // The knob is an oblong rather than a circle — 1.25x its height, with a pill
+  // radius. It reads as a physical slider handle instead of a dot.
+  //
+  // 1.25 and not more, because width is bought straight out of travel: the small
+  // switch's knob moves 13px as a circle, 10.2px at 1.25x, and only 7.4px at
+  // 1.5x. Travel is what makes the state legible at a glance, so past about
+  // 1.25x the shape starts costing more than it gains.
+  const KNOB_W = KNOB * 1.25
+  const TRAVEL = WIDTH - BORDER * 2 - KNOB_W - PAD * 2
+  // 37.5% of the knob's HEIGHT, so the inner dot stays circular rather than
+  // stretching with the oblong.
   const DOT = KNOB * 0.375
 
   const activeColor =
@@ -132,8 +144,10 @@ export default function Switch({
             position: 'absolute',
             top: `${PAD}px`,
             left: `${PAD}px`,
-            width: `${KNOB}px`,
+            width: `${KNOB_W}px`,
             height: `${KNOB}px`,
+            // radius-full on a non-square box gives a capsule, which is exactly
+            // the shape wanted — the corners round to half the shorter side.
             borderRadius: 'var(--radius-full)',
             background: '#ffffff',
             border: '0.75px solid var(--bg-layer)',
