@@ -284,34 +284,75 @@ export default function DashboardMenu({
           <LogoMark size={32} />
         </Link>
 
-        {!compact && (
-          <>
-            <div
-              style={{
-                width: '1.5px',
-                height: '20px',
-                background: 'var(--bg-layer)',
-                borderRadius: '19px',
-              }}
-            />
+        {/* Collapsed rather than unmounted. This is what made the header
+            collapse look like it only worked from some pages: the width was
+            animating everywhere, but the org switcher and divider VANISHED in a
+            single frame at the same time. Coming from a page with the nav row
+            showing, there was enough else moving to cover it; coming from a page
+            where the nav was already hidden, the instant disappearance was the
+            only thing you saw and it read as a snap rather than a collapse.
 
-            <OrgDropdown
-              orgName={orgName}
-              allOrgs={allOrgs}
-              activeOrgId={activeOrgId}
-            />
-          </>
-        )}
+            Kept mounted and collapsed to zero width instead, so the same
+            animation plays from every page. max-width rather than width because
+            the org name's length varies — a fixed target would either clip long
+            names or leave a gap after short ones. */}
+        <div
+          aria-hidden={compact}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            overflow: 'hidden',
+            maxWidth: compact ? '0px' : '320px',
+            opacity: compact ? 0 : 1,
+            // Not focusable while collapsed — a zero-width dropdown that can
+            // still be tabbed into is worse than one that's gone.
+            pointerEvents: compact ? 'none' : 'auto',
+            transition:
+              'max-width 0.3s var(--ease-out), opacity 0.2s var(--ease-out)',
+          }}
+        >
+          <div
+            style={{
+              width: '1.5px',
+              height: '20px',
+              flexShrink: 0,
+              background: 'var(--bg-layer)',
+              borderRadius: '19px',
+            }}
+          />
+
+          <OrgDropdown
+            orgName={orgName}
+            allOrgs={allOrgs}
+            activeOrgId={activeOrgId}
+          />
+        </div>
       </div>
 
       {/* Right side: on mobile, Create New sits before the pfp too —
           hidden on desktop since DashboardNav already has its own
           copy there */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {!compact && (
+        {/* Collapsed, not unmounted, for the same reason as the org switcher —
+            this is the mobile counterpart, and it disappearing in one frame was
+            the other half of the snap. */}
+        <div
+          aria-hidden={compact}
+          className='create-new-mobile-wrap'
+          style={{
+            overflow: 'hidden',
+            maxWidth: compact ? '0px' : '160px',
+            opacity: compact ? 0 : 1,
+            pointerEvents: compact ? 'none' : 'auto',
+            transition:
+              'max-width 0.3s var(--ease-out), opacity 0.2s var(--ease-out)',
+          }}
+        >
           <button
             onClick={() => router.push('/dashboard/create')}
             className='create-new-mobile'
+            tabIndex={compact ? -1 : 0}
             style={{
               alignItems: 'center',
               justifyContent: 'center',
@@ -321,13 +362,14 @@ export default function DashboardMenu({
               border: 'none',
               borderRadius: 'var(--radius-full)',
               cursor: 'pointer',
+              whiteSpace: 'nowrap',
             }}
           >
             <span className='para-sm' style={{ color: 'inherit' }}>
               Create new
             </span>
           </button>
-        )}
+        </div>
 
         <ProfileDropdown
           userImage={userImage}

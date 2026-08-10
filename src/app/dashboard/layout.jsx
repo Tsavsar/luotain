@@ -49,16 +49,10 @@ function PlanToggle() {
       .then((d) => {
         if (cancelled || !d) return
         setPlan(d.plan)
-        // Probes with a no-op switch to the CURRENT plan: if the route is
-        // disabled it 404s and the toggle hides itself, and if it's enabled
-        // nothing has changed.
-        return fetch('/api/plan', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plan: d.plan }),
-        }).then((r) => {
-          if (!cancelled) setAvailable(r.ok)
-        })
+        // One GET, and it tells us both things. The previous version fired a
+        // no-op PATCH to see whether the route was enabled, which 404'd by
+        // design and logged a console error on every load.
+        setAvailable(Boolean(d.toggleAvailable))
       })
       .catch(() => {})
     return () => {

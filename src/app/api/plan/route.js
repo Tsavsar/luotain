@@ -24,6 +24,11 @@ export async function GET() {
   return Response.json({
     plan: plan.id,
     linkCount,
+    // Reported here rather than discovered by firing a PATCH that's meant to
+    // 404. That probe worked but was a bad idea twice over: it logged a network
+    // error in the console on every page load, and it used a write request to
+    // answer a read question.
+    toggleAvailable: process.env.ALLOW_PLAN_TOGGLE === 'true',
     // Sent alongside rather than expecting the client to import the limits
     // and stay in step. Same source either way (src/lib/plans.js), but this
     // means a stale client can't render a limit the server isn't enforcing.

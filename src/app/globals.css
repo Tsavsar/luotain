@@ -1360,6 +1360,12 @@ html {
 .create-new-mobile {
   display: none;
 }
+/* The wrapper hides with the button. Without this it stayed as an empty flex
+   item on desktop, taking the parent's 8px gap and pushing the avatar over by
+   8px on every page — a gap for a button that isn't there. */
+.create-new-mobile-wrap {
+  display: none;
+}
 .org-name-text {
   display: block;
 }
@@ -1369,6 +1375,9 @@ html {
   }
   .create-new-mobile {
     display: flex;
+  }
+  .create-new-mobile-wrap {
+    display: block;
   }
   .org-name-text {
     display: none;
