@@ -29,6 +29,7 @@ export const SETTINGS_GROUPS = [
         href: '/dashboard/settings/connected-accounts',
       },
       { label: 'Sessions', href: '/dashboard/settings/sessions' },
+      { label: 'Preferences', href: '/dashboard/settings/preferences' },
       {
         label: 'Delete account',
         href: '/dashboard/settings/delete-account',

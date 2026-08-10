@@ -26,6 +26,15 @@ model User {
   // once someone deliberately re-rolls.
   avatarSeed String?
 
+  // Settings → Preferences. A single JSON column rather than one per toggle:
+  // preferences get added often, they're only ever read as a whole for one user,
+  // and a column each would mean a migration per checkbox for no query benefit.
+  //
+  // Defaults and validation live in src/lib/preferences.js — null here means
+  // "all defaults", so an account that has never opened the page needs no row
+  // written.
+  preferences Json?
+
   // Powers "Last updated" on the account settings page. An explicit
   // column rather than Prisma's @updatedAt, because @updatedAt fires on
   // ANY write to this row — a session refresh or an emailVerified change
