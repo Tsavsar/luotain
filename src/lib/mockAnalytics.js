@@ -759,7 +759,21 @@ const DOMAINS = [
 //
 // Scans are a share of that link's clicks rather than a made-up number, so the
 // totals on this page can't contradict the ones on the links page.
+// Ten codes across all five links, which is enough to exercise the things this
+// page is actually for:
+//
+//   summer-sale has four   — the comparison the separate slug exists for, four
+//                            placements on one link with wildly different pull
+//   nine point at live links, one at a trashed one — beta-launch, clever-crow
+//     and swift-otter are ALL in the mock trash, so spreading codes across them
+//     made most of the page render as dead links. One is enough to show that
+//     state; more just makes the page look broken.
+//   every pattern appears  — square, rounded, dots, classy, diamond, cross,
+//                            so the renderer's six shapes all get seen
+//   scan shares vary a lot — 0.04 to 0.61, because a page where everything
+//                            performs similarly hides whether the numbers work
 const QR_CODES = [
+  // summer-sale: four placements, the spread of a real campaign.
   {
     id: 'qr-store-window',
     label: 'Store window',
@@ -783,6 +797,30 @@ const QR_CODES = [
     scanShare: 0.09,
   },
   {
+    id: 'qr-receipt-footer',
+    label: 'Receipt footer',
+    shortCode: 'rf-summer',
+    linkUrl: 'luot.link/summer-sale',
+    color: '#000000',
+    markerColor: '#fa7319',
+    pattern: 'classy',
+    branding: false,
+    scanShare: 0.61,
+  },
+  {
+    id: 'qr-tote-bag',
+    label: 'Tote bag print',
+    shortCode: 'tb-summer',
+    linkUrl: 'luot.link/summer-sale',
+    color: '#1fc16b',
+    markerColor: '#1fc16b',
+    pattern: 'diamond',
+    branding: true,
+    scanShare: 0.04,
+  },
+
+  // quick-fox: two, one branded and one not.
+  {
     id: 'qr-conference',
     label: 'Conference booth',
     shortCode: 'cb-quick',
@@ -792,6 +830,66 @@ const QR_CODES = [
     pattern: 'dots',
     branding: true,
     scanShare: 0.31,
+  },
+  {
+    id: 'qr-lanyard',
+    label: 'Lanyard back',
+    shortCode: 'lb-quick',
+    linkUrl: 'luot.link/quick-fox',
+    color: '#335cff',
+    markerColor: '#335cff',
+    pattern: 'cross',
+    branding: false,
+    scanShare: 0.12,
+  },
+
+  {
+    id: 'qr-poster',
+    label: 'Office poster',
+    shortCode: 'op-3xk9',
+    linkUrl: 'luot.link/3xK9fL2',
+    color: '#22d3bb',
+    markerColor: '#000000',
+    pattern: 'rounded',
+    branding: true,
+    scanShare: 0.38,
+  },
+  {
+    id: 'qr-slide',
+    label: 'Deck end slide',
+    shortCode: 'ds-3xk9',
+    linkUrl: 'luot.link/3xK9fL2',
+    color: '#000000',
+    markerColor: '#000000',
+    pattern: 'dots',
+    branding: true,
+    scanShare: 0.07,
+  },
+
+  {
+    id: 'qr-packaging',
+    label: 'Packaging insert',
+    shortCode: 'pi-quick',
+    linkUrl: 'luot.link/quick-fox',
+    color: '#f6b51e',
+    markerColor: '#fa7319',
+    pattern: 'classy',
+    branding: true,
+    scanShare: 0.24,
+  },
+
+  // swift-otter is in the trash, so this one renders the "Link deleted" state
+  // on load rather than needing something deleted first.
+  {
+    id: 'qr-otter-flyer',
+    label: 'Event flyer',
+    shortCode: 'ef-otter',
+    linkUrl: 'luot.link/swift-otter',
+    color: '#fb4ba3',
+    markerColor: '#fb4ba3',
+    pattern: 'diamond',
+    branding: true,
+    scanShare: 0.19,
   },
 ]
 
