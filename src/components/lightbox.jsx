@@ -121,11 +121,10 @@ export default function Lightbox({
         style={{
           position: 'fixed',
           inset: 0,
-          // White rather than dark, with the page blurred behind it. Not fully
-          // opaque on purpose: at 0.72 the shapes of the page still read
-          // faintly through, which keeps a sense of where you are — a solid
-          // white sheet reads as a new page rather than an overlay.
-          background: 'rgba(255, 255, 255, 0.72)',
+          // Theme-aware: white in light mode, near-black in dark. See --scrim
+          // in globals.css — a white sheet over a dark app is blinding, and the
+          // point of an overlay is to recede.
+          background: 'var(--scrim)',
           backdropFilter: 'blur(14px) saturate(120%)',
           WebkitBackdropFilter: 'blur(14px) saturate(120%)',
           opacity: entered ? 1 : 0,

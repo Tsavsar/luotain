@@ -10,6 +10,7 @@ import QrDesigner from '@/components/qrdesigner'
 import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
 import { toast } from '@/components/toast'
 import { useMockDataState } from '@/components/mockdatacontext'
+import { getMockLinksTable } from '@/lib/mockAnalytics'
 import { SHORT_DOMAIN } from '@/lib/shortlink'
 import { getMockDomains } from '@/lib/mockAnalytics'
 
@@ -217,9 +218,16 @@ function FieldLabel({ label, hint, action, width, children }) {
 
 export default function CreatePage() {
   const router = useRouter()
-  const { useMockData } = useMockDataState()
+  const { useMockData, ready: mockReady, deletedUrls } = useMockDataState()
 
   const [mode, setMode] = useState('link')
+  // QR mode has two sources: a link that already exists, or a new one created
+  // alongside the code. Before this, the only way to get a QR for an existing
+  // link was to navigate to that link's detail page and use the field there —
+  // which meant the create screen couldn't do the more common of the two jobs.
+  const [qrSource, setQrSource] = useState('existing')
+  const [existingLinks, setExistingLinks] = useState(null)
+  const [selectedLinkId, setSelectedLinkId] = useState(null)
   // QR creation is two steps: the destination details, then the design.
   // Links are one step, so this only ever leaves 'details' in QR mode.
   const [step, setStep] = useState('details')
@@ -284,6 +292,11 @@ export default function CreatePage() {
     timers.current.push(setTimeout(() => setErrors({}), ERROR_MS))
   }, [])
 
+  // Resolved from the list rather than stored alongside the id, so it can't go
+  // stale if the list reloads.
+  const selectedLink =
+    existingLinks?.find((l) => l.id === selectedLinkId) || null
+
   const clearError = useCallback((field) => {
     setErrors((prev) => {
       if (!prev[field]) return prev
@@ -329,6 +342,18 @@ export default function CreatePage() {
     if (submitting) return
     if (!validate()) return
 
+    if (mode === 'qr' && qrSource === 'existing') {
+      // Different requirement entirely: no destination, domain or slug to
+      // validate — just whether a link was picked.
+      if (!selectedLinkId) {
+        flagError({ destination: true })
+        toast.error('Choose a link for the code')
+        return
+      }
+      setStep('design')
+      return
+    }
+
     if (mode === 'qr' && step === 'details') {
       // Details are valid, so move to the design step rather than
       // submitting — the code can't be created before it's styled.
@@ -337,10 +362,47 @@ export default function CreatePage() {
     }
 
     if (mode === 'qr' && step === 'design') {
-      // TODO: needs POST /api/qrcodes. The QrCode model exists and now
-      // carries a domainId, but nothing writes to it yet, so this stops
-      // here rather than pretending to save.
-      toast('Creating QR codes needs its endpoint first')
+      // An existing link is the only path that can actually save right now: the
+      // endpoint attaches a code to a link that already exists. Creating a link
+      // AND a code together needs two writes in sequence, which is a bigger
+      // change than this — so that path says so rather than half-doing it.
+      if (qrSource !== 'existing' || !selectedLinkId) {
+        toast('Creating a link and code together is not built yet')
+        return
+      }
+
+      setSubmitting(true)
+
+      if (useMockData) {
+        setSubmitting(false)
+        toast(`QR code created for ${selectedLink?.shortUrl} (mock, not saved)`)
+        return
+      }
+
+      try {
+        const res = await fetch('/api/qrcodes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ linkId: selectedLinkId, ...qr }),
+        })
+        const data = await res.json().catch(() => null)
+
+        if (!res.ok) {
+          console.error('[CreatePage] qr create failed', res.status, data)
+          toast.error(
+            data?.error || `Couldn't create the QR code (${res.status})`
+          )
+          setSubmitting(false)
+          return
+        }
+
+        toast('QR code created')
+        router.push('/dashboard/qrcodes')
+      } catch (err) {
+        console.error('[CreatePage]', err)
+        toast.error("Couldn't create the QR code")
+        setSubmitting(false)
+      }
       return
     }
 
@@ -458,36 +520,143 @@ export default function CreatePage() {
             markerColor={qr.markerColor}
             pattern={qr.pattern}
             branding={qr.branding}
-            // Only passed once there's a complete URL to show. With a
-            // blank slug this would read "luot.link/" and the copy button
-            // would hand over a dead link — better to show nothing than
-            // something wrong.
-            shortUrl={slug.trim() ? `${domain}/${slug.trim()}` : null}
+            // For an existing link, the link's own URL. The QR gets its own
+            // slug, but the server generates that on save, so there's nothing
+            // truthful to show for it yet — and the link's URL is what the code
+            // will ultimately resolve to either way.
+            //
+            // For a new link, only once there's a slug: a blank one would read
+            // "luot.link/" and the copy button would hand over a dead link.
+            shortUrl={
+              qrSource === 'existing'
+                ? selectedLink?.shortUrl || null
+                : slug.trim()
+                  ? `${domain}/${slug.trim()}`
+                  : null
+            }
             onChange={setQr}
           />
         ) : (
           <div
             style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
           >
-            <FieldLabel label='Destination'>
-              <Inputfield
-                lefticon={<LinkIcon />}
-                placeholder='https://example.com/your-page'
-                value={destination}
-                onChange={(e) => {
-                  setDestination(e.target.value)
+            {/* QR mode only. A code can point at a link that already exists or
+                at a new one — and picking an existing link is the more common
+                of the two, so it leads. */}
+            {mode === 'qr' ? (
+              <SegmentedTabs
+                items={[
+                  { id: 'existing', label: 'Existing link' },
+                  { id: 'new', label: 'New link' },
+                ]}
+                activeId={qrSource}
+                onChange={(id) => {
+                  setQrSource(id)
                   clearError('destination')
                 }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreate()
-                }}
-                error={Boolean(errors.destination)}
-                shaking={Boolean(shaking.destination)}
+                padX='14px'
               />
-            </FieldLabel>
+            ) : null}
 
+            {mode === 'qr' && qrSource === 'existing' ? (
+              <FieldLabel label='Link'>
+                <Dropdown
+                  fullWidth
+                  align='left'
+                  trigger={
+                    // Inputfield as the trigger, matching the domain picker
+                    // below — a second control that only looked similar would
+                    // read as a different kind of field.
+                    <Inputfield
+                      lefticon={<LinkIcon />}
+                      righticon={<ChevronIcon />}
+                      placeholder={
+                        existingLinks === null
+                          ? 'Loading your links…'
+                          : existingLinks.length === 0
+                            ? 'No links yet — create one first'
+                            : 'Choose a link'
+                      }
+                      value={selectedLink ? selectedLink.shortUrl : ''}
+                      onChange={() => {}}
+                      error={Boolean(errors.destination)}
+                      shaking={Boolean(shaking.destination)}
+                    />
+                  }
+                >
+                  <DropdownMenu width='440px'>
+                    {existingLinks === null ? (
+                      // Plain text, not a DropdownOption — it has no disabled
+                      // state, and a clickable-looking row that does nothing is
+                      // worse than one that clearly isn't a choice.
+                      <p
+                        className='para-xs'
+                        style={{
+                          color: 'var(--text-soft)',
+                          margin: 0,
+                          padding: '8px 10px',
+                        }}
+                      >
+                        Loading your links…
+                      </p>
+                    ) : existingLinks.length === 0 ? (
+                      <p
+                        className='para-xs'
+                        style={{
+                          color: 'var(--text-soft)',
+                          margin: 0,
+                          padding: '8px 10px',
+                        }}
+                      >
+                        No links yet — switch to New link
+                      </p>
+                    ) : (
+                      existingLinks.map((l) => (
+                        <DropdownOption
+                          key={l.id}
+                          selected={l.id === selectedLinkId}
+                          onClick={() => {
+                            setSelectedLinkId(l.id)
+                            clearError('destination')
+                          }}
+                        >
+                          {l.shortUrl}
+                        </DropdownOption>
+                      ))
+                    )}
+                  </DropdownMenu>
+                </Dropdown>
+              </FieldLabel>
+            ) : (
+              <FieldLabel label='Destination'>
+                <Inputfield
+                  lefticon={<LinkIcon />}
+                  placeholder='https://example.com/your-page'
+                  value={destination}
+                  onChange={(e) => {
+                    setDestination(e.target.value)
+                    clearError('destination')
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreate()
+                  }}
+                  error={Boolean(errors.destination)}
+                  shaking={Boolean(shaking.destination)}
+                />
+              </FieldLabel>
+            )}
+
+            {/* Hidden when pointing at an existing link: it already has a
+                domain and a slug, and offering to set them again would imply
+                the code could change them. It can't — the QR gets its own slug
+                from the server. */}
             <div
-              style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}
+              style={{
+                display:
+                  mode === 'qr' && qrSource === 'existing' ? 'none' : 'flex',
+                gap: '8px',
+                alignItems: 'flex-start',
+              }}
             >
               <FieldLabel label='Domain' width='170px'>
                 <Dropdown

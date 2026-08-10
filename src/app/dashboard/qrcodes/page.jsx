@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import QrDesigner, { QrCode, QrLightbox } from '@/components/qrdesigner'
 import Modal from '@/components/modal'
 import { toast } from '@/components/toast'
@@ -316,6 +316,12 @@ export default function QrCodesPage() {
   const [editing, setEditing] = useState(null)
   const [draft, setDraft] = useState(null)
   const [savingEdit, setSavingEdit] = useState(false)
+  // Where the lightbox's code was when Edit was pressed. The modal grows from
+  // that point instead of the centre of the screen, so the code appears to
+  // become the dialog rather than one thing vanishing and another appearing.
+  const [editOrigin, setEditOrigin] = useState(null)
+  const editTimer = useRef(null)
+  useEffect(() => () => clearTimeout(editTimer.current), [])
 
   function openViewer(code) {
     setViewing(code)
@@ -388,7 +394,8 @@ export default function QrCodesPage() {
     }
   }, [mockReady, useMockData, deletedUrls])
 
-  function startEditing(code) {
+  function startEditing(code, origin = null) {
+    setEditOrigin(origin)
     setEditing(code)
     setDraft({
       color: code.color,
@@ -525,9 +532,7 @@ export default function QrCodesPage() {
             <div
               style={{
                 display: 'flex',
-                // Left, aligned with the table's first column rather than
-                // floating at the far end away from everything it affects.
-                justifyContent: 'flex-start',
+                justifyContent: 'flex-end',
                 paddingBottom: '14px',
               }}
             >
@@ -628,7 +633,7 @@ export default function QrCodesPage() {
               codes={codes}
               register={register}
               onOpen={openViewer}
-              onEdit={startEditing}
+              onEdit={(code) => startEditing(code)}
               onDelete={handleDelete}
             />
           ) : view === 'gallery' ? (
@@ -650,7 +655,9 @@ export default function QrCodesPage() {
         markerColor={viewing?.markerColor}
         pattern={viewing?.pattern}
         branding={viewing?.branding}
-        onEdit={viewing ? () => startEditing(viewing) : undefined}
+        // The lightbox hands back where its card was, which becomes the
+        // modal's transform origin.
+        onEdit={viewing ? (origin) => startEditing(viewing, origin) : undefined}
       />
 
       <Modal
@@ -658,6 +665,10 @@ export default function QrCodesPage() {
         onClose={() => setEditing(null)}
         maxWidth='480px'
         labelledBy='qr-edit-title'
+        // Null when edit came from a row menu rather than the lightbox, in
+        // which case Modal falls back to a centred scale — which is right,
+        // since there's no card on screen to grow from.
+        origin={editOrigin}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

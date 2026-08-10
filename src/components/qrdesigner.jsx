@@ -734,6 +734,9 @@ export function QrLightbox({ open, onClose, shortUrl, onEdit, ...qr }) {
                 position: 'absolute',
                 inset: '6%',
                 borderRadius: '24px',
+                // Softer than the 0.55 it was on the old dark scrim, but still a
+                // black wash: on a dark scrim it reads as depth, on a light one as
+                // a soft shadow. One value works for both because it's translucent.
                 background: 'rgba(0, 0, 0, 0.16)',
                 filter: 'blur(38px)',
                 willChange: 'transform',
@@ -837,7 +840,24 @@ export function QrLightbox({ open, onClose, shortUrl, onEdit, ...qr }) {
             {onEdit ? (
               <button
                 type='button'
-                onClick={onEdit}
+                onClick={(e) => {
+                  // The card's centre in viewport coordinates. Read here rather than
+                  // by the caller because only this component knows which element the
+                  // card is — and it has to be read on the click, before the exit
+                  // starts moving it.
+                  const card = e.currentTarget
+                    .closest('[role="dialog"]')
+                    ?.querySelector('[data-qr-card]')
+                  const rect = card?.getBoundingClientRect()
+                  onEdit?.(
+                    rect
+                      ? {
+                          x: rect.left + rect.width / 2,
+                          y: rect.top + rect.height / 2,
+                        }
+                      : null
+                  )
+                }}
                 className='qr-lightbox-download'
                 style={{
                   display: 'flex',

@@ -119,6 +119,16 @@
      bounce (the switch thumb). Nothing here uses ease-in: it starts slow at
      exactly the moment the eye is on the element, which is what makes an
      interface feel sluggish. */
+  /* The full-screen overlay scrim. White in light mode, near-black in dark —
+     a white sheet over a dark app is blinding, and the whole point of the
+     overlay is to recede. Not fully opaque either way, so the page still reads
+     faintly through it and you keep a sense of where you are.
+     
+     A token rather than an inline colour because an inline style can't carry a
+     media query, and this has to follow both the system preference and the
+     manual [data-theme] override. */
+  --scrim: rgba(255, 255, 255, 0.72);
+
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   /* Defined but not yet called: nothing in the app currently MOVES rather
      than enters or exits. Kept as vocabulary so the next thing that does
@@ -156,6 +166,7 @@
 /* ─── Dark mode (follows OS setting) ─────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
+    --scrim: rgba(10, 10, 10, 0.72);
     --bg-default: #171717;
     --bg-surface: #1c1c1c;
     --bg-light: #1c1c1c;
@@ -213,6 +224,7 @@
 
 /* ─── Light mode (explicit override via [data-theme]) ── */
 [data-theme='light'] {
+  --scrim: rgba(255, 255, 255, 0.72);
   --bg-default: #ffffff;
   --bg-surface: #f7f7f7;
   --bg-light: #fcfcfc;
