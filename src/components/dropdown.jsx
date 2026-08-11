@@ -12,11 +12,12 @@ import {
 import { createPortal } from 'react-dom'
 
 // Closest the panel is ever allowed to sit to the edge of the screen.
-// Below this a scrolling menu shows too little to be usable — better to
-// overflow slightly than to present a 40px window into a long list.
-const MIN_PANEL_HEIGHT = 160
 // Below this a menu is too narrow to read options in, whatever its trigger is.
 const MIN_PANEL_WIDTH = 160
+// About seven rows. A fixed cap rather than filling the space available: a menu
+// that grows to 900px on a big screen is a wall of options to scan, and the
+// point of scrolling is that the list doesn't have to be visible all at once.
+const MAX_MENU_HEIGHT = 268
 const SCREEN_MARGIN = 12
 
 // Exit is faster than the 150ms enter. Asymmetric on purpose: entering is
@@ -142,32 +143,14 @@ export function Dropdown({
       // rather than a fixed max-height: a fixed number is either too tall on a
       // laptop or wastes room on a desktop, and the measurement is already
       // being taken here for the flip decision.
-      // scrollHeight, NOT offsetHeight with the cap removed. The previous
-      // version cleared maxHeight to measure, which was a real bug: this runs on
-      // every scroll event, so each gesture briefly removed the overflow, the
-      // browser clamped scrollTop to 0 because there was nothing to scroll, and
-      // the panel snapped back to the top. Scrolling appeared to do nothing.
+      // The panel does NOT scroll or clip. It positions, and that's all.
       //
-      // scrollHeight is the content's full height whether it's capped or not, so
-      // nothing has to be disturbed to read it.
-      const naturalHeight = panel.scrollHeight
-      const spaceBelow =
-        window.innerHeight - (a.bottom + offsetY) - SCREEN_MARGIN
-      const spaceAbove = a.top - offsetY - SCREEN_MARGIN
-      // Opens wherever there's more room once the menu is taller than either
-      // side — otherwise it would flip to a side that's also too short.
-      const openUp = naturalHeight > spaceBelow && spaceAbove > spaceBelow
-      const available = openUp ? spaceAbove : spaceBelow
-      if (naturalHeight > available) {
-        panel.style.maxHeight = `${Math.max(available, MIN_PANEL_HEIGHT)}px`
-        panel.style.overflowY = 'auto'
-      } else {
-        // Cleared, not just left set. On a resize that opens up space a stale
-        // cap would keep the menu short with nothing to scroll.
-        panel.style.maxHeight = ''
-        panel.style.overflowY = 'visible'
-      }
-
+      // I had the overflow here, which was wrong twice over: the border, radius
+      // and shadow all live on the menu INSIDE the panel, so clipping here cut
+      // off the menu's own shadow — and a dropdown doesn't scroll as a whole
+      // anyway. The panel stays put; its content scrolls. The cap now lives on a
+      // scroll container inside DropdownMenu, so offsetHeight below already
+      // reflects the capped height and nothing here has to know about it.
       const panelHeight = panel.offsetHeight
 
       // Horizontal: align to the trigger, then clamp on-screen.
@@ -181,11 +164,11 @@ export function Dropdown({
       // Vertical: below the trigger normally, flipped above it when
       // there isn't room below AND there is room above — otherwise a
       // menu opened near the bottom of the screen would run off it.
-      // Reuses the decision made above, so the height cap and the direction
-      // can't disagree — capping for one side and then opening on the other
-      // would leave the menu overflowing again.
       const belowTop = a.bottom + offsetY
-      const flip = openUp
+      const noRoomBelow =
+        belowTop + panelHeight > window.innerHeight - SCREEN_MARGIN
+      const roomAbove = a.top - offsetY - panelHeight > SCREEN_MARGIN
+      const flip = noRoomBelow && roomAbove
 
       panel.style.left = `${left}px`
       panel.style.top = `${flip ? a.top - offsetY - panelHeight : belowTop}px`
@@ -205,6 +188,8 @@ export function Dropdown({
     // to its trigger, so there's nothing to recompute, and running the whole
     // measurement on every wheel tick inside a long list is wasted work.
     function onScroll(e) {
+      // Scrolls from inside the menu's own list don't move the panel, so there's
+      // nothing to recompute.
       if (panel.contains(e.target)) return
       position()
     }
@@ -217,11 +202,12 @@ export function Dropdown({
     //
     // Centred rather than scrolled to the top edge, so the rows either side are
     // visible and you can see where you are in the list.
+    const scroller = panel.querySelector('.dropdown-scroll')
     const selected = panel.querySelector('[data-dropdown-selected="true"]')
-    if (selected && panel.scrollHeight > panel.clientHeight) {
+    if (scroller && selected && scroller.scrollHeight > scroller.clientHeight) {
       const s = selected.getBoundingClientRect()
-      const p = panel.getBoundingClientRect()
-      panel.scrollTop += s.top - p.top - (p.height - s.height) / 2
+      const c = scroller.getBoundingClientRect()
+      scroller.scrollTop += s.top - c.top - (c.height - s.height) / 2
     }
 
     window.addEventListener('resize', position)
@@ -302,7 +288,9 @@ const HIGHLIGHT_EASE = 'var(--ease-out)'
 // genuinely shouldn't match its trigger — before, every call site set one, which
 // is why seven different values existed.
 export function DropdownMenu({ children, width = '100%', close }) {
-  const containerRef = useRef(null)
+  // The scrolling element, and the highlight's positioning parent — the shell
+  // above it no longer needs a ref, since nothing measures against it.
+  const scrollRef = useRef(null)
   // Position is kept even after the pointer leaves, so the highlight
   // fades out where it actually is instead of shrinking back up to
   // the top of the menu as it disappears.
@@ -310,7 +298,10 @@ export function DropdownMenu({ children, width = '100%', close }) {
   const [hovering, setHovering] = useState(false)
 
   function handleMouseMove(e) {
-    const container = containerRef.current
+    // The scroll container, not the shell. The highlight lives inside it now, so
+    // its offsets have to be relative to the same element — measuring against
+    // the shell would put the highlight off by however far the list is scrolled.
+    const container = scrollRef.current
     if (!container) return
     const items = container.querySelectorAll('[data-dropdown-item]')
     const containerRect = container.getBoundingClientRect()
@@ -346,11 +337,9 @@ export function DropdownMenu({ children, width = '100%', close }) {
 
   return (
     <div
-      ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHovering(false)}
       style={{
-        position: 'relative',
         background: 'var(--bg-default)',
         border: '1px solid var(--stroke-soft)',
         borderRadius: '14px',
@@ -364,45 +353,67 @@ export function DropdownMenu({ children, width = '100%', close }) {
       // fixed width — '100%' is the default and means "whatever the panel is".
       data-menu-fixed-width={width !== '100%' ? 'true' : undefined}
     >
-      <div
-        aria-hidden='true'
-        style={{
-          position: 'absolute',
-          left: '4px',
-          right: '4px',
-          top: `${highlight?.top ?? 4}px`,
-          height: `${highlight?.height ?? 0}px`,
-          opacity: hovering ? 1 : 0,
-          background: highlight?.danger
-            ? 'var(--error-mute)'
-            : 'var(--bg-surface)',
-          borderRadius: 'var(--radius-lg)',
-          // Opacity and colour always transition; position only when
-          // sliding between rows (see animate above). Built as a list
-          // so the position transitions can be omitted outright
-          // rather than set to 0s, which would still fire transition
-          // events for no reason.
-          transition: [
-            'opacity 0.15s ease',
-            'background 0.15s ease',
-            highlight?.animate ? `top 0.2s ${HIGHLIGHT_EASE}` : null,
-            highlight?.animate ? `height 0.2s ${HIGHLIGHT_EASE}` : null,
-          ]
-            .filter(Boolean)
-            .join(', '),
-          pointerEvents: 'none',
-        }}
-      />
+      {/* The scrolling part. This is the whole correction: the panel and the
+          menu shell stay put, and only this scrolls — which is how a dropdown
+          behaves, and it means the shell's shadow and rounded corners are never
+          clipped by an overflow.
 
-      {Array.isArray(children)
-        ? children.map((child) =>
-            isValidElement(child)
-              ? cloneElement(child, { close, menuHovering: hovering })
-              : child
-          )
-        : isValidElement(children)
-          ? cloneElement(children, { close, menuHovering: hovering })
-          : children}
+          It's also the highlight's positioning parent, so the highlight travels
+          with the rows instead of hanging in place while they move under it. */}
+      <div
+        ref={scrollRef}
+        style={{
+          position: 'relative',
+          maxHeight: `${MAX_MENU_HEIGHT}px`,
+          overflowY: 'auto',
+          // Stops a gesture that reaches the end of the list carrying on to
+          // scroll the page behind it.
+          overscrollBehavior: 'contain',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+        className='dropdown-scroll'
+      >
+        <div
+          aria-hidden='true'
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: `${highlight?.top ?? 4}px`,
+            height: `${highlight?.height ?? 0}px`,
+            opacity: hovering ? 1 : 0,
+            background: highlight?.danger
+              ? 'var(--error-mute)'
+              : 'var(--bg-surface)',
+            borderRadius: 'var(--radius-lg)',
+            // Opacity and colour always transition; position only when
+            // sliding between rows (see animate above). Built as a list
+            // so the position transitions can be omitted outright
+            // rather than set to 0s, which would still fire transition
+            // events for no reason.
+            transition: [
+              'opacity 0.15s ease',
+              'background 0.15s ease',
+              highlight?.animate ? `top 0.2s ${HIGHLIGHT_EASE}` : null,
+              highlight?.animate ? `height 0.2s ${HIGHLIGHT_EASE}` : null,
+            ]
+              .filter(Boolean)
+              .join(', '),
+            pointerEvents: 'none',
+          }}
+        />
+
+        {Array.isArray(children)
+          ? children.map((child) =>
+              isValidElement(child)
+                ? cloneElement(child, { close, menuHovering: hovering })
+                : child
+            )
+          : isValidElement(children)
+            ? cloneElement(children, { close, menuHovering: hovering })
+            : children}
+      </div>
     </div>
   )
 }
