@@ -570,6 +570,7 @@ export default function CreatePage() {
                     <Inputfield
                       lefticon={<LinkIcon />}
                       righticon={<ChevronIcon />}
+                      textSize='12px'
                       placeholder={
                         existingLinks === null
                           ? 'Loading your links…'
@@ -584,7 +585,7 @@ export default function CreatePage() {
                     />
                   }
                 >
-                  <DropdownMenu width='440px'>
+                  <DropdownMenu>
                     {existingLinks === null ? (
                       // Plain text, not a DropdownOption — it has no disabled
                       // state, and a clickable-looking row that does nothing is
@@ -672,10 +673,11 @@ export default function CreatePage() {
                       value={domain}
                       onChange={() => {}}
                       righticon={<ChevronIcon />}
+                      textSize='12px'
                     />
                   }
                 >
-                  <DropdownMenu width='220px'>
+                  <DropdownMenu>
                     {domains.map((d) => (
                       <DropdownOption
                         key={d.hostname}
