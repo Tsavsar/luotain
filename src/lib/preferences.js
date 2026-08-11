@@ -36,6 +36,14 @@ export const DEFAULT_PREFERENCES = {
   copyWithScheme: true,
 }
 
+// When preferences were last saved, for the "Last updated" line. Kept inside the
+// JSON blob rather than as its own column, which means no migration — and it's
+// only ever read alongside the preferences themselves.
+//
+// Not in DEFAULT_PREFERENCES because it isn't a preference: it's set by the
+// server on save and can't be sent by a client.
+export const UPDATED_AT_KEY = 'updatedAt'
+
 // Merged over the defaults rather than returned raw, so a row written before a
 // preference existed still comes back complete — and an unknown key from an old
 // client can't leak through.
@@ -45,6 +53,9 @@ export function withDefaults(stored) {
   for (const key of Object.keys(DEFAULT_PREFERENCES)) {
     if (stored[key] !== undefined) out[key] = stored[key]
   }
+  // Passed through separately, since it isn't in the defaults — null until the
+  // page has been saved once, which is what renders as "Never".
+  out[UPDATED_AT_KEY] = stored[UPDATED_AT_KEY] || null
   return out
 }
 

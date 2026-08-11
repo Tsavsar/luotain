@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { getCurrentUserEmail } from '@/lib/session'
-import { withDefaults, sanitize } from '@/lib/preferences'
+import { withDefaults, sanitize, UPDATED_AT_KEY } from '@/lib/preferences'
 
 // GET /api/me/preferences
 export async function GET() {
@@ -58,7 +58,13 @@ export async function PATCH(request) {
 
     // Merged, not replaced. Writing the patch alone would wipe every preference
     // the request didn't happen to mention.
-    const next = { ...withDefaults(current.preferences), ...patch }
+    // Stamped server-side, and after the patch is spread so a client can't set
+    // it — sanitize() already drops it, this is belt and braces.
+    const next = {
+      ...withDefaults(current.preferences),
+      ...patch,
+      [UPDATED_AT_KEY]: new Date().toISOString(),
+    }
 
     const user = await prisma.user.update({
       where: { email },

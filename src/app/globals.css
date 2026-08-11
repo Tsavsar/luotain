@@ -2287,3 +2287,13 @@ html {
   width: 0;
   height: 0;
 }
+
+/* Discard changes. Text rather than a button, so hover is the only affordance —
+   it darkens toward the body colour rather than lightening, since it's the
+   lesser of the two actions and shouldn't compete with Save. */
+.discard-changes {
+  transition: color var(--duration-fast) ease;
+}
+.discard-changes:hover:not(:disabled) {
+  color: var(--text-sub) !important;
+}

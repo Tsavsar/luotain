@@ -81,6 +81,51 @@ function Group({ title, children }) {
   )
 }
 
+function Spinner({ size = 13 }) {
+  return (
+    <svg
+      className='btn-spinner'
+      width={size}
+      height={size}
+      viewBox='0 0 16 16'
+      fill='none'
+      aria-hidden='true'
+    >
+      <circle
+        cx='8'
+        cy='8'
+        r='6'
+        stroke='currentColor'
+        strokeWidth='2'
+        strokeLinecap='round'
+        strokeDasharray='28'
+        strokeDashoffset='9'
+        opacity='0.9'
+      />
+    </svg>
+  )
+}
+
+// "Never" until saved once. Relative while recent, because right after saving
+// "Just now" is the confirmation — an absolute date would read as historical.
+// Same wording as the General page's own line.
+function formatLastUpdated(iso) {
+  if (!iso) return 'Never'
+  const then = new Date(iso)
+  const mins = Math.floor((Date.now() - then.getTime()) / 60000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins} minute${mins === 1 ? '' : 's'} ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`
+  return then.toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
 function ChevronIcon() {
   return (
     <svg
@@ -102,11 +147,27 @@ function ChevronIcon() {
 }
 
 export default function PreferencesPage() {
-  const [prefs, setPrefs] = useState(null)
+  // Staged, like the General page: `draft` is what's on screen, `saved` is what
+  // the server holds, and Save persists the difference.
+  //
+  // This replaced save-on-change. I'd argued the other way — a switch has no half
+  // state, so there's nothing to confirm — but with seven preferences on one
+  // screen batching wins: one request instead of seven, and Discard becomes
+  // possible, which save-on-change can't offer at all.
+  const [draft, setDraft] = useState(null)
+  const [saved, setSaved] = useState(null)
+  const [saving, setSaving] = useState(false)
   const [theme, setTheme] = useState('light')
-  const saveTimer = useRef(null)
 
-  useEffect(() => () => clearTimeout(saveTimer.current), [])
+  // Theme is deliberately NOT staged. You change it to see it — a theme behind a
+  // Save button would mean picking Dark and nothing happening.
+  // Compared against the known preference keys, not every key on the object.
+  // `updatedAt` rides along in the same blob and is set by the server, so
+  // including it would work today (both copies match after a load) but break the
+  // moment anything else touched it.
+  const dirty =
+    Boolean(draft && saved) &&
+    Object.keys(DEFAULT_PREFERENCES).some((k) => draft[k] !== saved[k])
 
   useEffect(() => {
     // Theme is read from localStorage, not the API — it has to apply before
@@ -121,11 +182,16 @@ export default function PreferencesPage() {
     fetch('/api/me/preferences')
       .then((res) => (res.ok ? res.json() : null))
       .then((d) => {
-        if (!cancelled) setPrefs(d?.preferences || { ...DEFAULT_PREFERENCES })
+        if (cancelled) return
+        const next = d?.preferences || { ...DEFAULT_PREFERENCES }
+        setDraft(next)
+        setSaved(next)
       })
       .catch((err) => {
         console.error('[Preferences]', err)
-        if (!cancelled) setPrefs({ ...DEFAULT_PREFERENCES })
+        if (cancelled) return
+        setDraft({ ...DEFAULT_PREFERENCES })
+        setSaved({ ...DEFAULT_PREFERENCES })
       })
     return () => {
       cancelled = true
@@ -147,32 +213,49 @@ export default function PreferencesPage() {
     } catch {}
   }
 
-  // Optimistic, then persisted. A switch that waits for a round trip before
-  // moving feels broken on a slow connection; reverting on failure is the
-  // honest version of that trade.
+  // Local only. Nothing leaves the page until Save.
   function update(patch) {
-    const previous = prefs
-    setPrefs((p) => ({ ...p, ...patch }))
-
-    fetch('/api/me/preferences', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(patch),
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const data = await res.json().catch(() => null)
-          throw new Error(data?.error || `Save failed (${res.status})`)
-        }
-      })
-      .catch((err) => {
-        console.error('[Preferences]', err)
-        setPrefs(previous)
-        toast.error("Couldn't save that preference")
-      })
+    setDraft((d) => ({ ...d, ...patch }))
   }
 
-  if (!prefs) {
+  function discard() {
+    setDraft(saved)
+  }
+
+  async function handleSave() {
+    if (!dirty || saving) return
+    setSaving(true)
+    try {
+      // Only what changed, so a save can't overwrite a preference this tab never
+      // touched — the endpoint merges rather than replaces.
+      const patch = {}
+      for (const key of Object.keys(DEFAULT_PREFERENCES)) {
+        if (draft[key] !== saved[key]) patch[key] = draft[key]
+      }
+
+      const res = await fetch('/api/me/preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        toast.error(data?.error || `Couldn't save preferences (${res.status})`)
+        return
+      }
+
+      setDraft(data.preferences)
+      setSaved(data.preferences)
+      toast('Preferences saved')
+    } catch (err) {
+      console.error('[Preferences]', err)
+      toast.error("Couldn't save preferences")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!draft) {
     return (
       <div
         style={{
@@ -267,7 +350,7 @@ export default function PreferencesPage() {
                 <Inputfield
                   righticon={<ChevronIcon />}
                   textSize='12px'
-                  value={formatTimezone(prefs.timezone)}
+                  value={formatTimezone(draft.timezone)}
                   onChange={() => {}}
                   placeholder=''
                 />
@@ -277,7 +360,7 @@ export default function PreferencesPage() {
                 {zones.map((tz) => (
                   <DropdownOption
                     key={tz}
-                    selected={tz === prefs.timezone}
+                    selected={tz === draft.timezone}
                     onClick={() => update({ timezone: tz })}
                   >
                     {formatTimezone(tz)}
@@ -298,9 +381,9 @@ export default function PreferencesPage() {
             size='sm'
             hideLabel
             label='Weekly digest'
-            checked={prefs.emailWeeklyDigest}
+            checked={draft.emailWeeklyDigest}
             onChange={() =>
-              update({ emailWeeklyDigest: !prefs.emailWeeklyDigest })
+              update({ emailWeeklyDigest: !draft.emailWeeklyDigest })
             }
           />
         </Row>
@@ -312,9 +395,9 @@ export default function PreferencesPage() {
             size='sm'
             hideLabel
             label='Traffic alerts'
-            checked={prefs.emailTrafficAlerts}
+            checked={draft.emailTrafficAlerts}
             onChange={() =>
-              update({ emailTrafficAlerts: !prefs.emailTrafficAlerts })
+              update({ emailTrafficAlerts: !draft.emailTrafficAlerts })
             }
           />
         </Row>
@@ -326,9 +409,9 @@ export default function PreferencesPage() {
             size='sm'
             hideLabel
             label='Product updates'
-            checked={prefs.emailProductUpdates}
+            checked={draft.emailProductUpdates}
             onChange={() =>
-              update({ emailProductUpdates: !prefs.emailProductUpdates })
+              update({ emailProductUpdates: !draft.emailProductUpdates })
             }
           />
         </Row>
@@ -343,9 +426,9 @@ export default function PreferencesPage() {
             size='sm'
             hideLabel
             label='Brand new QR codes'
-            checked={prefs.defaultQrBranding}
+            checked={draft.defaultQrBranding}
             onChange={() =>
-              update({ defaultQrBranding: !prefs.defaultQrBranding })
+              update({ defaultQrBranding: !draft.defaultQrBranding })
             }
           />
         </Row>
@@ -357,11 +440,94 @@ export default function PreferencesPage() {
             size='sm'
             hideLabel
             label='Copy links with https://'
-            checked={prefs.copyWithScheme}
-            onChange={() => update({ copyWithScheme: !prefs.copyWithScheme })}
+            checked={draft.copyWithScheme}
+            onChange={() => update({ copyWithScheme: !draft.copyWithScheme })}
           />
         </Row>
       </Group>
+
+      {/* Save on the left, Discard pushed to the far end. The gap between them is
+          deliberate: they're opposite outcomes, and sitting them side by side is
+          how someone discards a change they meant to keep.
+
+          Discard only exists while there's something to discard — a permanently
+          visible one implies there's always something staged. */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          gap: '16px',
+        }}
+      >
+        <button
+          type='button'
+          onClick={handleSave}
+          disabled={!dirty || saving}
+          className='settings-save'
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '8px 18px',
+            borderRadius: 'var(--radius-lg)',
+            border: 'none',
+            cursor: !dirty || saving ? 'default' : 'pointer',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '12px',
+            lineHeight: '16px',
+            letterSpacing: '0.24px',
+            background: dirty ? 'var(--text-strong)' : 'var(--bg-surface)',
+            color: dirty ? 'var(--bg-default)' : 'var(--text-sub)',
+          }}
+        >
+          {saving ? (
+            <>
+              <Spinner />
+              Saving
+            </>
+          ) : (
+            'Save changes'
+          )}
+        </button>
+
+        {/* Text, not a button — it's the lesser of the two actions, and giving it
+            the same weight as Save would make the pair read as a choice rather
+            than an action with an escape hatch. */}
+        {dirty ? (
+          <button
+            type='button'
+            onClick={discard}
+            disabled={saving}
+            className='discard-changes'
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              margin: 0,
+              cursor: saving ? 'default' : 'pointer',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '12px',
+              lineHeight: '16px',
+              letterSpacing: '0.24px',
+              color: 'var(--text-soft)',
+            }}
+          >
+            Discard changes
+          </button>
+        ) : null}
+      </div>
+
+      <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+        <span className='para-xs' style={{ color: 'var(--text-strong)' }}>
+          Last updated:
+        </span>
+        <span className='para-xs' style={{ color: 'var(--text-strong)' }}>
+          {formatLastUpdated(saved?.updatedAt)}
+        </span>
+      </div>
     </div>
   )
 }
