@@ -2307,3 +2307,64 @@ html {
 .theme-card:active {
   transform: scale(0.97);
 }
+
+/* ─── Paper theme ───
+   A warm off-white, built out from #efedeb.
+   
+   Every value is derived rather than picked by eye: the light theme's lightness
+   STEPS are preserved and the base colour's warm bias (R+4 over B) is carried
+   through the whole ramp, so it reads as one family rather than a background
+   with grey UI sitting on it.
+   
+   Two tones are darker than their light-theme equivalents, deliberately. The
+   page is darker than white, so every text colour loses contrast against it —
+   --text-soft drops from 2.52:1 to 2.16 and --text-accent from 2.79 to 2.39.
+   Both are darkened until they match what light achieves, so this theme is never
+   worse to read than light. (Both already fall short of WCAG AA on white; that's
+   a pre-existing issue in the light ramp, not one this theme introduces, and
+   fixing it properly means darkening both themes together.)
+   
+   --primary-base stays the brand orange. It fills buttons and draws borders,
+   where the colour matters more than text contrast; --text-accent is the one
+   that gets darkened, because that's the token used for orange TEXT. */
+[data-theme='paper'] {
+  --scrim: rgba(239, 237, 235, 0.72);
+
+  --bg-default: #efedeb;
+  --bg-light: #eceae8;
+  --bg-surface: #e7e5e3;
+  --bg-layer: #e5e3e1;
+  --bg-subtle: #dbd9d7;
+  --bg-muted: #c1bfbd;
+  --bg-weak: #1c1a18;
+
+  --text-strong: #1a1816;
+  --text-sub: #5f5c59;
+  --text-soft: #989694;
+  --text-disabled: #c1bfbd;
+  --text-inverse: #efedeb;
+  --text-accent: #e66a17;
+
+  /* Warm-tinted rather than pure black at low alpha. On a warm background a
+     neutral black hairline reads faintly blue. */
+  --stroke-soft: rgba(26, 24, 22, 0.06);
+  --stroke-medium: rgba(26, 24, 22, 0.11);
+  --stroke-strong: rgba(26, 24, 22, 0.21);
+
+  /* The status tints, re-based. This was the one thing that would have looked
+     obviously wrong: every mute value is a near-white tint sitting just BELOW
+     white in the light theme, which on a #efedeb page puts them ABOVE the
+     background — so a status chip would glow brighter than the page instead of
+     resting on it. Each is darkened by the same amount it sits below white,
+     keeping its hue, so the relationship is preserved rather than inverted.
+     
+     The base and faint variants are inherited: those are the actual signal
+     colours and they should read identically in every theme. */
+  --primary-mute: #ebe0d8;
+  --error-mute: #e8d6d7;
+  --success-mute: #cee6d9;
+  /* No --warning-mute here on purpose: in :root it's an alias for
+     --primary-mute, and CSS variables resolve at the point of use — so it picks
+     up the value above on its own. Hardcoding it would silently break that link
+     and leave the two able to drift apart. */
+}

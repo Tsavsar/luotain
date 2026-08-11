@@ -175,7 +175,16 @@ export default function PreferencesPage() {
     // happen that early. This surfaces the same local value the toggle uses
     // rather than introducing a second source of truth.
     try {
-      setTheme(localStorage.getItem('theme') || 'light')
+      // Defaults to 'system' when nothing is stored, not 'light'. It used to
+      // fall back to light, which meant someone who picked System saw Light
+      // selected after every reload — System was stored as a MISSING key, so it
+      // was indistinguishable from a first visit. It's stored explicitly now.
+      const saved = localStorage.getItem('theme')
+      setTheme(
+        saved === 'light' || saved === 'dark' || saved === 'paper'
+          ? saved
+          : 'system'
+      )
     } catch {}
 
     let cancelled = false
@@ -202,10 +211,12 @@ export default function PreferencesPage() {
     setTheme(next)
     try {
       if (next === 'system') {
-        // The attribute removed rather than set, so the CSS falls back to
-        // prefers-color-scheme — which is what "system" means.
+        // The attribute is removed so the CSS falls through to
+        // prefers-color-scheme — but the CHOICE is still written down, so the
+        // picker can show it as selected next time. Removing the key instead
+        // lost the distinction between "chose system" and "never chose".
         document.documentElement.removeAttribute('data-theme')
-        localStorage.removeItem('theme')
+        localStorage.setItem('theme', 'system')
       } else {
         document.documentElement.setAttribute('data-theme', next)
         localStorage.setItem('theme', next)
