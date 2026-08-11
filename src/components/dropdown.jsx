@@ -297,7 +297,40 @@ export function DropdownMenu({ children, width = '100%', close }) {
   const [highlight, setHighlight] = useState(null) // { top, height, danger, animate }
   const [hovering, setHovering] = useState(false)
 
+  // The cursor's last known position, so a scroll can re-resolve which row is
+  // under it. Held in a ref rather than state: it changes on every pointer move
+  // and nothing renders from it.
+  const pointerY = useRef(null)
+
+  function resolveHighlight(clientY) {
+    const container = scrollRef.current
+    if (!container || clientY == null) return
+    const items = container.querySelectorAll('[data-dropdown-item]')
+    const containerRect = container.getBoundingClientRect()
+    for (const item of items) {
+      const r = item.getBoundingClientRect()
+      if (clientY >= r.top && clientY <= r.bottom) {
+        const top = r.top - containerRect.top + container.scrollTop
+        setHighlight((prev) =>
+          prev && prev.top === top && prev.height === r.height
+            ? prev
+            : {
+                top,
+                height: r.height,
+                danger: item.dataset.danger === 'true',
+                // Never animated from a scroll — the row changed because the
+                // list moved, not because the cursor did, so sliding would
+                // chase the content.
+                animate: false,
+              }
+        )
+        return
+      }
+    }
+  }
+
   function handleMouseMove(e) {
+    pointerY.current = e.clientY
     // The scroll container, not the shell. The highlight lives inside it now, so
     // its offsets have to be relative to the same element — measuring against
     // the shell would put the highlight off by however far the list is scrolled.
@@ -308,7 +341,14 @@ export function DropdownMenu({ children, width = '100%', close }) {
     for (const item of items) {
       const r = item.getBoundingClientRect()
       if (e.clientY >= r.top && e.clientY <= r.bottom) {
-        const top = r.top - containerRect.top
+        // + scrollTop. getBoundingClientRect is viewport-relative, so
+        // r.top - containerRect.top gives the offset from the container's
+        // VISIBLE top — but the highlight is absolutely positioned inside a
+        // scrolling element, and those scroll with the content. So without this
+        // the highlight sat exactly one scroll-distance too high, which is why
+        // the hover looked correct at the top of the list and drifted further off
+        // the more you scrolled.
+        const top = r.top - containerRect.top + container.scrollTop
         const height = r.height
         const danger = item.dataset.danger === 'true'
         const wasHovering = hovering
@@ -338,7 +378,10 @@ export function DropdownMenu({ children, width = '100%', close }) {
   return (
     <div
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => setHovering(false)}
+      onMouseLeave={() => {
+        pointerY.current = null
+        setHovering(false)
+      }}
       style={{
         background: 'var(--bg-default)',
         border: '1px solid var(--stroke-soft)',
@@ -362,6 +405,11 @@ export function DropdownMenu({ children, width = '100%', close }) {
           with the rows instead of hanging in place while they move under it. */}
       <div
         ref={scrollRef}
+        // Re-resolves which row is under the cursor as the list moves. A wheel
+        // gesture scrolls the rows past a stationary pointer and fires no
+        // mousemove, so without this the highlight stayed on whichever row was
+        // under the cursor when it last moved.
+        onScroll={() => resolveHighlight(pointerY.current)}
         style={{
           position: 'relative',
           maxHeight: `${MAX_MENU_HEIGHT}px`,
@@ -380,7 +428,7 @@ export function DropdownMenu({ children, width = '100%', close }) {
             position: 'absolute',
             left: 0,
             right: 0,
-            top: `${highlight?.top ?? 4}px`,
+            top: `${highlight?.top ?? 0}px`,
             height: `${highlight?.height ?? 0}px`,
             opacity: hovering ? 1 : 0,
             background: highlight?.danger
