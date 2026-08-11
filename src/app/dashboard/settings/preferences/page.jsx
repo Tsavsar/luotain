@@ -272,7 +272,7 @@ export default function PreferencesPage() {
                 />
               }
             >
-              <DropdownMenu width='240px'>
+              <DropdownMenu>
                 {zones.map((tz) => (
                   <DropdownOption
                     key={tz}

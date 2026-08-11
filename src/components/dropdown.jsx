@@ -15,6 +15,8 @@ import { createPortal } from 'react-dom'
 // Below this a scrolling menu shows too little to be usable — better to
 // overflow slightly than to present a 40px window into a long list.
 const MIN_PANEL_HEIGHT = 160
+// Below this a menu is too narrow to read options in, whatever its trigger is.
+const MIN_PANEL_WIDTH = 160
 const SCREEN_MARGIN = 12
 
 // Exit is faster than the 150ms enter. Asymmetric on purpose: entering is
@@ -111,6 +113,25 @@ export function Dropdown({
 
     function position() {
       const a = anchor.getBoundingClientRect()
+
+      // The panel matches its trigger unless a width was passed explicitly.
+      // That's the sensible default for the common case — a field or a pill
+      // opening a list of its own values — and it was previously hand-set per
+      // call site, which is how seven different widths ended up in the app.
+      //
+      // Floored at MIN_PANEL_WIDTH so an icon-sized trigger doesn't produce an
+      // unusable menu: a row menu's button is 24px wide, and a 24px list of
+      // options is worse than one that ignores the trigger.
+      // Skipped when the menu inside asked for its own width — reading it off
+      // the DOM rather than threading a prop through, because the panel renders
+      // whatever children it's given and doesn't know what they are.
+      const fixed = panel.querySelector('[data-menu-fixed-width]')
+      if (!fixed) {
+        panel.style.width = `${Math.max(a.width, MIN_PANEL_WIDTH)}px`
+      } else {
+        panel.style.width = ''
+      }
+
       const panelWidth = panel.offsetWidth
 
       // The panel had no height cap, so a long menu just kept growing — the
@@ -276,7 +297,11 @@ export function Dropdown({
 // how the highlight knows which tint to become as it slides onto it.
 const HIGHLIGHT_EASE = 'var(--ease-out)'
 
-export function DropdownMenu({ children, width = '220px', close }) {
+// width defaults to filling the panel, which Dropdown has already sized to the
+// trigger. Passing a width here is now an override for the rare menu that
+// genuinely shouldn't match its trigger — before, every call site set one, which
+// is why seven different values existed.
+export function DropdownMenu({ children, width = '100%', close }) {
   const containerRef = useRef(null)
   // Position is kept even after the pointer leaves, so the highlight
   // fades out where it actually is instead of shrinking back up to
@@ -335,6 +360,9 @@ export function DropdownMenu({ children, width = '220px', close }) {
         flexDirection: 'column',
         width,
       }}
+      // Tells the panel not to size itself to the trigger. Only set for a real
+      // fixed width — '100%' is the default and means "whatever the panel is".
+      data-menu-fixed-width={width !== '100%' ? 'true' : undefined}
     >
       <div
         aria-hidden='true'
@@ -424,7 +452,12 @@ export function DropdownOption({
         // cap-height-to-baseline, ~8-9px for a 12px font. So padding
         // tuned against the old untrimmed height reads as visibly
         // tight against the new, smaller one. 12px here.
-        padding: '12px 14px 12px 12px',
+        // 9px, down from 12. The text can't get smaller — 12px is already the
+        // floor — so the row's weight comes from its padding, and 12px vertical
+        // on a 12px font made each option about 33px tall. 9px brings that to
+        // ~27px, which is still a comfortable target and reads far lighter in a
+        // list of forty.
+        padding: '9px 14px 9px 12px',
         borderRadius: 'var(--radius-lg)',
       }}
     >
