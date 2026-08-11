@@ -266,6 +266,7 @@ export default function PreferencesPage() {
               trigger={
                 <Inputfield
                   righticon={<ChevronIcon />}
+                  textSize='12px'
                   value={formatTimezone(prefs.timezone)}
                   onChange={() => {}}
                   placeholder=''

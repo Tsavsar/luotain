@@ -452,12 +452,7 @@ export function DropdownOption({
         // cap-height-to-baseline, ~8-9px for a 12px font. So padding
         // tuned against the old untrimmed height reads as visibly
         // tight against the new, smaller one. 12px here.
-        // 9px, down from 12. The text can't get smaller — 12px is already the
-        // floor — so the row's weight comes from its padding, and 12px vertical
-        // on a 12px font made each option about 33px tall. 9px brings that to
-        // ~27px, which is still a comfortable target and reads far lighter in a
-        // list of forty.
-        padding: '9px 14px 9px 12px',
+        padding: '12px 14px 12px 12px',
         borderRadius: 'var(--radius-lg)',
       }}
     >
