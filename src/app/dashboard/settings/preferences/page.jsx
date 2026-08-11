@@ -321,35 +321,12 @@ export default function PreferencesPage() {
       </p>
 
       <Group title='Appearance'>
-        {/* Stacked rather than using Row. The three cards come to ~216px, which
-            doesn't fit Row's right-aligned control slot without squeezing the
-            label — and the cards are the point here, so they get the width. */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            width: '100%',
-            padding: '14px 0',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            <p
-              className='para-sm'
-              style={{ color: 'var(--text-strong)', margin: 0 }}
-            >
-              Theme
-            </p>
-            <p
-              className='para-xs'
-              style={{ color: 'var(--text-soft)', margin: 0 }}
-            >
-              System follows your device setting.
-            </p>
-          </div>
-
+        {/* Same Row as every other setting, so this reads as one list rather
+            than one list plus a special case. The cards come to ~216px, which
+            fits beside the label in the 720px column. */}
+        <Row label='Theme' description='System follows your device setting.'>
           <ThemePreview value={theme} onChange={applyTheme} />
-        </div>
+        </Row>
       </Group>
 
       <Group title='Analytics'>
