@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Switch from '@/components/switch'
-import SegmentedTabs from '@/components/segmentedtabs'
+import ThemePreview from '@/components/themepreview'
 import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
 import Inputfield from '@/components/input'
 import { toast } from '@/components/toast'
@@ -321,18 +321,35 @@ export default function PreferencesPage() {
       </p>
 
       <Group title='Appearance'>
-        <Row label='Theme' description='System follows your device setting.'>
-          <SegmentedTabs
-            items={[
-              { id: 'light', label: 'Light' },
-              { id: 'dark', label: 'Dark' },
-              { id: 'system', label: 'System' },
-            ]}
-            activeId={theme}
-            onChange={applyTheme}
-            padX='12px'
-          />
-        </Row>
+        {/* Stacked rather than using Row. The three cards come to ~216px, which
+            doesn't fit Row's right-aligned control slot without squeezing the
+            label — and the cards are the point here, so they get the width. */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            width: '100%',
+            padding: '14px 0',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <p
+              className='para-sm'
+              style={{ color: 'var(--text-strong)', margin: 0 }}
+            >
+              Theme
+            </p>
+            <p
+              className='para-xs'
+              style={{ color: 'var(--text-soft)', margin: 0 }}
+            >
+              System follows your device setting.
+            </p>
+          </div>
+
+          <ThemePreview value={theme} onChange={applyTheme} />
+        </div>
       </Group>
 
       <Group title='Analytics'>

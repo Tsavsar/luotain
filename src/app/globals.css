@@ -2297,3 +2297,13 @@ html {
 .discard-changes:hover:not(:disabled) {
   color: var(--text-sub) !important;
 }
+
+/* Theme preview cards. The press scale goes on the card, not the shared press
+   group, because these aren't buttons in the usual sense — they're previews, and
+   a smaller scale suits something that reads as an object rather than a control. */
+.theme-card {
+  transition: transform var(--duration-press) ease-out;
+}
+.theme-card:active {
+  transform: scale(0.97);
+}
