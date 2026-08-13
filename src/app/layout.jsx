@@ -21,7 +21,7 @@ export const viewport = {
 // preferences page's effect only set its own picker state, not the attribute.
 //
 // It's a blocking inline script rather than an effect on purpose: an effect runs
-// after the first paint, so a dark or paper theme would flash white first. This
+// after the first paint, so a dark theme would flash white first. This
 // is the one case where a synchronous script in <head> is the right tool.
 //
 // 'system' is stored as the literal string and clears the attribute, which lets
@@ -31,7 +31,7 @@ const THEME_SCRIPT = `
 (function () {
   try {
     var t = localStorage.getItem('theme');
-    if (t === 'light' || t === 'dark' || t === 'paper') {
+    if (t === 'light' || t === 'dark') {
       document.documentElement.setAttribute('data-theme', t);
     } else {
       document.documentElement.removeAttribute('data-theme');

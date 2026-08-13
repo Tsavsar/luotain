@@ -28,21 +28,6 @@ const LIGHT = {
   hair: 'rgba(0, 0, 0, 0.05)',
 }
 
-// Warm off-white, matching the [data-theme='paper'] ramp in globals.css. Same
-// hardcoding rule as the other two: this illustrates a theme, so it can't follow
-// the active one.
-const PAPER = {
-  window: '#efedeb',
-  card: '#e7e5e3',
-  border: 'rgba(26, 24, 22, 0.11)',
-  ring: '#e5e3e1',
-  bar: '#dbd9d7',
-  strong: '#c1bfbd',
-  metric: '#eceae8',
-  pill: '#e7e5e3',
-  hair: 'rgba(26, 24, 22, 0.06)',
-}
-
 const DARK = {
   window: '#171717',
   card: '#292929',
@@ -192,7 +177,7 @@ function SystemMiniature() {
 }
 
 function Card({ id, label, selected, onSelect }) {
-  const p = id === 'dark' ? DARK : id === 'paper' ? PAPER : LIGHT
+  const p = id === 'dark' ? DARK : LIGHT
 
   return (
     <button
@@ -259,20 +244,12 @@ export default function ThemePreview({ value, onChange }) {
     <div
       role='group'
       aria-label='Theme'
-      // 10px rather than 12: four cards at 12px come to 292px, which starts
-      // crowding the label in the Row. At 10 it's 286px and still comfortable.
-      style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}
+      style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}
     >
       <Card
         id='light'
         label='Light'
         selected={value === 'light'}
-        onSelect={onChange}
-      />
-      <Card
-        id='paper'
-        label='Paper'
-        selected={value === 'paper'}
         onSelect={onChange}
       />
       <Card

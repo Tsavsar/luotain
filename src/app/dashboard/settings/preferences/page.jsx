@@ -180,11 +180,7 @@ export default function PreferencesPage() {
       // selected after every reload — System was stored as a MISSING key, so it
       // was indistinguishable from a first visit. It's stored explicitly now.
       const saved = localStorage.getItem('theme')
-      setTheme(
-        saved === 'light' || saved === 'dark' || saved === 'paper'
-          ? saved
-          : 'system'
-      )
+      setTheme(saved === 'light' || saved === 'dark' ? saved : 'system')
     } catch {}
 
     let cancelled = false
