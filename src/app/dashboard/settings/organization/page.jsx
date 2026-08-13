@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import AvatarRow from '@/components/avatarrow'
 import SaveBar from '@/components/savebar'
+import { SettingsGeneralSkeleton } from '@/components/settingsskeleton'
 import { useUnsavedChanges, UnsavedBanner } from '@/components/unsavedchanges'
 import Inputfield from '@/components/input'
 import { toast } from '@/components/toast'
@@ -243,47 +244,10 @@ export default function OrganizationSettingsPage() {
     }
   }
 
-  if (!draft) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '18px',
-          width: '100%',
-        }}
-      >
-        <div
-          className='skeleton-pulse'
-          style={{
-            width: '116px',
-            height: '20px',
-            borderRadius: '4px',
-            background: 'var(--bg-surface)',
-          }}
-        />
-        <div
-          className='skeleton-pulse'
-          style={{
-            width: '100%',
-            height: '62px',
-            borderRadius: '24px',
-            background: 'var(--bg-surface)',
-          }}
-        />
-        <div
-          className='skeleton-pulse'
-          style={{
-            width: '360px',
-            maxWidth: '100%',
-            height: '42px',
-            borderRadius: '16px',
-            background: 'var(--bg-surface)',
-          }}
-        />
-      </div>
-    )
-  }
+  // The same skeleton the account page uses. The hand-rolled one here had a
+  // full-width avatar bar above a 360px field, so the layout jumped as the real
+  // content replaced it — which is the exact mismatch the wrapper below fixes.
+  if (!draft) return <SettingsGeneralSkeleton />
 
   return (
     <div
@@ -309,13 +273,16 @@ export default function OrganizationSettingsPage() {
         disabled={saving}
       />
 
+      {/* The same wrapper the account page uses, so the avatar row and the name
+          field share one width. It was a bare 100% here, which stretched the row
+          across the full column while the field below stayed at 360. */}
       <div
+        className='settings-field-group'
         style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '12px',
           alignItems: 'flex-start',
-          width: '100%',
         }}
       >
         <AvatarRow
@@ -344,10 +311,9 @@ export default function OrganizationSettingsPage() {
           style={{ display: 'none' }}
         />
 
-        {/* The shared class, not an inline width — it carries the 360px cap and
-            the mobile override that takes it full width, and an inline cap
-            can't be undone by a media query. */}
-        <div className='settings-field-group'>
+        {/* No width of its own: the parent above carries the cap, and nesting
+            the same class would apply it twice for no effect. */}
+        <div style={{ width: '100%' }}>
           <Inputfield
             lefticon={<BuildingIcon />}
             placeholder='Workspace name'
