@@ -142,9 +142,13 @@ const COL_ROLE = '111px'
 // lands in the same place in all three sections.
 //
 // 45px, not 16. At the icon's own size the button was barely bigger than the
-// glyph, so hovering it meant hitting a 16px target — which is below the 24px
-// minimum a pointer can reliably land on, and well below the 44px a finger
-// needs. The extra width is hit area, not padding.
+// glyph, so hovering it meant hitting a 16px target — below the 24px a pointer
+// can reliably land on. The extra width is hit area, not padding.
+//
+// It COLLAPSES to zero on a single row, though: with one email there's nothing
+// to remove, so the field runs the full width and the slot opens only when a
+// second row appears. Animating max-width rather than mounting the button means
+// the fields slide left instead of jumping.
 const COL_ACTION = '45px'
 
 function ListHeader({ right = 'Role' }) {
@@ -617,9 +621,12 @@ export default function TeamPage() {
               key={i}
               style={{
                 display: 'flex',
-                gap: '6px',
+                // The gap collapses with the slot — leaving it at 6px would
+                // still hold the single-row field 6px short of full width.
+                gap: rows.length > 1 ? '6px' : '0px',
                 alignItems: 'center',
                 width: '100%',
+                transition: 'gap var(--duration-panel) var(--ease-out)',
               }}
             >
               <div style={{ flex: '1 0 0', minWidth: 0 }}>
@@ -669,16 +676,23 @@ export default function TeamPage() {
                 </Dropdown>
               </div>
 
-              {/* The slot is always here, empty on a single row. Showing it
-                  only from the second row made every field jump sideways the
-                  moment one was added. */}
+              {/* Collapsed to zero width with one row, open with more. The
+                  button stays mounted either way — animating max-width lets the
+                  email field slide left, where mounting and unmounting would
+                  snap it. */}
               <div
+                aria-hidden={rows.length === 1}
                 style={{
-                  width: COL_ACTION,
+                  width: rows.length > 1 ? COL_ACTION : '0px',
                   flexShrink: 0,
+                  alignSelf: 'stretch',
+                  overflow: 'hidden',
+                  opacity: rows.length > 1 ? 1 : 0,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  transition:
+                    'width var(--duration-panel) var(--ease-out), opacity var(--duration-fast) ease',
                 }}
               >
                 {rows.length > 1 ? (
@@ -694,8 +708,17 @@ export default function TeamPage() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: '100%',
-                      height: '38px',
+                      // Fixed rather than 100%, so it keeps its full hit area
+                      // while the slot around it is animating open.
+                      width: COL_ACTION,
+                      // 42px, matching the Inputfield beside it (10px padding
+                      // top and bottom + 20px line-height + 2px border). At 38
+                      // there was a 4px dead band across the top and bottom of
+                      // the row — you'd aim at the row's vertical centre-line
+                      // near its edge and hit nothing, which is what still felt
+                      // wrong after the width was fixed.
+                      height: '42px',
+                      flexShrink: 0,
                       background: 'none',
                       border: 'none',
                       borderRadius: 'var(--radius-md)',

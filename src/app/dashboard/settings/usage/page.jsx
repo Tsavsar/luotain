@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Tooltip from '@/components/tooltip'
 import AnimatedNumber from '@/components/animatednumber'
 import { useMockDataState } from '@/components/mockdatacontext'
@@ -8,18 +8,37 @@ import { useMockDataState } from '@/components/mockdatacontext'
 // ─── Organisation → Usage ───
 // Node 87:4734. Four metrics, then a year of activity as a heatmap.
 
-// 10px cells with a 3px gap, up from 7.5 and 2. That's the largest that still
-// fits: 53 weeks comes to 689px against the 720px column, and one more pixel
-// per cell would overflow and force the grid to scroll on a full-width window.
+// The cell size is MEASURED, not fixed.
 //
-// The old 7.5px square was below any reasonable touch target — a finger needs
-// about 44px and even a mouse wants 24 — so tapping a day on a phone was
-// guesswork. It's still under 44px, which a 365-cell grid can't avoid without
-// becoming enormous, but 10px is roughly 1.8x the area and the tooltip now has
-// a realistic chance of being triggered deliberately.
-const CELL = 10
+// Every fixed value was wrong, and the reason is that the settings column's
+// 720px includes the sidebar — the content panel is really about 494px. So the
+// design's 7.5px cells came to 504px and already overflowed, and my 10px came to
+// 689px and overflowed by nearly 200. The grid was scrolling in every version.
+//
+// Measuring the container and dividing by 53 means the cells are always the
+// largest that fit, nothing scrolls, and if this panel ever gets wider the
+// squares grow with it rather than needing another hardcoded number.
+const MAX_WEEKS = 53
 const GAP = 3
 const ROWS = 7
+// The size a cell has to be to be worth aiming at. When 53 weeks won't fit at
+// this size, the grid shows FEWER WEEKS rather than smaller squares — a shorter
+// history you can actually read beats a full year you can't hit.
+const MIN_CELL = 11
+const MAX_CELL = 18
+
+// Given the space, the biggest cells that work and how many weeks fit.
+function fit(width) {
+  if (!width) return { cell: MIN_CELL, weeks: MAX_WEEKS }
+  // First try the full year.
+  const forFullYear = Math.floor((width - (MAX_WEEKS - 1) * GAP) / MAX_WEEKS)
+  if (forFullYear >= MIN_CELL) {
+    return { cell: Math.min(forFullYear, MAX_CELL), weeks: MAX_WEEKS }
+  }
+  // It won't fit at a usable size, so keep the size and drop weeks instead.
+  const weeks = Math.max(8, Math.floor((width + GAP) / (MIN_CELL + GAP)))
+  return { cell: MIN_CELL, weeks: Math.min(weeks, MAX_WEEKS) }
+}
 
 // Cold to hot, matching the design's ramp. Note primary-dark is the HOTTEST
 // step, not the coldest — it's a deeper orange, so the scale runs pale to deep
@@ -105,6 +124,23 @@ function levelFor(count, max) {
 }
 
 function Heatmap({ start, byDay, max }) {
+  // Measured rather than assumed. The settings panel is ~494px, not the 720 the
+  // column suggests — that figure includes the sidebar — so every fixed cell
+  // size overflowed.
+  const wrapRef = useRef(null)
+  const [width, setWidth] = useState(0)
+
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => {
+      setWidth(entry.contentRect.width)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const { cell: CELL, weeks: WEEKS } = fit(width)
   // Built as columns of 7, which is what makes each column a week and each row
   // a weekday — the shape people already read from contribution graphs.
   const { weeks, monthLabels } = useMemo(() => {
@@ -113,11 +149,16 @@ function Heatmap({ start, byDay, max }) {
     const monthLabels = []
     let seenMonth = -1
 
-    for (let w = 0; w < 53; w++) {
+    // Counts back from today rather than forward from the fetched start, so a
+    // narrower panel drops the OLDEST weeks and the grid always ends on the
+    // current week.
+    const offset = (53 - WEEKS) * ROWS
+
+    for (let w = 0; w < WEEKS; w++) {
       const days = []
       for (let d = 0; d < ROWS; d++) {
         const date = new Date(startDate)
-        date.setDate(startDate.getDate() + w * ROWS + d)
+        date.setDate(startDate.getDate() + offset + w * ROWS + d)
         const key = date.toISOString().slice(0, 10)
         // Future days in the final partial week render as nothing rather than
         // as an empty-but-real cell, which would read as "no activity".
@@ -137,12 +178,13 @@ function Heatmap({ start, byDay, max }) {
       weeks.push(days)
     }
     return { weeks, monthLabels }
-  }, [start, byDay])
+  }, [start, byDay, WEEKS])
 
   const step = CELL + GAP
 
   return (
     <div
+      ref={wrapRef}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -153,13 +195,7 @@ function Heatmap({ start, byDay, max }) {
       {/* Absolutely positioned against the grid's own step, so a label sits over
           the week its month begins. Spacing them evenly would drift out of
           alignment, since months aren't the same number of weeks. */}
-      <div
-        style={{
-          position: 'relative',
-          height: '10px',
-          width: `${53 * step}px`,
-        }}
-      >
+      <div style={{ position: 'relative', height: '12px', width: '100%' }}>
         {monthLabels.map(({ week, label }) => (
           <span
             key={`${label}-${week}`}
@@ -445,12 +481,11 @@ export default function UsagePage() {
           />
         </div>
 
-        {/* Scrolls rather than shrinking. 53 weeks at 9.5px is ~504px, which is
-            wider than the settings column on a narrow window — squeezing the
-            cells instead would make them unreadable. */}
-        <div style={{ width: '100%', overflowX: 'auto', paddingBottom: '4px' }}>
-          <Heatmap start={usage.start} byDay={usage.byDay} max={max} />
-        </div>
+        {/* No scroll container. The grid sizes itself to whatever width it's
+            given, so there's nothing to scroll — and the Cold/Hot legend was
+            inside this, which meant it slid away with the grid instead of
+            staying put. */}
+        <Heatmap start={usage.start} byDay={usage.byDay} max={max} />
       </div>
     </div>
   )
