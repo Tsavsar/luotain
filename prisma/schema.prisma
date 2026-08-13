@@ -166,6 +166,12 @@ enum Plan {
 model Organization {
   id        String       @id @default(cuid())
   name      String
+
+  // Powers "Last updated" on the workspace settings page. @updatedAt rather
+  // than a manual stamp is fine here, unlike User.profileUpdatedAt: nothing
+  // else writes to this row on a schedule, so any write to it IS a settings
+  // change.
+  updatedAt DateTime?    @updatedAt
   // On the org, not the User: links, domains and billing are all org-scoped,
   // and a user in two orgs can legitimately be on a paid plan in one and free
   // in the other.
