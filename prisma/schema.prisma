@@ -184,6 +184,10 @@ model Organization {
   avatarSeed String?
   createdAt DateTime     @default(now())
   members   Membership[]
+  // Pending invitations. Prisma requires both sides of a relation to be
+  // declared — I added Invite.organization and User.invitesSent but missed this
+  // one, which is what failed the build rather than anything at runtime.
+  invites   Invite[]
   links     Link[]
   clicks    Click[]
   // Custom domains belonging to this org. Prisma requires this side of
