@@ -119,6 +119,11 @@ export default function Inputfield({
         style={{
           outline: 'none',
           flex: 1,
+          // minWidth 0, or the input refuses to shrink below its intrinsic
+          // width and pushes anything after it out of the box. In a narrow
+          // field — the 111px role picker — that squeezed the chevron clean
+          // off the right edge, so the dropdown had no affordance at all.
+          minWidth: 0,
           border: 'none',
           background: 'transparent',
           fontFamily: 'var(--font-sans)',
@@ -136,7 +141,10 @@ export default function Inputfield({
           transition: 'filter 0.13s ease, opacity 0.13s ease, color 0.15s ease',
         }}
       />
-      {righticon}
+      {/* flexShrink 0, so it can't be squeezed to nothing by a long value. */}
+      {righticon ? (
+        <span style={{ display: 'flex', flexShrink: 0 }}>{righticon}</span>
+      ) : null}
     </div>
   )
 }

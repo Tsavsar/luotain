@@ -621,12 +621,9 @@ export default function TeamPage() {
               key={i}
               style={{
                 display: 'flex',
-                // The gap collapses with the slot — leaving it at 6px would
-                // still hold the single-row field 6px short of full width.
-                gap: rows.length > 1 ? '6px' : '0px',
+                gap: '6px',
                 alignItems: 'center',
                 width: '100%',
-                transition: 'gap var(--duration-panel) var(--ease-out)',
               }}
             >
               <div style={{ flex: '1 0 0', minWidth: 0 }}>
@@ -676,61 +673,54 @@ export default function TeamPage() {
                 </Dropdown>
               </div>
 
-              {/* Collapsed to zero width with one row, open with more. The
-                  button stays mounted either way — animating max-width lets the
-                  email field slide left, where mounting and unmounting would
-                  snap it. */}
-              <div
+              {/* ONE element, not a button inside an animating slot. That
+                  nesting was the bug: the wrapper's width animated while the
+                  button inside kept a fixed 45px, so mid-animation the two
+                  boxes disagreed and `overflow: hidden` clipped the button's
+                  hit area to whatever the wrapper had reached. Hovering hit
+                  nothing until the animation finished.
+
+                  Now the button IS the slot — one box, one hit area, and the
+                  thing that animates is the thing you click. */}
+              <button
+                type='button'
+                onClick={() => removeRow(i)}
+                disabled={rows.length === 1}
                 aria-hidden={rows.length === 1}
+                tabIndex={rows.length === 1 ? -1 : 0}
+                aria-label='Remove this row'
+                className='invite-remove-row'
                 style={{
-                  width: rows.length > 1 ? COL_ACTION : '0px',
-                  flexShrink: 0,
-                  alignSelf: 'stretch',
-                  overflow: 'hidden',
-                  opacity: rows.length > 1 ? 1 : 0,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  width: rows.length > 1 ? COL_ACTION : '0px',
+                  // Cancels the row's 6px gap while closed, so a single row runs
+                  // truly full width. Collapsing the row's own gap instead
+                  // removed the space between the email and role fields too.
+                  marginLeft: rows.length > 1 ? 0 : '-6px',
+                  // 42px, matching the Inputfield beside it — 10px padding top
+                  // and bottom, 20px line-height, 2px border. At 38 there was a
+                  // 2px dead band across the top and bottom of the row.
+                  height: '42px',
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                  opacity: rows.length > 1 ? 1 : 0,
+                  // Not clickable while collapsed, so a zero-width button can't
+                  // swallow a click meant for the field beside it.
+                  pointerEvents: rows.length > 1 ? 'auto' : 'none',
+                  background: 'none',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  padding: 0,
+                  cursor: 'pointer',
+                  color: 'var(--text-soft)',
                   transition:
-                    'width var(--duration-panel) var(--ease-out), opacity var(--duration-fast) ease',
+                    'width var(--duration-panel) var(--ease-out), margin-left var(--duration-panel) var(--ease-out), opacity var(--duration-fast) ease, color var(--duration-fast) ease, background var(--duration-fast) ease',
                 }}
               >
-                {rows.length > 1 ? (
-                  <button
-                    type='button'
-                    onClick={() => removeRow(i)}
-                    aria-label='Remove this row'
-                    className='invite-remove-row'
-                    style={{
-                      // Fills the slot, so the whole 45px is the target rather
-                      // than just the glyph at its centre — which is what made
-                      // this hard to hover.
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      // Fixed rather than 100%, so it keeps its full hit area
-                      // while the slot around it is animating open.
-                      width: COL_ACTION,
-                      // 42px, matching the Inputfield beside it (10px padding
-                      // top and bottom + 20px line-height + 2px border). At 38
-                      // there was a 4px dead band across the top and bottom of
-                      // the row — you'd aim at the row's vertical centre-line
-                      // near its edge and hit nothing, which is what still felt
-                      // wrong after the width was fixed.
-                      height: '42px',
-                      flexShrink: 0,
-                      background: 'none',
-                      border: 'none',
-                      borderRadius: 'var(--radius-md)',
-                      padding: 0,
-                      cursor: 'pointer',
-                      color: 'var(--text-soft)',
-                    }}
-                  >
-                    <TrashIcon />
-                  </button>
-                ) : null}
-              </div>
+                <TrashIcon />
+              </button>
             </div>
           ))}
 
