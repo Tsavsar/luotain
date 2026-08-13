@@ -125,6 +125,8 @@ function DashboardShell({ children }) {
   const compactHeader = pathname?.startsWith('/dashboard/create')
   const [checking, setChecking] = useState(true)
   const [orgName, setOrgName] = useState('')
+  const [orgImage, setOrgImage] = useState(null)
+  const [orgAvatarSeed, setOrgAvatarSeed] = useState(null)
   const [allOrgs, setAllOrgs] = useState([])
   const [activeOrgId, setActiveOrgId] = useState(null)
   const [userImage, setUserImage] = useState(null)
@@ -225,6 +227,8 @@ function DashboardShell({ children }) {
         // removing a photo in settings left the old one in the header and
         // the gradient never got a chance to render.
         setOrgName(data.orgName)
+        setOrgImage(data.orgImage || null)
+        setOrgAvatarSeed(data.orgAvatarSeed || null)
       } catch (err) {
         setOrgName('Your Organization')
       }
@@ -238,7 +242,13 @@ function DashboardShell({ children }) {
   // the account avatar, which is why that one already worked.
   useEffect(() => {
     function onOrgUpdated(e) {
-      if (e.detail?.name) setOrgName(e.detail.name)
+      if (!e.detail) return
+      if (e.detail.name) setOrgName(e.detail.name)
+      // Checked with `in` rather than truthiness: removing the picture sends
+      // null, and a truthy check would treat that as "nothing changed" and
+      // leave the old photo in the header.
+      if ('image' in e.detail) setOrgImage(e.detail.image)
+      if ('avatarSeed' in e.detail) setOrgAvatarSeed(e.detail.avatarSeed)
     }
     window.addEventListener('luotain:org-updated', onOrgUpdated)
     return () => window.removeEventListener('luotain:org-updated', onOrgUpdated)
@@ -276,6 +286,8 @@ function DashboardShell({ children }) {
         >
           <DashboardMenu
             orgName={orgName}
+            orgImage={orgImage}
+            orgAvatarSeed={orgAvatarSeed}
             allOrgs={allOrgs}
             activeOrgId={activeOrgId}
             userImage={userImage}

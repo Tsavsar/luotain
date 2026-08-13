@@ -23,6 +23,8 @@ export async function GET() {
   if (memberships.length === 0) {
     return Response.json({
       orgName: 'Your Organization',
+      orgImage: null,
+      orgAvatarSeed: null,
       activeOrgId: null,
       allOrgs: [],
       userImage: user.image || null,
@@ -51,10 +53,18 @@ export async function GET() {
 
   return Response.json({
     orgName: activeMembership.organization.name,
+    // The image and seed were fetched all along — `include: { organization:
+    // true }` above pulls the whole row — but never returned, so the header had
+    // nothing to render and fell back to a gradient off the name. Uploading a
+    // workspace picture appeared to do nothing.
+    orgImage: activeMembership.organization.image || null,
+    orgAvatarSeed: activeMembership.organization.avatarSeed || null,
     activeOrgId: activeMembership.organizationId,
     allOrgs: memberships.map((m) => ({
       id: m.organizationId,
       name: m.organization.name,
+      image: m.organization.image || null,
+      avatarSeed: m.organization.avatarSeed || null,
     })),
     userImage: user.image || null,
   })

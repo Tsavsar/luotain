@@ -232,7 +232,15 @@ export default function OrganizationSettingsPage() {
       // Tells the header, which fetched the name once on mount and would
       // otherwise show the old one until a reload.
       window.dispatchEvent(
-        new CustomEvent('luotain:org-updated', { detail: { name: next.name } })
+        new CustomEvent('luotain:org-updated', {
+          detail: {
+            name: next.name,
+            // Sent even when null — removing the picture has to clear it in the
+            // header too, and omitting the key would leave the old one there.
+            image: next.image,
+            avatarSeed: next.avatarSeed,
+          },
+        })
       )
 
       toast('Workspace updated')

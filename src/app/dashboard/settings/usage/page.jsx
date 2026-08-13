@@ -383,6 +383,9 @@ export default function UsagePage() {
             narrow window, which reads as two groups rather than one set of four.
             They scroll together with the heatmap instead — the metrics and the
             grid are the same object, so they should behave the same way. */}
+        {/* No overflow. The four metrics come to ~515px in a 720px column, so
+            there's nothing to scroll — and an overflow container with nothing
+            overflowing still swallows scroll gestures that land on it. */}
         <div
           style={{
             display: 'flex',
@@ -390,9 +393,7 @@ export default function UsagePage() {
             alignItems: 'flex-start',
             flexWrap: 'nowrap',
             width: '100%',
-            overflowX: 'auto',
           }}
-          className='usage-metrics'
         >
           <Metric
             label='Total links created'

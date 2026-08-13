@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import LogoMark from './logomark'
-import GradientAvatar from './gradientavatar'
+import GradientAvatar, { seedFor } from './gradientavatar'
 import PlanCard from './plancard'
 
 function OrgChevronIcon() {
@@ -63,7 +63,43 @@ function PlusIcon() {
 // never trusts the client), then does a full reload so every piece
 // of dashboard data reflects the newly active org consistently,
 // rather than trying to selectively refetch each piece.
-function OrgDropdown({ orgName, allOrgs = [], activeOrgId }) {
+// Photo if there is one, gradient otherwise. Both places that show an org
+// avatar were calling GradientAvatar directly with only a name, so an uploaded
+// picture was never rendered anywhere in the header.
+function OrgAvatar({ image, name, seed, id, size }) {
+  if (image) {
+    return (
+      <img
+        src={image}
+        alt=''
+        width={size}
+        height={size}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          borderRadius: 'var(--radius-full)',
+          objectFit: 'cover',
+          flexShrink: 0,
+        }}
+      />
+    )
+  }
+  return (
+    <GradientAvatar
+      seed={seedFor({ seed, id, name })}
+      name={name}
+      size={size}
+    />
+  )
+}
+
+function OrgDropdown({
+  orgName,
+  orgImage,
+  orgAvatarSeed,
+  allOrgs = [],
+  activeOrgId,
+}) {
   const router = useRouter()
 
   async function handleSwitch(orgId) {
@@ -89,7 +125,13 @@ function OrgDropdown({ orgName, allOrgs = [], activeOrgId }) {
       trigger={
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <GradientAvatar name={orgName} size={24} />
+            <OrgAvatar
+              image={orgImage}
+              name={orgName}
+              seed={orgAvatarSeed}
+              id={activeOrgId}
+              size={24}
+            />
             {/* Hidden on mobile via CSS — keeps just the avatar +
                 chevron in the compact top row */}
             <p
@@ -130,7 +172,13 @@ function OrgDropdown({ orgName, allOrgs = [], activeOrgId }) {
               borderRadius: 'var(--radius-md)',
             }}
           >
-            <GradientAvatar name={org.name} size={20} />
+            <OrgAvatar
+              image={org.image}
+              name={org.name}
+              seed={org.avatarSeed}
+              id={org.id}
+              size={20}
+            />
             <p
               className='para-sm'
               style={{ color: 'var(--text-strong)', margin: 0, flex: 1 }}
@@ -255,6 +303,8 @@ function ProfileDropdown({ userImage, userName, avatarSeed }) {
 // two of each to keep in sync.
 export default function DashboardMenu({
   orgName,
+  orgImage,
+  orgAvatarSeed,
   allOrgs,
   activeOrgId,
   userImage,
@@ -324,6 +374,8 @@ export default function DashboardMenu({
 
           <OrgDropdown
             orgName={orgName}
+            orgImage={orgImage}
+            orgAvatarSeed={orgAvatarSeed}
             allOrgs={allOrgs}
             activeOrgId={activeOrgId}
           />
