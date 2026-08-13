@@ -4,73 +4,97 @@ import { useEffect, useState } from 'react'
 import { useMockDataState } from '@/components/mockdatacontext'
 
 // ─── Dev controls ───
-// The testing panel: mock data, which tier it pretends to be, the real plan,
-// and the theme.
+// Mock data, the tier it pretends to be, the real plan, and the theme.
 //
-// Collapsed by default and remembered, because this sits over the app and every
-// control added to it made the old horizontal strip wider — two three-button
-// pickers had pushed it across a third of the screen with nothing labelled.
+// Every row is ALWAYS visible. The previous version hid the mock plan picker
+// until mock data was switched on and the real plan picker unless an env var
+// was set — so with both off the panel showed no plan control at all, which is
+// indistinguishable from it being broken. A dev panel hiding its own controls
+// to look tidy is the wrong trade.
 //
-// Colours are hardcoded rather than tokens, deliberately: this is scaffolding
-// that has to stay legible over whatever it's covering. The previous version
-// used #171717, which is the page background in dark mode — the panel
-// disappeared into it, leaving the controls floating on nothing.
+// Colours are hardcoded, not tokens: this is scaffolding sitting over the app
+// and it has to stay legible whatever it's covering. Tokens would make it match
+// the page and disappear into it, which is what the first version did.
 const OPEN_KEY = 'luotain:dev-open'
 
 const PANEL = '#1c1c1c'
-const BORDER = 'rgba(255, 255, 255, 0.12)'
-const LABEL = 'rgba(255, 255, 255, 0.45)'
-const TEXT = 'rgba(255, 255, 255, 0.85)'
-const ACTIVE_BG = 'rgba(255, 255, 255, 0.14)'
+const BORDER = 'rgba(255, 255, 255, 0.1)'
+const DIM = 'rgba(255, 255, 255, 0.4)'
+const TEXT = 'rgba(255, 255, 255, 0.9)'
+const TRACK = 'rgba(255, 255, 255, 0.07)'
+const ACTIVE = 'rgba(255, 255, 255, 0.13)'
 
-function Row({ label, children }) {
+const PLAN_OPTIONS = [
+  { id: 'FREE', label: 'Free' },
+  { id: 'STARTER', label: 'Starter' },
+  { id: 'PRO', label: 'Pro' },
+]
+
+function Row({ label, hint, children }) {
   return (
     <div
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '16px',
+        gap: '20px',
         width: '100%',
       }}
     >
       <span
         style={{
-          fontFamily: 'var(--font-sans)',
-          fontSize: '11px',
-          lineHeight: '16px',
-          letterSpacing: '0.22px',
-          color: LABEL,
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {label}
-      </span>
-      <div
-        style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: '2px',
-          flexShrink: 0,
+          flexDirection: 'column',
+          gap: '1px',
+          minWidth: 0,
         }}
       >
+        <span
+          style={{
+            fontFamily: 'var(--font-sans)',
+            fontSize: '11px',
+            lineHeight: '15px',
+            letterSpacing: '0.2px',
+            color: TEXT,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {label}
+        </span>
+        {hint ? (
+          <span
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '9px',
+              lineHeight: '13px',
+              letterSpacing: '0.2px',
+              color: DIM,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {hint}
+          </span>
+        ) : null}
+      </span>
+      <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
         {children}
-      </div>
+      </span>
     </div>
   )
 }
 
-// A segmented picker in the panel's own palette. The app's SegmentedTabs reads
-// theme tokens, which would make it invisible on this dark panel in light mode.
+// The panel's own segmented control. The app's SegmentedTabs reads theme
+// tokens, which go invisible on a dark panel in light mode.
 function Segmented({ options, value, onChange, disabled }) {
   return (
-    <div
+    <span
       style={{
         display: 'flex',
-        gap: '2px',
+        gap: '1px',
         padding: '2px',
         borderRadius: '8px',
-        background: 'rgba(255, 255, 255, 0.06)',
+        background: TRACK,
+        opacity: disabled ? 0.5 : 1,
       }}
     >
       {options.map((o) => (
@@ -81,23 +105,23 @@ function Segmented({ options, value, onChange, disabled }) {
           disabled={disabled}
           aria-pressed={value === o.id}
           style={{
-            padding: '3px 9px',
+            padding: '3px 8px',
             borderRadius: '6px',
             border: 'none',
-            background: value === o.id ? ACTIVE_BG : 'transparent',
-            color: value === o.id ? TEXT : LABEL,
+            background: value === o.id ? ACTIVE : 'transparent',
+            color: value === o.id ? TEXT : DIM,
             cursor: disabled ? 'default' : 'pointer',
             fontFamily: 'var(--font-sans)',
-            fontSize: '11px',
-            lineHeight: '16px',
-            letterSpacing: '0.22px',
+            fontSize: '10px',
+            lineHeight: '14px',
+            letterSpacing: '0.2px',
             transition: 'background 0.15s ease, color 0.15s ease',
           }}
         >
           {o.label}
         </button>
       ))}
-    </div>
+    </span>
   )
 }
 
@@ -111,13 +135,13 @@ function Pill({ on, onClick, disabled }) {
       aria-checked={on}
       style={{
         position: 'relative',
-        width: '30px',
-        height: '18px',
+        width: '28px',
+        height: '16px',
         borderRadius: '999px',
         border: 'none',
         padding: 0,
         cursor: disabled ? 'default' : 'pointer',
-        background: on ? 'var(--primary-base)' : 'rgba(255, 255, 255, 0.16)',
+        background: on ? 'var(--primary-base)' : 'rgba(255, 255, 255, 0.15)',
         transition: 'background 0.18s ease',
         flexShrink: 0,
       }}
@@ -127,40 +151,40 @@ function Pill({ on, onClick, disabled }) {
           position: 'absolute',
           top: '3px',
           left: on ? '15px' : '3px',
-          width: '12px',
-          height: '12px',
+          width: '10px',
+          height: '10px',
           borderRadius: '999px',
           background: '#fff',
-          transition: 'left 0.18s var(--ease-out)',
+          transition: 'left 0.18s cubic-bezier(0.23, 1, 0.32, 1)',
         }}
       />
     </button>
   )
 }
 
-function GearIcon() {
+function Divider() {
   return (
-    <svg
-      width='15'
-      height='15'
-      viewBox='0 0 16 16'
-      fill='none'
+    <span
       aria-hidden='true'
-    >
-      <circle cx='8' cy='8' r='2.2' stroke='currentColor' strokeWidth='1.3' />
-      <path
-        d='M8 1.8v1.4M8 12.8v1.4M14.2 8h-1.4M3.2 8H1.8M12.4 3.6l-1 1M4.6 11.4l-1 1M12.4 12.4l-1-1M4.6 4.6l-1-1'
-        stroke='currentColor'
-        strokeWidth='1.3'
-        strokeLinecap='round'
-      />
-    </svg>
+      style={{
+        height: '1px',
+        width: '100%',
+        background: BORDER,
+        flexShrink: 0,
+      }}
+    />
   )
 }
 
 export default function DevControls({ theme, onToggleTheme }) {
-  const { useMockData, toggleMockData, mockPlan, setMockPlan, ready } =
-    useMockDataState()
+  const {
+    useMockData,
+    setMockData,
+    toggleMockData,
+    mockPlan,
+    setMockPlan,
+    ready,
+  } = useMockDataState()
 
   const [open, setOpen] = useState(false)
   const [realPlan, setRealPlan] = useState(null)
@@ -195,6 +219,14 @@ export default function DevControls({ theme, onToggleTheme }) {
     } catch {}
   }
 
+  // Picking a tier turns mock data ON. Choosing a mock plan while mock data is
+  // off changes nothing visible, which is the trap the last version set: the
+  // control worked, it just had no effect anyone could see.
+  function chooseMockPlan(next) {
+    setMockPlan(next)
+    if (!useMockData) setMockData(true)
+  }
+
   async function setRealPlanTo(next) {
     if (busy || next === realPlan) return
     setBusy(true)
@@ -206,8 +238,7 @@ export default function DevControls({ theme, onToggleTheme }) {
       })
       if (res.ok) {
         // Reloaded rather than announced: the plan changes what several pages
-        // render and what the API allows, and a switch during testing is worth
-        // a clean slate over a partial refresh.
+        // render and what the API allows.
         window.location.reload()
       }
     } finally {
@@ -215,18 +246,13 @@ export default function DevControls({ theme, onToggleTheme }) {
     }
   }
 
-  const PLAN_OPTIONS = [
-    { id: 'FREE', label: 'Free' },
-    { id: 'STARTER', label: 'Starter' },
-    { id: 'PRO', label: 'Pro' },
-  ]
-
   if (!open) {
     return (
       <button
         type='button'
         onClick={() => setOpenPersisted(true)}
-        aria-label='Open dev controls'
+        aria-label='Dev controls'
+        className='dev-trigger'
         style={{
           position: 'fixed',
           left: '20px',
@@ -234,23 +260,34 @@ export default function DevControls({ theme, onToggleTheme }) {
           zIndex: 99,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          width: '32px',
-          height: '32px',
+          gap: '7px',
+          padding: '7px 12px',
           borderRadius: '999px',
           background: PANEL,
           border: `1px solid ${BORDER}`,
-          color: TEXT,
           cursor: 'pointer',
-          // Muted until hovered — it's scaffolding, and it shouldn't compete
-          // with the app it's sitting on top of.
-          opacity: 0.55,
-          transition: 'opacity 0.15s ease',
+          fontFamily: 'var(--font-sans)',
+          fontSize: '10px',
+          lineHeight: '14px',
+          letterSpacing: '0.3px',
+          color: DIM,
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.55')}
       >
-        <GearIcon />
+        {/* Shows the current state, so the collapsed pill still answers "what
+            am I looking at" without being opened. */}
+        <span
+          style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '999px',
+            background: useMockData
+              ? 'var(--primary-base)'
+              : 'rgba(255,255,255,0.25)',
+          }}
+        />
+        {useMockData
+          ? `Mock · ${mockPlan[0] + mockPlan.slice(1).toLowerCase()}`
+          : 'Dev'}
       </button>
     )
   }
@@ -264,15 +301,13 @@ export default function DevControls({ theme, onToggleTheme }) {
         zIndex: 99,
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
-        // Sized to its content, with a floor so the rows don't jump as the
-        // conditional ones appear.
-        minWidth: '260px',
-        padding: '14px',
+        gap: '11px',
+        width: '268px',
+        padding: '13px 14px',
         borderRadius: '14px',
         background: PANEL,
         border: `1px solid ${BORDER}`,
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)',
       }}
     >
       <div
@@ -285,31 +320,32 @@ export default function DevControls({ theme, onToggleTheme }) {
         <span
           style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: '11px',
-            lineHeight: '16px',
-            letterSpacing: '0.4px',
+            fontSize: '9px',
+            lineHeight: '13px',
+            letterSpacing: '0.7px',
             textTransform: 'uppercase',
-            color: LABEL,
+            color: DIM,
           }}
         >
-          Dev
+          Dev controls
         </span>
         <button
           type='button'
           onClick={() => setOpenPersisted(false)}
-          aria-label='Close dev controls'
+          aria-label='Close'
+          className='dev-close'
           style={{
             display: 'flex',
             background: 'none',
             border: 'none',
             padding: 0,
             cursor: 'pointer',
-            color: LABEL,
+            color: DIM,
           }}
         >
           <svg
-            width='14'
-            height='14'
+            width='12'
+            height='12'
             viewBox='0 0 16 16'
             fill='none'
             aria-hidden='true'
@@ -317,42 +353,48 @@ export default function DevControls({ theme, onToggleTheme }) {
             <path
               d='M4.5 4.5l7 7M11.5 4.5l-7 7'
               stroke='currentColor'
-              strokeWidth='1.5'
+              strokeWidth='1.6'
               strokeLinecap='round'
             />
           </svg>
         </button>
       </div>
 
+      <Divider />
+
       <Row label='Mock data'>
         <Pill on={useMockData} onClick={toggleMockData} disabled={!ready} />
       </Row>
 
-      {/* Only with mock on — a mock plan picker that changes nothing visible
-          would read as broken. */}
-      {useMockData ? (
-        <Row label='Mock plan'>
-          <Segmented
-            options={PLAN_OPTIONS}
-            value={mockPlan}
-            onChange={setMockPlan}
-          />
-        </Row>
-      ) : null}
+      {/* Always shown. Picking a tier switches mock data on, so this can't be a
+          control that silently does nothing. */}
+      <Row label='Mock plan' hint={useMockData ? null : 'turns mock data on'}>
+        <Segmented
+          options={PLAN_OPTIONS}
+          value={mockPlan}
+          onChange={chooseMockPlan}
+        />
+      </Row>
 
-      {/* Only where the endpoint is enabled. This writes a REAL plan to the
-          database, which is why it's separated from the mock one above rather
-          than sitting next to it unlabelled. */}
-      {planAvailable && realPlan ? (
-        <Row label='Real plan'>
-          <Segmented
-            options={PLAN_OPTIONS}
-            value={realPlan}
-            onChange={setRealPlanTo}
-            disabled={busy}
-          />
-        </Row>
-      ) : null}
+      <Divider />
+
+      {/* Also always shown, disabled where the endpoint is off — an absent
+          control looks broken, a disabled one with a reason doesn't. */}
+      <Row
+        label='Real plan'
+        hint={
+          planAvailable ? 'writes to the database' : 'set ALLOW_PLAN_TOGGLE'
+        }
+      >
+        <Segmented
+          options={PLAN_OPTIONS}
+          value={realPlan || 'FREE'}
+          onChange={setRealPlanTo}
+          disabled={!planAvailable || busy}
+        />
+      </Row>
+
+      <Divider />
 
       <Row label='Theme'>
         <Segmented

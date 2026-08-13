@@ -2355,3 +2355,20 @@ html {
   color: var(--error-base) !important;
   background: var(--error-mute) !important;
 }
+
+/* --- Dev controls ---
+   Scaffolding, so it holds its own palette rather than following the theme —
+   a panel that matches the page is one that disappears into it. */
+.dev-trigger {
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) ease;
+}
+.dev-trigger:hover {
+  opacity: 1;
+}
+.dev-close {
+  transition: color var(--duration-fast) ease;
+}
+.dev-close:hover {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
