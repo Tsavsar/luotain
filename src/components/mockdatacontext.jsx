@@ -125,14 +125,16 @@ export function MockDataProvider({ children }) {
       setMockData,
       toggleMockData,
       deletedUrls,
-      mockPlan,
-      setMockPlan,
       deleteMockLink,
       recoverMockLink,
       mockPlan,
       setMockPlan,
       ready,
     }),
+    // mockPlan MUST be here. It was in the object but not the deps, so the memo
+    // never recomputed when the plan changed — every consumer kept the first
+    // value and the picker looked frozen on Free however many times you clicked
+    // it. The state was updating fine; nothing downstream ever heard about it.
     [
       useMockData,
       setMockData,
@@ -140,6 +142,8 @@ export function MockDataProvider({ children }) {
       deletedUrls,
       deleteMockLink,
       recoverMockLink,
+      mockPlan,
+      setMockPlan,
       ready,
     ]
   )

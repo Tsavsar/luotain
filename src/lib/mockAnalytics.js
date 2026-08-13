@@ -975,6 +975,10 @@ export function getMockBilling(planId = 'FREE') {
       periodEnd: null,
       interval: null,
       cancelAtPeriodEnd: false,
+      // No card on Free, which is the state the design shows — "No payment
+      // method added" with an Add link. Someone who downgrades keeps their card
+      // on file, but that's a different state and mocking it here would hide
+      // the empty one.
       card: null,
       invoices: [],
     }

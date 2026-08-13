@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { PLANS, PLAN_FEATURES } from '@/lib/plans'
 import SegmentedTabs from '@/components/segmentedtabs'
+import BackButton from '@/components/backbutton'
 import AnimatedNumber from '@/components/animatednumber'
 import { toast } from '@/components/toast'
 import { useMockDataState } from '@/components/mockdatacontext'
@@ -44,7 +45,29 @@ function PlanBadge({ planId }) {
   )
 }
 
+// The same marks as the PlanCard overlay, so a plan read here and a plan read
+// there look like the same thing. Orange check for included; a DASH rather than
+// a cross for excluded — these aren't errors, they're capabilities the tier
+// doesn't have, and an X reads as something being wrong.
 function CheckIcon({ on }) {
+  if (!on) {
+    return (
+      <svg
+        width='16'
+        height='16'
+        viewBox='0 0 16 16'
+        fill='none'
+        aria-hidden='true'
+      >
+        <path
+          d='M4.5 8h7'
+          stroke='var(--text-disabled)'
+          strokeWidth='1.5'
+          strokeLinecap='round'
+        />
+      </svg>
+    )
+  }
   return (
     <svg
       width='16'
@@ -53,22 +76,13 @@ function CheckIcon({ on }) {
       fill='none'
       aria-hidden='true'
     >
-      {on ? (
-        <path
-          d='M3.5 8.5l3 3 6-6'
-          stroke='currentColor'
-          strokeWidth='1.6'
-          strokeLinecap='round'
-          strokeLinejoin='round'
-        />
-      ) : (
-        <path
-          d='M4.5 4.5l7 7M11.5 4.5l-7 7'
-          stroke='currentColor'
-          strokeWidth='1.6'
-          strokeLinecap='round'
-        />
-      )}
+      <path
+        d='M3.4 8.4 6.3 11.3 12.6 5'
+        stroke='var(--primary-base)'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
     </svg>
   )
 }
@@ -84,26 +98,6 @@ function ArrowIcon() {
     >
       <path
         d='M6 4l4 4-4 4'
-        stroke='currentColor'
-        strokeWidth='1.5'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-    </svg>
-  )
-}
-
-function BackIcon() {
-  return (
-    <svg
-      width='16'
-      height='16'
-      viewBox='0 0 16 16'
-      fill='none'
-      aria-hidden='true'
-    >
-      <path
-        d='M10 4L6 8l4 4'
         stroke='currentColor'
         strokeWidth='1.5'
         strokeLinecap='round'
@@ -233,29 +227,10 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
           width: '100%',
         }}
       >
-        <button
-          type='button'
-          onClick={onBack}
-          className='billing-action'
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '12px',
-            lineHeight: '16px',
-            letterSpacing: '0.24px',
-            color: 'var(--text-sub)',
-            alignSelf: 'flex-start',
-          }}
-        >
-          <BackIcon />
-          Back
-        </button>
+        {/* The shared BackButton, which already carries this exact icon plus
+            its label and hover. onBack overrides the navigation, which is what
+            a step inside a page needs — this shouldn't leave the route. */}
+        <BackButton onBack={onBack} />
         <p className='para-xs' style={{ color: 'var(--text-sub)', margin: 0 }}>
           Every plan gets full analytics and a QR code with every link. The only
           thing that changes is how many links you need.
@@ -265,7 +240,21 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
       <SegmentedTabs
         items={[
           { id: 'monthly', label: 'Monthly' },
-          { id: 'annual', label: 'Annually (save 20%)' },
+          {
+            id: 'annual',
+            // The discount in orange, matching the PlanCard overlay — the reason
+            // to switch is the thing worth seeing first.
+            label: (
+              <>
+                Annually
+                <span
+                  style={{ color: 'var(--primary-base)', marginLeft: '5px' }}
+                >
+                  save 20%
+                </span>
+              </>
+            ),
+          },
         ]}
         activeId={annual ? 'annual' : 'monthly'}
         onChange={(id) => setAnnual(id === 'annual')}
@@ -397,7 +386,12 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
                     borderRadius: 'var(--radius-lg)',
                     border: 'none',
                     cursor: isCurrent || busy ? 'default' : 'pointer',
-                    alignSelf: 'flex-start',
+                    // Fills the column. Sized to its label instead, the three
+                    // CTAs came out at three different widths — "Current plan",
+                    // "Upgrade plan" and "Get pro plan" are all different
+                    // lengths — which read as three unrelated buttons rather
+                    // than one choice made three ways.
+                    width: '100%',
                     fontFamily: 'var(--font-sans)',
                     fontSize: '12px',
                     lineHeight: '16px',
@@ -443,15 +437,9 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
                         alignItems: 'center',
                       }}
                     >
-                      <span
-                        style={{
-                          display: 'flex',
-                          flexShrink: 0,
-                          color: on
-                            ? 'var(--text-sub)'
-                            : 'var(--text-disabled)',
-                        }}
-                      >
+                      {/* No colour here — the mark sets its own, orange when
+                          included. Tinting the wrapper would override it. */}
+                      <span style={{ display: 'flex', flexShrink: 0 }}>
                         <CheckIcon on={on} />
                       </span>
                       <p
@@ -938,7 +926,7 @@ export default function BillingPage() {
               borderRadius: 'var(--radius-lg)',
               border: 'none',
               cursor: 'pointer',
-              alignSelf: 'flex-start',
+              width: '100%',
               fontFamily: 'var(--font-sans)',
               fontSize: '12px',
               lineHeight: '16px',

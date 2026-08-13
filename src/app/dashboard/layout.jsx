@@ -6,175 +6,13 @@ import DashboardMenu from '@/components/dashboardmenu'
 import DashboardNav from '@/components/dashboardnav'
 import DashboardSkeleton from '@/components/dashboardskeleton'
 import { ToastStack } from '@/components/toast'
+import DevControls from '@/components/devcontrols'
 import { getProfile } from '@/lib/profilecache'
 import { MotionConfig } from 'motion/react'
-import Switch from '@/components/switch'
 import {
   MockDataProvider,
   useMockDataState,
 } from '@/components/mockdatacontext'
-
-// Split out because it needs to be INSIDE the provider to read it, and
-// DashboardLayout is the thing rendering the provider.
-// Which tier the MOCK data pretends to be on. Distinct from PlanToggle below,
-// which writes a real plan to the database and needs ALLOW_PLAN_TOGGLE — this
-// changes nothing and is how you look at each tier's paywalls and billing state
-// without touching a workspace.
-//
-// Only rendered with mock data on: a plan picker that does nothing to real data
-// would be a control that appears broken.
-function MockPlanPicker() {
-  const { useMockData, mockPlan, setMockPlan, ready } = useMockDataState()
-  if (!ready || !useMockData) return null
-
-  return (
-    <div
-      role='group'
-      aria-label='Mock plan'
-      style={{
-        display: 'flex',
-        gap: '2px',
-        padding: '3px',
-        borderRadius: '10px',
-        background: 'var(--bg-surface)',
-      }}
-    >
-      {['FREE', 'STARTER', 'PRO'].map((id) => (
-        <button
-          key={id}
-          type='button'
-          onClick={() => setMockPlan(id)}
-          aria-pressed={mockPlan === id}
-          className='qr-view-option'
-          style={{
-            padding: '3px 10px',
-            borderRadius: '7px',
-            border: 'none',
-            background: mockPlan === id ? 'var(--bg-default)' : 'transparent',
-            color: mockPlan === id ? 'var(--text-strong)' : 'var(--text-soft)',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '11px',
-            lineHeight: '16px',
-            letterSpacing: '0.22px',
-          }}
-        >
-          {id === 'FREE' ? 'Free' : id === 'STARTER' ? 'Starter' : 'Pro'}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function MockDataToggle() {
-  const { useMockData, toggleMockData, ready } = useMockDataState()
-  return (
-    <Switch
-      checked={useMockData}
-      onChange={toggleMockData}
-      disabled={!ready}
-      label={`Mock data${useMockData ? '' : ''}`}
-    />
-  )
-}
-
-// A testing switch for plan-gated UI, sitting with the mock-data toggle.
-//
-// Two states rather than three, deliberately: what needs exercising is free
-// versus paid, and a three-way control for a binary question is more fiddly
-// than useful. Switching to paid picks PRO because it's the tier with every
-// capability turned on — Starter's gates are a subset of Free's.
-//
-// Renders nothing unless the endpoint is enabled, so it disappears the moment
-// ALLOW_PLAN_TOGGLE is removed rather than sitting there failing.
-function PlanToggle() {
-  const [plan, setPlan] = useState(null)
-  const [available, setAvailable] = useState(false)
-  const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/plan')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (cancelled || !d) return
-        setPlan(d.plan)
-        // One GET, and it tells us both things. The previous version fired a
-        // no-op PATCH to see whether the route was enabled, which 404'd by
-        // design and logged a console error on every load.
-        setAvailable(Boolean(d.toggleAvailable))
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  if (!available || !plan) return null
-
-  // All three, not a Free/Pro switch. Starter was unreachable, which meant the
-  // whole middle tier — its limits, its billing state, every paywall that says
-  // "upgrade to Pro" rather than "upgrade" — could never be seen while testing.
-  async function setTo(next) {
-    if (busy || next === plan) return
-    setBusy(true)
-    try {
-      const res = await fetch('/api/plan', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: next }),
-      })
-      if (res.ok) {
-        setPlan(next)
-        // Reloaded rather than announced by event: plan changes what several
-        // pages render and what the API allows, and a plan switch during
-        // testing is worth a clean slate over a partial refresh.
-        window.location.reload()
-      }
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div
-      role='group'
-      aria-label='Plan (dev)'
-      style={{
-        display: 'flex',
-        gap: '2px',
-        padding: '3px',
-        borderRadius: '10px',
-        background: 'var(--bg-surface)',
-      }}
-    >
-      {['FREE', 'STARTER', 'PRO'].map((id) => (
-        <button
-          key={id}
-          type='button'
-          onClick={() => setTo(id)}
-          disabled={busy}
-          aria-pressed={plan === id}
-          className='qr-view-option'
-          style={{
-            padding: '3px 10px',
-            borderRadius: '7px',
-            border: 'none',
-            background: plan === id ? 'var(--bg-default)' : 'transparent',
-            color: plan === id ? 'var(--text-strong)' : 'var(--text-soft)',
-            cursor: busy ? 'default' : 'pointer',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '11px',
-            lineHeight: '16px',
-            letterSpacing: '0.22px',
-          }}
-        >
-          {id === 'FREE' ? 'Free' : id === 'STARTER' ? 'Starter' : 'Pro'}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 function DashboardShell({ children }) {
   const router = useRouter()
@@ -396,69 +234,11 @@ function DashboardShell({ children }) {
 
         <ToastStack />
 
-        {/* Testing controls, one cluster. The mock-data toggle lives here
-          rather than on each page: it used to be a separate button on
-          the links, trash, detail and analytics pages, each with its
-          own state, so switching it on and then navigating anywhere
-          silently turned it back off. One toggle, shared state, and it
-          survives a reload. */}
-        <div
-          style={{
-            position: 'fixed',
-            left: '20px',
-            bottom: '20px',
-            zIndex: 99,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '8px 14px',
-            borderRadius: 'var(--radius-full)',
-            background: '#171717',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-          }}
-        >
-          <MockDataToggle />
-
-          <MockPlanPicker />
-
-          <span
-            aria-hidden='true'
-            style={{
-              width: '1px',
-              height: '16px',
-              background: 'rgba(255, 255, 255, 0.15)',
-            }}
-          />
-
-          <PlanToggle />
-
-          <span
-            aria-hidden='true'
-            style={{
-              width: '1px',
-              height: '16px',
-              background: 'rgba(255, 255, 255, 0.15)',
-            }}
-          />
-
-          <button
-            onClick={toggleTheme}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-sans)',
-            }}
-          >
-            <span
-              className='para-xs'
-              style={{ color: 'rgba(255,255,255,0.7)' }}
-            >
-              {theme === 'dark' ? 'Light' : 'Dark'}
-            </span>
-          </button>
-        </div>
+        {/* One panel, collapsible — see DevControls. It was a fixed
+            horizontal strip, and every control added to it made that strip
+            wider: two three-button pickers had stretched it across a third of
+            the screen with nothing labelled. */}
+        <DevControls theme={theme} onToggleTheme={toggleTheme} />
       </main>
     </MotionConfig>
   )
