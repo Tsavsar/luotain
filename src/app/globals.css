@@ -2308,6 +2308,8 @@ html {
   transform: scale(0.97);
 }
 
+
+
 /* --- Invite composer ---
    Drops in rather than appearing. The button it replaces sits in the same
    place, so without a transition the swap reads as a glitch. */

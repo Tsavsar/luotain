@@ -272,18 +272,15 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
         padX='14px'
       />
 
-      {/* Wraps rather than scrolling. Three 230px columns need 754px and the
-          settings panel is about 494 — the design's row would have overflowed,
-          and a plan you have to scroll sideways to find is one you don't buy. */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '32px',
-          alignItems: 'flex-start',
-          flexWrap: 'wrap',
-          width: '100%',
-        }}
-      >
+      {/* Breaks out of the settings panel. Three 230px columns need 754px and
+          the panel is about 494, so this overflows to the RIGHT rather than
+          wrapping — comparing plans works when they're side by side, and a
+          stacked column is a list you scroll rather than a comparison you read.
+          
+          It only overflows where there's room for it: below 1300px viewport the
+          row would run past the window and force page-level horizontal scroll,
+          so it wraps there instead. See .plan-columns. */}
+      <div className='plan-columns'>
         {Object.values(PLANS).map((plan) => {
           const isCurrent = plan.id === currentPlan
           const price = annual ? plan.priceAnnual : plan.priceMonthly
