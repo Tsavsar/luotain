@@ -16,6 +16,56 @@ import {
 
 // Split out because it needs to be INSIDE the provider to read it, and
 // DashboardLayout is the thing rendering the provider.
+// Which tier the MOCK data pretends to be on. Distinct from PlanToggle below,
+// which writes a real plan to the database and needs ALLOW_PLAN_TOGGLE — this
+// changes nothing and is how you look at each tier's paywalls and billing state
+// without touching a workspace.
+//
+// Only rendered with mock data on: a plan picker that does nothing to real data
+// would be a control that appears broken.
+function MockPlanPicker() {
+  const { useMockData, mockPlan, setMockPlan, ready } = useMockDataState()
+  if (!ready || !useMockData) return null
+
+  return (
+    <div
+      role='group'
+      aria-label='Mock plan'
+      style={{
+        display: 'flex',
+        gap: '2px',
+        padding: '3px',
+        borderRadius: '10px',
+        background: 'var(--bg-surface)',
+      }}
+    >
+      {['FREE', 'STARTER', 'PRO'].map((id) => (
+        <button
+          key={id}
+          type='button'
+          onClick={() => setMockPlan(id)}
+          aria-pressed={mockPlan === id}
+          className='qr-view-option'
+          style={{
+            padding: '3px 10px',
+            borderRadius: '7px',
+            border: 'none',
+            background: mockPlan === id ? 'var(--bg-default)' : 'transparent',
+            color: mockPlan === id ? 'var(--text-strong)' : 'var(--text-soft)',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '11px',
+            lineHeight: '16px',
+            letterSpacing: '0.22px',
+          }}
+        >
+          {id === 'FREE' ? 'Free' : id === 'STARTER' ? 'Starter' : 'Pro'}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function MockDataToggle() {
   const { useMockData, toggleMockData, ready } = useMockDataState()
   return (
@@ -62,12 +112,12 @@ function PlanToggle() {
 
   if (!available || !plan) return null
 
-  const paid = plan !== 'FREE'
-
-  async function toggle() {
-    if (busy) return
+  // All three, not a Free/Pro switch. Starter was unreachable, which meant the
+  // whole middle tier — its limits, its billing state, every paywall that says
+  // "upgrade to Pro" rather than "upgrade" — could never be seen while testing.
+  async function setTo(next) {
+    if (busy || next === plan) return
     setBusy(true)
-    const next = paid ? 'FREE' : 'PRO'
     try {
       const res = await fetch('/api/plan', {
         method: 'PATCH',
@@ -87,13 +137,42 @@ function PlanToggle() {
   }
 
   return (
-    <Switch
-      checked={paid}
-      onChange={toggle}
-      disabled={busy}
-      tone='primary'
-      label={paid ? 'Pro' : 'Free'}
-    />
+    <div
+      role='group'
+      aria-label='Plan (dev)'
+      style={{
+        display: 'flex',
+        gap: '2px',
+        padding: '3px',
+        borderRadius: '10px',
+        background: 'var(--bg-surface)',
+      }}
+    >
+      {['FREE', 'STARTER', 'PRO'].map((id) => (
+        <button
+          key={id}
+          type='button'
+          onClick={() => setTo(id)}
+          disabled={busy}
+          aria-pressed={plan === id}
+          className='qr-view-option'
+          style={{
+            padding: '3px 10px',
+            borderRadius: '7px',
+            border: 'none',
+            background: plan === id ? 'var(--bg-default)' : 'transparent',
+            color: plan === id ? 'var(--text-strong)' : 'var(--text-soft)',
+            cursor: busy ? 'default' : 'pointer',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '11px',
+            lineHeight: '16px',
+            letterSpacing: '0.22px',
+          }}
+        >
+          {id === 'FREE' ? 'Free' : id === 'STARTER' ? 'Starter' : 'Pro'}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -339,6 +418,8 @@ function DashboardShell({ children }) {
           }}
         >
           <MockDataToggle />
+
+          <MockPlanPicker />
 
           <span
             aria-hidden='true'

@@ -11,6 +11,9 @@ import {
 
 const STORAGE_KEY = 'luotain:mock-data'
 const DELETED_KEY = 'luotain:mock-deleted'
+const PLAN_KEY = 'luotain:mock-plan'
+
+const VALID_PLANS = ['FREE', 'STARTER', 'PRO']
 
 const MockDataContext = createContext({
   useMockData: false,
@@ -19,6 +22,12 @@ const MockDataContext = createContext({
   deletedUrls: [],
   deleteMockLink: () => {},
   recoverMockLink: () => {},
+  // The plan the mock data pretends to be on. Separate from the dev plan
+  // toggle in the dashboard header, which writes a REAL plan to the database
+  // and needs ALLOW_PLAN_TOGGLE — this one changes nothing and is the way to
+  // see how each tier looks without touching a workspace.
+  mockPlan: 'FREE',
+  setMockPlan: () => {},
   ready: false,
 })
 
@@ -39,12 +48,17 @@ export function MockDataProvider({ children }) {
   // per-page, a delete from the detail page changed nothing anywhere
   // else — which is exactly how it was behaving.
   const [deletedUrls, setDeletedUrls] = useState([])
+  const [mockPlan, setMockPlanState] = useState('FREE')
 
   useEffect(() => {
     try {
       setUseMockData(window.localStorage.getItem(STORAGE_KEY) === 'true')
       const saved = window.localStorage.getItem(DELETED_KEY)
       if (saved) setDeletedUrls(JSON.parse(saved))
+      // Validated rather than trusted: an old or hand-edited value would
+      // otherwise reach the plan lookups as an unknown tier.
+      const plan = window.localStorage.getItem(PLAN_KEY)
+      if (VALID_PLANS.includes(plan)) setMockPlanState(plan)
     } catch {
       // Private browsing and some embedded webviews throw on access
       // rather than returning null. Mock off is the correct fallback.
@@ -94,14 +108,29 @@ export function MockDataProvider({ children }) {
     [persistDeleted]
   )
 
+  const setMockPlan = useCallback((next) => {
+    if (!VALID_PLANS.includes(next)) return
+    setMockPlanState(next)
+    try {
+      window.localStorage.setItem(PLAN_KEY, next)
+    } catch {
+      // Same reasoning as above — private browsing throws rather than
+      // returning null, and losing the preference is better than crashing.
+    }
+  }, [])
+
   const value = useMemo(
     () => ({
       useMockData,
       setMockData,
       toggleMockData,
       deletedUrls,
+      mockPlan,
+      setMockPlan,
       deleteMockLink,
       recoverMockLink,
+      mockPlan,
+      setMockPlan,
       ready,
     }),
     [

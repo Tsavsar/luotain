@@ -177,6 +177,31 @@ model Organization {
   // and a user in two orgs can legitimately be on a paid plan in one and free
   // in the other.
   plan      Plan         @default(FREE)
+
+  // ─── Billing ───
+  // Enough to render the billing page truthfully. Deliberately NOT a full
+  // mirror of the payment provider's state: the provider is the source of
+  // truth, and duplicating it invites the two drifting apart. These are the
+  // few fields the UI can't work without.
+  //
+  // Every one is nullable — a Free workspace has never had any of them, and a
+  // default would be a claim rather than a fact.
+  billingPeriodEnd  DateTime?
+  billingInterval   String?  // 'month' or 'year'
+  // Cancelled but still inside the paid period. The plan stays as-is until
+  // billingPeriodEnd passes, which is what "you keep access until" means.
+  cancelAtPeriodEnd Boolean  @default(false)
+
+  // The card, as the provider reports it. Brand and last four only — storing
+  // anything more would put this app in scope for card-data compliance for no
+  // benefit, since the provider already holds it.
+  cardBrand String?
+  cardLast4 String?
+
+  // The provider's own ids, so a webhook can find this row and a portal
+  // session can be opened without a lookup table.
+  customerId     String? @unique
+  subscriptionId String? @unique
   // An org's logo, once uploads exist. Null today for every org.
   image     String?
   // Same gradient treatment as User — an org without a logo gets one

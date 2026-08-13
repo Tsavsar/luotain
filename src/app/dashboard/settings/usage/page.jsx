@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Tooltip from '@/components/tooltip'
 import AnimatedNumber from '@/components/animatednumber'
 import { useMockDataState } from '@/components/mockdatacontext'
+import { PLANS } from '@/lib/plans'
 
 // ─── Organisation → Usage ───
 // Node 87:4734. Four metrics, then a year of activity as a heatmap.
@@ -300,7 +301,7 @@ function Heatmap({ start, byDay, max }) {
 }
 
 export default function UsagePage() {
-  const { useMockData, ready: mockReady } = useMockDataState()
+  const { useMockData, mockPlan, ready: mockReady } = useMockDataState()
   const [usage, setUsage] = useState(null)
 
   useEffect(() => {
@@ -332,8 +333,14 @@ export default function UsagePage() {
         null
       )
       setUsage({
-        plan: { id: 'FREE', name: 'Free', maxLinks: 5 },
-        links: 3,
+        // Reads the mock plan rather than hardcoding Free, so the "of 5 on
+        // Free" line changes with the tier like the real one does.
+        plan: {
+          id: mockPlan,
+          name: PLANS[mockPlan]?.name || 'Free plan',
+          maxLinks: PLANS[mockPlan]?.maxLinks ?? 5,
+        },
+        links: mockPlan === 'PRO' ? 138 : mockPlan === 'STARTER' ? 42 : 3,
         qrCodes: 4,
         events: entries.reduce((sum, [, c]) => sum + c, 0),
         busiestDay: busiest,
@@ -353,7 +360,7 @@ export default function UsagePage() {
     return () => {
       cancelled = true
     }
-  }, [mockReady, useMockData])
+  }, [mockReady, useMockData, mockPlan])
 
   if (!usage) {
     return (

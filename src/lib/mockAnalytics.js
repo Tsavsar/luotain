@@ -1,3 +1,4 @@
+import { PLANS } from '@/lib/plans'
 import { SHORT_DOMAIN } from '@/lib/shortlink'
 // ─── Mock analytics data layer ───
 //
@@ -956,4 +957,56 @@ export function getMockTrash(sessionDeleted = []) {
       ).toISOString(),
     }
   })
+}
+
+// ─── Billing ───
+// What each tier's billing page looks like, so the paid states can be seen
+// without a real subscription. A live workspace has no card and no invoices
+// until a provider is connected, which means Starter and Pro were unreachable
+// designs — this is the only way to look at them.
+export function getMockBilling(planId = 'FREE') {
+  const plan = PLANS[planId] || PLANS.FREE
+
+  if (plan.id === 'FREE') {
+    return {
+      role: 'OWNER',
+      plan: { id: plan.id, name: plan.name, maxLinks: plan.maxLinks },
+      linkCount: 4,
+      periodEnd: null,
+      interval: null,
+      cancelAtPeriodEnd: false,
+      card: null,
+      invoices: [],
+    }
+  }
+
+  // Renews a month out, so the date reads as a real upcoming renewal rather
+  // than a fixed day that drifts into the past.
+  const periodEnd = new Date()
+  periodEnd.setMonth(periodEnd.getMonth() + 1)
+
+  const amount = plan.priceMonthly
+  const invoices = [0, 1, 2].map((i) => {
+    const date = new Date()
+    date.setMonth(date.getMonth() - i)
+    return {
+      id: `mock-inv-${i}`,
+      date: date.toISOString(),
+      amount,
+      status: 'paid',
+    }
+  })
+
+  return {
+    role: 'OWNER',
+    plan: { id: plan.id, name: plan.name, maxLinks: plan.maxLinks },
+    // Near the Starter limit on purpose, so the usage line has something to
+    // say; Pro is unlimited and hides it anyway.
+    linkCount: plan.maxLinks == null ? 138 : Math.max(1, plan.maxLinks - 8),
+    periodEnd: periodEnd.toISOString(),
+    interval: 'month',
+    cancelAtPeriodEnd: false,
+    card: { brand: 'Visa', last4: '2694' },
+    invoices,
+  }
 }
