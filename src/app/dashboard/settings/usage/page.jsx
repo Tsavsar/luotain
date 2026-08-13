@@ -8,8 +8,17 @@ import { useMockDataState } from '@/components/mockdatacontext'
 // ─── Organisation → Usage ───
 // Node 87:4734. Four metrics, then a year of activity as a heatmap.
 
-const CELL = 7.5
-const GAP = 2
+// 10px cells with a 3px gap, up from 7.5 and 2. That's the largest that still
+// fits: 53 weeks comes to 689px against the 720px column, and one more pixel
+// per cell would overflow and force the grid to scroll on a full-width window.
+//
+// The old 7.5px square was below any reasonable touch target — a finger needs
+// about 44px and even a mouse wants 24 — so tapping a day on a phone was
+// guesswork. It's still under 44px, which a 365-cell grid can't avoid without
+// becoming enormous, but 10px is roughly 1.8x the area and the tooltip now has
+// a realistic chance of being triggered deliberately.
+const CELL = 10
+const GAP = 3
 const ROWS = 7
 
 // Cold to hot, matching the design's ramp. Note primary-dark is the HOTTEST
@@ -158,9 +167,9 @@ function Heatmap({ start, byDay, max }) {
               position: 'absolute',
               left: `${week * step}px`,
               fontFamily: 'var(--font-sans)',
-              fontSize: '8px',
+              fontSize: '10px',
               lineHeight: 1,
-              letterSpacing: '0.16px',
+              letterSpacing: '0.2px',
               color: 'var(--text-sub)',
               whiteSpace: 'nowrap',
             }}
@@ -217,9 +226,9 @@ function Heatmap({ start, byDay, max }) {
         <span
           style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: '8px',
+            fontSize: '10px',
             lineHeight: 1,
-            letterSpacing: '0.16px',
+            letterSpacing: '0.2px',
             color: 'var(--text-sub)',
           }}
         >
@@ -241,9 +250,9 @@ function Heatmap({ start, byDay, max }) {
         <span
           style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: '8px',
+            fontSize: '10px',
             lineHeight: 1,
-            letterSpacing: '0.16px',
+            letterSpacing: '0.2px',
             color: 'var(--text-sub)',
           }}
         >
