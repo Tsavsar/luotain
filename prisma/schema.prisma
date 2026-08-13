@@ -50,6 +50,7 @@ model User {
   appSessions   AppSession[]
   memberships   Membership[]
   links         Link[] // links this user created — org owns them, this is attribution only
+  invitesSent   Invite[] @relation("InvitesSent")
 }
 
 model Account {
@@ -188,6 +189,40 @@ model Organization {
   // Custom domains belonging to this org. Prisma requires this side of
   // the relation to exist even though nothing reads it yet.
   domains   Domain[]
+}
+
+// ─── Invite ───
+// A pending invitation. Separate from Membership because the person may not
+// have an account yet — there's no User row to attach a membership to until
+// they accept, and inviting by email is the whole point.
+model Invite {
+  id String @id @default(cuid())
+
+  // Lowercased on write. Email is case-insensitive in practice, and without
+  // normalising it "Sam@x.com" and "sam@x.com" would be two pending invites to
+  // the same person.
+  email String
+  role  Role   @default(MEMBER)
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  // Who sent it, for the pending list. SetNull rather than Cascade: an invite
+  // is the workspace's, not the sender's, so it shouldn't vanish if they leave.
+  invitedBy   User?   @relation("InvitesSent", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedById String?
+
+  // Single-use and unguessable. cuid is sequential enough to be predictable,
+  // so this is generated with randomBytes at the call site instead.
+  token String @unique
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // One pending invite per email per workspace. Without it, clicking Send twice
+  // creates two, and accepting one leaves the other dangling forever.
+  @@unique([organizationId, email])
+  @@index([token])
 }
 
 model Membership {

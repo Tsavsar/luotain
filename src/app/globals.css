@@ -2319,3 +2319,26 @@ html {
   width: 0;
   height: 0;
 }
+
+/* --- Invite composer ---
+   Drops in rather than appearing. The button it replaces sits in the same
+   place, so without a transition the swap reads as a glitch. */
+.invite-composer {
+  animation: inviteIn 0.22s var(--ease-out);
+}
+@keyframes inviteIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.invite-add-row {
+  transition: color var(--duration-fast) ease;
+}
+.invite-add-row:hover {
+  color: var(--text-strong) !important;
+}
