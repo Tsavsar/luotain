@@ -2330,3 +2330,13 @@ html {
 .invite-add-row:hover {
   color: var(--text-strong) !important;
 }
+
+/* Remove-a-row. Goes red on hover rather than just darkening, because it's the
+   only destructive control in the composer and the trash shape alone is doing a
+   lot of work at 16px. */
+.invite-remove-row {
+  transition: color var(--duration-fast) ease;
+}
+.invite-remove-row:hover {
+  color: var(--error-base) !important;
+}

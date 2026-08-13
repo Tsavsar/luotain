@@ -45,19 +45,26 @@ function PlusIcon() {
   )
 }
 
-function CloseIcon() {
+function TrashIcon() {
   return (
     <svg
-      width='14'
-      height='14'
+      width='16'
+      height='16'
       viewBox='0 0 16 16'
       fill='none'
       aria-hidden='true'
     >
       <path
-        d='M4.5 4.5l7 7M11.5 4.5l-7 7'
+        d='M2.5 4.5h11M6 4.5V3.2a.7.7 0 0 1 .7-.7h2.6a.7.7 0 0 1 .7.7v1.3M12.3 4.5l-.5 8a1 1 0 0 1-1 .9H5.2a1 1 0 0 1-1-.9l-.5-8'
         stroke='currentColor'
-        strokeWidth='1.5'
+        strokeWidth='1.4'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M6.6 7v3.4M9.4 7v3.4'
+        stroke='currentColor'
+        strokeWidth='1.4'
         strokeLinecap='round'
       />
     </svg>
@@ -112,13 +119,17 @@ function Spinner({ size = 13 }) {
 // The two-column header. Shared by both lists so the Role column lines up
 // between members and pending invites.
 const COL_ROLE = '111px'
+// The trailing action column — trash in the composer, the 3-dot menu on a
+// pending invite, empty on a member row. Reserved everywhere so the Role column
+// lands in the same place in all three sections.
+const COL_ACTION = '16px'
 
 function ListHeader({ right = 'Role' }) {
   return (
     <div
       style={{
         display: 'flex',
-        gap: '8px',
+        gap: '6px',
         alignItems: 'flex-start',
         width: '100%',
       }}
@@ -145,6 +156,7 @@ function ListHeader({ right = 'Role' }) {
       >
         {right}
       </p>
+      <span style={{ width: COL_ACTION, flexShrink: 0 }} />
     </div>
   )
 }
@@ -252,6 +264,10 @@ function MemberRow({ member }) {
           {roleLabel(member.role)}
         </p>
       </div>
+
+      {/* Empty, but reserved — a member row has no action, and without the slot
+          its Role column would sit 22px right of the composer's. */}
+      <span style={{ width: COL_ACTION, flexShrink: 0 }} />
     </div>
   )
 }
@@ -327,23 +343,27 @@ function InviteRow({ invite, canManage, onCancel }) {
         </div>
       </div>
 
-      <div
-        style={{
-          width: COL_ROLE,
-          flexShrink: 0,
-          padding: '4px 0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
+      <div style={{ width: COL_ROLE, flexShrink: 0, padding: '4px 0' }}>
         <p
           className='para-xs'
           style={{ color: 'var(--text-strong)', margin: 0 }}
         >
           {roleLabel(invite.role)}
         </p>
+      </div>
 
+      {/* In the shared slot rather than crammed inside the Role column, which
+          is where it was — that pushed the role label off-centre and made this
+          row's columns disagree with every other row's. */}
+      <div
+        style={{
+          width: COL_ACTION,
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         {canManage ? (
           <Dropdown
             align='right'
@@ -626,27 +646,37 @@ export default function TeamPage() {
                 </Dropdown>
               </div>
 
-              {/* Only from the second row. Removing the only row would leave
-                  the composer with nothing in it. */}
-              {rows.length > 1 ? (
-                <button
-                  type='button'
-                  onClick={() => removeRow(i)}
-                  aria-label='Remove this row'
-                  className='settings-icon-btn'
-                  style={{
-                    display: 'flex',
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    cursor: 'pointer',
-                    color: 'var(--text-soft)',
-                    flexShrink: 0,
-                  }}
-                >
-                  <CloseIcon />
-                </button>
-              ) : null}
+              {/* The slot is always here, empty on a single row. Showing it
+                  only from the second row made every field jump sideways the
+                  moment one was added. */}
+              <div
+                style={{
+                  width: COL_ACTION,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {rows.length > 1 ? (
+                  <button
+                    type='button'
+                    onClick={() => removeRow(i)}
+                    aria-label='Remove this row'
+                    className='invite-remove-row'
+                    style={{
+                      display: 'flex',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      color: 'var(--text-soft)',
+                    }}
+                  >
+                    <TrashIcon />
+                  </button>
+                ) : null}
+              </div>
             </div>
           ))}
 
