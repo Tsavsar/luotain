@@ -5,7 +5,7 @@ import Inputfield from '@/components/input'
 import Tooltip from '@/components/tooltip'
 import AvatarRow from '@/components/avatarrow'
 import SaveBar from '@/components/savebar'
-import Alert, { AlertAction, AlertInfoIcon } from '@/components/alert'
+import { useUnsavedChanges, UnsavedBanner } from '@/components/unsavedchanges'
 import { SettingsGeneralSkeleton } from '@/components/settingsskeleton'
 import { getProfile, primeProfile } from '@/lib/profilecache'
 import { toast } from '@/components/toast'
@@ -172,8 +172,6 @@ export default function SettingsGeneralPage() {
   // Only shown once someone actually tries to leave. Standing open the
   // whole time you're typing is nagging — the Save button already says
   // there's something to save. This is a reaction, not a status readout.
-  const [warnOpen, setWarnOpen] = useState(false)
-  const [warnShaking, setWarnShaking] = useState(false)
 
   const fileRef = useRef(null)
   const timers = useRef([])
@@ -211,59 +209,13 @@ export default function SettingsGeneralPage() {
     }
   }, [])
 
-  // ─── Leaving with unsaved changes ───
-  // Two different exits, two mechanisms.
-  //
-  // A real page unload (tab close, refresh, external link) can only be
-  // handled by beforeunload, and the browser shows its own dialog — we
-  // can't style that.
-  //
-  // In-app navigation is a click on a link that never reaches the network,
-  // so beforeunload never fires. This catches those in the capture phase,
-  // before Next's router sees them, and shows the banner instead.
-  useEffect(() => {
-    if (!dirty) return
-    function onBeforeUnload(e) {
-      e.preventDefault()
-      e.returnValue = ''
-    }
-    window.addEventListener('beforeunload', onBeforeUnload)
-    return () => window.removeEventListener('beforeunload', onBeforeUnload)
-  }, [dirty])
-
-  useEffect(() => {
-    if (!dirty) return
-    function onClick(e) {
-      const link = e.target.closest?.('a[href]')
-      if (!link) return
-      const href = link.getAttribute('href')
-      // Only internal navigation away from this page. An anchor, a new tab,
-      // or an external link isn't losing anything.
-      if (
-        !href ||
-        !href.startsWith('/') ||
-        href.startsWith('/dashboard/settings/general')
-      )
-        return
-      if (link.target === '_blank' || e.metaKey || e.ctrlKey) return
-
-      e.preventDefault()
-      e.stopPropagation()
-      setWarnOpen(true)
-      // Re-shakes on every attempt. A banner that's already open and does
-      // nothing when you try again reads as broken.
-      setWarnShaking(true)
-      timers.current.push(setTimeout(() => setWarnShaking(false), 400))
-    }
-    document.addEventListener('click', onClick, true)
-    return () => document.removeEventListener('click', onClick, true)
-  }, [dirty])
-
-  // Saving or discarding resolves it, so the banner closes on its own
-  // rather than lingering after the reason for it is gone.
-  useEffect(() => {
-    if (!dirty) setWarnOpen(false)
-  }, [dirty])
+  // The guard lives in one place now — see src/components/unsavedchanges.jsx.
+  // It was three effects here, and the org and preferences pages needed the
+  // same behaviour rather than three near-copies of it.
+  const { warnOpen, warnShaking } = useUnsavedChanges(
+    dirty,
+    '/dashboard/settings/general'
+  )
 
   function flagError() {
     setErrored(true)
@@ -409,26 +361,12 @@ export default function SettingsGeneralPage() {
         General settings
       </p>
 
-      {/* Drops down when there's something unsaved, and shakes again on
-          each attempt to leave. The same Alert as the deleted-link notice,
-          so an inline warning looks the same wherever it appears. */}
-      <div
-        className={`unsaved-banner${warnOpen ? ' is-open' : ''}${warnShaking ? ' is-shaking' : ''}`}
-        // Width is in CSS, not here — an inline cap can't be undone by a
-        // media query, and this needs to go full width on mobile.
-        style={{ width: '100%' }}
-      >
-        <Alert
-          variant='inline'
-          icon={<AlertInfoIcon />}
-          message='You have unsaved changes'
-          action={
-            <AlertAction onClick={handleDiscard} disabled={saving}>
-              Discard
-            </AlertAction>
-          }
-        />
-      </div>
+      <UnsavedBanner
+        open={warnOpen}
+        shaking={warnShaking}
+        onDiscard={handleDiscard}
+        disabled={saving}
+      />
 
       <div
         className='settings-field-group'

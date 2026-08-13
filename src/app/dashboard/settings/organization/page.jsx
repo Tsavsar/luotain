@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import AvatarRow from '@/components/avatarrow'
 import SaveBar from '@/components/savebar'
+import { useUnsavedChanges, UnsavedBanner } from '@/components/unsavedchanges'
 import Inputfield from '@/components/input'
 import { toast } from '@/components/toast'
 import { seedFor } from '@/components/gradientavatar'
@@ -134,6 +135,13 @@ export default function OrganizationSettingsPage() {
       draft.image !== saved.image ||
       draft.avatarSeed !== saved.avatarSeed)
 
+  // Same guard as the account page: warns on tab close AND on in-app
+  // navigation, which beforeunload can't see.
+  const { warnOpen, warnShaking } = useUnsavedChanges(
+    dirty,
+    '/dashboard/settings/organization'
+  )
+
   function flagError(fields) {
     setErrors(fields)
     setShaking(fields)
@@ -219,6 +227,13 @@ export default function OrganizationSettingsPage() {
       }
       setSaved(next)
       setDraft(next)
+
+      // Tells the header, which fetched the name once on mount and would
+      // otherwise show the old one until a reload.
+      window.dispatchEvent(
+        new CustomEvent('luotain:org-updated', { detail: { name: next.name } })
+      )
+
       toast('Workspace updated')
     } catch (err) {
       console.error('[OrgSettings]', err)
@@ -287,6 +302,13 @@ export default function OrganizationSettingsPage() {
         General settings
       </p>
 
+      <UnsavedBanner
+        open={warnOpen}
+        shaking={warnShaking}
+        onDiscard={() => setDraft(saved)}
+        disabled={saving}
+      />
+
       <div
         style={{
           display: 'flex',
@@ -322,7 +344,10 @@ export default function OrganizationSettingsPage() {
           style={{ display: 'none' }}
         />
 
-        <div style={{ width: '360px', maxWidth: '100%' }}>
+        {/* The shared class, not an inline width — it carries the 360px cap and
+            the mobile override that takes it full width, and an inline cap
+            can't be undone by a media query. */}
+        <div className='settings-field-group'>
           <Inputfield
             lefticon={<BuildingIcon />}
             placeholder='Workspace name'

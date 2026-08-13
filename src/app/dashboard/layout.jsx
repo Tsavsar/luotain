@@ -232,6 +232,18 @@ function DashboardShell({ children }) {
     loadInfo()
   }, [checking])
 
+  // Renaming the workspace in settings updates the header immediately.
+  // /api/dashboard-info is fetched once on mount, so without this the old name
+  // sat in the header until a reload — the same problem primeProfile solves for
+  // the account avatar, which is why that one already worked.
+  useEffect(() => {
+    function onOrgUpdated(e) {
+      if (e.detail?.name) setOrgName(e.detail.name)
+    }
+    window.addEventListener('luotain:org-updated', onOrgUpdated)
+    return () => window.removeEventListener('luotain:org-updated', onOrgUpdated)
+  }, [])
+
   if (checking) return <DashboardSkeleton />
 
   return (

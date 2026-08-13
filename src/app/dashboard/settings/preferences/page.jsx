@@ -7,6 +7,7 @@ import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
 import Inputfield from '@/components/input'
 import { toast } from '@/components/toast'
 import SaveBar from '@/components/savebar'
+import { useUnsavedChanges, UnsavedBanner } from '@/components/unsavedchanges'
 import {
   DEFAULT_PREFERENCES,
   COMMON_TIMEZONES,
@@ -175,6 +176,11 @@ export default function PreferencesPage() {
       cancelled = true
     }
   }, [])
+
+  const { warnOpen, warnShaking } = useUnsavedChanges(
+    dirty,
+    '/dashboard/settings/preferences'
+  )
 
   function applyTheme(next) {
     setTheme(next)
