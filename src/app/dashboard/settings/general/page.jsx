@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import Inputfield from '@/components/input'
 import Tooltip from '@/components/tooltip'
-import AvatarRow, { Spinner } from '@/components/avatarrow'
+import AvatarRow from '@/components/avatarrow'
+import SaveBar from '@/components/savebar'
 import Alert, { AlertAction, AlertInfoIcon } from '@/components/alert'
 import { SettingsGeneralSkeleton } from '@/components/settingsskeleton'
 import { getProfile, primeProfile } from '@/lib/profilecache'
@@ -491,37 +492,12 @@ export default function SettingsGeneralPage() {
         </div>
       </div>
 
-      <button
-        type='button'
-        onClick={handleSave}
-        disabled={!dirty || saving}
-        className='settings-save'
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '8px 18px',
-          borderRadius: 'var(--radius-lg)',
-          border: 'none',
-          cursor: !dirty || saving ? 'default' : 'pointer',
-          fontFamily: 'var(--font-sans)',
-          fontSize: '12px',
-          lineHeight: '16px',
-          letterSpacing: '0.24px',
-          background: dirty ? 'var(--text-strong)' : 'var(--bg-surface)',
-          color: dirty ? 'var(--bg-default)' : 'var(--text-sub)',
-          transition: 'background 0.2s ease, color 0.2s ease',
-        }}
-      >
-        {saving ? (
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Spinner size={13} />
-            Saving
-          </span>
-        ) : (
-          'Save changes'
-        )}
-      </button>
+      <SaveBar
+        dirty={dirty}
+        saving={saving}
+        onSave={handleSave}
+        onDiscard={() => setDraft(saved)}
+      />
 
       <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
         <span className='para-xs' style={{ color: 'var(--text-strong)' }}>

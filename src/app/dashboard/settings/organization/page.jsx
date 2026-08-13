@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import AvatarRow, { Spinner } from '@/components/avatarrow'
+import AvatarRow from '@/components/avatarrow'
+import SaveBar from '@/components/savebar'
 import Inputfield from '@/components/input'
 import { toast } from '@/components/toast'
 import { seedFor } from '@/components/gradientavatar'
@@ -336,37 +337,12 @@ export default function OrganizationSettingsPage() {
         </div>
       </div>
 
-      <button
-        type='button'
-        onClick={handleSave}
-        disabled={!dirty || saving}
-        className='settings-save'
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          padding: '8px 18px',
-          borderRadius: 'var(--radius-lg)',
-          border: 'none',
-          cursor: !dirty || saving ? 'default' : 'pointer',
-          fontFamily: 'var(--font-sans)',
-          fontSize: '12px',
-          lineHeight: '16px',
-          letterSpacing: '0.24px',
-          background: dirty ? 'var(--text-strong)' : 'var(--bg-surface)',
-          color: dirty ? 'var(--bg-default)' : 'var(--text-sub)',
-        }}
-      >
-        {saving ? (
-          <>
-            <Spinner size={13} />
-            Saving
-          </>
-        ) : (
-          'Save changes'
-        )}
-      </button>
+      <SaveBar
+        dirty={dirty}
+        saving={saving}
+        onSave={handleSave}
+        onDiscard={() => setDraft(saved)}
+      />
 
       <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
         <span className='para-xs' style={{ color: 'var(--text-strong)' }}>

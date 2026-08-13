@@ -6,6 +6,7 @@ import ThemePreview from '@/components/themepreview'
 import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
 import Inputfield from '@/components/input'
 import { toast } from '@/components/toast'
+import SaveBar from '@/components/savebar'
 import {
   DEFAULT_PREFERENCES,
   COMMON_TIMEZONES,
@@ -81,34 +82,6 @@ function Group({ title, children }) {
   )
 }
 
-function Spinner({ size = 13 }) {
-  return (
-    <svg
-      className='btn-spinner'
-      width={size}
-      height={size}
-      viewBox='0 0 16 16'
-      fill='none'
-      aria-hidden='true'
-    >
-      <circle
-        cx='8'
-        cy='8'
-        r='6'
-        stroke='currentColor'
-        strokeWidth='2'
-        strokeLinecap='round'
-        strokeDasharray='28'
-        strokeDashoffset='9'
-        opacity='0.9'
-      />
-    </svg>
-  )
-}
-
-// "Never" until saved once. Relative while recent, because right after saving
-// "Just now" is the confirmation — an absolute date would read as historical.
-// Same wording as the General page's own line.
 function formatLastUpdated(iso) {
   if (!iso) return 'Never'
   const then = new Date(iso)
@@ -447,79 +420,12 @@ export default function PreferencesPage() {
         </Row>
       </Group>
 
-      {/* Save on the left, Discard pushed to the far end. The gap between them is
-          deliberate: they're opposite outcomes, and sitting them side by side is
-          how someone discards a change they meant to keep.
-
-          Discard only exists while there's something to discard — a permanently
-          visible one implies there's always something staged. */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          gap: '16px',
-        }}
-      >
-        <button
-          type='button'
-          onClick={handleSave}
-          disabled={!dirty || saving}
-          className='settings-save'
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '8px 18px',
-            borderRadius: 'var(--radius-lg)',
-            border: 'none',
-            cursor: !dirty || saving ? 'default' : 'pointer',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '12px',
-            lineHeight: '16px',
-            letterSpacing: '0.24px',
-            background: dirty ? 'var(--text-strong)' : 'var(--bg-surface)',
-            color: dirty ? 'var(--bg-default)' : 'var(--text-sub)',
-          }}
-        >
-          {saving ? (
-            <>
-              <Spinner />
-              Saving
-            </>
-          ) : (
-            'Save changes'
-          )}
-        </button>
-
-        {/* Text, not a button — it's the lesser of the two actions, and giving it
-            the same weight as Save would make the pair read as a choice rather
-            than an action with an escape hatch. */}
-        {dirty ? (
-          <button
-            type='button'
-            onClick={discard}
-            disabled={saving}
-            className='discard-changes'
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              margin: 0,
-              cursor: saving ? 'default' : 'pointer',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '12px',
-              lineHeight: '16px',
-              letterSpacing: '0.24px',
-              color: 'var(--text-soft)',
-            }}
-          >
-            Discard changes
-          </button>
-        ) : null}
-      </div>
+      <SaveBar
+        dirty={dirty}
+        saving={saving}
+        onSave={handleSave}
+        onDiscard={discard}
+      />
 
       <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
         <span className='para-xs' style={{ color: 'var(--text-strong)' }}>
