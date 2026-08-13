@@ -744,24 +744,34 @@ export default function TeamPage() {
               paddingTop: '2px',
             }}
           >
-            {/* Cancel on the left, Send on the right — the destructive one
-                furthest from the thumb, and the opposite arrangement to the
-                save bars, where the primary action leads. */}
+            {/* Cancel on the left, Send on the right — the discarding one
+                furthest from the thumb, and the opposite arrangement to the save
+                bars, where the primary action leads.
+
+                Same size and shape as Send, filled light rather than dark:
+                --bg-surface is two steps down the background ramp from the page,
+                and it's already the secondary fill on the create page, so this
+                doesn't introduce a second way of drawing the same button. */}
             <button
               type='button'
               onClick={closeComposer}
               disabled={sending}
-              className='discard-changes'
+              className='create-secondary'
               style={{
-                background: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '8px 18px',
+                borderRadius: 'var(--radius-lg)',
                 border: 'none',
-                padding: 0,
                 cursor: sending ? 'default' : 'pointer',
                 fontFamily: 'var(--font-sans)',
                 fontSize: '12px',
                 lineHeight: '16px',
                 letterSpacing: '0.24px',
-                color: 'var(--text-soft)',
+                background: 'var(--bg-surface)',
+                color: 'var(--text-sub)',
               }}
             >
               Cancel
