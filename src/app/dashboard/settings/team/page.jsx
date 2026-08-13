@@ -480,11 +480,24 @@ export default function TeamPage() {
       }
 
       const n = result.invites.length
-      toast(
-        result.skipped
-          ? `${n} ${n === 1 ? 'invite' : 'invites'} sent, ${result.skipped} already ${result.skipped === 1 ? 'a member' : 'members'}`
-          : `${n} ${n === 1 ? 'invite' : 'invites'} sent`
-      )
+      const word = n === 1 ? 'invite' : 'invites'
+
+      // A failed send is reported rather than swallowed. The invite row exists
+      // and is cancellable either way, so saying "sent" would be a lie the
+      // pending list appears to confirm.
+      if (result.emailsFailed) {
+        toast.error(
+          result.emailsFailed === n
+            ? `${n} ${word} created, but the ${n === 1 ? 'email' : 'emails'} couldn't be sent`
+            : `${n - result.emailsFailed} sent, ${result.emailsFailed} couldn't be emailed`
+        )
+      } else {
+        toast(
+          result.skipped
+            ? `${n} ${word} sent, ${result.skipped} already ${result.skipped === 1 ? 'a member' : 'members'}`
+            : `${n} ${word} sent`
+        )
+      }
       closeComposer()
       await load()
     } catch (err) {

@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
+import { sendInviteEmail } from '@/lib/sendinvite'
 
 const INVITE_DAYS = 7
 const MAX_PER_REQUEST = 20
@@ -18,9 +19,15 @@ export async function POST(request) {
   const { error, organizationId, userId } = await resolveActiveOrg()
   if (error) return error
 
+  // The org name and sender come along for the email — "invited you to Acme by
+  // Shater" is what makes an invite recognisable, and neither was being loaded.
   const membership = await prisma.membership.findFirst({
     where: { organizationId, userId },
-    select: { role: true },
+    select: {
+      role: true,
+      organization: { select: { name: true } },
+      user: { select: { name: true, email: true } },
+    },
   })
   if (!membership || !['OWNER', 'ADMIN'].includes(membership.role)) {
     return Response.json(
@@ -137,10 +144,13 @@ export async function POST(request) {
             token: crypto.randomBytes(32).toString('hex'),
             expiresAt,
           },
+          // token included so it can be mailed — stripped from the response
+          // below before anything leaves the server.
           select: {
             id: true,
             email: true,
             role: true,
+            token: true,
             expiresAt: true,
             createdAt: true,
           },
@@ -148,11 +158,41 @@ export async function POST(request) {
       )
     )
 
+    // Sent AFTER the rows exist, and in parallel. Sending first would risk
+    // mailing a link to a token that was never stored.
+    //
+    // A failed send does NOT fail the request: the invite is real and
+    // cancellable either way, and rolling it back would leave the sender with
+    // nothing to retry from. The count comes back so the UI can say so.
+    const results = await Promise.all(
+      created.map((inv) =>
+        sendInviteEmail({
+          to: inv.email,
+          token: inv.token,
+          orgName: membership.organization?.name,
+          inviterName: membership.user?.name || membership.user?.email,
+          role: inv.role,
+          expiresAt: inv.expiresAt,
+        })
+      )
+    )
+    const failed = results.filter((r) => !r.sent)
+    if (failed.length) {
+      console.error(
+        '[POST /api/org/invites] some emails did not send',
+        failed.map((f) => f.error)
+      )
+    }
+
     return Response.json({
-      invites: created,
+      // The token is stripped before this leaves the server. It's the only
+      // thing standing between a stranger and the workspace, and the page that
+      // called this has no use for it.
+      invites: created.map(({ token, ...rest }) => rest),
       // Reported so the client can say "2 sent, 1 already a member" rather than
       // silently dropping people from the list.
       skipped: cleaned.length - toInvite.length,
+      emailsFailed: failed.length,
     })
   } catch (err) {
     console.error('[POST /api/org/invites]', err)
