@@ -45,28 +45,46 @@ function PlusIcon() {
   )
 }
 
+// The real asset. Its #e8e8e8 is swapped for currentColor so the red hover
+// reaches it — a fixed grey would stay grey however the button is styled.
 function TrashIcon() {
   return (
     <svg
-      width='16'
-      height='16'
-      viewBox='0 0 16 16'
-      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+      width='18'
+      height='18'
+      viewBox='0 0 20 20'
       aria-hidden='true'
     >
-      <path
-        d='M2.5 4.5h11M6 4.5V3.2a.7.7 0 0 1 .7-.7h2.6a.7.7 0 0 1 .7.7v1.3M12.3 4.5l-.5 8a1 1 0 0 1-1 .9H5.2a1 1 0 0 1-1-.9l-.5-8'
-        stroke='currentColor'
-        strokeWidth='1.4'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-      <path
-        d='M6.6 7v3.4M9.4 7v3.4'
-        stroke='currentColor'
-        strokeWidth='1.4'
-        strokeLinecap='round'
-      />
+      <g fill='currentColor'>
+        <rect
+          x='8'
+          y='3'
+          width='4'
+          height='2'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+          fill='currentColor'
+        />
+        <path
+          d='m4.299,8l.358,7.149c.079,1.599,1.396,2.851,2.996,2.851h4.695c1.601,0,2.917-1.252,2.996-2.851l.358-7.149H4.299Z'
+          strokeWidth='0'
+          fill='currentColor'
+        />
+        <line
+          x1='17'
+          y1='5'
+          x2='3'
+          y2='5'
+          fill='none'
+          stroke='currentColor'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          strokeWidth='2'
+        />
+      </g>
     </svg>
   )
 }
@@ -122,7 +140,12 @@ const COL_ROLE = '111px'
 // The trailing action column — trash in the composer, the 3-dot menu on a
 // pending invite, empty on a member row. Reserved everywhere so the Role column
 // lands in the same place in all three sections.
-const COL_ACTION = '16px'
+//
+// 45px, not 16. At the icon's own size the button was barely bigger than the
+// glyph, so hovering it meant hitting a 16px target — which is below the 24px
+// minimum a pointer can reliably land on, and well below the 44px a finger
+// needs. The extra width is hit area, not padding.
+const COL_ACTION = '45px'
 
 function ListHeader({ right = 'Role' }) {
   return (
@@ -665,9 +688,17 @@ export default function TeamPage() {
                     aria-label='Remove this row'
                     className='invite-remove-row'
                     style={{
+                      // Fills the slot, so the whole 45px is the target rather
+                      // than just the glyph at its centre — which is what made
+                      // this hard to hover.
                       display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                      height: '38px',
                       background: 'none',
                       border: 'none',
+                      borderRadius: 'var(--radius-md)',
                       padding: 0,
                       cursor: 'pointer',
                       color: 'var(--text-soft)',

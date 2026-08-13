@@ -2331,12 +2331,25 @@ html {
   color: var(--text-strong) !important;
 }
 
-/* Remove-a-row. Goes red on hover rather than just darkening, because it's the
-   only destructive control in the composer and the trash shape alone is doing a
-   lot of work at 16px. */
+/* Remove-a-row. Red on hover rather than just darkening, because it's the only
+   destructive control in the composer.
+   
+   The background comes with it: the button now fills a 45px slot, so colouring
+   only the glyph would leave most of the target with no feedback at all — you'd
+   be hovering something that looks inert until the cursor happens to cross the
+   icon itself. */
 .invite-remove-row {
-  transition: color var(--duration-fast) ease;
+  transition:
+    color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
 }
-.invite-remove-row:hover {
+@media (hover: hover) and (pointer: fine) {
+  .invite-remove-row:hover {
+    color: var(--error-base) !important;
+    background: var(--error-mute) !important;
+  }
+}
+.invite-remove-row:active {
   color: var(--error-base) !important;
+  background: var(--error-mute) !important;
 }
