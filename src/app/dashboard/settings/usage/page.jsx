@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Tooltip from '@/components/tooltip'
+import AnimatedNumber from '@/components/animatednumber'
 import { useMockDataState } from '@/components/mockdatacontext'
 
 // ─── Organisation → Usage ───
@@ -22,7 +23,7 @@ const SCALE = [
   'var(--primary-dark)',
 ]
 
-function Metric({ label, value, caption }) {
+function Metric({ label, value, unit, caption }) {
   return (
     <div
       style={{
@@ -30,6 +31,9 @@ function Metric({ label, value, caption }) {
         flexDirection: 'column',
         gap: '10px',
         alignItems: 'flex-start',
+        // Holds its natural width. nowrap alone stops the ROW breaking, but the
+        // items would still shrink and wrap their captions mid-phrase.
+        flexShrink: 0,
       }}
     >
       <p
@@ -46,11 +50,19 @@ function Metric({ label, value, caption }) {
           width: '100%',
         }}
       >
+        {/* The same per-digit roll the stats cards use, so a number arriving
+            here reads the same as one arriving on the dashboard. Thousands
+            separators survive, since it takes the formatted string.
+
+            The unit is rendered OUTSIDE it: AnimatedNumber rolls every character
+            it's given, so "46 events" would have the letters tumbling like
+            digits, which reads as a glitch rather than a count. */}
         <p
           className='label-lg'
           style={{ color: 'var(--text-strong)', margin: 0 }}
         >
-          {value}
+          <AnimatedNumber value={value} />
+          {unit ? <span>{` ${unit}`}</span> : null}
         </p>
         <p
           style={{
@@ -367,13 +379,20 @@ export default function UsagePage() {
           width: '100%',
         }}
       >
+        {/* One line, always. flexWrap let these drop to a second row on a
+            narrow window, which reads as two groups rather than one set of four.
+            They scroll together with the heatmap instead — the metrics and the
+            grid are the same object, so they should behave the same way. */}
         <div
           style={{
             display: 'flex',
             gap: '36px',
             alignItems: 'flex-start',
-            flexWrap: 'wrap',
+            flexWrap: 'nowrap',
+            width: '100%',
+            overflowX: 'auto',
           }}
+          className='usage-metrics'
         >
           <Metric
             label='Total links created'
@@ -399,10 +418,9 @@ export default function UsagePage() {
           <Metric
             label='Most active day'
             value={
-              usage.busiestDay
-                ? `${usage.busiestDay.count.toLocaleString()} events`
-                : '—'
+              usage.busiestDay ? usage.busiestDay.count.toLocaleString() : '—'
             }
+            unit={usage.busiestDay ? 'events' : undefined}
             caption={
               usage.busiestDay
                 ? new Date(

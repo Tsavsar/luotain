@@ -2307,3 +2307,15 @@ html {
 .theme-card:active {
   transform: scale(0.97);
 }
+
+/* The usage metrics row. Scrolls rather than wrapping, and hides its scrollbar
+   the same way the dropdown list does — four short metrics with a visible bar
+   under them would look like a broken table. */
+.usage-metrics {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.usage-metrics::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
