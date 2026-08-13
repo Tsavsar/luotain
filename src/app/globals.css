@@ -2308,8 +2308,6 @@ html {
   transform: scale(0.97);
 }
 
-
-
 /* --- Invite composer ---
    Drops in rather than appearing. The button it replaces sits in the same
    place, so without a transition the swap reads as a glitch. */
@@ -2371,4 +2369,19 @@ html {
 }
 .dev-close:hover {
   color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* --- Billing plan columns ---
+   The pricing row on the billing page. Distinct from .plan-columns, which is
+   the PlanCard overlay's and stacks below 900px.
+   
+   Always horizontal. Three 230px columns come to 754px and the settings panel
+   is about 494, so width: max-content lets it overflow the panel to the right
+   — the panel has min-width 0, so a child sized to its content overflows
+   visually without forcing the panel wider and squeezing the sidebar. */
+.billing-plan-columns {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  width: max-content;
 }

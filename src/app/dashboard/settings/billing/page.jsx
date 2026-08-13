@@ -261,17 +261,20 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
         padX='14px'
       />
 
-      {/* Breaks out of the settings panel. Three 230px columns need 754px and
-          the panel is about 494, so this overflows to the RIGHT rather than
-          wrapping — comparing plans works when they're side by side, and a
-          stacked column is a list you scroll rather than a comparison you read.
-          
-          It only overflows where there's room for it: below 1300px viewport the
-          row would run past the window and force page-level horizontal scroll,
-          so it wraps there instead. See .plan-columns. */}
-      <div className='plan-columns'>
+      {/* Its own class, NOT .plan-columns — that one belongs to the PlanCard
+          overlay and stacks below 900px, which this page was silently
+          inheriting. Two components sharing a class name is how one gets a rule
+          written for the other.
+
+          Always one horizontal row, overflowing the settings panel to the
+          right. Comparing plans works when they're side by side; a stacked
+          column is a list you scroll rather than a comparison you read. */}
+      <div className='billing-plan-columns'>
         {Object.values(PLANS).map((plan) => {
           const isCurrent = plan.id === currentPlan
+          // Same rule as the PlanCard: Pro is the featured tier unless you're
+          // already on it.
+          const featured = plan.id === 'PRO' && !isCurrent
           const price = annual ? plan.priceAnnual : plan.priceMonthly
           const busy = busyPlan === plan.id
 
@@ -384,7 +387,6 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
                     justifyContent: 'center',
                     padding: '8px 16px',
                     borderRadius: 'var(--radius-lg)',
-                    border: 'none',
                     cursor: isCurrent || busy ? 'default' : 'pointer',
                     // Fills the column. Sized to its label instead, the three
                     // CTAs came out at three different widths — "Current plan",
@@ -396,12 +398,19 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
                     fontSize: '12px',
                     lineHeight: '16px',
                     letterSpacing: '0.24px',
-                    background: isCurrent
-                      ? 'var(--bg-layer)'
-                      : 'var(--bg-weak)',
-                    color: isCurrent
-                      ? 'var(--text-strong)'
-                      : 'var(--text-inverse)',
+                    // The PlanCard's treatment: only the FEATURED plan is
+                    // filled dark, the rest are outlined. Three dark buttons in
+                    // a row give every tier the same weight, which is the one
+                    // thing a pricing table shouldn't do.
+                    border: featured ? 'none' : '1px solid var(--stroke-soft)',
+                    background: featured
+                      ? 'var(--bg-weak)'
+                      : isCurrent
+                        ? 'var(--bg-layer)'
+                        : 'var(--bg-default)',
+                    color: featured
+                      ? 'var(--text-inverse)'
+                      : 'var(--text-strong)',
                   }}
                 >
                   {isCurrent
@@ -712,9 +721,14 @@ export default function BillingPage() {
                 color: atLimit ? 'var(--error-base)' : 'var(--text-sub)',
               }}
             >
-              {atLimit
-                ? `You've used all ${data.plan.maxLinks} of your links`
-                : `You have used ${data.linkCount} out of your ${data.plan.maxLinks} ${isFree ? 'free ' : ''}links`}
+              {/* One sentence at every count, so it reads 1 of 5, then 4 of 5,
+                  then 5 of 5. It used to swap to "You've used all 5 of your
+                  links" at the limit, which meant the count never actually
+                  reached 5 out of 5 — the number you most want to see was the
+                  one wording that replaced it. Colour carries the urgency
+                  instead. */}
+              You have used {data.linkCount} out of your {data.plan.maxLinks}{' '}
+              {isFree ? 'free ' : ''}links
             </p>
           </div>
         ) : null}
