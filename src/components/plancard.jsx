@@ -2,335 +2,33 @@
 
 import { useEffect, useState } from 'react'
 import Lightbox from '@/components/lightbox'
-import SegmentedTabs from '@/components/segmentedtabs'
-import AnimatedNumber from '@/components/animatednumber'
-import {
-  PLANS,
-  PLAN_ORDER,
-  PLAN_FEATURES,
-  planFor,
-  usageLabel,
-} from '@/lib/plans'
+import PlanPicker from '@/components/planpicker'
 import { toast } from '@/components/toast'
 import { useMockDataState } from '@/components/mockdatacontext'
 
-// ─── PlanCard ───
-// Node 106:832.
+// ─── Upgrade plan overlay ───
+// The pricing table in a lightbox, opened from the profile menu.
 //
-// Every column is generated from src/lib/plans.js rather than written out per
-// tier. That's the whole point: the API enforces limits from that same file,
-// so the table physically cannot advertise something the endpoint refuses.
-// Hand-writing three columns is how a pricing page ends up promising 50 links
-// while the server allows 5.
-
-function CheckIcon() {
-  return (
-    <svg
-      width='16'
-      height='16'
-      viewBox='0 0 16 16'
-      fill='none'
-      aria-hidden='true'
-    >
-      <path
-        d='M3.4 8.4 6.3 11.3 12.6 5'
-        stroke='var(--primary-base)'
-        strokeWidth='1.5'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-    </svg>
-  )
-}
-
-function DashIcon() {
-  return (
-    <svg
-      width='16'
-      height='16'
-      viewBox='0 0 16 16'
-      fill='none'
-      aria-hidden='true'
-    >
-      {/* A dash rather than a cross. These aren't errors — they're capabilities
-          this tier doesn't include, and a red X reads as something being
-          wrong. */}
-      <path
-        d='M4.5 8h7'
-        stroke='var(--text-disabled)'
-        strokeWidth='1.5'
-        strokeLinecap='round'
-      />
-    </svg>
-  )
-}
-
-function BillingToggle({ annual, onChange }) {
-  return (
-    <SegmentedTabs
-      items={[
-        { id: 'monthly', label: 'Monthly' },
-        // The discount in orange, so the reason to switch is the thing that
-        // catches the eye rather than the word "Annually".
-        {
-          id: 'annual',
-          label: (
-            <>
-              Annually
-              {/* Margin rather than a {' '} text node: whitespace between JSX
-                  siblings is collapsible, and inside a flex-centred label it
-                  was rendering tight. A margin can't be collapsed away. */}
-              <span style={{ color: 'var(--primary-base)', marginLeft: '5px' }}>
-                (save 20%)
-              </span>
-            </>
-          ),
-        },
-      ]}
-      activeId={annual ? 'annual' : 'monthly'}
-      onChange={(id) => onChange(id === 'annual')}
-      padX='14px'
-    />
-  )
-}
-
-function PlanColumn({ plan, current, annual, linkCount, onUpgrade, busy }) {
-  const isCurrent = plan.id === current
-  // Negative means this tier sits below the current one. Compared against
-  // PLAN_ORDER rather than price, which was the old test — priceMonthly === 0
-  // only catches Free, so a Pro user saw "Upgrade plan" on Starter.
-  const direction = PLAN_ORDER.indexOf(plan.id) - PLAN_ORDER.indexOf(current)
-  // Emphasised, because Starter and Pro had identical dark buttons in the
-  // design and nothing guided the choice. Pro is the tier to steer toward.
-  // Featured only when it's actually a step UP — highlighting Pro for someone
-  // already on it would be selling them what they have.
-  const featured = plan.id === 'PRO' && direction > 0
-
-  const price = annual ? plan.priceAnnual : plan.priceMonthly
-  const period = annual ? '/year' : '/month'
-  const note =
-    plan.priceMonthly === 0
-      ? plan.priceNote
-      : annual
-        ? 'Billed annually'
-        : 'Billed monthly'
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        width: '230px',
-        flexShrink: 0,
-      }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        <p
-          className='label-sm'
-          style={{ color: 'var(--text-strong)', margin: 0 }}
-        >
-          {plan.name}
-        </p>
-        <p
-          style={{
-            margin: 0,
-            fontFamily: 'var(--font-sans)',
-            fontSize: '10px',
-            lineHeight: 1.35,
-            letterSpacing: '0.2px',
-            color: 'var(--text-soft)',
-          }}
-        >
-          {plan.tagline}
-        </p>
-      </div>
-
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
-          width: '100%',
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <div style={{ display: 'flex', gap: '2px', alignItems: 'flex-end' }}>
-            {/* AnimatedNumber rather than a count-up, deliberately. Counting
-                $5 to $48 would display 6, 7, 8 … 47 on the way — prices that
-                don't exist, on a pricing table. The digit cascade animates the
-                change without ever showing a wrong figure, and it's already
-                the treatment stats values use, so numbers behave the same way
-                across the app. */}
-            <p
-              className='label-lg'
-              style={{
-                color: 'var(--text-strong)',
-                margin: 0,
-                display: 'flex',
-                alignItems: 'baseline',
-              }}
-            >
-              <span>$</span>
-              <AnimatedNumber value={price} />
-            </p>
-            <p
-              className='para-xs'
-              style={{
-                color: 'var(--text-strong)',
-                margin: 0,
-                paddingBottom: '3px',
-              }}
-            >
-              {period}
-            </p>
-          </div>
-          {/* Note and usage on one line, separated by a dot. Usage belongs up
-              here with the price rather than under the button: it's context
-              for the plan, and it reads before the decision instead of after
-              it. Only shown on the plan you're actually on — "0 of 5 used" on
-              a tier you haven't bought is meaningless. */}
-          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-            <p
-              style={{
-                margin: 0,
-                fontFamily: 'var(--font-sans)',
-                fontSize: '10px',
-                lineHeight: 1.35,
-                letterSpacing: '0.2px',
-                color: 'var(--text-soft)',
-              }}
-            >
-              {note}
-            </p>
-            {isCurrent && usageLabel(plan.id, linkCount) ? (
-              <>
-                <span
-                  aria-hidden='true'
-                  style={{
-                    width: '3px',
-                    height: '3px',
-                    flexShrink: 0,
-                    borderRadius: 'var(--radius-full)',
-                    background: 'var(--bg-muted)',
-                  }}
-                />
-                <p
-                  style={{
-                    margin: 0,
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: '10px',
-                    lineHeight: 1.35,
-                    letterSpacing: '0.2px',
-                    // Red at the limit, since that's the moment it stops being
-                    // information and becomes the reason to upgrade.
-                    color:
-                      plan.maxLinks !== null && linkCount >= plan.maxLinks
-                        ? 'var(--error-base)'
-                        : 'var(--text-soft)',
-                  }}
-                >
-                  {usageLabel(plan.id, linkCount)}
-                </p>
-              </>
-            ) : null}
-          </div>
-        </div>
-
-        {isCurrent ? (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '8px 16px',
-              borderRadius: 'var(--radius-lg)',
-              background: 'var(--bg-layer)',
-              color: 'var(--text-strong)',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '12px',
-              lineHeight: '16px',
-              letterSpacing: '0.24px',
-            }}
-          >
-            Current plan
-          </div>
-        ) : (
-          <button
-            type='button'
-            onClick={() => onUpgrade(plan)}
-            disabled={busy}
-            className='plan-cta'
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '8px 16px',
-              borderRadius: 'var(--radius-full)',
-              border: featured ? 'none' : '1px solid var(--stroke-soft)',
-              background: featured ? 'var(--bg-weak)' : 'var(--bg-default)',
-              // A downgrade reads muted: available, but not as inviting as an
-              // upgrade, since one of the two costs you features.
-              color: featured
-                ? 'var(--text-inverse)'
-                : direction < 0
-                  ? 'var(--text-sub)'
-                  : 'var(--text-strong)',
-              cursor: busy ? 'default' : 'pointer',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '12px',
-              lineHeight: '16px',
-              letterSpacing: '0.24px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {plan.priceMonthly === 0 ? 'Downgrade' : 'Upgrade plan'}
-          </button>
-        )}
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {PLAN_FEATURES.map((f, i) => {
-          const included = f.included(plan)
-          return (
-            <div
-              key={i}
-              style={{ display: 'flex', gap: '10px', alignItems: 'center' }}
-            >
-              {included ? <CheckIcon /> : <DashIcon />}
-              <span
-                className='para-xs'
-                style={{
-                  color: included ? 'var(--text-sub)' : 'var(--text-disabled)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {f.label(plan)}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
+// Rebuilt around the shared PlanPicker rather than keeping its own copy. There
+// were two implementations of the same table and they had drifted: this one
+// tested `priceMonthly === 0` to decide "Downgrade", which mislabels Starter for
+// a Pro user, and its CTA styling, plan icons and check marks were all set
+// separately from the billing page's. Whatever's fixed in one now lands in both.
+//
+// What stays here is what's genuinely the overlay's: the lightbox shell, the
+// card's own edge and entrance, the title, and where the plan comes from.
 export default function PlanCard({ open, onClose }) {
   const { useMockData, mockPlan, ready: mockReady } = useMockDataState()
   const [data, setData] = useState(null)
-  const [annual, setAnnual] = useState(false)
-  const [busy, setBusy] = useState(false)
+  const [busyPlan, setBusyPlan] = useState(null)
 
   useEffect(() => {
     if (!open || !mockReady) return
     let cancelled = false
 
-    // This had no mock branch, so it always fetched the REAL plan — switching
-    // the mock tier changed the billing page and left this overlay insisting
-    // you were on Free. Every label, the featured column and the usage line
-    // were all reading the wrong plan.
+    // This had no mock branch before, so it always fetched the REAL plan —
+    // switching the mock tier changed the billing page and left this overlay
+    // insisting you were on Free.
     if (useMockData) {
       setData({
         plan: mockPlan,
@@ -345,6 +43,7 @@ export default function PlanCard({ open, onClose }) {
         if (!cancelled && d) setData(d)
       })
       .catch(() => {})
+
     return () => {
       cancelled = true
     }
@@ -352,13 +51,17 @@ export default function PlanCard({ open, onClose }) {
 
   const current = data?.plan || 'FREE'
 
-  function handleUpgrade(plan) {
-    // TODO: needs a payment provider. Stopping here rather than switching the
-    // plan: an upgrade button that grants a paid tier without taking payment
-    // is the one thing in this flow that must not silently work.
-    setBusy(true)
-    toast('Checkout is not connected yet')
-    setTimeout(() => setBusy(false), 400)
+  function handleChoose(planId) {
+    // Stops here rather than switching the plan: an upgrade button that grants
+    // a paid tier without taking payment is the one thing in this flow that
+    // must not silently work.
+    setBusyPlan(planId)
+    toast(
+      useMockData
+        ? 'Mock data is on — nothing is charged'
+        : 'Checkout is not connected yet'
+    )
+    setTimeout(() => setBusyPlan(null), 400)
   }
 
   return (
@@ -370,16 +73,19 @@ export default function PlanCard({ open, onClose }) {
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
-            gap: '28px',
+            gap: '24px',
             alignItems: 'flex-start',
             padding: '24px',
             borderRadius: '26px',
             background: 'var(--bg-default)',
-            // Its own edge and shadow: the scrim is white, so without these
-            // the card has no boundary at all.
+            // Its own edge and shadow: the scrim is light, so without these the
+            // card has no boundary at all.
             border: '1px solid var(--stroke-soft)',
             boxShadow: '0px 10px 20px 3px rgba(0, 0, 0, 0.06)',
             maxWidth: '100%',
+            // The table is 754px wide, so the card is sized to hold it rather
+            // than letting it overflow into the scrim.
+            overflowX: 'auto',
             opacity: entered ? 1 : 0,
             transform: entered
               ? 'translateY(0) scale(1)'
@@ -394,7 +100,7 @@ export default function PlanCard({ open, onClose }) {
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '8px',
+              gap: '6px',
               width: '100%',
             }}
           >
@@ -403,52 +109,28 @@ export default function PlanCard({ open, onClose }) {
               className='label-lg'
               style={{ color: 'var(--text-strong)', margin: 0 }}
             >
-              Plans
+              Choose your plan
             </p>
-            {/* Reworded from the design, which said only the link count
-                changes — the table also gates CSV export, custom slugs and a
-                custom domain, so the original copy contradicted the columns
-                directly underneath it. */}
             <p
               className='para-xs'
-              style={{ color: 'var(--text-sub)', margin: 0, maxWidth: '414px' }}
+              style={{ color: 'var(--text-sub)', margin: 0 }}
             >
-              Every plan gets full analytics and a QR code with every link. Paid
-              plans add more links, exports and your own domain.
+              Every plan gets full analytics and a QR code with every link. The
+              only thing that changes is how many links you need.
             </p>
           </div>
 
-          <BillingToggle annual={annual} onChange={setAnnual} />
+          {/* No onBack: the lightbox already closes on escape, on the scrim, and
+              on its own button — a fourth way out is one too many.
 
-          <div
-            className='plan-columns'
-            style={{ display: 'flex', gap: '32px' }}
-          >
-            {PLAN_ORDER.map((id) => (
-              <PlanColumn
-                key={id}
-                plan={planFor(id)}
-                current={current}
-                annual={annual}
-                linkCount={data?.linkCount ?? 0}
-                onUpgrade={handleUpgrade}
-                busy={busy}
-              />
-            ))}
-          </div>
-
-          <p
-            style={{
-              margin: 0,
-              fontFamily: 'var(--font-sans)',
-              fontSize: '10px',
-              lineHeight: 1.35,
-              letterSpacing: '0.2px',
-              color: 'var(--text-soft)',
-            }}
-          >
-            Prices in USD. Cancel anytime, no long-term contracts.
-          </p>
+              showIntro false because the title above already says it; the
+              billing page has no title, which is why the picker carries one. */}
+          <PlanPicker
+            currentPlan={current}
+            onChoose={handleChoose}
+            busyPlan={busyPlan}
+            showIntro={false}
+          />
         </div>
       )}
     </Lightbox>

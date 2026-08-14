@@ -284,6 +284,19 @@ model Domain {
   hostname String  @unique // "luot.link", "go.acme.com"
   verified Boolean @default(false)
 
+  // ─── Verification ───
+  // The DNS record the owner has to add. A CNAME pointing at us proves control
+  // of the hostname, which is the whole point — anyone can type a domain into a
+  // form, only its owner can change its DNS.
+  //
+  // The token is per-domain rather than global so one workspace's record can't
+  // be used to claim another's domain.
+  verifyToken String?
+  // When it was last checked, and what happened. Nullable because a domain
+  // that's never been checked hasn't failed — it just hasn't been looked at.
+  lastCheckedAt DateTime?
+  lastError     String?
+
   // Null for the shared default. Cascade so deleting an org takes its
   // custom domains with it — a domain with no owner and no shared flag
   // would be unreachable.
