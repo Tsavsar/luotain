@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PLANS, PLAN_FEATURES } from '@/lib/plans'
+import { PLANS, PLAN_FEATURES, PLAN_ORDER } from '@/lib/plans'
 import SegmentedTabs from '@/components/segmentedtabs'
 import BackButton from '@/components/backbutton'
 import AnimatedNumber from '@/components/animatednumber'
@@ -214,7 +214,12 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
           const isCurrent = plan.id === currentPlan
           // Same rule as the PlanCard: Pro is the featured tier unless you're
           // already on it.
-          const featured = plan.id === 'PRO' && !isCurrent
+          // Negative means this tier sits below the current one.
+          const direction =
+            PLAN_ORDER.indexOf(plan.id) - PLAN_ORDER.indexOf(currentPlan)
+          // Pro is featured only when it's actually a step UP. Highlighting it
+          // for someone already on Pro would be selling them what they have.
+          const featured = plan.id === 'PRO' && direction > 0
           const price = annual ? plan.priceAnnual : plan.priceMonthly
           const busy = busyPlan === plan.id
 
@@ -354,18 +359,30 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
                       : isCurrent
                         ? 'var(--bg-layer)'
                         : 'var(--bg-default)',
+                    // A downgrade reads muted. It's available, but styling it
+                    // as invitingly as an upgrade puts the two moves on equal
+                    // footing, and one of them costs you features.
                     color: featured
                       ? 'var(--text-inverse)'
-                      : 'var(--text-strong)',
+                      : direction < 0
+                        ? 'var(--text-sub)'
+                        : 'var(--text-strong)',
                   }}
                 >
+                  {/* Compared against PLAN_ORDER rather than named tiers. Every
+                      label was an upgrade before, so a Pro user looking at Free
+                      read "Upgrade plan" for the tier BELOW them — which is
+                      both wrong and the kind of wrong that makes someone
+                      distrust the rest of the page. */}
                   {isCurrent
                     ? 'Current plan'
                     : busy
                       ? 'Opening…'
-                      : plan.id === 'PRO'
-                        ? 'Get pro plan'
-                        : 'Upgrade plan'}
+                      : direction < 0
+                        ? 'Downgrade plan'
+                        : plan.id === 'PRO'
+                          ? 'Get pro plan'
+                          : 'Upgrade plan'}
                 </button>
               </div>
 
@@ -634,6 +651,8 @@ export default function BillingPage() {
                 color: 'var(--text-inverse)',
               }}
             >
+              {/* "Change plan" on Pro, since there's nowhere up from there and
+                  the only move is sideways or down. */}
               {data.plan.id === 'PRO' ? 'Change plan' : 'Upgrade plan'}
             </button>
           ) : null}

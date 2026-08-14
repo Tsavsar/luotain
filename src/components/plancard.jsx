@@ -95,9 +95,15 @@ function BillingToggle({ annual, onChange }) {
 
 function PlanColumn({ plan, current, annual, linkCount, onUpgrade, busy }) {
   const isCurrent = plan.id === current
+  // Negative means this tier sits below the current one. Compared against
+  // PLAN_ORDER rather than price, which was the old test — priceMonthly === 0
+  // only catches Free, so a Pro user saw "Upgrade plan" on Starter.
+  const direction = PLAN_ORDER.indexOf(plan.id) - PLAN_ORDER.indexOf(current)
   // Emphasised, because Starter and Pro had identical dark buttons in the
   // design and nothing guided the choice. Pro is the tier to steer toward.
-  const featured = plan.id === 'PRO' && !isCurrent
+  // Featured only when it's actually a step UP — highlighting Pro for someone
+  // already on it would be selling them what they have.
+  const featured = plan.id === 'PRO' && direction > 0
 
   const price = annual ? plan.priceAnnual : plan.priceMonthly
   const period = annual ? '/year' : '/month'
@@ -264,7 +270,13 @@ function PlanColumn({ plan, current, annual, linkCount, onUpgrade, busy }) {
               borderRadius: 'var(--radius-full)',
               border: featured ? 'none' : '1px solid var(--stroke-soft)',
               background: featured ? 'var(--bg-weak)' : 'var(--bg-default)',
-              color: featured ? 'var(--text-inverse)' : 'var(--text-strong)',
+              // A downgrade reads muted: available, but not as inviting as an
+              // upgrade, since one of the two costs you features.
+              color: featured
+                ? 'var(--text-inverse)'
+                : direction < 0
+                  ? 'var(--text-sub)'
+                  : 'var(--text-strong)',
               cursor: busy ? 'default' : 'pointer',
               fontFamily: 'var(--font-sans)',
               fontSize: '12px',
