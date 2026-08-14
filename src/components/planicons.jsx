@@ -37,12 +37,12 @@ function FreeIcon({ size = 32 }) {
           stroke={STEM}
           d='M49.042 67.502A.46.46 0 0 0 49.5 68h5c.27 0 .48-.23.459-.498l-.806-9.668A2 2 0 0 0 52.16 56h-.32a2 2 0 0 0-1.993 1.834z'
         />
-        <path stroke={STEM} d='M52 68V20a8 8 0 0 0-8-8H34' />
+        <path stroke={STEM} d='M52 68V20a8 8 0 0 0-8-8H42' />
         <path
           className='plan-bloom'
           fill={GROWTH}
           stroke={GROWTH_EDGE}
-          d='M28 12h12v6a6 6 0 0 1-12 0z'
+          d='M25 10h17v8a8.5 8.5 0 0 1-17 0z'
         />
       </g>
     </svg>
@@ -66,14 +66,14 @@ function StarterIcon({ size = 32 }) {
         strokeWidth='4'
       >
         <path fill={STEM} stroke={STEM} d='M37 72h6l-2-12h-2z' />
-        <path stroke={STEM} d='M40 25v35m4-35h-8' />
+        <path stroke={STEM} d='M40 27v33m4-33h-8' />
         <path
           className='plan-bloom'
           fill={GROWTH}
           stroke={GROWTH_EDGE}
-          d='M34 8h12l-1 12H35z'
+          d='M31 5h18l-1.5 17H32.5z'
         />
-        <path stroke={GROWTH_EDGE} d='M40 14V8' />
+        <path stroke={GROWTH_EDGE} d='M40 13V5' />
       </g>
     </svg>
   )
@@ -96,41 +96,41 @@ function ProIcon({ size = 32 }) {
         strokeWidth='4'
       >
         <path fill={STEM} stroke={STEM} d='M37 70h6l-2-12h-2z' />
-        <path stroke={STEM} d='M40 19v40m12-32H28m0-5v5m24-5v5' />
+        <path stroke={STEM} d='M40 19v40m12-32H28m0-8v8m24-8v8' />
         {/* Staggered, not simultaneous. Three blossoms pulsing in unison read
             as a flash; offset, they read as something alive. The outer two are
             offset furthest so the eye starts at the tallest. */}
         <rect
           className='plan-bloom'
           style={{ animationDelay: '0.9s' }}
-          width='8'
-          height='8'
-          x='24'
-          y='14'
+          width='12'
+          height='12'
+          x='22'
+          y='11'
           fill={GROWTH}
           stroke={GROWTH_EDGE}
-          rx='4'
+          rx='6'
         />
         <rect
           className='plan-bloom'
-          width='8'
-          height='8'
-          x='36'
-          y='10'
+          width='12'
+          height='12'
+          x='34'
+          y='6'
           fill={GROWTH}
           stroke={GROWTH_EDGE}
-          rx='4'
+          rx='6'
         />
         <rect
           className='plan-bloom'
           style={{ animationDelay: '0.45s' }}
-          width='8'
-          height='8'
-          x='48'
-          y='14'
+          width='12'
+          height='12'
+          x='46'
+          y='11'
           fill={GROWTH}
           stroke={GROWTH_EDGE}
-          rx='4'
+          rx='6'
         />
         <path stroke={STEM} d='M44 31h-8' />
       </g>

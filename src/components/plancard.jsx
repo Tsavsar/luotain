@@ -12,6 +12,7 @@ import {
   usageLabel,
 } from '@/lib/plans'
 import { toast } from '@/components/toast'
+import { useMockDataState } from '@/components/mockdatacontext'
 
 // ─── PlanCard ───
 // Node 106:832.
@@ -317,13 +318,27 @@ function PlanColumn({ plan, current, annual, linkCount, onUpgrade, busy }) {
 }
 
 export default function PlanCard({ open, onClose }) {
+  const { useMockData, mockPlan, ready: mockReady } = useMockDataState()
   const [data, setData] = useState(null)
   const [annual, setAnnual] = useState(false)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (!open) return
+    if (!open || !mockReady) return
     let cancelled = false
+
+    // This had no mock branch, so it always fetched the REAL plan — switching
+    // the mock tier changed the billing page and left this overlay insisting
+    // you were on Free. Every label, the featured column and the usage line
+    // were all reading the wrong plan.
+    if (useMockData) {
+      setData({
+        plan: mockPlan,
+        linkCount: mockPlan === 'PRO' ? 138 : mockPlan === 'STARTER' ? 42 : 4,
+      })
+      return
+    }
+
     fetch('/api/plan')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -333,7 +348,7 @@ export default function PlanCard({ open, onClose }) {
     return () => {
       cancelled = true
     }
-  }, [open])
+  }, [open, mockReady, useMockData, mockPlan])
 
   const current = data?.plan || 'FREE'
 
