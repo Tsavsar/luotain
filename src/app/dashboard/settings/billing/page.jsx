@@ -6,6 +6,8 @@ import SegmentedTabs from '@/components/segmentedtabs'
 import BackButton from '@/components/backbutton'
 import AnimatedNumber from '@/components/animatednumber'
 import { toast } from '@/components/toast'
+import PlanIcon from '@/components/planicons'
+import CardMark from '@/components/cardmarks'
 import { useMockDataState } from '@/components/mockdatacontext'
 import { getMockBilling } from '@/lib/mockAnalytics'
 
@@ -15,40 +17,6 @@ import { getMockBilling } from '@/lib/mockAnalytics'
 // One page, three states. The picker is a view of this page rather than a
 // separate route, so Back returns you here without a navigation.
 
-function PlanBadge({ planId }) {
-  // A ring in the plan's own weight — Free hollow, paid filled. Cheaper than an
-  // icon set and it reads as a tier at a glance.
-  const filled = planId !== 'FREE'
-  return (
-    <span
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '32px',
-        height: '32px',
-        borderRadius: 'var(--radius-full)',
-        background: filled ? 'var(--text-strong)' : 'var(--bg-surface)',
-        flexShrink: 0,
-      }}
-    >
-      <span
-        style={{
-          width: '12px',
-          height: '12px',
-          borderRadius: 'var(--radius-full)',
-          border: `2px solid ${filled ? 'var(--bg-default)' : 'var(--text-soft)'}`,
-          background: planId === 'PRO' ? 'var(--bg-default)' : 'transparent',
-        }}
-      />
-    </span>
-  )
-}
-
-// The same marks as the PlanCard overlay, so a plan read here and a plan read
-// there look like the same thing. Orange check for included; a DASH rather than
-// a cross for excluded — these aren't errors, they're capabilities the tier
-// doesn't have, and an X reads as something being wrong.
 function CheckIcon({ on }) {
   if (!on) {
     return (
@@ -125,34 +93,6 @@ function InfoIcon() {
       />
       <circle cx='8' cy='5.2' r='0.85' fill='currentColor' />
     </svg>
-  )
-}
-
-function CardMark({ brand }) {
-  // A coloured chip rather than the real brand marks. Visa and Mastercard logos
-  // are trademarks with usage rules, and a two-letter chip carries the same
-  // information without shipping someone else's asset.
-  const label = (brand || 'Card').slice(0, 4)
-  return (
-    <span
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '29px',
-        height: '20px',
-        borderRadius: '4px',
-        background: 'var(--text-strong)',
-        color: 'var(--bg-default)',
-        fontFamily: 'var(--font-sans)',
-        fontSize: '8px',
-        letterSpacing: '0.3px',
-        textTransform: 'uppercase',
-        flexShrink: 0,
-      }}
-    >
-      {label}
-    </span>
   )
 }
 
@@ -284,11 +224,17 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '20px',
+                // 16px, down from 20 — the icon adds a row, and the original
+                // rhythm left the column reading as five loose blocks.
+                gap: '16px',
                 width: '230px',
                 flexShrink: 0,
               }}
             >
+              {/* The same plant, so the tier you're reading about in the picker
+                  and the one shown on the page above are marked the same way. */}
+              <PlanIcon planId={plan.id} size={28} />
+
               <div
                 style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}
               >
@@ -623,7 +569,10 @@ export default function BillingPage() {
             width: '100%',
           }}
         >
-          <PlanBadge planId={data.plan.id} />
+          {/* The plant marks the tier: a sprout on Free, a bud on Starter, a
+              branched plant on Pro. It replaced a ring badge that distinguished
+              the tiers only by fill, which is a distinction nobody reads. */}
+          <PlanIcon planId={data.plan.id} size={32} />
 
           <div
             style={{
