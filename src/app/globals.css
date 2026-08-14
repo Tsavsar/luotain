@@ -2385,3 +2385,36 @@ html {
   align-items: flex-start;
   width: max-content;
 }
+
+/* --- Plan icon blooms ---
+   A slow breath on the orange growth.
+   
+   Opacity only, no scale: these are stroked shapes and scaling would need a
+   transform-origin per element, which for a rect at x=24 and one at x=48 is two
+   different origins — and a blossom that grows and shrinks reads as a button
+   inviting a press rather than something alive.
+   
+   4s, and only down to 0.72. Long and shallow is the difference between
+   breathing and blinking — anything faster or deeper turns a settings page into
+   something that wants attention it doesn't deserve. */
+@keyframes planBloom {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+.plan-bloom {
+  animation: planBloom 4s ease-in-out infinite;
+}
+
+/* Off entirely under reduced motion. A looping animation is exactly what that
+   preference is for — unlike a one-shot transition, it never stops, so there's
+   no "it'll be over in a moment" defence. */
+@media (prefers-reduced-motion: reduce) {
+  .plan-bloom {
+    animation: none;
+  }
+}
