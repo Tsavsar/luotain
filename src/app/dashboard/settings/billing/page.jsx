@@ -386,7 +386,7 @@ function PlanPicker({ currentPlan, onBack, onChoose, busyPlan }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     padding: '8px 16px',
-                    borderRadius: 'var(--radius-lg)',
+                    borderRadius: 'var(--radius-full)',
                     cursor: isCurrent || busy ? 'default' : 'pointer',
                     // Fills the column. Sized to its label instead, the three
                     // CTAs came out at three different widths — "Current plan",
@@ -673,7 +673,7 @@ export default function BillingPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '8px 16px',
-                borderRadius: 'var(--radius-lg)',
+                borderRadius: 'var(--radius-full)',
                 border: 'none',
                 cursor: 'pointer',
                 flexShrink: 0,
@@ -937,10 +937,13 @@ export default function BillingPage() {
               alignItems: 'center',
               justifyContent: 'center',
               padding: '8px 16px',
-              borderRadius: 'var(--radius-lg)',
+              borderRadius: 'var(--radius-full)',
               border: 'none',
               cursor: 'pointer',
-              width: '100%',
+              // 100px, not full width. Stretching a destructive action across
+              // the page makes it the biggest target there, which is the
+              // opposite of the emphasis it wants.
+              width: '100px',
               fontFamily: 'var(--font-sans)',
               fontSize: '12px',
               lineHeight: '16px',

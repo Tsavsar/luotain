@@ -64,7 +64,7 @@ export default function AuthButton({ icon, label, onClick }) {
             ? 'var(--text-strong)'
             : 'var(--text-sub)',
         border: 'none',
-        borderRadius: 'var(--radius-lg)',
+        borderRadius: 'var(--radius-full)',
         cursor: loading ? 'default' : 'pointer',
         transition: 'background 0.15s ease, color 0.15s ease',
       }}

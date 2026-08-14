@@ -288,7 +288,7 @@ export function ModalButton({
       style={{
         flex: '1 0 0',
         padding: '10px',
-        borderRadius: 'var(--radius-lg)',
+        borderRadius: 'var(--radius-full)',
         border: 'none',
         cursor: 'pointer',
         fontFamily: 'var(--font-sans)',

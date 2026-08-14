@@ -261,7 +261,7 @@ function PlanColumn({ plan, current, annual, linkCount, onUpgrade, busy }) {
               alignItems: 'center',
               justifyContent: 'center',
               padding: '8px 16px',
-              borderRadius: 'var(--radius-lg)',
+              borderRadius: 'var(--radius-full)',
               border: featured ? 'none' : '1px solid var(--stroke-soft)',
               background: featured ? 'var(--bg-weak)' : 'var(--bg-default)',
               color: featured ? 'var(--text-inverse)' : 'var(--text-strong)',

@@ -184,7 +184,7 @@ export default function DeleteAccountPage() {
           justifyContent: 'center',
           gap: '8px',
           padding: '8px 16px',
-          borderRadius: 'var(--radius-lg)',
+          borderRadius: 'var(--radius-full)',
           border: 'none',
           background: matches ? 'var(--error-base)' : 'var(--error-mute)',
           color: matches ? 'var(--text-inverse)' : 'var(--error-base)',

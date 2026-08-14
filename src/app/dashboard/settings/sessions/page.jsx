@@ -261,7 +261,7 @@ function SessionRow({ session, onSignOut, busy }) {
             justifyContent: 'center',
             flexShrink: 0,
             padding: '8px 18px',
-            borderRadius: 'var(--radius-lg)',
+            borderRadius: 'var(--radius-full)',
             border: 'none',
             background: 'var(--bg-surface)',
             color: 'var(--text-sub)',

@@ -34,7 +34,7 @@ export default function SaveBar({ dirty, saving, onSave, onDiscard }) {
           justifyContent: 'center',
           gap: '8px',
           padding: '8px 18px',
-          borderRadius: 'var(--radius-lg)',
+          borderRadius: 'var(--radius-full)',
           border: 'none',
           cursor: !dirty || saving ? 'default' : 'pointer',
           fontFamily: 'var(--font-sans)',
