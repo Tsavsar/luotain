@@ -214,17 +214,32 @@ export default function LinksPage() {
             router.push(`/dashboard/links/${slugOf(link.shortUrl)}`)
           }
           onEdit={(link) => {
-            // TODO: route to the link's edit view once it exists
+            if (useMockData) {
+              toast('Mock data is on — nothing was changed')
+              return
+            }
+            setEditing(link)
           }}
-          onDuplicate={(link) => {
-            // Blocked on the create flow, not stubbed out of laziness:
-            // duplicating means creating a new link with this one's
-            // destination and a fresh slug, and there's no POST /api/links
-            // yet to create anything with. Wire this to the create form
-            // pre-filled from `link` once that exists.
-            toast('Duplicating needs the create flow first')
-          }}
+          onDuplicate={handleDuplicate}
           onDelete={handleDelete}
+        />
+
+        <EditLinkModal
+          open={Boolean(editing)}
+          link={editing}
+          onClose={() => setEditing(null)}
+          // Patched in place rather than refetched: the server returned the
+          // updated link, so a round trip would only confirm what we already
+          // have and flash the table while it loads.
+          onSaved={(updated) =>
+            setLinks((rows) =>
+              (rows || []).map((r) =>
+                r.id === updated.id
+                  ? { ...r, ...updated, destination: updated.destinationUrl }
+                  : r
+              )
+            )
+          }
         />
       </div>
 
