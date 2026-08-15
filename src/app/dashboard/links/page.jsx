@@ -67,56 +67,57 @@ export default function LinksPage() {
         if (!cancelled) setLinks([])
       })
 
-    // Extracted so edit and duplicate can refresh the table. It was inline in the
-    // effect, which meant anything else needing a reload had to repeat the fetch.
-    function load() {
-      return fetch('/api/links')
-        .then((res) => {
-          if (!res.ok) throw new Error(`links list failed: ${res.status}`)
-          return res.json()
-        })
-        .then((data) => setLinks(data.links ?? []))
-        .catch((err) => {
-          console.error('[LinksPage]', err)
-          setLinks([])
-        })
-    }
-
-    // Duplicating is a create with the same destination and a generated slug.
-    // Leaving the slug blank is what asks the server for one — copying the
-    // original's would collide, and appending "-2" invents a convention the rest
-    // of the app doesn't use.
-    async function handleDuplicate(link) {
-      if (useMockData) {
-        toast('Mock data is on — nothing was created')
-        return
-      }
-      try {
-        const res = await fetch('/api/links', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            destinationUrl: link.destinationUrl || link.destination,
-            title: link.title || null,
-          }),
-        })
-        const d = await res.json().catch(() => null)
-        if (!res.ok) {
-          toast.error(d?.error || `Couldn't duplicate (${res.status})`)
-          return
-        }
-        toast('Link duplicated')
-        await load()
-      } catch (err) {
-        console.error('[Links]', err)
-        toast.error("Couldn't duplicate the link")
-      }
-    }
-
     return () => {
       cancelled = true
     }
   }, [mockReady, useMockData, selectedRange, deletedUrls])
+
+  // Extracted so edit and duplicate can refresh the table. It was inline in
+  // the effect, which meant anything else needing a reload had to repeat the
+  // fetch — and left it defined inside the effect, out of scope for the JSX.
+  function load() {
+    return fetch('/api/links')
+      .then((res) => {
+        if (!res.ok) throw new Error(`links list failed: ${res.status}`)
+        return res.json()
+      })
+      .then((data) => setLinks(data.links ?? []))
+      .catch((err) => {
+        console.error('[LinksPage]', err)
+        setLinks([])
+      })
+  }
+
+  // Duplicating is a create with the same destination and a generated slug.
+  // Leaving the slug blank is what asks the server for one — copying the
+  // original's would collide, and appending "-2" invents a convention the rest
+  // of the app doesn't use.
+  async function handleDuplicate(link) {
+    if (useMockData) {
+      toast('Mock data is on — nothing was created')
+      return
+    }
+    try {
+      const res = await fetch('/api/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destinationUrl: link.destinationUrl || link.destination,
+          title: link.title || null,
+        }),
+      })
+      const d = await res.json().catch(() => null)
+      if (!res.ok) {
+        toast.error(d?.error || `Couldn't duplicate (${res.status})`)
+        return
+      }
+      toast('Link duplicated')
+      await load()
+    } catch (err) {
+      console.error('[Links]', err)
+      toast.error("Couldn't duplicate the link")
+    }
+  }
 
   async function handleDelete(link) {
     // Mock rows are display-only — their id is the link's own url
