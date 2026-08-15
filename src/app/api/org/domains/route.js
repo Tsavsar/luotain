@@ -79,6 +79,22 @@ export async function GET() {
       id: d.id,
       hostname: d.hostname,
       verified: d.verified,
+      // Derived HERE rather than in the page, because it depends on how the
+      // verify route recorded things and the two should stay in one place.
+      //
+      //   draft    added, never checked — still editable, still correctable
+      //   pending  checked, no CNAME there yet, which is normal while DNS
+      //            propagates and is NOT a failure
+      //   failed   checked, and a CNAME exists pointing somewhere else — the
+      //            only one of the three someone can act on right now
+      //   verified done
+      status: d.verified
+        ? 'verified'
+        : !d.lastCheckedAt
+          ? 'draft'
+          : d.lastError && d.lastError.startsWith('Found a CNAME')
+            ? 'failed'
+            : 'pending',
       // The host portion, which is what someone types into their DNS panel —
       // "go" rather than "go.acme.com".
       dnsHost: d.hostname.split('.')[0],

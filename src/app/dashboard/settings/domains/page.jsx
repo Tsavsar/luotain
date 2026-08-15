@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Inputfield from '@/components/input'
 import Tag from '@/components/tag'
+import Tooltip from '@/components/tooltip'
 import CopyButton from '@/components/copybutton'
 import { CopyIcon, MoreIcon } from '@/components/linktablehelpers'
 import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
@@ -59,6 +60,26 @@ function ArrowIcon() {
   )
 }
 
+function RefreshIcon() {
+  return (
+    <svg
+      width='14'
+      height='14'
+      viewBox='0 0 14 14'
+      fill='none'
+      aria-hidden='true'
+    >
+      <path
+        d='M12 7a5 5 0 1 1-1.6-3.7M12 2v2.6H9.4'
+        stroke='currentColor'
+        strokeWidth='1.3'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
 function HelpIcon() {
   return (
     <svg
@@ -106,6 +127,39 @@ function Spinner({ size = 13 }) {
 }
 
 const COL_HOST = '158px'
+
+// An icon on the same raised plate as the status tag beside it, so the pair
+// reads as one control group rather than a tag with a loose button next to it.
+function TagButton({ onClick, label, busy, children }) {
+  return (
+    <button
+      type='button'
+      onClick={onClick}
+      disabled={busy}
+      aria-label={label}
+      className='domain-recheck'
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '4px',
+        borderRadius: 'var(--radius-sm)',
+        background: 'var(--bg-default)',
+        border: '1px solid var(--stroke-soft)',
+        boxShadow: '0 2px 2px rgba(54, 54, 54, 0.04)',
+        cursor: busy ? 'default' : 'pointer',
+        color: 'var(--text-sub)',
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+// Note: the status itself is derived in GET /api/org/domains, not here. It
+// depends on how the verify route recorded the result, so the two belong
+// together rather than split across the network.
 
 // ─── The DNS instructions ───
 function DnsRecord({ label, value, copyable }) {
@@ -167,6 +221,7 @@ const VERIFIED = [
     hostname: 'links.studio.co',
     dnsHost: 'links',
     verified: true,
+    status: 'verified',
     links: 12,
     clicks: 40,
   },
@@ -175,6 +230,7 @@ const VERIFIED = [
     hostname: 'go.acme.com',
     dnsHost: 'go',
     verified: true,
+    status: 'verified',
     links: 5,
     clicks: 21,
   },
@@ -183,6 +239,7 @@ const VERIFIED = [
 // The two failures worth telling apart: a record that exists but points
 // somewhere else, and a hostname that doesn't resolve at all.
 const WRONG_TARGET = {
+  status: 'failed',
   id: 'd4',
   hostname: 'links.wrongtarget.co',
   dnsHost: 'links',
@@ -193,6 +250,7 @@ const WRONG_TARGET = {
 }
 
 const TYPO = {
+  status: 'failed',
   id: 'd5',
   hostname: 'go.acmee.com',
   dnsHost: 'go',
@@ -210,6 +268,20 @@ const WAITING = {
   hostname: 'try.acme.com',
   dnsHost: 'try',
   verified: false,
+  status: 'pending',
+  links: 0,
+  clicks: 0,
+  lastError: null,
+}
+
+// Just added, never checked. The step between pressing Add and pressing Save —
+// the one I kept collapsing into the others.
+const DRAFT = {
+  id: 'd0',
+  hostname: 'acme.com',
+  dnsHost: 'acme',
+  verified: false,
+  status: 'draft',
   links: 0,
   clicks: 0,
   lastError: null,
@@ -217,10 +289,11 @@ const WAITING = {
 
 function mockDomainsFor(state) {
   if (state === 'empty') return []
+  if (state === 'draft') return [DRAFT]
   if (state === 'pending') return [WAITING]
   if (state === 'failed') return [WRONG_TARGET, TYPO]
   if (state === 'verified') return VERIFIED
-  return [...VERIFIED, WAITING, WRONG_TARGET, TYPO]
+  return [...VERIFIED, DRAFT, WAITING, WRONG_TARGET, TYPO]
 }
 
 export default function DomainsPage() {
@@ -235,9 +308,8 @@ export default function DomainsPage() {
   const [hostname, setHostname] = useState('')
   const [adding, setAdding] = useState(false)
   const [checking, setChecking] = useState(null)
-  // Keyed by domain id. The pending row is an editable field, so each one needs
-  // its own working value — a single string would have two pending domains
-  // sharing one input.
+  // Only used by the DRAFT stage, where the hostname is still editable. Once
+  // saved it's committed and the row becomes text.
   const [drafts, setDrafts] = useState({})
   const [errored, setErrored] = useState(false)
   const [shaking, setShaking] = useState(false)
@@ -319,36 +391,32 @@ export default function DomainsPage() {
     }
   }
 
-  // Save: sends the edited hostname if it changed, then checks DNS. One
-  // request rather than rename-then-verify, so the two can't disagree about
-  // which domain was actually looked up.
-  async function handleSave(domain) {
+  // Just a check now. The rename path went with the editable field — a
+  // different hostname is a different domain, so it's remove-and-re-add.
+  async function handleCheck(domain) {
     if (useMockData) {
-      toast('Mock data is on — nothing was saved')
+      toast('Mock data is on — nothing was checked')
       return
     }
-    const edited = (drafts[domain.id] ?? domain.hostname).trim()
-    if (!edited) {
-      flag()
-      toast.error('Enter a domain')
-      return
-    }
-
     setChecking(domain.id)
     try {
+      // The edited hostname goes with it only from the draft stage. A
+      // committed domain sends nothing, so a re-check can't quietly rename it.
+      const edited =
+        domain.status === 'draft'
+          ? (drafts[domain.id] ?? domain.hostname).trim()
+          : null
+
       const res = await fetch(`/api/org/domains/${domain.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hostname: edited }),
+        body: JSON.stringify(edited ? { hostname: edited } : {}),
       })
       const d = await res.json().catch(() => null)
       if (!res.ok) {
         toast.error(d?.error || "Couldn't check the domain")
         return
       }
-      // The draft is dropped so the field falls back to whatever the server
-      // now holds. Keeping it would leave a stale edit sitting over a renamed
-      // domain, which looks like the save didn't take.
       setDrafts((prev) => {
         const next = { ...prev }
         delete next[domain.id]
@@ -442,11 +510,19 @@ export default function DomainsPage() {
       >
         Domains
       </p>
-      <span
-        style={{ display: 'flex', color: 'var(--text-soft)', flexShrink: 0 }}
+      {/* Explains what a custom domain IS before someone has one — the page is
+          otherwise a form with no context for anyone who arrived by browsing
+          the settings nav. */}
+      <Tooltip
+        label='Use your own domain for short links and QR codes, like go.yourbrand.com'
+        placement='left'
       >
-        <HelpIcon />
-      </span>
+        <span
+          style={{ display: 'flex', color: 'var(--text-soft)', flexShrink: 0 }}
+        >
+          <HelpIcon />
+        </span>
+      </Tooltip>
     </div>
   )
 
@@ -638,129 +714,263 @@ export default function DomainsPage() {
             Pending domain
           </p>
 
-          <div
-            style={{
-              display: 'flex',
-              gap: '8px',
-              alignItems: 'center',
-              width: '100%',
-            }}
-          >
-            {/* Editable, not a label. A pending domain is most often pending
-                because of a typo, and an uneditable one means the only fix is
-                remove and re-add — losing the DNS record you'd already set up
-                against it. */}
-            <div style={{ flex: '1 0 0', minWidth: 0 }}>
-              <Inputfield
-                lefticon={<GlobeIcon />}
-                value={drafts[d.id] ?? d.hostname}
-                onChange={(e) =>
-                  setDrafts((prev) => ({ ...prev, [d.id]: e.target.value }))
-                }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSave(d)
-                }}
-              />
-            </div>
-
-            {canManage ? (
-              <button
-                type='button'
-                onClick={() => handleSave(d)}
-                disabled={checking === d.id}
-                className='plan-cta'
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '8px 18px',
-                  borderRadius: 'var(--radius-full)',
-                  border: 'none',
-                  cursor: checking === d.id ? 'default' : 'pointer',
-                  flexShrink: 0,
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '12px',
-                  lineHeight: '16px',
-                  letterSpacing: '0.24px',
-                  background: 'var(--bg-weak)',
-                  color: 'var(--text-inverse)',
-                }}
-              >
-                {checking === d.id ? <Spinner /> : null}
-                {checking === d.id ? 'Saving' : 'Save'}
-              </button>
-            ) : null}
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-              padding: '16px',
-              borderRadius: '16px',
-              background: 'var(--bg-surface)',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}
-          >
-            <p
+          {/* Two different headers, because adding is a TWO-step: you get a
+              chance to correct the hostname and Save, and only then is it
+              committed and checked. I had built each of these and then replaced
+              one with the other — they're both real, at different points. */}
+          {d.status === 'draft' ? (
+            /* Just added. Still editable, because a typo here is likely and
+               the domain hasn't been checked against anything yet. */
+            <div
               style={{
-                margin: 0,
-                fontFamily: 'var(--font-sans)',
-                fontSize: '10px',
-                lineHeight: 1,
-                letterSpacing: '0.2px',
-                color: 'var(--text-soft)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+                width: '100%',
               }}
             >
-              Add this record at your DNS provider
-            </p>
+              <div style={{ flex: '1 0 0', minWidth: 0, maxWidth: '340px' }}>
+                <Inputfield
+                  lefticon={<GlobeIcon />}
+                  value={drafts[d.id] ?? d.hostname}
+                  onChange={(e) =>
+                    setDrafts((prev) => ({ ...prev, [d.id]: e.target.value }))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCheck(d)
+                  }}
+                />
+              </div>
 
+              {canManage ? (
+                <button
+                  type='button'
+                  onClick={() => handleCheck(d)}
+                  disabled={checking === d.id}
+                  className='plan-cta'
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '8px 18px',
+                    borderRadius: 'var(--radius-full)',
+                    border: 'none',
+                    cursor: checking === d.id ? 'default' : 'pointer',
+                    flexShrink: 0,
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '12px',
+                    lineHeight: '16px',
+                    letterSpacing: '0.24px',
+                    background: 'var(--bg-weak)',
+                    color: 'var(--text-inverse)',
+                  }}
+                >
+                  {checking === d.id ? <Spinner /> : null}
+                  {checking === d.id ? 'Saving' : 'Save'}
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            /* Committed. The hostname is settled; what changes now is whether
+               DNS has caught up, which is a status rather than an edit. */
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+                width: '100%',
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                  minWidth: 0,
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  lineHeight: '20px',
+                  letterSpacing: '0.28px',
+                  color: 'var(--text-strong)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {d.hostname}
+              </p>
+
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '10px',
+                  alignItems: 'center',
+                  padding: '0 6px',
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{ display: 'flex', gap: '4px', alignItems: 'center' }}
+                >
+                  <Tag
+                    tone={d.status === 'failed' ? 'error' : 'pending'}
+                    label={
+                      d.status === 'failed'
+                        ? 'Verification failed'
+                        : 'Pending verification'
+                    }
+                    // Only while waiting. A pulsing dot on a failed check
+                    // suggests something is still happening.
+                    pulse={d.status === 'pending'}
+                  />
+                  {canManage ? (
+                    <TagButton
+                      onClick={() => handleCheck(d)}
+                      label='Check again'
+                      busy={checking === d.id}
+                    >
+                      <span
+                        className={
+                          checking === d.id ? 'domain-spinning' : undefined
+                        }
+                        style={{ display: 'flex' }}
+                      >
+                        <RefreshIcon />
+                      </span>
+                    </TagButton>
+                  ) : null}
+                </div>
+
+                {canManage ? (
+                  <Dropdown
+                    align='right'
+                    trigger={
+                      <span style={{ display: 'flex' }}>
+                        <MoreIcon />
+                      </span>
+                    }
+                  >
+                    <DropdownMenu>
+                      <DropdownOption onClick={() => handleCheck(d)}>
+                        Check again
+                      </DropdownOption>
+                      <DropdownOption danger onClick={() => handleRemove(d)}>
+                        Remove domain
+                      </DropdownOption>
+                    </DropdownMenu>
+                  </Dropdown>
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          {/* The error panel is for 'failed' ONLY — a CNAME that exists and
+              points elsewhere. A domain merely waiting on DNS keeps the
+              instructions, because it hasn't done anything wrong and showing it
+              a red panel would say otherwise. */}
+          {d.status === 'failed' ? (
+            <>
+              <div
+                style={{
+                  padding: '16px',
+                  borderRadius: '16px',
+                  background: 'var(--error-mute)',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <p
+                  className='para-xs'
+                  style={{ color: 'var(--error-base)', margin: 0 }}
+                >
+                  {d.lastError}
+                </p>
+              </div>
+
+              {canManage ? (
+                <button
+                  type='button'
+                  onClick={() => handleCheck(d)}
+                  disabled={checking === d.id}
+                  className='create-secondary'
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '8px 18px',
+                    borderRadius: 'var(--radius-full)',
+                    border: 'none',
+                    cursor: checking === d.id ? 'default' : 'pointer',
+                    alignSelf: 'flex-start',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '12px',
+                    lineHeight: '16px',
+                    letterSpacing: '0.24px',
+                    background: 'var(--bg-surface)',
+                    color: 'var(--text-sub)',
+                  }}
+                >
+                  {checking === d.id ? <Spinner /> : null}
+                  {checking === d.id ? 'Checking' : 'Retry verification'}
+                </button>
+              ) : null}
+            </>
+          ) : (
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '4px',
+                gap: '16px',
+                padding: '16px',
+                borderRadius: '16px',
+                background: 'var(--bg-surface)',
                 width: '100%',
+                boxSizing: 'border-box',
               }}
             >
-              <DnsRecord label='Type' value='CNAME' />
-              <DnsRecord label='Host' value={d.dnsHost} />
-              <DnsRecord label='Value' value={data.cnameTarget} copyable />
-            </div>
-
-            {/* The last check's result, when there's been one. Saying nothing
-                after a failed verify leaves someone guessing whether it ran. */}
-            {d.lastError ? (
               <p
                 style={{
                   margin: 0,
                   fontFamily: 'var(--font-sans)',
                   fontSize: '10px',
-                  lineHeight: 1.4,
+                  lineHeight: 1,
                   letterSpacing: '0.2px',
-                  color: 'var(--text-sub)',
+                  color: 'var(--text-soft)',
                 }}
               >
-                {d.lastError}
+                Add this record at your DNS provider
               </p>
-            ) : null}
 
-            <p
-              style={{
-                margin: 0,
-                fontFamily: 'var(--font-sans)',
-                fontSize: '10px',
-                lineHeight: 1,
-                letterSpacing: '0.2px',
-                color: 'var(--text-soft)',
-              }}
-            >
-              DNS changes can take up to 24 hours to propagate.
-            </p>
-          </div>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                  width: '100%',
+                }}
+              >
+                <DnsRecord label='Type' value='CNAME' />
+                <DnsRecord label='Host' value={d.dnsHost} />
+                <DnsRecord label='Value' value={data.cnameTarget} copyable />
+              </div>
+
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '10px',
+                  lineHeight: 1,
+                  letterSpacing: '0.2px',
+                  color: 'var(--text-soft)',
+                }}
+              >
+                DNS changes can take up to 24 hours to propagate.
+              </p>
+            </div>
+          )}
         </div>
       ))}
 
@@ -863,7 +1073,7 @@ export default function DomainsPage() {
                     }
                   >
                     <DropdownMenu>
-                      <DropdownOption onClick={() => handleSave(d)}>
+                      <DropdownOption onClick={() => handleCheck(d)}>
                         Re-check DNS
                       </DropdownOption>
                       <DropdownOption danger onClick={() => handleRemove(d)}>

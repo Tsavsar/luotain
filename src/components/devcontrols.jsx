@@ -385,6 +385,7 @@ export default function DevControls({ theme, onToggleTheme }) {
         <Segmented
           options={[
             { id: 'empty', label: 'None' },
+            { id: 'draft', label: 'New' },
             { id: 'pending', label: 'Wait' },
             { id: 'failed', label: 'Fail' },
             { id: 'verified', label: 'OK' },

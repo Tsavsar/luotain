@@ -18,7 +18,14 @@ const VALID_PLANS = ['FREE', 'STARTER', 'PRO']
 // Which domain scenario the mock data renders. Static mock data showed every
 // outcome at once, which is useful for comparing them and useless for checking
 // that any ONE state looks right on its own.
-const VALID_DOMAIN_STATES = ['empty', 'pending', 'failed', 'verified', 'mixed']
+const VALID_DOMAIN_STATES = [
+  'empty',
+  'draft',
+  'pending',
+  'failed',
+  'verified',
+  'mixed',
+]
 
 const MockDataContext = createContext({
   useMockData: false,
