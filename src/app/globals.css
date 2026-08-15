@@ -2098,18 +2098,9 @@ html {
   color: var(--error-base) !important;
 }
 
-/* --- Plan card --- */
-
-/* Three 230px columns plus two 32px gaps is 754px — wider than a phone, and
-   wider than a small laptop once the card's own padding is counted. They stack
-   rather than scroll horizontally: a pricing table you have to swipe sideways
-   hides the comparison, which is the only reason the table exists. */
-@media (max-width: 900px) {
-  .plan-columns {
-    flex-direction: column;
-    gap: 28px !important;
-  }
-}
+/* The old .plan-columns rule is gone. It stacked the overlay's pricing table
+   below 900px while the billing page's identical table stayed horizontal —
+   two rules for one thing, which is exactly what sharing the component fixes. */
 
 /* Delete account. No :hover lightening — a destructive button shouldn't get
    friendlier as the cursor approaches it. It darkens instead. */
@@ -2371,15 +2362,14 @@ html {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
-/* --- Billing plan columns ---
-   The pricing row on the billing page. Distinct from .plan-columns, which is
-   the PlanCard overlay's and stacks below 900px.
+/* --- Plan picker columns ---
+   The pricing row, shared by the billing page and the upgrade overlay.
    
    Always horizontal. Three 230px columns come to 754px and the settings panel
    is about 494, so width: max-content lets it overflow the panel to the right
    — the panel has min-width 0, so a child sized to its content overflows
    visually without forcing the panel wider and squeezing the sidebar. */
-.billing-plan-columns {
+.plan-picker-columns {
   display: flex;
   gap: 32px;
   align-items: flex-start;

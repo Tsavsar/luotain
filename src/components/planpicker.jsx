@@ -132,7 +132,18 @@ export default function PlanPicker({
 
           The old .plan-columns is gone — it stacked below 900px, and the two
           surfaces using this had drifted onto different rules. */}
-      <div className='plan-picker-columns'>
+      <div
+        style={{
+          display: 'flex',
+          gap: '32px',
+          alignItems: 'flex-start',
+          // max-content, so the row takes the width it needs and overflows its
+          // container rather than wrapping. NOT a class: this lived in
+          // globals.css, and a component whose layout sits in another file
+          // stacks into a column the moment that file is out of step.
+          width: 'max-content',
+        }}
+      >
         {Object.values(PLANS).map((plan) => {
           const isCurrent = plan.id === currentPlan
           // Same rule as the PlanCard: Pro is the featured tier unless you're
