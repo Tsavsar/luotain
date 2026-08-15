@@ -183,6 +183,8 @@ export default function DevControls({ theme, onToggleTheme }) {
     toggleMockData,
     mockPlan,
     setMockPlan,
+    mockDomainState,
+    setMockDomainState,
     ready,
   } = useMockDataState()
 
@@ -373,6 +375,26 @@ export default function DevControls({ theme, onToggleTheme }) {
           options={PLAN_OPTIONS}
           value={mockPlan}
           onChange={chooseMockPlan}
+        />
+      </Row>
+
+      {/* Which domain scenario to render. Static mock data showed all five
+          outcomes at once, which compares them well and makes it impossible to
+          check that any one state looks right on its own. */}
+      <Row label='Domains' hint={useMockData ? null : 'turns mock data on'}>
+        <Segmented
+          options={[
+            { id: 'empty', label: 'None' },
+            { id: 'pending', label: 'Wait' },
+            { id: 'failed', label: 'Fail' },
+            { id: 'verified', label: 'OK' },
+            { id: 'mixed', label: 'All' },
+          ]}
+          value={mockDomainState}
+          onChange={(id) => {
+            setMockDomainState(id)
+            if (!useMockData) setMockData(true)
+          }}
         />
       </Row>
 

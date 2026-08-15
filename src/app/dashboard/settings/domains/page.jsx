@@ -161,13 +161,84 @@ function DnsRecord({ label, value, copyable }) {
   )
 }
 
+const VERIFIED = [
+  {
+    id: 'd1',
+    hostname: 'links.studio.co',
+    dnsHost: 'links',
+    verified: true,
+    links: 12,
+    clicks: 40,
+  },
+  {
+    id: 'd2',
+    hostname: 'go.acme.com',
+    dnsHost: 'go',
+    verified: true,
+    links: 5,
+    clicks: 21,
+  },
+]
+
+// The two failures worth telling apart: a record that exists but points
+// somewhere else, and a hostname that doesn't resolve at all.
+const WRONG_TARGET = {
+  id: 'd4',
+  hostname: 'links.wrongtarget.co',
+  dnsHost: 'links',
+  verified: false,
+  links: 0,
+  clicks: 0,
+  lastError: 'Found a CNAME pointing at ghs.googlehosted.com instead',
+}
+
+const TYPO = {
+  id: 'd5',
+  hostname: 'go.acmee.com',
+  dnsHost: 'go',
+  verified: false,
+  links: 0,
+  clicks: 0,
+  lastError: "That hostname doesn't resolve — check it's spelt right",
+}
+
+// Waiting on DNS. lastError is null rather than a message, because a domain
+// added a minute ago hasn't failed — it just hasn't been checked, and saying
+// otherwise reports a result that never happened.
+const WAITING = {
+  id: 'd3',
+  hostname: 'try.acme.com',
+  dnsHost: 'try',
+  verified: false,
+  links: 0,
+  clicks: 0,
+  lastError: null,
+}
+
+function mockDomainsFor(state) {
+  if (state === 'empty') return []
+  if (state === 'pending') return [WAITING]
+  if (state === 'failed') return [WRONG_TARGET, TYPO]
+  if (state === 'verified') return VERIFIED
+  return [...VERIFIED, WAITING, WRONG_TARGET, TYPO]
+}
+
 export default function DomainsPage() {
   const router = useRouter()
-  const { useMockData, mockPlan, ready: mockReady } = useMockDataState()
+  const {
+    useMockData,
+    mockPlan,
+    mockDomainState,
+    ready: mockReady,
+  } = useMockDataState()
   const [data, setData] = useState(null)
   const [hostname, setHostname] = useState('')
   const [adding, setAdding] = useState(false)
   const [checking, setChecking] = useState(null)
+  // Keyed by domain id. The pending row is an editable field, so each one needs
+  // its own working value — a single string would have two pending domains
+  // sharing one input.
+  const [drafts, setDrafts] = useState({})
   const [errored, setErrored] = useState(false)
   const [shaking, setShaking] = useState(false)
   const timers = useRef([])
@@ -193,41 +264,17 @@ export default function DomainsPage() {
         cnameTarget: 'cname.luotain.app',
         // Both states at once on Pro — a verified pair and one still pending —
         // since the page's whole job is showing the difference.
-        domains: plan.customDomain
-          ? [
-              {
-                id: 'd1',
-                hostname: 'links.studio.co',
-                dnsHost: 'links',
-                verified: true,
-                links: 12,
-                clicks: 40,
-              },
-              {
-                id: 'd2',
-                hostname: 'go.acme.com',
-                dnsHost: 'go',
-                verified: true,
-                links: 5,
-                clicks: 21,
-              },
-              {
-                id: 'd3',
-                hostname: 'try.acme.com',
-                dnsHost: 'try',
-                verified: false,
-                links: 0,
-                clicks: 0,
-                lastError: 'No CNAME record found yet',
-              },
-            ]
-          : [],
+        // Built from the chosen scenario rather than a fixed list — see the
+        // Domains row in the dev panel. The messages are the exact strings the
+        // verify endpoint produces, tested against live DNS, so what renders
+        // here is what a real check would say.
+        domains: plan.customDomain ? mockDomainsFor(mockDomainState) : [],
       })
       return
     }
 
     load()
-  }, [mockReady, useMockData, mockPlan])
+  }, [mockReady, useMockData, mockPlan, mockDomainState])
 
   function flag() {
     setErrored(true)
@@ -272,21 +319,42 @@ export default function DomainsPage() {
     }
   }
 
-  async function handleCheck(domain) {
+  // Save: sends the edited hostname if it changed, then checks DNS. One
+  // request rather than rename-then-verify, so the two can't disagree about
+  // which domain was actually looked up.
+  async function handleSave(domain) {
     if (useMockData) {
-      toast('Mock data is on — nothing was checked')
+      toast('Mock data is on — nothing was saved')
       return
     }
+    const edited = (drafts[domain.id] ?? domain.hostname).trim()
+    if (!edited) {
+      flag()
+      toast.error('Enter a domain')
+      return
+    }
+
     setChecking(domain.id)
     try {
       const res = await fetch(`/api/org/domains/${domain.id}`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hostname: edited }),
       })
       const d = await res.json().catch(() => null)
       if (!res.ok) {
         toast.error(d?.error || "Couldn't check the domain")
         return
       }
+      // The draft is dropped so the field falls back to whatever the server
+      // now holds. Keeping it would leave a stale edit sitting over a renamed
+      // domain, which looks like the save didn't take.
+      setDrafts((prev) => {
+        const next = { ...prev }
+        delete next[domain.id]
+        return next
+      })
+
       toast(
         d.domain.verified
           ? `${d.domain.hostname} is verified`
@@ -578,52 +646,27 @@ export default function DomainsPage() {
               width: '100%',
             }}
           >
-            <div
-              style={{
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'center',
-                flex: '1 0 0',
-                minWidth: 0,
-                padding: '8px 4px 8px 10px',
-                borderRadius: 'var(--radius-lg)',
-                background: 'var(--bg-default)',
-                border: '1px solid var(--stroke-soft)',
-                boxShadow: '0 2px 4px rgba(54, 54, 54, 0.04)',
-              }}
-            >
-              <span
-                style={{
-                  display: 'flex',
-                  color: 'var(--text-soft)',
-                  flexShrink: 0,
+            {/* Editable, not a label. A pending domain is most often pending
+                because of a typo, and an uneditable one means the only fix is
+                remove and re-add — losing the DNS record you'd already set up
+                against it. */}
+            <div style={{ flex: '1 0 0', minWidth: 0 }}>
+              <Inputfield
+                lefticon={<GlobeIcon />}
+                value={drafts[d.id] ?? d.hostname}
+                onChange={(e) =>
+                  setDrafts((prev) => ({ ...prev, [d.id]: e.target.value }))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSave(d)
                 }}
-              >
-                <GlobeIcon />
-              </span>
-              <p
-                style={{
-                  margin: 0,
-                  flex: '1 0 0',
-                  minWidth: 0,
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  letterSpacing: '0.28px',
-                  color: 'var(--text-strong)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {d.hostname}
-              </p>
+              />
             </div>
 
             {canManage ? (
               <button
                 type='button'
-                onClick={() => handleCheck(d)}
+                onClick={() => handleSave(d)}
                 disabled={checking === d.id}
                 className='plan-cta'
                 style={{
@@ -645,7 +688,7 @@ export default function DomainsPage() {
                 }}
               >
                 {checking === d.id ? <Spinner /> : null}
-                {checking === d.id ? 'Checking' : 'Verify'}
+                {checking === d.id ? 'Saving' : 'Save'}
               </button>
             ) : null}
           </div>
@@ -820,7 +863,7 @@ export default function DomainsPage() {
                     }
                   >
                     <DropdownMenu>
-                      <DropdownOption onClick={() => handleCheck(d)}>
+                      <DropdownOption onClick={() => handleSave(d)}>
                         Re-check DNS
                       </DropdownOption>
                       <DropdownOption danger onClick={() => handleRemove(d)}>
