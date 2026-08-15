@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { PLANS } from '@/lib/plans'
+import { listInvoices } from '@/lib/billing'
 
 // GET /api/org/billing
 export async function GET() {
@@ -17,6 +18,7 @@ export async function GET() {
         cancelAtPeriodEnd: true,
         cardBrand: true,
         cardLast4: true,
+        customerId: true,
       },
     }),
     prisma.membership.findFirst({
@@ -51,9 +53,9 @@ export async function GET() {
       org.cardBrand && org.cardLast4
         ? { brand: org.cardBrand, last4: org.cardLast4 }
         : null,
-    // No invoices table — these come from the payment provider, which isn't
-    // connected yet. An empty array rather than fabricated rows, so the page
-    // shows its real empty state instead of a plausible lie.
-    invoices: [],
+    // Fetched live from Polar rather than stored. A mirrored invoice that
+    // disagrees with the provider's is worse than no invoice at all, and
+    // there's nothing here worth caching.
+    invoices: await listInvoices({ customerId: org.customerId }),
   })
 }

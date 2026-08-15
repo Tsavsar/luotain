@@ -1,4 +1,4 @@
- // ─── Billing provider ───
+// ─── Billing provider ───
 // Polar, behind a deliberately thin adapter.
 //
 // Everything Polar-specific lives in THIS file. The routes and the billing page
@@ -21,7 +21,8 @@ function client() {
   }
   return new Polar({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
-    server: process.env.POLAR_SERVER === 'production' ? 'production' : 'sandbox',
+    server:
+      process.env.POLAR_SERVER === 'production' ? 'production' : 'sandbox',
   })
 }
 
@@ -54,10 +55,18 @@ export function productIdFor(planId, annual) {
 }
 
 // Creates a hosted checkout and returns its URL.
-export async function createCheckout({ planId, annual, email, organizationId, userId }) {
+export async function createCheckout({
+  planId,
+  annual,
+  email,
+  organizationId,
+  userId,
+}) {
   const productId = productIdFor(planId, annual)
   if (!productId) {
-    return { error: `No Polar product configured for ${planId} ${annual ? 'yearly' : 'monthly'}` }
+    return {
+      error: `No Polar product configured for ${planId} ${annual ? 'yearly' : 'monthly'}`,
+    }
   }
 
   try {
@@ -85,7 +94,8 @@ export async function createCheckout({ planId, annual, email, organizationId, us
 // The customer portal, where someone updates a card or cancels. Polar hosts it,
 // which is why this app never sees a card number.
 export async function openPortal({ customerId }) {
-  if (!customerId) return { error: 'This workspace has no billing customer yet' }
+  if (!customerId)
+    return { error: 'This workspace has no billing customer yet' }
   try {
     const session = await client().customerSessions.create({ customerId })
     return { url: session.customerPortalUrl }
@@ -121,4 +131,33 @@ export function planFromProductId(productId) {
     if (id && id === productId) return { planId, interval }
   }
   return null
+}
+
+// Past orders, for the invoices table. Polar holds these — we don't keep a copy,
+// because a mirrored invoice that disagrees with the provider's is worse than
+// no invoice at all.
+export async function listInvoices({ customerId, limit = 10 }) {
+  if (!customerId) return []
+  try {
+    const res = await client().orders.list({ customerId, limit })
+    const items = res?.result?.items || res?.items || []
+    return items.map((o) => ({
+      id: o.id,
+      date: o.createdAt || o.created_at,
+      // Polar returns minor units — cents, not dollars. Dividing here rather
+      // than in the page keeps the provider's quirks in this file.
+      amount: typeof o.totalAmount === 'number' ? o.totalAmount / 100 : null,
+      currency: (o.currency || 'usd').toUpperCase(),
+      status: o.status === 'paid' ? 'paid' : o.status || 'pending',
+      // Polar hosts the PDF. Linking to theirs rather than generating our own
+      // means the receipt someone downloads is the one their accountant can
+      // verify against the payment.
+      url: o.invoiceUrl || o.invoice_url || null,
+    }))
+  } catch (err) {
+    // Never throws. A failed invoice fetch should leave the rest of the billing
+    // page working, not blank it — the plan and card matter more.
+    console.error('[billing.listInvoices]', err)
+    return []
+  }
 }

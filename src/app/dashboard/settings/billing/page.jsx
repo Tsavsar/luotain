@@ -157,6 +157,39 @@ export default function BillingPage() {
     }
   }
 
+  // Real invoices open Polar's hosted PDF. Mock ones generate a plain-text
+  // receipt in the browser, so the download does something real while testing
+  // rather than toasting "not connected" — the point of mock mode is that the
+  // flow works end to end.
+  function downloadInvoice(inv) {
+    if (inv.url) {
+      window.open(inv.url, '_blank', 'noopener,noreferrer')
+      return
+    }
+
+    const lines = [
+      'LUOTAIN',
+      '',
+      'Receipt',
+      `Date      ${formatDate(inv.date)}`,
+      `Amount    ${inv.currency || 'US$'}${inv.amount}`,
+      `Status    ${inv.status}`,
+      `Plan      ${data.plan.name}`,
+      `Reference ${inv.id}`,
+      '',
+      'Mock receipt — no payment was taken.',
+    ]
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `luotain-receipt-${inv.id}.txt`
+    a.click()
+    // Revoked, or every download leaks its blob for the life of the page.
+    URL.revokeObjectURL(url)
+  }
+
   async function handleChoose(planId, annual) {
     if (useMockData) {
       toast('Mock data is on — nothing is charged')
@@ -518,7 +551,9 @@ export default function BillingPage() {
                   justifyContent: 'flex-end',
                 }}
               >
-                <ActionLink onClick={openPortal}>View</ActionLink>
+                <ActionLink onClick={() => downloadInvoice(inv)}>
+                  Download
+                </ActionLink>
               </div>
             </div>
           ))}
