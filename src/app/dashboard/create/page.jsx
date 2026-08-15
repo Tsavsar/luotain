@@ -803,7 +803,10 @@ export default function CreatePage() {
 
             Hidden when there are no links yet — an empty picker offering
             nothing is a control that can only disappoint. */}
-        {mode !== 'qr' && existingLinks && existingLinks.length > 0 ? (
+        {/* Shown even with NO links: someone who wants a QR from a standing
+            start had no way in, because the picker was the only route to the
+            designer and it hid itself when empty. */}
+        {mode !== 'qr' && existingLinks ? (
           <div
             style={{
               display: 'flex',
@@ -824,7 +827,9 @@ export default function CreatePage() {
                 color: 'var(--text-soft)',
               }}
             >
-              Or add a QR code to a link you already have
+              {existingLinks.length > 0
+                ? 'Or add a QR code to a link you already have'
+                : 'Or design a QR code for a link you make now'}
             </p>
 
             <Dropdown

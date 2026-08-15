@@ -27,6 +27,7 @@ import {
 } from '@/lib/mockAnalytics'
 import { shortUrlFor } from '@/lib/shortlink'
 import LogoMark from '@/components/logomark'
+import EditLinkModal from '@/components/editlinkmodal'
 import Alert, { AlertAction, AlertInfoIcon } from '@/components/alert'
 import Modal from '@/components/modal'
 import CopyButton from '@/components/copybutton'
@@ -166,6 +167,8 @@ export default function LinkDetailPage() {
   // for the same reason.
   const [activeFilters, setActiveFilters] = useState([])
   const [collapsingAlert, setCollapsingAlert] = useState(false)
+  const [ogImage, setOgImage] = useState(null)
+  const [editing, setEditing] = useState(null)
   const [recovering, setRecovering] = useState(false)
   // QR state. `hasQr` starts from the link's own record, so the field
   // shows the right thing on load rather than always starting at
@@ -341,6 +344,53 @@ export default function LinkDetailPage() {
   const deletedPhrase =
     deletedDaysAgo === 0 ? 'today' : `${pluralDays(deletedDaysAgo)} ago`
   const expiryPhrase = daysLeft === 0 ? 'today' : `in ${pluralDays(daysLeft)}`
+
+  // The destination's own preview image. Fetched through our server because
+  // most sites refuse a cross-origin read from a page, and because a visitor's
+  // browser shouldn't contact the destination just to render a dashboard.
+  //
+  // Failure is expected and silent: plenty of sites 403 a bot user agent —
+  // vercel.com and nextjs.org both do — so the logo fallback is the normal
+  // case rather than an edge one.
+  useEffect(() => {
+    const destination = link?.destination || link?.destinationUrl
+    if (!destination) return
+    let cancelled = false
+    fetch(`/api/og?url=${encodeURIComponent(destination)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.image) setOgImage(d.image)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [link?.destination, link?.destinationUrl])
+
+  // Same as the table's: a create with this destination and a fresh slug.
+  async function handleDuplicate() {
+    if (!link) return
+    try {
+      const res = await fetch('/api/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destinationUrl: link.destination || link.destinationUrl,
+          title: link.title || null,
+        }),
+      })
+      const d = await res.json().catch(() => null)
+      if (!res.ok) {
+        toast.error(d?.error || "Couldn't duplicate the link")
+        return
+      }
+      toast(`${d.link.shortUrl} created`)
+      router.push(`/dashboard/links/${d.link.shortCode}`)
+    } catch (err) {
+      console.error('[LinkPage]', err)
+      toast.error("Couldn't duplicate the link")
+    }
+  }
 
   async function handleRecover() {
     if (!link || recovering) return
@@ -545,12 +595,11 @@ export default function LinkDetailPage() {
                 <DropdownOption onClick={handleRecover}>Recover</DropdownOption>
               ) : (
                 <>
-                  <DropdownOption
-                    onClick={() => {
-                      // TODO: route to the link's edit view once it exists
-                    }}
-                  >
+                  <DropdownOption onClick={() => setEditing(link)}>
                     Edit
+                  </DropdownOption>
+                  <DropdownOption onClick={handleDuplicate}>
+                    Duplicate
                   </DropdownOption>
                   <DropdownOption
                     danger
@@ -655,7 +704,7 @@ export default function LinkDetailPage() {
             ) : (
               <>
                 <LinkPreview
-                  imageUrl={link?.ogImageUrl}
+                  imageUrl={link?.ogImageUrl || ogImage}
                   alt={link?.title || ''}
                 />
 
@@ -978,6 +1027,22 @@ export default function LinkDetailPage() {
         markerColor={qr.markerColor}
         pattern={qr.pattern}
         branding={qr.branding}
+      />
+
+      <EditLinkModal
+        open={Boolean(editing)}
+        link={editing}
+        onClose={() => setEditing(null)}
+        // The slug can change, and the URL contains it — so a rename has to
+        // move the page too, or you'd be sitting on a route that no longer
+        // resolves.
+        onSaved={(updated) => {
+          if (updated.shortCode && updated.shortCode !== link?.shortCode) {
+            router.replace(`/dashboard/links/${updated.shortCode}`)
+            return
+          }
+          setLink((prev) => (prev ? { ...prev, ...updated } : prev))
+        }}
       />
 
       <DeleteConfirmModal
