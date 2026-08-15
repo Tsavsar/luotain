@@ -136,20 +136,63 @@ export default function BillingPage() {
     }
   }, [mockReady, useMockData, mockPlan])
 
-  function notConnected() {
+  // The billing portal: card changes, invoices, cancellation. Polar hosts it,
+  // so this app never handles a card.
+  async function openPortal() {
     if (useMockData) {
       toast('Mock data is on — nothing is charged')
       return
     }
-    // Says what's actually true rather than failing silently. Checkout is the
-    // one thing on this page that can't work until a provider is wired up.
-    toast('Checkout is not connected yet')
+    try {
+      const res = await fetch('/api/billing/portal', { method: 'POST' })
+      const d = await res.json().catch(() => null)
+      if (!res.ok) {
+        toast.error(d?.error || "Couldn't open the billing portal")
+        return
+      }
+      window.location.href = d.url
+    } catch (err) {
+      console.error('[Billing]', err)
+      toast.error("Couldn't open the billing portal")
+    }
   }
 
-  function handleChoose(planId) {
+  async function handleChoose(planId, annual) {
+    if (useMockData) {
+      toast('Mock data is on — nothing is charged')
+      return
+    }
+
     setBusyPlan(planId)
-    notConnected()
-    setBusyPlan(null)
+    try {
+      const res = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, annual: Boolean(annual) }),
+      })
+      const d = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        // A downgrade isn't a checkout — there's nothing to pay. The route says
+        // so and we send them to the portal instead of showing an error for
+        // something that isn't one.
+        if (d?.usePortal) {
+          await openPortal()
+          return
+        }
+        toast.error(d?.error || `Couldn't start checkout (${res.status})`)
+        return
+      }
+
+      // Full navigation, not the router. Checkout is Polar's domain, so this
+      // leaves the app entirely.
+      window.location.href = d.url
+    } catch (err) {
+      console.error('[Billing]', err)
+      toast.error("Couldn't start checkout")
+    } finally {
+      setBusyPlan(null)
+    }
   }
 
   if (!data) {
@@ -411,7 +454,7 @@ export default function BillingPage() {
           )}
 
           {canManage ? (
-            <ActionLink onClick={notConnected}>
+            <ActionLink onClick={openPortal}>
               {data.card ? 'Update' : 'Add payment method'}
             </ActionLink>
           ) : null}
@@ -475,7 +518,7 @@ export default function BillingPage() {
                   justifyContent: 'flex-end',
                 }}
               >
-                <ActionLink onClick={notConnected}>View</ActionLink>
+                <ActionLink onClick={openPortal}>View</ActionLink>
               </div>
             </div>
           ))}
@@ -524,7 +567,7 @@ export default function BillingPage() {
           </div>
           <button
             type='button'
-            onClick={notConnected}
+            onClick={openPortal}
             className='session-signout'
             style={{
               display: 'flex',
