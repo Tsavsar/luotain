@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BackButton from '@/components/backbutton'
-import SegmentedTabs from '@/components/segmentedtabs'
 import Inputfield from '@/components/input'
 import Tooltip from '@/components/tooltip'
 import QrDesigner from '@/components/qrdesigner'
@@ -220,7 +219,11 @@ export default function CreatePage() {
   const router = useRouter()
   const { useMockData, ready: mockReady, deletedUrls } = useMockDataState()
 
-  const [mode, setMode] = useState('link')
+  // Fixed. The mode selector is gone — this page only creates links now, and a
+  // QR comes with each one. Kept as a constant rather than ripped out of every
+  // branch below, so the QR design step stays reachable from the link page
+  // without a rewrite of the whole file.
+  const mode = 'link'
   // QR mode has two sources: a link that already exists, or a new one created
   // alongside the code. Before this, the only way to get a QR for an existing
   // link was to navigate to that link's detail page and use the field there —
@@ -342,12 +345,12 @@ export default function CreatePage() {
     if (submitting) return
     if (!validate()) return
 
-    if (mode === 'qr' && qrSource === 'existing') {
-      // Different requirement entirely: no destination, domain or slug to
-      // validate — just whether a link was picked.
+    if (mode === 'qr' && qrSource !== 'new') {
+      // Pointing at an existing link, so there's no destination, domain or slug
+      // to validate — only whether one was picked.
       if (!selectedLinkId) {
         flagError({ destination: true })
-        toast.error('Choose a link for the code')
+        toast.error('Choose a link, or create a new one')
         return
       }
       setStep('design')
@@ -501,19 +504,6 @@ export default function CreatePage() {
           </p>
         </div>
 
-        <SegmentedTabs
-          items={[
-            { id: 'link', label: 'Shorten a link' },
-            { id: 'qr', label: 'Create a QR code' },
-          ]}
-          activeId={mode}
-          onChange={(next) => {
-            setMode(next)
-            setStep('details')
-          }}
-          padX='14px'
-        />
-
         {mode === 'qr' && step === 'design' ? (
           <QrDesigner
             color={qr.color}
@@ -540,25 +530,7 @@ export default function CreatePage() {
           <div
             style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
           >
-            {/* QR mode only. A code can point at a link that already exists or
-                at a new one — and picking an existing link is the more common
-                of the two, so it leads. */}
             {mode === 'qr' ? (
-              <SegmentedTabs
-                items={[
-                  { id: 'existing', label: 'Existing link' },
-                  { id: 'new', label: 'New link' },
-                ]}
-                activeId={qrSource}
-                onChange={(id) => {
-                  setQrSource(id)
-                  clearError('destination')
-                }}
-                padX='14px'
-              />
-            ) : null}
-
-            {mode === 'qr' && qrSource === 'existing' ? (
               <FieldLabel label='Link'>
                 <Dropdown
                   fullWidth
@@ -570,7 +542,6 @@ export default function CreatePage() {
                     <Inputfield
                       lefticon={<LinkIcon />}
                       righticon={<ChevronIcon />}
-                      textSize='12px'
                       placeholder={
                         existingLinks === null
                           ? 'Loading your links…'
@@ -578,14 +549,20 @@ export default function CreatePage() {
                             ? 'No links yet — create one first'
                             : 'Choose a link'
                       }
-                      value={selectedLink ? selectedLink.shortUrl : ''}
+                      value={
+                        qrSource === 'new'
+                          ? 'A new link'
+                          : selectedLink
+                            ? selectedLink.shortUrl
+                            : ''
+                      }
                       onChange={() => {}}
                       error={Boolean(errors.destination)}
                       shaking={Boolean(shaking.destination)}
                     />
                   }
                 >
-                  <DropdownMenu>
+                  <DropdownMenu width='440px'>
                     {existingLinks === null ? (
                       // Plain text, not a DropdownOption — it has no disabled
                       // state, and a clickable-looking row that does nothing is
@@ -609,7 +586,7 @@ export default function CreatePage() {
                           padding: '8px 10px',
                         }}
                       >
-                        No links yet — switch to New link
+                        No links yet — create one below
                       </p>
                     ) : (
                       existingLinks.map((l) => (
@@ -618,6 +595,9 @@ export default function CreatePage() {
                           selected={l.id === selectedLinkId}
                           onClick={() => {
                             setSelectedLinkId(l.id)
+                            // Back out of new-link mode, which hides the
+                            // destination and slug fields again.
+                            setQrSource('existing')
                             clearError('destination')
                           }}
                         >
@@ -625,10 +605,39 @@ export default function CreatePage() {
                         </DropdownOption>
                       ))
                     )}
+
+                    {/* The second path, as an option rather than a toggle above
+                        the field. This replaced an Existing link / New link
+                        segmented control — which was a whole extra control to
+                        answer a question the dropdown was already asking. */}
+                    <div
+                      aria-hidden='true'
+                      style={{
+                        height: '1px',
+                        margin: '4px 6px',
+                        background: 'var(--stroke-soft)',
+                      }}
+                    />
+                    <DropdownOption
+                      selected={qrSource === 'new'}
+                      onClick={() => {
+                        setQrSource('new')
+                        setSelectedLinkId(null)
+                        clearError('destination')
+                      }}
+                    >
+                      Create a new link
+                    </DropdownOption>
                   </DropdownMenu>
                 </Dropdown>
               </FieldLabel>
-            ) : (
+            ) : null}
+
+            {/* Shown for a plain link, and for a QR pointed at a new one — those
+                aren't alternatives, since a new link needs a destination either
+                way. It used to be an either/or with the picker above, which meant
+                choosing "new link" left nowhere to type the URL. */}
+            {mode !== 'qr' || qrSource === 'new' ? (
               <FieldLabel label='Destination'>
                 <Inputfield
                   lefticon={<LinkIcon />}
@@ -645,7 +654,7 @@ export default function CreatePage() {
                   shaking={Boolean(shaking.destination)}
                 />
               </FieldLabel>
-            )}
+            ) : null}
 
             {/* Hidden when pointing at an existing link: it already has a
                 domain and a slug, and offering to set them again would imply
@@ -673,11 +682,10 @@ export default function CreatePage() {
                       value={domain}
                       onChange={() => {}}
                       righticon={<ChevronIcon />}
-                      textSize='12px'
                     />
                   }
                 >
-                  <DropdownMenu>
+                  <DropdownMenu width='220px'>
                     {domains.map((d) => (
                       <DropdownOption
                         key={d.hostname}
@@ -732,9 +740,17 @@ export default function CreatePage() {
               </FieldLabel>
             </div>
 
+            {/* Describes the domain and slug fields, so it's hidden with them.
+                It sat outside that row before, which meant it appeared under the
+                link picker and offered slug advice for a link that already has
+                one. */}
             <p
               className='para-xs'
-              style={{ color: 'var(--text-soft)', margin: 0 }}
+              style={{
+                color: 'var(--text-soft)',
+                margin: 0,
+                display: mode === 'qr' && qrSource !== 'new' ? 'none' : 'block',
+              }}
             >
               Leave the slug blank and we&rsquo;ll generate one. Only verified
               domains show up here,{' '}
