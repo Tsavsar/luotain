@@ -219,17 +219,36 @@ export default function CreatePage() {
   const router = useRouter()
   const { useMockData, ready: mockReady, deletedUrls } = useMockDataState()
 
-  // Fixed. The mode selector is gone — this page only creates links now, and a
-  // QR comes with each one. Kept as a constant rather than ripped out of every
-  // branch below, so the QR design step stays reachable from the link page
-  // without a rewrite of the whole file.
-  const mode = 'link'
+  // Not chosen from a toggle any more. You get here by PICKING AN EXISTING
+  // LINK — selecting one is the whole gesture, and it puts you in the designer.
+  // Typing a new destination instead creates a link, and a QR comes with it.
+  const [mode, setMode] = useState('link')
   // QR mode has two sources: a link that already exists, or a new one created
   // alongside the code. Before this, the only way to get a QR for an existing
   // link was to navigate to that link's detail page and use the field there —
   // which meant the create screen couldn't do the more common of the two jobs.
   const [qrSource, setQrSource] = useState('existing')
   const [existingLinks, setExistingLinks] = useState(null)
+
+  // Loaded on mount. It used to load only when the QR tab was opened, and that
+  // tab is gone — so without this the picker below would never have anything
+  // in it.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/links')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (!cancelled) setExistingLinks(d?.links ?? [])
+      })
+      .catch(() => {
+        // An empty list rather than null, so the picker simply doesn't render
+        // instead of hanging in a loading state forever.
+        if (!cancelled) setExistingLinks([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
   const [selectedLinkId, setSelectedLinkId] = useState(null)
   // QR creation is two steps: the destination details, then the design.
   // Links are one step, so this only ever leaves 'details' in QR mode.
@@ -776,6 +795,71 @@ export default function CreatePage() {
             </p>
           </div>
         )}
+
+        {/* The way into QR design, and the only one. No mode toggle: picking a
+            link IS the gesture, and it puts you straight in the designer.
+            Typing a destination above instead creates a new link, which comes
+            with its own code.
+
+            Hidden when there are no links yet — an empty picker offering
+            nothing is a control that can only disappoint. */}
+        {mode !== 'qr' && existingLinks && existingLinks.length > 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              width: '100%',
+              paddingTop: '14px',
+              borderTop: '1px solid var(--stroke-soft)',
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                fontFamily: 'var(--font-sans)',
+                fontSize: '10px',
+                lineHeight: 1,
+                letterSpacing: '0.2px',
+                color: 'var(--text-soft)',
+              }}
+            >
+              Or add a QR code to a link you already have
+            </p>
+
+            <Dropdown
+              fullWidth
+              trigger={
+                <Inputfield
+                  lefticon={<LinkIcon />}
+                  righticon={<ChevronIcon />}
+                  placeholder='Choose a link'
+                  value=''
+                  onChange={() => {}}
+                />
+              }
+            >
+              <DropdownMenu>
+                {existingLinks.map((l) => (
+                  <DropdownOption
+                    key={l.id}
+                    onClick={() => {
+                      setSelectedLinkId(l.id)
+                      setQrSource('existing')
+                      // Straight to the designer. The details step has nothing
+                      // left to ask — the link already has its destination,
+                      // domain and slug.
+                      setMode('qr')
+                      setStep('design')
+                    }}
+                  >
+                    {l.shortUrl}
+                  </DropdownOption>
+                ))}
+              </DropdownMenu>
+            </Dropdown>
+          </div>
+        ) : null}
 
         <div
           style={{
