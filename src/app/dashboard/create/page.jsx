@@ -502,7 +502,7 @@ export default function CreatePage() {
         return
       }
 
-      toast(`${data.link.shortUrl} created`)
+      toast(`${data.link.shortUrl} ${isEditing ? 'updated' : 'created'}`)
       // Straight to the new link's page — node 147:855 is that page with
       // empty analytics, which already exists.
       router.push(`/dashboard/links/${data.link.shortCode}`)
@@ -549,7 +549,9 @@ export default function CreatePage() {
           >
             {mode === 'qr' && step === 'design'
               ? 'Design your QR code'
-              : 'What do you want to create?'}
+              : isEditing
+                ? 'Edit link'
+                : 'Create a short link'}
           </p>
         </div>
 
@@ -836,7 +838,7 @@ export default function CreatePage() {
         {/* Shown even with NO links: someone who wants a QR from a standing
             start had no way in, because the picker was the only route to the
             designer and it hid itself when empty. */}
-        {mode !== 'qr' && existingLinks ? (
+        {mode !== 'qr' && !isEditing && existingLinks ? (
           <div
             style={{
               display: 'flex',
@@ -955,9 +957,13 @@ export default function CreatePage() {
             }}
           >
             {submitting
-              ? 'Creating…'
+              ? isEditing
+                ? 'Saving…'
+                : 'Creating…'
               : mode === 'link'
-                ? 'Create link'
+                ? isEditing
+                  ? 'Save changes'
+                  : 'Create link'
                 : step === 'details'
                   ? 'Design QR code'
                   : 'Create code'}
