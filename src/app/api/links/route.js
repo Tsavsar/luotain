@@ -177,11 +177,48 @@ export async function POST(request) {
 
   // Resolve the domain first — everything below is scoped to it, since a
   // slug is only unique within one.
-  const requestedHostname = String(body?.domain || '').trim() || SHORT_DOMAIN
-  const domainRecord = await prisma.domain.findUnique({
-    where: { hostname: requestedHostname },
-    select: { id: true, hostname: true, verified: true, organizationId: true },
-  })
+  const requestedHostname = String(body?.domain || '').trim()
+
+  let domainRecord = requestedHostname
+    ? await prisma.domain.findUnique({
+        where: { hostname: requestedHostname },
+        select: {
+          id: true,
+          hostname: true,
+          verified: true,
+          organizationId: true,
+        },
+      })
+    : null
+
+  // Nothing asked for: fall back to SHORT_DOMAIN, then to whatever platform
+  // domain actually exists. The constant alone wasn't enough — it's read from
+  // an env var at build time, so a deployment made before the domain changed
+  // keeps handing out the old hostname however the database looks.
+  if (!requestedHostname) {
+    domainRecord =
+      (await prisma.domain.findUnique({
+        where: { hostname: SHORT_DOMAIN },
+        select: {
+          id: true,
+          hostname: true,
+          verified: true,
+          organizationId: true,
+        },
+      })) ||
+      (await prisma.domain.findFirst({
+        where: { organizationId: null, verified: true },
+        // Newest wins. If both an old and a new platform domain are present,
+        // the new one is the one that was added on purpose.
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          hostname: true,
+          verified: true,
+          organizationId: true,
+        },
+      }))
+  }
 
   if (!domainRecord) {
     return Response.json(

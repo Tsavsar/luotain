@@ -308,7 +308,30 @@ export default function CreatePage() {
         if (cancelled || !d) return
         // Verified only. An unverified domain can be picked but the create
         // route refuses it, so offering one is a guaranteed error.
-        setDomains((d.domains || []).filter((x) => x.verified))
+        const list = (d.domains || []).filter((x) => x.verified)
+        setDomains(list)
+
+        // Pick the default from what actually EXISTS rather than from
+        // SHORT_DOMAIN. That constant is baked in at build time, so it stays
+        // stale until a redeploy — which is how new links kept landing on the
+        // old hostname after the domain was switched.
+        //
+        // The platform domain wins, since it's the one every workspace shares
+        // and the one people mean by "my short links".
+        setDomain((current) => {
+          if (list.some((x) => x.hostname === current)) return current
+          // SHORT_DOMAIN first WHEN IT EXISTS in the list. Both luotain.app
+          // and luot.link can be platform domains at once, and picking "any
+          // shared one" takes whichever was created first — the old one.
+          const configured = list.find((x) => x.hostname === SHORT_DOMAIN)
+          const shared = list.find((x) => x.shared)
+          return (
+            configured?.hostname ||
+            shared?.hostname ||
+            list[0]?.hostname ||
+            current
+          )
+        })
       })
       .catch(() => {})
     return () => {
@@ -410,7 +433,10 @@ export default function CreatePage() {
     return true
   }
 
-  async function handleCreate() {
+  // Takes the intent as an ARGUMENT rather than reading state. setIntent()
+  // followed by handleCreate() in the same handler reads the previous value,
+  // so the QR button would have created a plain link on its first press.
+  async function handleCreate(wanted = 'link') {
     if (submitting) return
     if (!validate()) return
 
@@ -523,6 +549,19 @@ export default function CreatePage() {
         if (data?.field) flagError({ [data.field]: true })
         toast.error(data?.error || 'Something went wrong')
         setSubmitting(false)
+        return
+      }
+
+      // Wanted a QR code: the link is made, now design its code. Straight into
+      // the designer rather than out to the link page and back in — the whole
+      // problem was that making a code required a link to already exist.
+      if (wanted === 'qr' && !isEditing) {
+        setSelectedLinkId(data.link.id)
+        setQrSource('existing')
+        setMode('qr')
+        setStep('design')
+        setSubmitting(false)
+        toast(`${data.link.shortUrl} created — now design its code`)
         return
       }
 
@@ -965,9 +1004,44 @@ export default function CreatePage() {
             </button>
           ) : null}
 
+          {/* A second action, not a mode. The choice of link-or-code happens
+              HERE, once there's a destination to apply it to — asking up front
+              meant someone wanting a code had to already own a link, which is
+              the thing that never worked.
+
+              Hidden while editing and while designing: neither is a moment to
+              start a second thing. */}
+          {mode === 'link' && !isEditing ? (
+            <button
+              type='button'
+              onClick={() => handleCreate('qr')}
+              disabled={submitting}
+              className='create-secondary'
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 20px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--bg-surface)',
+                border: 'none',
+                cursor: submitting ? 'default' : 'pointer',
+                marginRight: '10px',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '14px',
+                lineHeight: '20px',
+                letterSpacing: '0.28px',
+                color: 'var(--text-sub)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Create QR code
+            </button>
+          ) : null}
+
           <button
             type='button'
-            onClick={handleCreate}
+            onClick={() => handleCreate('link')}
             disabled={submitting}
             className='create-submit'
             style={{
