@@ -89,22 +89,34 @@ export async function GET(request, { params }) {
     if (!domain) return new Response('Not found', { status: 404 })
 
     // A QR code and a link share one slug namespace on a domain, so both are
-    // checked. The QR is looked at first because its row also tells us which
-    // link it belongs to — the reverse would need a second query.
-    const qr = await prisma.qrCode.findUnique({
-      where: { domainId_shortCode: { domainId: domain.id, shortCode } },
-      select: {
-        id: true,
-        link: {
-          select: {
-            id: true,
-            destinationUrl: true,
-            organizationId: true,
-            deletedAt: true,
+    // checked.
+    //
+    // The QR lookup is wrapped SEPARATELY. It used to sit in the same try as
+    // everything else, so if it threw — a missing migration, a constraint that
+    // doesn't exist in the database yet — the outer catch returned 404 and
+    // every single link on every domain stopped resolving. One optional query
+    // taking down the whole redirect is the worst possible failure here.
+    let qr = null
+    try {
+      qr = await prisma.qrCode.findUnique({
+        where: { domainId_shortCode: { domainId: domain.id, shortCode } },
+        select: {
+          id: true,
+          link: {
+            select: {
+              id: true,
+              destinationUrl: true,
+              organizationId: true,
+              deletedAt: true,
+            },
           },
         },
-      },
-    })
+      })
+    } catch (err) {
+      // Logged and ignored: a scan still resolves through the link below, it
+      // just isn't attributed to a specific code.
+      console.error('[redirect] qr lookup failed, continuing', err?.code || err)
+    }
 
     const link =
       qr?.link ||
@@ -130,24 +142,31 @@ export async function GET(request, { params }) {
     // the insert would be cancelled mid-flight and the click lost. One indexed
     // insert is a few milliseconds; a click that never lands is permanent.
     const headers = request.headers
-    await prisma.click.create({
-      data: {
-        linkId: link.id,
-        qrCodeId: qr?.id || null,
-        organizationId: link.organizationId,
-        // Geo comes from the platform's edge headers — deriving it from an IP
-        // would mean shipping a geo database and storing the address, and the
-        // address is the part worth not keeping.
-        country: headers.get('x-vercel-ip-country') || null,
-        region: headers.get('x-vercel-ip-country-region') || null,
-        city: headers.get('x-vercel-ip-city')
-          ? decodeURIComponent(headers.get('x-vercel-ip-city'))
-          : null,
-        device: deviceFrom(headers.get('user-agent') || ''),
-        browser: browserFrom(headers.get('user-agent') || ''),
-        referrer: referrerFrom(headers.get('referer')),
-      },
-    })
+    try {
+      await prisma.click.create({
+        data: {
+          linkId: link.id,
+          qrCodeId: qr?.id || null,
+          organizationId: link.organizationId,
+          // Geo comes from the platform's edge headers — deriving it from an IP
+          // would mean shipping a geo database and storing the address, and the
+          // address is the part worth not keeping.
+          country: headers.get('x-vercel-ip-country') || null,
+          region: headers.get('x-vercel-ip-country-region') || null,
+          city: headers.get('x-vercel-ip-city')
+            ? decodeURIComponent(headers.get('x-vercel-ip-city'))
+            : null,
+          device: deviceFrom(headers.get('user-agent') || ''),
+          browser: browserFrom(headers.get('user-agent') || ''),
+          referrer: referrerFrom(headers.get('referer')),
+        },
+      })
+    } catch (err) {
+      // An unrecordable click is a lost statistic. A failed redirect is a
+      // person who can't reach the page. Those aren't close, so this never
+      // blocks the redirect.
+      console.error('[redirect] click insert failed', err?.code || err)
+    }
 
     // 302, not 301. A permanent redirect is cached by the browser forever,
     // which means editing a link's destination would never reach anyone who'd
@@ -155,7 +174,16 @@ export async function GET(request, { params }) {
     // so the click would go uncounted too.
     return Response.redirect(link.destinationUrl, 302)
   } catch (err) {
+    // 500, not 404. Returning "Not found" for a thrown error made a broken
+    // query indistinguishable from a missing link — which is exactly how a
+    // failing QR lookup looked like every link being absent.
+    //
+    // The message goes in the body too. Nobody's reading server logs while
+    // testing a redirect on their phone, and "Not found" told us nothing.
     console.error('[redirect]', shortCode, err)
-    return new Response('Not found', { status: 404 })
+    return new Response(
+      `Redirect failed: ${String(err?.message || err).split('\n')[0]}`,
+      { status: 500 }
+    )
   }
 }

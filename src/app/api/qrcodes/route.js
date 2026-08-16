@@ -142,7 +142,9 @@ export async function POST(request) {
   // else's link.
   const link = await prisma.link.findFirst({
     where: { id: linkId, organizationId },
-    select: { id: true, domainId: true, deletedAt: true },
+    // shortCode too — it's the default label. A page of codes all called
+    // "QR code" is a list you can't read.
+    select: { id: true, domainId: true, deletedAt: true, shortCode: true },
   })
   if (!link) {
     return Response.json({ error: 'Link not found' }, { status: 404 })
@@ -169,10 +171,13 @@ export async function POST(request) {
     : '#000000'
   const branding = body?.branding !== false
 
+  // Falls back to the LINK'S SLUG, not the words "QR code". Every code on the
+  // page was called the same thing, so the list told you nothing about which
+  // was which — and the slug is the one piece of text that identifies it.
   const label =
     String(body?.label || '')
       .trim()
-      .slice(0, 60) || 'QR code'
+      .slice(0, 60) || link.shortCode
 
   // A QR's slug and a link's slug resolve at the same domain, so they share one
   // namespace — luot.link/abc can't be both. Two separate unique constraints
