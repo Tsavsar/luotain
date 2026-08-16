@@ -173,6 +173,9 @@ export default function LinkDetailPage() {
   // "Generate".
   const [designingQr, setDesigningQr] = useState(false)
   const [viewingQr, setViewingQr] = useState(false)
+  // Where the code was on screen when Edit was pressed, so the designer grows
+  // from it rather than appearing from nowhere.
+  const [qrOrigin, setQrOrigin] = useState(null)
   const [savingQr, setSavingQr] = useState(false)
   const [qr, setQr] = useState({
     color: '#000000',
@@ -945,7 +948,12 @@ export default function LinkDetailPage() {
           be asking for something we're holding. Straight to the styling. */}
       <Modal
         open={designingQr}
-        onClose={() => setDesigningQr(false)}
+        onClose={() => {
+          setDesigningQr(false)
+          // Cleared, or the next open animates from wherever the last one was.
+          setQrOrigin(null)
+        }}
+        origin={qrOrigin}
         maxWidth='480px'
         labelledBy='qr-designer-title'
       >
@@ -1024,6 +1032,17 @@ export default function LinkDetailPage() {
       <QrLightbox
         open={viewingQr}
         onClose={() => setViewingQr(false)}
+        // Without this the lightbox hides its Edit button entirely — it renders
+        // on `{onEdit ? ...}`, so an unpassed handler reads as "this code isn't
+        // editable" rather than as a missing prop.
+        //
+        // The lightbox closes first: it sits above the designer in the stack, so
+        // opening both at once would leave the designer behind it.
+        onEdit={(origin) => {
+          setViewingQr(false)
+          setQrOrigin(origin)
+          setTimeout(() => setDesigningQr(true), 180)
+        }}
         shortUrl={link?.shortUrl}
         color={qr.color}
         markerColor={qr.markerColor}
