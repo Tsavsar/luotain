@@ -469,7 +469,8 @@ export default function CreatePage() {
         }
 
         toast('QR code created')
-        router.push('/dashboard/qrcodes')
+        // replace, not push — see below.
+        router.replace('/dashboard/qrcodes')
       } catch (err) {
         console.error('[CreatePage]', err)
         toast.error("Couldn't create the QR code")
@@ -487,7 +488,7 @@ export default function CreatePage() {
       const generated = slug.trim() || randomSlug()
       toast(`${domain}/${generated} created (mock, not saved)`)
       setSubmitting(false)
-      router.push('/dashboard/links')
+      router.replace('/dashboard/links')
       return
     }
 
@@ -528,7 +529,13 @@ export default function CreatePage() {
       toast(`${data.link.shortUrl} ${isEditing ? 'updated' : 'created'}`)
       // Straight to the new link's page — node 147:855 is that page with
       // empty analytics, which already exists.
-      router.push(`/dashboard/links/${data.link.shortCode}`)
+      // replace, not push. push leaves the create form in history, so Back
+      // reopens a form for a link that already exists — which reads as the
+      // create having failed, and invites making a second one by accident.
+      //
+      // Replacing means Back goes wherever you were BEFORE creating, which is
+      // almost always the links table.
+      router.replace(`/dashboard/links/${data.link.shortCode}`)
     } catch (err) {
       console.error('[CreatePage]', err)
       toast.error("Couldn't create the link")
