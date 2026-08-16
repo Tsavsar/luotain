@@ -27,7 +27,6 @@ import {
 } from '@/lib/mockAnalytics'
 import { shortUrlFor } from '@/lib/shortlink'
 import LogoMark from '@/components/logomark'
-import EditLinkModal from '@/components/editlinkmodal'
 import Alert, { AlertAction, AlertInfoIcon } from '@/components/alert'
 import Modal from '@/components/modal'
 import CopyButton from '@/components/copybutton'
@@ -168,7 +167,6 @@ export default function LinkDetailPage() {
   const [activeFilters, setActiveFilters] = useState([])
   const [collapsingAlert, setCollapsingAlert] = useState(false)
   const [ogImage, setOgImage] = useState(null)
-  const [editing, setEditing] = useState(null)
   const [recovering, setRecovering] = useState(false)
   // QR state. `hasQr` starts from the link's own record, so the field
   // shows the right thing on load rather than always starting at
@@ -375,7 +373,7 @@ export default function LinkDetailPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          destinationUrl: link.destination || link.destinationUrl,
+          destination: link.destination || link.destinationUrl,
           title: link.title || null,
         }),
       })
@@ -595,7 +593,11 @@ export default function LinkDetailPage() {
                 <DropdownOption onClick={handleRecover}>Recover</DropdownOption>
               ) : (
                 <>
-                  <DropdownOption onClick={() => setEditing(link)}>
+                  <DropdownOption
+                    onClick={() =>
+                      router.push(`/dashboard/create?edit=${link.id}`)
+                    }
+                  >
                     Edit
                   </DropdownOption>
                   <DropdownOption onClick={handleDuplicate}>
@@ -1027,22 +1029,6 @@ export default function LinkDetailPage() {
         markerColor={qr.markerColor}
         pattern={qr.pattern}
         branding={qr.branding}
-      />
-
-      <EditLinkModal
-        open={Boolean(editing)}
-        link={editing}
-        onClose={() => setEditing(null)}
-        // The slug can change, and the URL contains it — so a rename has to
-        // move the page too, or you'd be sitting on a route that no longer
-        // resolves.
-        onSaved={(updated) => {
-          if (updated.shortCode && updated.shortCode !== link?.shortCode) {
-            router.replace(`/dashboard/links/${updated.shortCode}`)
-            return
-          }
-          setLink((prev) => (prev ? { ...prev, ...updated } : prev))
-        }}
       />
 
       <DeleteConfirmModal

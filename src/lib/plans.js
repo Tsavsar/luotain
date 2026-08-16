@@ -21,7 +21,7 @@ export const PLANS = {
     // null means unlimited. Deliberately null rather than Infinity, which
     // doesn't survive JSON — the limit crosses the network on every page.
     maxLinks: 5,
-    customSlugs: false,
+    customSlugs: true,
     csvExport: false,
     customDomain: false,
     support: 'Community support',
@@ -37,9 +37,9 @@ export const PLANS = {
     priceAnnual: 48,
     priceNote: 'Billed monthly',
     maxLinks: 50,
-    customSlugs: false,
+    customSlugs: true,
     csvExport: false,
-    customDomain: false,
+    customDomain: true,
     support: 'Email support',
   },
   PRO: {
@@ -77,7 +77,6 @@ export const PLAN_FEATURES = [
   { label: () => 'Full click and scan analytics', included: () => true },
   { label: (p) => p.support, included: () => true },
   { label: () => 'CSV export', included: (p) => p.csvExport },
-  { label: () => 'Custom slugs', included: (p) => p.customSlugs },
   { label: () => 'Custom domain', included: (p) => p.customDomain },
 ]
 
@@ -105,6 +104,7 @@ export function linkLimitReason(planId, currentCount) {
 
 export function customSlugReason(planId) {
   const plan = planFor(planId)
+  // Always true now — kept so callers don't need changing.
   if (plan.customSlugs) return null
   return `Custom slugs are a Pro feature. ${plan.name} generates one for you.`
 }

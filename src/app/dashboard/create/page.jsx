@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import BackButton from '@/components/backbutton'
 import Inputfield from '@/components/input'
 import Tooltip from '@/components/tooltip'
@@ -223,12 +223,39 @@ export default function CreatePage() {
   // LINK — selecting one is the whole gesture, and it puts you in the designer.
   // Typing a new destination instead creates a link, and a QR comes with it.
   const [mode, setMode] = useState('link')
+
+  // ?edit=<id> turns this page into an edit form. Reusing it rather than a
+  // modal was the right call: the modal had to reimplement slug generation and
+  // the domain picker, and it had neither — so editing could only change a
+  // destination while creating could do all three.
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('edit')
+  const isEditing = Boolean(editId)
   // QR mode has two sources: a link that already exists, or a new one created
   // alongside the code. Before this, the only way to get a QR for an existing
   // link was to navigate to that link's detail page and use the field there —
   // which meant the create screen couldn't do the more common of the two jobs.
   const [qrSource, setQrSource] = useState('existing')
   const [existingLinks, setExistingLinks] = useState(null)
+
+  // When editing, fill the form from the link. The fields are already here —
+  // destination, domain, slug, title — so editing needs no new UI at all.
+  useEffect(() => {
+    if (!editId) return
+    let cancelled = false
+    fetch(`/api/links/${editId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (cancelled || !d?.link) return
+        setDestination(d.link.destinationUrl || '')
+        setSlug(d.link.shortCode || '')
+        setTitle(d.link.title || '')
+      })
+      .catch((err) => console.error('[CreatePage] edit load', err))
+    return () => {
+      cancelled = true
+    }
+  }, [editId])
 
   // Loaded on mount. It used to load only when the QR tab was opened, and that
   // tab is gone — so without this the picker below would never have anything
@@ -442,15 +469,18 @@ export default function CreatePage() {
     }
 
     try {
-      const res = await fetch('/api/links', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          destination: destination.trim(),
-          slug: slug.trim() || undefined,
-          domain,
-        }),
-      })
+      const res = await fetch(
+        isEditing ? `/api/links/${editId}` : '/api/links',
+        {
+          method: isEditing ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            destination: destination.trim(),
+            slug: slug.trim() || undefined,
+            domain,
+          }),
+        }
+      )
       const data = await res.json()
 
       if (!res.ok) {

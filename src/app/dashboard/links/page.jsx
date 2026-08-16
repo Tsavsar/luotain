@@ -8,7 +8,6 @@ import LinksTable from '@/components/linkstable'
 import RecentlyDeletedLink from '@/components/recentlydeletedlink'
 import { slugOf } from '@/components/linktablehelpers'
 import { toast } from '@/components/toast'
-import EditLinkModal from '@/components/editlinkmodal'
 import {
   getMockLinksStats,
   getMockLinksTable,
@@ -38,7 +37,6 @@ export default function LinksPage() {
   // that should reset it change (mock toggled, range changed), so a
   // delete's own removal otherwise sticks.
   const [links, setLinks] = useState(null)
-  const [editing, setEditing] = useState(null)
   useEffect(() => {
     // Wait until the saved mock preference is known — otherwise a
     // reload with mock on hits the network once for nothing.
@@ -102,7 +100,10 @@ export default function LinksPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          destinationUrl: link.destinationUrl || link.destination,
+          // `destination`, not `destinationUrl` — POST /api/links reads that
+          // key. PATCH /api/links/[id] reads destinationUrl, which is how this
+          // slipped through: the two endpoints name the same field differently.
+          destination: link.destinationUrl || link.destination,
           title: link.title || null,
         }),
       })
@@ -219,28 +220,10 @@ export default function LinksPage() {
               toast('Mock data is on — nothing was changed')
               return
             }
-            setEditing(link)
+            router.push(`/dashboard/create?edit=${link.id}`)
           }}
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
-        />
-
-        <EditLinkModal
-          open={Boolean(editing)}
-          link={editing}
-          onClose={() => setEditing(null)}
-          // Patched in place rather than refetched: the server returned the
-          // updated link, so a round trip would only confirm what we already
-          // have and flash the table while it loads.
-          onSaved={(updated) =>
-            setLinks((rows) =>
-              (rows || []).map((r) =>
-                r.id === updated.id
-                  ? { ...r, ...updated, destination: updated.destinationUrl }
-                  : r
-              )
-            )
-          }
         />
       </div>
 

@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
-import { PLANS } from '@/lib/plans'
 
 const SLUG = /^[a-zA-Z0-9._-]+$/
 
@@ -66,8 +65,12 @@ export async function PATCH(request, { params }) {
 
   const data = {}
 
-  if (typeof body?.destinationUrl === 'string') {
-    const raw = body.destinationUrl.trim()
+  // Both keys accepted. POST /api/links reads `destination` and this read only
+  // `destinationUrl` — the same field under two names across two endpoints,
+  // which is exactly how the duplicate button ended up 400ing.
+  const rawDestination = body?.destinationUrl ?? body?.destination
+  if (typeof rawDestination === 'string') {
+    const raw = rawDestination.trim()
     if (!raw) {
       return Response.json(
         { error: 'Enter a destination', field: 'destinationUrl' },
@@ -108,18 +111,8 @@ export async function PATCH(request, { params }) {
   // something. Allowed, but gated to plans that pay for custom slugs — the same
   // check the create route makes.
   if (typeof body?.slug === 'string' && body.slug.trim() !== link.shortCode) {
-    const org = await prisma.organization.findUnique({
-      where: { id: organizationId },
-      select: { plan: true },
-    })
-    const plan = PLANS[org?.plan] || PLANS.FREE
-    if (!plan.customSlugs) {
-      return Response.json(
-        { error: 'Custom links are available on a paid plan', upgrade: true },
-        { status: 402 }
-      )
-    }
-
+    // No plan gate. Custom slugs are free on every tier — a short link you
+    // can't name is most of the point of a short link.
     const slug = body.slug.trim()
     if (!SLUG.test(slug)) {
       return Response.json(
