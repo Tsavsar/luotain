@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useMockDataState } from '@/components/mockdatacontext'
 import { useRouter } from 'next/navigation'
 import LinksStats from '@/components/linksstats'
+import UsageBanner from '@/components/usagebanner'
 import LinksTable from '@/components/linkstable'
 import RecentlyDeletedLink from '@/components/recentlydeletedlink'
 import { slugOf } from '@/components/linktablehelpers'
@@ -29,9 +30,24 @@ export default function LinksPage() {
 
   // deletedUrls is passed through so the totals drop when something is
   // deleted — no link, nothing to report.
+  // Real stats were literally null, so all three cards sat empty on every real
+  // workspace — "Links created" never updated because nothing ever computed it.
+  //
+  // Derived from the links already loaded rather than fetched: the list is
+  // right here and carries a click count per row, so a second request would ask
+  // the server to recount what the page can add up itself.
   const stats = useMockData
     ? getMockLinksStats(selectedRange, [], deletedUrls)
-    : null
+    : links
+      ? {
+          totalClicks: links.reduce((sum, l) => sum + (l.clicks || 0), 0),
+          linksCreated: links.length,
+          // Not computable from this list — a unique visitor needs the click
+          // rows, not a per-link total. Left undefined so the card shows its
+          // empty state rather than a number that would be wrong.
+          uniqueVisitors: undefined,
+        }
+      : null
 
   // Real state, re-seeded from the generator only when the inputs
   // that should reset it change (mock toggled, range changed), so a
@@ -190,6 +206,11 @@ export default function LinksPage() {
           paddingBottom: 0,
         }}
       >
+        {/* Above the stats, because the limit is context for everything below
+            it — finding out you're at 5 of 5 AFTER scrolling a full table is
+            finding out too late. */}
+        <UsageBanner linkCount={links?.length} />
+
         <LinksStats
           stats={stats}
           selectedRange={selectedRange}

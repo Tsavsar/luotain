@@ -7,6 +7,7 @@ import DashboardNav from '@/components/dashboardnav'
 import DashboardSkeleton from '@/components/dashboardskeleton'
 import { ToastStack } from '@/components/toast'
 import DevControls from '@/components/devcontrols'
+import PlanBadge from '@/components/planbadge'
 import { getProfile } from '@/lib/profilecache'
 import { MotionConfig } from 'motion/react'
 import {
@@ -239,6 +240,11 @@ function DashboardShell({ children }) {
             wider: two three-button pickers had stretched it across a third of
             the screen with nothing labelled. */}
         <DevControls theme={theme} onToggleTheme={toggleTheme} />
+
+        {/* Bottom right, opposite the dev controls. In the layout rather than
+            per page, so it's present everywhere without each page having to
+            remember it. */}
+        <PlanBadge />
       </main>
     </MotionConfig>
   )

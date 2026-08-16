@@ -2369,11 +2369,27 @@ html {
    is about 494, so width: max-content lets it overflow the panel to the right
    — the panel has min-width 0, so a child sized to its content overflows
    visually without forcing the panel wider and squeezing the sidebar. */
+/* --- Plan picker columns ---
+   The row itself is set INLINE on the element, deliberately. This rule carries
+   only the mobile override, because a media query can't be inline.
+   
+   That split is the point: if this file is ever out of step with the component,
+   the failure is "doesn't stack on a phone" rather than "stacked on every
+   screen" — which is what happened when the whole layout lived here.
+   
+   640px, not 900: three 230px columns need 754px, so between 640 and 754 the
+   row overflows and scrolls, which on a laptop is fine and preserves the
+   comparison. Below 640 there's no room to scroll usefully and stacking is the
+   only readable option. */
 .plan-picker-columns {
-  display: flex;
-  gap: 32px;
-  align-items: flex-start;
-  width: max-content;
+  /* Nothing here for desktop — the element carries it. */
+}
+@media (max-width: 640px) {
+  .plan-picker-columns {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 28px !important;
+  }
 }
 
 /* --- Plan icon blooms ---
@@ -2406,5 +2422,74 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .plan-bloom {
     animation: none;
+  }
+}
+
+/* --- Domains ---
+   The re-check button, on the same plate as the status tag beside it. */
+.domain-recheck {
+  transition:
+    color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+.domain-recheck:hover:not(:disabled) {
+  color: var(--text-strong) !important;
+  background: var(--bg-surface) !important;
+}
+
+/* Spins WHILE checking. A DNS lookup takes a second or two, and a button that
+   does nothing visible for that long reads as not having registered the tap. */
+@keyframes domainSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.domain-spinning {
+  animation: domainSpin 0.9s linear infinite;
+}
+
+/* The pending dot breathes, so "waiting" looks like waiting rather than a
+   status that's stuck. Only the pending tone gets it — see the pulse prop. */
+@keyframes tagDotPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.tag-dot-pulse {
+  animation: tagDotPulse 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .domain-spinning,
+  .tag-dot-pulse {
+    animation: none;
+  }
+}
+
+/* --- Plan badge ---
+   Bottom right, over whatever page is showing. Muted until hovered: it's a
+   status marker, and something pinned to every screen shouldn't hold attention
+   the way a control does. */
+.plan-badge {
+  opacity: 0.75;
+  transition:
+    opacity var(--duration-fast) ease,
+    transform var(--duration-press) ease-out;
+}
+.plan-badge:hover {
+  opacity: 1;
+}
+.plan-badge:active {
+  transform: scale(0.97);
+}
+
+/* Out of the way on a phone, where it would otherwise sit over the content and
+   there's no room to spare. */
+@media (max-width: 640px) {
+  .plan-badge {
+    display: none;
   }
 }
