@@ -291,7 +291,30 @@ export default function CreatePage() {
   const [domain, setDomain] = useState(SHORT_DOMAIN)
   // Verified only — the helper text under the form promises exactly
   // that, so the picker has to honour it rather than list everything.
-  const domains = getMockDomains()
+  // Real domains, not the mock list. This was getMockDomains(), so the picker
+  // showed a hardcoded set and never your actual verified domains — which is
+  // why adding luot.link changed nothing here.
+  const [domains, setDomains] = useState([])
+
+  useEffect(() => {
+    if (useMockData) {
+      setDomains(getMockDomains())
+      return
+    }
+    let cancelled = false
+    fetch('/api/org/domains')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return
+        // Verified only. An unverified domain can be picked but the create
+        // route refuses it, so offering one is a guaranteed error.
+        setDomains((d.domains || []).filter((x) => x.verified))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [useMockData])
   const [errors, setErrors] = useState({})
   const [shaking, setShaking] = useState({})
   const [submitting, setSubmitting] = useState(false)

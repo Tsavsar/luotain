@@ -492,8 +492,12 @@ export default function DomainsPage() {
   }
 
   const canManage = data.role === 'OWNER' || data.role === 'ADMIN'
-  const pending = data.domains.filter((d) => !d.verified)
-  const verified = data.domains.filter((d) => d.verified)
+  // The platform domain is excluded from both lists. It's available to
+  // everyone and removable by nobody, so listing it under "your domains" with
+  // a Remove option would offer something that can't happen.
+  const owned = data.domains.filter((d) => !d.shared)
+  const pending = owned.filter((d) => !d.verified)
+  const verified = owned.filter((d) => d.verified)
 
   const header = (
     <div

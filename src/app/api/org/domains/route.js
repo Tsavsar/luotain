@@ -27,7 +27,11 @@ export async function GET() {
       select: { role: true },
     }),
     prisma.domain.findMany({
-      where: { organizationId },
+      // The workspace's own domains, PLUS any platform domain (organizationId
+      // null) — that's luot.link, which every workspace creates links on. It
+      // was filtered out by an org-only where, so the picker on the create page
+      // couldn't offer the one domain everybody uses.
+      where: { OR: [{ organizationId }, { organizationId: null }] },
       orderBy: [{ verified: 'desc' }, { createdAt: 'asc' }],
       select: {
         id: true,
@@ -37,6 +41,7 @@ export async function GET() {
         lastCheckedAt: true,
         lastError: true,
         createdAt: true,
+        organizationId: true,
         _count: { select: { links: true } },
       },
     }),
@@ -79,6 +84,10 @@ export async function GET() {
       id: d.id,
       hostname: d.hostname,
       verified: d.verified,
+      // The platform's own domain, not this workspace's. Flagged so the
+      // settings page can leave it out of "your domains" while the create
+      // page still offers it — it's usable by everyone, owned by nobody.
+      shared: d.organizationId === null,
       // Derived HERE rather than in the page, because it depends on how the
       // verify route recorded things and the two should stay in one place.
       //
