@@ -28,27 +28,6 @@ export default function LinksPage() {
   } = useMockDataState()
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
 
-  // deletedUrls is passed through so the totals drop when something is
-  // deleted — no link, nothing to report.
-  // Real stats were literally null, so all three cards sat empty on every real
-  // workspace — "Links created" never updated because nothing ever computed it.
-  //
-  // Derived from the links already loaded rather than fetched: the list is
-  // right here and carries a click count per row, so a second request would ask
-  // the server to recount what the page can add up itself.
-  const stats = useMockData
-    ? getMockLinksStats(selectedRange, [], deletedUrls)
-    : links
-      ? {
-          totalClicks: links.reduce((sum, l) => sum + (l.clicks || 0), 0),
-          linksCreated: links.length,
-          // Not computable from this list — a unique visitor needs the click
-          // rows, not a per-link total. Left undefined so the card shows its
-          // empty state rather than a number that would be wrong.
-          uniqueVisitors: undefined,
-        }
-      : null
-
   // Real state, re-seeded from the generator only when the inputs
   // that should reset it change (mock toggled, range changed), so a
   // delete's own removal otherwise sticks.
@@ -85,6 +64,27 @@ export default function LinksPage() {
       cancelled = true
     }
   }, [mockReady, useMockData, selectedRange, deletedUrls])
+
+  // deletedUrls is passed through so the totals drop when something is
+  // deleted — no link, nothing to report.
+  // Real stats were literally null, so all three cards sat empty on every real
+  // workspace — "Links created" never updated because nothing ever computed it.
+  //
+  // Derived from the links already loaded rather than fetched: the list is
+  // right here and carries a click count per row, so a second request would ask
+  // the server to recount what the page can add up itself.
+  const stats = useMockData
+    ? getMockLinksStats(selectedRange, [], deletedUrls)
+    : links
+      ? {
+          totalClicks: links.reduce((sum, l) => sum + (l.clicks || 0), 0),
+          linksCreated: links.length,
+          // Not computable from this list — a unique visitor needs the click
+          // rows, not a per-link total. Left undefined so the card shows its
+          // empty state rather than a number that would be wrong.
+          uniqueVisitors: undefined,
+        }
+      : null
 
   // Extracted so edit and duplicate can refresh the table. It was inline in
   // the effect, which meant anything else needing a reload had to repeat the
