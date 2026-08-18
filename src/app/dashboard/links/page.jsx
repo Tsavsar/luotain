@@ -15,6 +15,35 @@ import {
   getMockTrash,
 } from '@/lib/mockAnalytics'
 
+// Mirrors the ranges the mock generator uses, so a real workspace and a mock
+// one count the same window. null means "everything", which is what a range
+// with no start should mean rather than an empty list.
+function rangeStartFor(range) {
+  const now = Date.now()
+  const day = 24 * 3600 * 1000
+  switch (range) {
+    case 'Today': {
+      const d = new Date()
+      d.setHours(0, 0, 0, 0)
+      return d
+    }
+    case 'Yesterday': {
+      const d = new Date()
+      d.setHours(0, 0, 0, 0)
+      return new Date(d.getTime() - day)
+    }
+    case 'Last 30 days':
+      return new Date(now - 30 * day)
+    case 'Last 90 days':
+      return new Date(now - 90 * day)
+    case 'All time':
+      return null
+    case 'Last 7 days':
+    default:
+      return new Date(now - 7 * day)
+  }
+}
+
 export default function LinksPage() {
   const router = useRouter()
   // Shared across every page and persisted, so switching it on once
@@ -78,7 +107,13 @@ export default function LinksPage() {
     : links
       ? {
           totalClicks: links.reduce((sum, l) => sum + (l.clicks || 0), 0),
-          linksCreated: links.length,
+          // Counted WITHIN the selected range, matching what the mock stats do.
+          // It was links.length, so the number never moved when the range
+          // changed — which reads exactly like a stat that isn't updating.
+          linksCreated: links.filter((l) => {
+            const since = rangeStartFor(selectedRange)
+            return !since || new Date(l.createdAt) >= since
+          }).length,
           // Not computable from this list — a unique visitor needs the click
           // rows, not a per-link total. Left undefined so the card shows its
           // empty state rather than a number that would be wrong.
@@ -201,7 +236,14 @@ export default function LinksPage() {
         style={{
           width: '100%',
           display: 'flex',
-          justifyContent: 'center',
+          // column, and it MATTERS. This was a plain flex row with one child, so
+          // direction never came up — adding the banner beside the stats laid
+          // them out side by side and squashed both.
+          flexDirection: 'column',
+          // center was horizontal centring on a row. As a column it would
+          // shrink both children to their content width, so it goes.
+          alignItems: 'stretch',
+          gap: '14px',
           paddingTop: 0,
           paddingBottom: 0,
         }}
