@@ -7,6 +7,7 @@ import { signOut } from 'next-auth/react'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import LogoMark from './logomark'
 import GradientAvatar, { seedFor } from './gradientavatar'
+import PlanBadge from './planbadge'
 import PlanCard from './plancard'
 
 function OrgChevronIcon() {
@@ -422,6 +423,12 @@ export default function DashboardMenu({
             </span>
           </button>
         </div>
+
+        {/* Left of the avatar, in the header rather than pinned to a corner.
+            A plan is a property of the account, so it belongs where the account
+            lives — floating bottom right it read as an overlay on the page it
+            happened to be covering. */}
+        <PlanBadge />
 
         <ProfileDropdown
           userImage={userImage}

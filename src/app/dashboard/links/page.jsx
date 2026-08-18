@@ -236,28 +236,39 @@ export default function LinksPage() {
         style={{
           width: '100%',
           display: 'flex',
-          // column, and it MATTERS. This was a plain flex row with one child, so
-          // direction never came up — adding the banner beside the stats laid
-          // them out side by side and squashed both.
-          flexDirection: 'column',
-          // center was horizontal centring on a row. As a column it would
-          // shrink both children to their content width, so it goes.
-          alignItems: 'stretch',
-          gap: '14px',
+          // Stays a centring ROW, matching every other section on this page —
+          // the outer div centres, the child carries the width. I'd changed it
+          // to a column, which centred nothing and left the content hard left.
+          justifyContent: 'center',
           paddingTop: 0,
           paddingBottom: 0,
         }}
       >
-        {/* Above the stats, because the limit is context for everything below
-            it — finding out you're at 5 of 5 AFTER scrolling a full table is
-            finding out too late. */}
-        <UsageBanner linkCount={links?.length} />
+        {/* The stacking happens HERE, inside the centred child, so the banner
+            and the stats share one column and one width. */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            width: '100%',
+            // 720, matching the table below. Without it the banner would run
+            // wider than every other element on the page, since this wrapper
+            // is the only thing here without its own cap.
+            maxWidth: '720px',
+          }}
+        >
+          {/* Above the stats: the limit is context for everything below it, and
+              finding out you're at 5 of 5 after scrolling a full table is
+              finding out too late. */}
+          <UsageBanner linkCount={links?.length} />
 
-        <LinksStats
-          stats={stats}
-          selectedRange={selectedRange}
-          onRangeChange={setSelectedRange}
-        />
+          <LinksStats
+            stats={stats}
+            selectedRange={selectedRange}
+            onRangeChange={setSelectedRange}
+          />
+        </div>
       </div>
 
       <div
