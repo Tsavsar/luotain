@@ -999,7 +999,6 @@ export function getMockBilling(planId = 'FREE') {
       amount,
       currency: 'US$',
       status: 'paid',
-      // No url on purpose. A real invoice carries Polar's hosted PDF link; a
       // mock one has nothing to link to, and the missing url is what tells the
       // page to generate a receipt in the browser instead.
       url: null,

@@ -84,13 +84,6 @@ function ErrorIcon() {
 
 // ─── Mount once, near the root layout ───
 // Retheming is CSS-variable-first (Sonner's own --normal-bg /
-// --success-border / etc., documented at sonner.emilkowal.ski/styling)
-// rather than `unstyled: true` — going fully unstyled would mean
-// rebuilding the positioning/animation CSS ourselves, which is the
-// exact work switching to Sonner was meant to avoid. Because these
-// map to KernUI's OWN var(--bg-default) etc., the toast re-themes
-// for light/dark automatically through the normal CSS cascade —
-// Sonner's separate `theme` prop isn't needed on top of that.
 export function ToastStack() {
   return (
     <SonnerToaster
