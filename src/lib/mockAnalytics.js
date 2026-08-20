@@ -1015,7 +1015,7 @@ export function getMockBilling(planId = 'FREE') {
     periodEnd: periodEnd.toISOString(),
     interval: 'month',
     cancelAtPeriodEnd: false,
-    card: { brand: 'Visa', last4: '2694' },
+    card: { brand: 'Visa', last4: '6767' },
     invoices,
   }
 }
