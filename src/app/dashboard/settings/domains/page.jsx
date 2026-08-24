@@ -694,7 +694,10 @@ export default function DomainsPage() {
             <div className='settings-field-group'>
               <Inputfield
                 lefticon={<GlobeIcon />}
-                placeholder='go.yourbrand.com'
+                // Just the domain. "go.yourbrand.com" read as an instruction to
+                // use a subdomain called "go" — and since both a root and a
+                // subdomain are valid here, a placeholder shouldn't push one.
+                placeholder='yourbrand.com'
                 value={hostname}
                 onChange={(e) => {
                   setHostname(e.target.value)
