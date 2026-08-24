@@ -6,7 +6,7 @@ import {
   addDomain,
   getDomainConfig,
   removeDomain,
-  CNAME_TARGET,
+  dnsRecordFor,
   isConfigured,
 } from '@/lib/vercel'
 
@@ -126,38 +126,54 @@ export async function POST(request, { params }) {
     console.error('[verify] vercel config unavailable', conf?.error)
   }
 
-  try {
-    // resolveCname, not a plain lookup: an A record pointing at the right IP
-    // isn't the same as a CNAME, and only the CNAME survives us changing
-    // infrastructure.
-    const records = await dns.resolveCname(hostname)
-    const target = CNAME_TARGET.toLowerCase().replace(/\.$/, '')
-    verified = records.some(
-      (r) => r.toLowerCase().replace(/\.$/, '') === target
-    )
-    if (!verified) {
-      lastError = records.length
-        ? `Found a CNAME pointing at ${records[0]} instead`
-        : 'No CNAME record found'
+  // The lookup MUST match the record we ask for. It always did resolveCname, so
+  // an apex — which is told to add an A record, because DNS forbids a CNAME at
+  // the root — could never verify. It reported "No CNAME record found yet"
+  // forever while the correct record sat there working.
+  const record = dnsRecordFor(hostname)
+
+  if (record.type === 'A') {
+    try {
+      const ips = await dns.resolve4(hostname)
+      verified = ips.includes(record.value)
+      if (!verified) {
+        lastError = ips.length
+          ? `Found an A record pointing at ${ips[0]} instead of ${record.value}`
+          : 'No A record found yet'
+      }
+    } catch (err) {
+      if (err?.code === 'ENODATA') {
+        lastError = 'No A record found yet'
+      } else if (err?.code === 'ENOTFOUND') {
+        lastError = "That domain doesn't resolve — check it's spelt right"
+      } else {
+        lastError = `Lookup failed: ${err?.code || 'unknown'}`
+      }
     }
-  } catch (err) {
-    // ENODATA and ENOTFOUND mean different things and need different advice.
-    // They were collapsed into one message, which sent someone whose domain
-    // doesn't resolve at all off to a DNS panel for a domain they'd mistyped.
-    //
-    //   ENODATA   the hostname resolves, there's just no CNAME on it yet —
-    //             the normal state right after adding one
-    //   ENOTFOUND nothing resolves at that name, which is almost always a typo
-    //             or a subdomain that was never created
-    if (err?.code === 'ENODATA') {
-      lastError = 'No CNAME record found yet'
-    } else if (err?.code === 'ENOTFOUND') {
-      lastError = "That hostname doesn't resolve — check it's spelt right"
-    } else {
-      lastError = `Lookup failed: ${err?.code || 'unknown'}`
+  } else {
+    try {
+      const records = await dns.resolveCname(hostname)
+      const target = record.value.toLowerCase().replace(/\.$/, '')
+      verified = records.some(
+        (r) => r.toLowerCase().replace(/\.$/, '') === target
+      )
+      if (!verified) {
+        lastError = records.length
+          ? `Found a CNAME pointing at ${records[0]} instead`
+          : 'No CNAME record found'
+      }
+    } catch (err) {
+      //   ENODATA   resolves, just no CNAME on it yet
+      //   ENOTFOUND nothing resolves at that name — usually a typo
+      if (err?.code === 'ENODATA') {
+        lastError = 'No CNAME record found yet'
+      } else if (err?.code === 'ENOTFOUND') {
+        lastError = "That hostname doesn't resolve — check it's spelt right"
+      } else {
+        lastError = `Lookup failed: ${err?.code || 'unknown'}`
+      }
     }
   }
-
   return await save(domain.id, hostname, verified, lastError)
 }
 
