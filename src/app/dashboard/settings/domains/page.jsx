@@ -219,7 +219,7 @@ const VERIFIED = [
   {
     id: 'd1',
     hostname: 'links.studio.co',
-    dnsHost: 'links',
+    dns: { type: 'CNAME', host: 'links', value: 'cname.vercel-dns.com' },
     verified: true,
     status: 'verified',
     links: 12,
@@ -228,7 +228,7 @@ const VERIFIED = [
   {
     id: 'd2',
     hostname: 'go.acme.com',
-    dnsHost: 'go',
+    dns: { type: 'CNAME', host: 'go', value: 'cname.vercel-dns.com' },
     verified: true,
     status: 'verified',
     links: 5,
@@ -242,7 +242,7 @@ const WRONG_TARGET = {
   status: 'failed',
   id: 'd4',
   hostname: 'links.wrongtarget.co',
-  dnsHost: 'links',
+  dns: { type: 'CNAME', host: 'links', value: 'cname.vercel-dns.com' },
   verified: false,
   links: 0,
   clicks: 0,
@@ -253,7 +253,7 @@ const TYPO = {
   status: 'failed',
   id: 'd5',
   hostname: 'go.acmee.com',
-  dnsHost: 'go',
+  dns: { type: 'CNAME', host: 'go', value: 'cname.vercel-dns.com' },
   verified: false,
   links: 0,
   clicks: 0,
@@ -266,7 +266,7 @@ const TYPO = {
 const WAITING = {
   id: 'd3',
   hostname: 'try.acme.com',
-  dnsHost: 'try',
+  dns: { type: 'CNAME', host: 'try', value: 'cname.vercel-dns.com' },
   verified: false,
   status: 'pending',
   links: 0,
@@ -279,7 +279,7 @@ const WAITING = {
 const DRAFT = {
   id: 'd0',
   hostname: 'acme.com',
-  dnsHost: 'acme',
+  dns: { type: 'A', host: '@', value: '76.76.21.21', isApex: true },
   verified: false,
   status: 'draft',
   links: 0,
@@ -945,7 +945,9 @@ export default function DomainsPage() {
                   color: 'var(--text-soft)',
                 }}
               >
-                Add this record at your DNS provider
+                {d.dns?.isApex
+                  ? 'Add this record at your DNS provider. A root domain needs an A record — most providers write the root as @, some leave it blank.'
+                  : 'Add this record at your DNS provider'}
               </p>
 
               <div
@@ -956,9 +958,17 @@ export default function DomainsPage() {
                   width: '100%',
                 }}
               >
-                <DnsRecord label='Type' value='CNAME' />
-                <DnsRecord label='Host' value={d.dnsHost} />
-                <DnsRecord label='Value' value={data.cnameTarget} copyable />
+                {/* All three come from the server now. Type was hardcoded to
+                    CNAME, which is wrong for an apex — DNS doesn't permit a
+                    CNAME there at all, so anyone adding a root domain was being
+                    told to create a record their provider would reject. */}
+                <DnsRecord label='Type' value={d.dns?.type || 'CNAME'} />
+                <DnsRecord label='Host' value={d.dns?.host || '@'} />
+                <DnsRecord
+                  label='Value'
+                  value={d.dns?.value || data.cnameTarget}
+                  copyable
+                />
               </div>
 
               <p

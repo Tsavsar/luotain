@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { PLANS } from '@/lib/plans'
 
-import { addDomain, CNAME_TARGET } from '@/lib/vercel'
+import { addDomain, CNAME_TARGET, dnsRecordFor } from '@/lib/vercel'
 
 // Loose on purpose. A strict RFC pattern rejects valid hostnames, and the real
 // test is whether DNS resolves — this only catches obvious mistakes before they
@@ -103,9 +103,10 @@ export async function GET() {
           : d.lastError && d.lastError.startsWith('Found a CNAME')
             ? 'failed'
             : 'pending',
-      // The host portion, which is what someone types into their DNS panel —
-      // "go" rather than "go.acme.com".
-      dnsHost: d.hostname.split('.')[0],
+      // The WHOLE record, not just a host label. split('.')[0] gave
+      // "shatermt" for shatermt.com — a subdomain that doesn't exist — and
+      // told people to CNAME an apex, which DNS doesn't allow at all.
+      dns: dnsRecordFor(d.hostname),
       links: d._count.links,
       clicks: clicksByDomain[d.id] || 0,
       lastCheckedAt: d.lastCheckedAt,
@@ -228,7 +229,7 @@ export async function POST(request) {
     return Response.json({
       domain: {
         ...domain,
-        dnsHost: domain.hostname.split('.')[0],
+        dns: dnsRecordFor(domain.hostname),
         links: 0,
         clicks: 0,
       },
