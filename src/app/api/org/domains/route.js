@@ -3,8 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { PLANS } from '@/lib/plans'
 
-// The CNAME target every custom domain points at.
-const CNAME_TARGET = process.env.DOMAIN_CNAME_TARGET || 'cname.luotain.app'
+import { addDomain, CNAME_TARGET } from '@/lib/vercel'
 
 // Loose on purpose. A strict RFC pattern rejects valid hostnames, and the real
 // test is whether DNS resolves — this only catches obvious mistakes before they
@@ -195,6 +194,22 @@ export async function POST(request) {
           field: 'hostname',
         },
         { status: 409 }
+      )
+    }
+
+    // Registered with the HOST before the row exists. Without this the domain
+    // gets a row, passes DNS verification, and still serves nothing — Vercel
+    // won't answer for a hostname that isn't on the project, so there's no
+    // certificate and the browser refuses before any of our code runs.
+    //
+    // Not awaited into failure: if Vercel is unreachable the row is still
+    // created and the domain can be re-checked later. Losing the ability to add
+    // a domain because an API call timed out is the worse outcome.
+    const registered = await addDomain(hostname)
+    if (registered?.error) {
+      console.error(
+        '[POST /api/org/domains] vercel add failed',
+        registered.error
       )
     }
 

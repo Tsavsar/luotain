@@ -2,7 +2,18 @@ import dns from 'dns/promises'
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 
-const CNAME_TARGET = process.env.DOMAIN_CNAME_TARGET || 'cname.luotain.app'
+import {
+  addDomain,
+  getDomainConfig,
+  removeDomain,
+  CNAME_TARGET,
+  isConfigured,
+} from '@/lib/vercel'
+
+// Same loose pattern as the create route — a strict RFC one rejects valid
+// hostnames, and DNS is the real test.
+const HOSTNAME =
+  /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
 
 // Scoped to the caller's org, so a guessed id can't verify or delete someone
 // else's domain.
@@ -35,20 +46,91 @@ async function authorize(id) {
   return { domain, organizationId }
 }
 
-// POST /api/org/domains/[id]  — check the DNS record
+// POST /api/org/domains/[id]  { hostname? }  — save and check
+//
+// Optionally renames first. The pending domain is an editable field in the
+// design, so Save has to handle a corrected typo as well as a re-check —
+// without that, the only way to fix "acme.con" is to remove it and start again.
 export async function POST(request, { params }) {
   const { id } = await params
-  const { error, domain } = await authorize(id)
+  const { error, domain, organizationId } = await authorize(id)
   if (error) return error
+
+  let body
+  try {
+    body = await request.json()
+  } catch {
+    body = {}
+  }
+
+  let hostname = domain.hostname
+  const requested = String(body?.hostname || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '')
+    .replace(/\.$/, '')
+
+  if (requested && requested !== domain.hostname) {
+    if (!HOSTNAME.test(requested)) {
+      return Response.json(
+        { error: "That doesn't look like a domain", field: 'hostname' },
+        { status: 400 }
+      )
+    }
+    // hostname is globally unique, so this catches another workspace's domain
+    // as well as a duplicate here.
+    const clash = await prisma.domain.findUnique({
+      where: { hostname: requested },
+      select: { id: true, organizationId: true },
+    })
+    if (clash && clash.id !== domain.id) {
+      return Response.json(
+        {
+          error:
+            clash.organizationId === organizationId
+              ? "You've already added that domain"
+              : 'That domain is already in use',
+          field: 'hostname',
+        },
+        { status: 409 }
+      )
+    }
+    hostname = requested
+  }
 
   let verified = false
   let lastError = null
+
+  // Vercel first, when it's configured. Its answer is the one that matters:
+  // our own DNS lookup can say the CNAME is perfect while Vercel still has no
+  // certificate for the name, and then a "verified" domain serves an SSL error.
+  if (isConfigured()) {
+    // Re-added in case it was never registered, or was removed. Adding a
+    // domain that's already there is a no-op.
+    await addDomain(hostname)
+
+    const conf = await getDomainConfig(hostname)
+    if (conf?.data) {
+      // misconfigured is Vercel's own verdict on whether DNS reaches it.
+      // The `verified` field on the ADD response is useless here — it comes
+      // back true even when nothing has been set up.
+      verified = conf.data.misconfigured === false
+      if (!verified) {
+        lastError = 'DNS not reaching us yet — check the CNAME record'
+      }
+      return await save(domain.id, hostname, verified, lastError)
+    }
+    // Falls through to a raw lookup if Vercel couldn't answer. A failed API
+    // call shouldn't make verification impossible.
+    console.error('[verify] vercel config unavailable', conf?.error)
+  }
 
   try {
     // resolveCname, not a plain lookup: an A record pointing at the right IP
     // isn't the same as a CNAME, and only the CNAME survives us changing
     // infrastructure.
-    const records = await dns.resolveCname(domain.hostname)
+    const records = await dns.resolveCname(hostname)
     const target = CNAME_TARGET.toLowerCase().replace(/\.$/, '')
     verified = records.some(
       (r) => r.toLowerCase().replace(/\.$/, '') === target
@@ -59,17 +141,35 @@ export async function POST(request, { params }) {
         : 'No CNAME record found'
     }
   } catch (err) {
-    // ENODATA and ENOTFOUND are the normal "not set up yet" cases, not faults —
-    // reported as guidance rather than as an error someone should worry about.
-    lastError =
-      err?.code === 'ENODATA' || err?.code === 'ENOTFOUND'
-        ? 'No CNAME record found yet'
-        : `Lookup failed: ${err?.code || 'unknown'}`
+    // ENODATA and ENOTFOUND mean different things and need different advice.
+    // They were collapsed into one message, which sent someone whose domain
+    // doesn't resolve at all off to a DNS panel for a domain they'd mistyped.
+    //
+    //   ENODATA   the hostname resolves, there's just no CNAME on it yet —
+    //             the normal state right after adding one
+    //   ENOTFOUND nothing resolves at that name, which is almost always a typo
+    //             or a subdomain that was never created
+    if (err?.code === 'ENODATA') {
+      lastError = 'No CNAME record found yet'
+    } else if (err?.code === 'ENOTFOUND') {
+      lastError = "That hostname doesn't resolve — check it's spelt right"
+    } else {
+      lastError = `Lookup failed: ${err?.code || 'unknown'}`
+    }
   }
 
+  return await save(domain.id, hostname, verified, lastError)
+}
+
+// One place that writes the result, because there are two paths to it now —
+// Vercel's verdict and a raw DNS lookup — and they must record it identically.
+async function save(id, hostname, verified, lastError) {
   const updated = await prisma.domain.update({
-    where: { id: domain.id },
-    data: { verified, lastCheckedAt: new Date(), lastError },
+    where: { id },
+    // hostname included, so a rename and its check land together — saving the
+    // new name but verifying the old one would report a result for a domain
+    // that's no longer there.
+    data: { hostname, verified, lastCheckedAt: new Date(), lastError },
     select: {
       id: true,
       hostname: true,
@@ -103,6 +203,10 @@ export async function DELETE(request, { params }) {
   }
 
   try {
+    // Removed from the host too, or the project accumulates domains nobody
+    // owns — and a hostname left attached can't be added by anyone else,
+    // including the person who re-adds their own.
+    await removeDomain(domain.hostname)
     await prisma.domain.delete({ where: { id: domain.id } })
     return Response.json({ success: true, hostname: domain.hostname })
   } catch (err) {

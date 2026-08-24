@@ -971,7 +971,9 @@ export default function DomainsPage() {
                   color: 'var(--text-soft)',
                 }}
               >
-                DNS changes can take up to 24 hours to propagate.
+                DNS changes can take up to 24 hours to propagate. Once the
+                record resolves, the certificate is issued automatically and the
+                domain starts serving links.
               </p>
             </div>
           )}
