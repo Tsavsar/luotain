@@ -324,6 +324,48 @@ export default function DomainsPage() {
       .catch((err) => console.error('[Domains]', err))
   }
 
+  // Re-checks on its own while something is pending.
+  //
+  // Without this, verification only ever ran when the button was pressed — so
+  // DNS would propagate ten minutes later and the page would still say pending
+  // because nobody was there to ask again. The domain WAS verified; the screen
+  // just never found out.
+  //
+  // Every 15 seconds, and only while the tab is visible: a background tab
+  // polling an API that does a DNS lookup is work nobody asked for.
+  useEffect(() => {
+    if (useMockData || !data?.allowed) return
+    const waiting = (data.domains || []).filter(
+      (d) => !d.verified && d.status !== 'draft'
+    )
+    if (waiting.length === 0) return
+
+    let stopped = false
+
+    async function tick() {
+      if (stopped || document.hidden) return
+      // Checked in parallel; one slow lookup shouldn't hold up the others.
+      await Promise.all(
+        waiting.map((d) =>
+          fetch(`/api/org/domains/${d.id}`, { method: 'POST' }).catch(() => {})
+        )
+      )
+      if (!stopped) await load()
+    }
+
+    const timer = setInterval(tick, 15000)
+    return () => {
+      stopped = true
+      clearInterval(timer)
+    }
+    // Keyed on the ids and their statuses, so the interval restarts when
+    // something verifies — and stops once nothing is waiting.
+  }, [
+    useMockData,
+    data?.allowed,
+    (data?.domains || []).map((d) => `${d.id}:${d.status}`).join(','),
+  ])
+
   useEffect(() => {
     if (!mockReady) return
 
