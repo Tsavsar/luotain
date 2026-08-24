@@ -2381,9 +2381,8 @@ html {
    row overflows and scrolls, which on a laptop is fine and preserves the
    comparison. Below 640 there's no room to scroll usefully and stacking is the
    only readable option. */
-.plan-picker-columns {
-  /* Nothing here for desktop — the element carries it. */
-}
+
+/* Nothing here for desktop — the element carries it. *
 @media (max-width: 640px) {
   .plan-picker-columns {
     flex-direction: column !important;
