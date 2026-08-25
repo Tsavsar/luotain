@@ -14,7 +14,7 @@ import { Caption } from '@/components/landingparts'
 // Type here runs to 4.68px, which is decorative rather than readable. That's
 // the intent: it reads as "a form", the way a wireframe does.
 
-const IMAGE = '/websiteimage.png'
+const IMAGE = '/assets/websiteimage.png'
 
 function LinkIcon() {
   return (

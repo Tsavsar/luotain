@@ -9,7 +9,7 @@ import { Card } from '@/components/cardcontainer'
 // 290px against the dashboard's full width, so each is scaled rather than
 // re-styled — a second set of markup imitating Card would need updating every
 // time the real one changed, and would drift the first time it didn't.
-const IMAGE = '/websiteimage.png'
+const IMAGE = '/assets/websiteimage.png'
 
 // The design's own numbers: each card steps 43.02px left and 39.69px down from
 // the one before, later ones on top.
