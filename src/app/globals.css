@@ -2491,3 +2491,36 @@ html {
     display: none;
   }
 }
+
+/* --- Landing page --- */
+
+/* Nav and footer links. Underline on hover rather than a colour change: on a
+   page this restrained, a second colour would read as an accent rather than as
+   a link. */
+.landing-nav-link {
+  transition: opacity var(--duration-fast) ease;
+}
+.landing-nav-link:hover {
+  opacity: 0.6;
+}
+
+.landing-pill {
+  transition:
+    opacity var(--duration-fast) ease,
+    transform var(--duration-press) ease-out;
+}
+.landing-pill:hover {
+  opacity: 0.9;
+}
+.landing-pill:active {
+  transform: scale(0.97);
+}
+
+/* Below the 800px column the sections need room to breathe rather than the
+   120px gap they carry on desktop, which on a phone is most of a screen of
+   nothing between each one. */
+@media (max-width: 720px) {
+  .landing-stack {
+    gap: 72px !important;
+  }
+}
