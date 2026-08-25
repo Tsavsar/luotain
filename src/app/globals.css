@@ -2555,9 +2555,10 @@ html {
    transcribed. Three stops, each at the width where a specific thing breaks
    rather than at a round number. */
 
-/* 900: the hero is 402px of card plus ~340px of text plus a gap. Below this the
-   text column is narrower than the 341px the headline is set to. */
-@media (max-width: 900px) {
+/* 1100: the hero is 503px of card plus ~470px of text plus a gap. Below this
+   the text column drops under the 380px the headline is set to and starts
+   breaking mid-phrase. */
+@media (max-width: 1100px) {
   .landing-split {
     flex-direction: column;
     align-items: flex-start !important;
@@ -2580,8 +2581,8 @@ html {
   }
 }
 
-/* 620: two 256px cards no longer fit side by side. */
-@media (max-width: 620px) {
+/* 700: two columns of card copy no longer hold a readable measure. */
+@media (max-width: 700px) {
   .landing-cards > * {
     flex: 1 1 100% !important;
   }
@@ -2606,7 +2607,7 @@ html {
 /* The hero card and closing card are fixed-width by design. Below their own
    width they'd overflow the viewport, so they shrink from here rather than
    forcing a horizontal scrollbar on the whole page. */
-@media (max-width: 460px) {
+@media (max-width: 560px) {
   .landing-herocard,
   .landing-closingcard {
     width: 100% !important;

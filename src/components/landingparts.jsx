@@ -6,7 +6,10 @@ import Link from 'next/link'
 // Every value here is transcribed from the design rather than approximated.
 // Pulled out of the page so a spacing change happens once.
 
-export const COLUMN = 800
+// 1000, up from the design's 800. The grid divides it into three 322px
+// columns instead of 256, which is what gives the card copy a readable measure
+// at 13px — 256 was about 30 characters a line.
+export const COLUMN = 1000
 
 // px 20 / py 8 / radius 48. The nav and hero use 48; the use-case and closing
 // rows use 99 in the design — both are past the pill threshold at this height,

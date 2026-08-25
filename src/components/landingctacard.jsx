@@ -13,10 +13,13 @@ const IMAGE = '/assets/websiteimage.png'
 
 // The design's own numbers: each card steps 43.02px left and 39.69px down from
 // the one before, later ones on top.
+// Scaled with the card. The design's offsets are for a 457px card; ours is
+// 571 now, so leaving them would have bunched the stack into the right-hand
+// third and left the left side empty.
 const STACK = [
-  { right: 30, top: 8 },
-  { right: 73.02, top: 47.69 },
-  { right: 116.04, top: 87.38 },
+  { right: 37, top: 10 },
+  { right: 91, top: 60 },
+  { right: 145, top: 109 },
 ]
 
 // Static sample. Not the mock generator: that produces a fresh random spread
@@ -50,11 +53,14 @@ const GEOGRAPHY = {
   ],
 }
 
-// 290 / 380 ≈ 0.76. Scaling the real card keeps its internal proportions
-// exactly, where re-specifying every inner size at 76% would round differently
-// at each step and drift.
-const SCALE = 0.76
-const CARD_WIDTH = 290
+// The real card is ~380 wide in the dashboard. 362 here keeps the same
+// proportion against the enlarged 571px well that 290 had against 457.
+//
+// Scaling rather than re-styling: re-specifying every inner size at 95% would
+// round differently at each step, and the card would stop matching the one in
+// the app the first time either changed.
+const SCALE = 0.95
+const CARD_WIDTH = 362
 
 function StackedCard({ right, top, children }) {
   return (
@@ -88,7 +94,7 @@ export default function ClosingCard() {
       style={{
         position: 'relative',
         height: '277px',
-        width: '457px',
+        width: '571px',
         maxWidth: '100%',
         borderRadius: '8px',
         background: 'var(--bg-surface)',
