@@ -71,6 +71,14 @@ export default function PlanPicker({
   // scaled picker would either clip at the bottom or overlap the section
   // below, depending on which hack papered over it.
   columnWidth = 230,
+  // Multiplies every size in the picker — type, icons and the gaps between
+  // them. The settings panel uses 1; the landing page uses 1.2 so the plans
+  // read at the same weight as the rest of the site rather than as fine print.
+  //
+  // A prop rather than CSS zoom: zoom is a non-standard property with its own
+  // rounding quirks, and it scales the shadows and borders too, which start
+  // looking heavy well before the type looks right.
+  scale = 1,
   // The lead-in above the table. The overlay has its own title, so it passes
   // false rather than repeating the sentence under one.
   showIntro = true,
@@ -190,14 +198,21 @@ export default function PlanPicker({
             >
               {/* The same plant, so the tier you're reading about in the picker
                   and the one shown on the page above are marked the same way. */}
-              <PlanIcon planId={plan.id} size={28} />
+              <PlanIcon planId={plan.id} size={Math.round(28 * scale)} />
 
               <div
                 style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}
               >
                 <p
-                  className='label-sm'
-                  style={{ color: 'var(--text-strong)', margin: 0 }}
+                  style={{
+                    color: 'var(--text-strong)',
+                    margin: 0,
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: `${14 * scale}px`,
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                    letterSpacing: `${0.28 * scale}px`,
+                  }}
                 >
                   {plan.id === 'FREE' ? 'Free' : plan.name}
                 </p>
@@ -205,7 +220,7 @@ export default function PlanPicker({
                   style={{
                     margin: 0,
                     fontFamily: 'var(--font-sans)',
-                    fontSize: '10px',
+                    fontSize: `${10 * scale}px`,
                     lineHeight: 1.4,
                     letterSpacing: '0.2px',
                     color: 'var(--text-soft)',
@@ -237,8 +252,15 @@ export default function PlanPicker({
                     }}
                   >
                     <p
-                      className='label-lg'
-                      style={{ color: 'var(--text-strong)', margin: 0 }}
+                      style={{
+                        color: 'var(--text-strong)',
+                        margin: 0,
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: `${18 * scale}px`,
+                        fontWeight: 500,
+                        lineHeight: 1.4,
+                        letterSpacing: `${0.36 * scale}px`,
+                      }}
                     >
                       {/* Only the number rolls — AnimatedNumber animates every
                           character it's given, so the $ and /month would tumble
@@ -251,8 +273,11 @@ export default function PlanPicker({
                       }
                     </p>
                     <p
-                      className='para-xs'
                       style={{
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: `${12 * scale}px`,
+                        lineHeight: `${16 * scale}px`,
+                        letterSpacing: `${0.24 * scale}px`,
                         color: 'var(--text-sub)',
                         margin: 0,
                         paddingBottom: '3px',
@@ -265,7 +290,7 @@ export default function PlanPicker({
                     style={{
                       margin: 0,
                       fontFamily: 'var(--font-sans)',
-                      fontSize: '10px',
+                      fontSize: `${10 * scale}px`,
                       lineHeight: 1.4,
                       letterSpacing: '0.2px',
                       color: 'var(--text-soft)',
@@ -373,8 +398,11 @@ export default function PlanPicker({
                         <CheckIcon on={on} />
                       </span>
                       <p
-                        className='para-xs'
                         style={{
+                          fontFamily: 'var(--font-sans)',
+                          fontSize: `${12 * scale}px`,
+                          lineHeight: `${16 * scale}px`,
+                          letterSpacing: `${0.24 * scale}px`,
                           margin: 0,
                           color: on
                             ? 'var(--text-sub)'
@@ -396,7 +424,7 @@ export default function PlanPicker({
         style={{
           margin: 0,
           fontFamily: 'var(--font-sans)',
-          fontSize: '10px',
+          fontSize: `${10 * scale}px`,
           lineHeight: 1.4,
           letterSpacing: '0.2px',
           color: 'var(--text-soft)',

@@ -105,7 +105,9 @@ function Nav() {
       }}
     >
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <LogoMark size={26} />
+        <span className='landing-logo'>
+          <LogoMark size={26} />
+        </span>
 
         <span
           aria-hidden='true'
@@ -240,6 +242,7 @@ function Hero() {
       style={{ display: 'flex', alignItems: 'flex-end', width: '100%' }}
     >
       <div
+        className='landing-herotext'
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -249,6 +252,7 @@ function Hero() {
           // 37px top and bottom, which is what sits the block's baseline
           // against the card beside it.
           padding: '37px 0',
+          // Tightened on mobile — see .landing-herotext.
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -273,7 +277,10 @@ function Hero() {
           </Body>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+        <div
+          className='landing-heropills'
+          style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}
+        >
           <Pill href='/login' tone='soft'>
             View a demo
           </Pill>
@@ -455,14 +462,16 @@ function Plans() {
 
           currentPlan is null: nobody visiting this page is on a plan, so every
           column offers to start rather than one saying "current". */}
-      {/* 268 columns, zoomed 1.15 by the CSS below — (3 x 268 + 64) x 1.15 is
-          998, so it fills the page AND its 12px type lands at ~14, matching
-          the rest of the site instead of reading as fine print. */}
+      {/* scale 1.2 sizes the type and icons for a website rather than a
+          settings panel: 12px feature rows become 14, the plan name 17, the
+          price 22 and the plant icon 34. Columns at 312 fill the 1000 column
+          exactly. */}
       <div className='landing-plans-wrap'>
         <PlanPicker
           currentPlan={null}
           showIntro={false}
-          columnWidth={268}
+          columnWidth={312}
+          scale={1.2}
           onChoose={() => router.push('/get-started')}
         />
       </div>

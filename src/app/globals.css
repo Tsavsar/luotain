@@ -2520,25 +2520,16 @@ html {
 }
 
 /* --- Plans ---
+   No zoom. The picker takes a `scale` prop instead, which sizes its type and
+   icons properly — zoom also scales shadows and borders, and those start
+   looking heavy well before the type looks right.
 
-   zoom, not transform. The picker's type is sized for the settings panel and
-   reads as fine print next to the site's 14px body — but a transform doesn't
-   affect layout, so a scaled picker overlaps whatever follows it. zoom scales
-   layout too, so the page below simply reflows.
-
-   1.15 takes its 12px to ~14, and 268px columns render at ~308 so three of
-   them plus gaps come to 998. */
+   Three 312px columns plus two 32px gaps come to exactly 1000. */
 .landing-plans-wrap {
   width: 100%;
-  zoom: 1.15;
 }
 
 @media (max-width: 1100px) {
-  /* Back to natural size. Zooming on a narrow screen only makes the overflow
-     worse, and the columns wrap here anyway. */
-  .landing-plans-wrap {
-    zoom: 1;
-  }
   .landing-plans-wrap > div > div:last-child {
     width: 100% !important;
     flex-wrap: wrap !important;
@@ -2549,8 +2540,7 @@ html {
   }
 }
 
-/* Full width on a phone, as asked — a 268px column in a 340px viewport leaves
-   an odd margin down one side. */
+/* Full width on a phone. */
 @media (max-width: 700px) {
   .landing-plans-wrap > div > div:last-child > * {
     max-width: 100% !important;
@@ -2751,5 +2741,36 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .landing-sheet {
     animation: none;
+  }
+}
+
+/* --- Mobile hero ---
+   The form is what people came for, so it has to be on the first screen. Four
+   things were pushing it below the fold: 96px of top padding, 37px of hero
+   padding, a 32px gap and two buttons that duplicate what's already reachable.
+   Removing them lifts it roughly 190px. */
+@media (max-width: 700px) {
+  .landing-stack {
+    padding-top: 32px !important;
+  }
+  .landing-herotext {
+    padding: 0 !important;
+    gap: 20px !important;
+  }
+  /* The card's own button is the action, and Get started sits in the menu. */
+  .landing-heropills {
+    display: none !important;
+  }
+  .landing-split {
+    gap: 24px !important;
+  }
+  /* 48, up from 26. Once the links collapse into the burger this is the only
+     brand element left, and at 26 it looked incidental beside a 40px button. */
+  .landing-logo svg {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  .landing-nav {
+    padding-top: 24px !important;
   }
 }

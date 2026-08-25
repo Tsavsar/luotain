@@ -59,24 +59,24 @@ const GEOGRAPHY = {
   ],
 }
 
-// Scaled down from 362. At that size the three overlapping cards filled the
-// well corner to corner with no texture visible between them, so the montage
-// read as a solid block rather than as cards on a surface.
-const SCALE = 0.78
-const CARD_WIDTH = 296
+// The dashboard card is ~380 wide. 362 keeps the proportion against the 571px
+// well that the design's 290 had against 457.
+const SCALE = 0.95
+const CARD_WIDTH = 362
 
-function StackedCard({ x, y, children }) {
+function StackedCard({ right, top, children }) {
   return (
     <div
       style={{
         position: 'absolute',
-        left: '50%',
-        top: '50%',
+        right: `${right}px`,
+        top: `${top}px`,
         width: `${CARD_WIDTH / SCALE}px`,
-        // Centred first, then offset, then scaled. The order matters: scaling
-        // before the translate would scale the offsets too.
-        transform: `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${SCALE})`,
-        transformOrigin: 'center',
+        transform: `scale(${SCALE})`,
+        // Top right, so the card shrinks toward its own corner and the `right`
+        // offset stays the offset intended. A centre origin would pull every
+        // card inward by half its shrinkage and close the cascade up.
+        transformOrigin: 'top right',
         // Decorative. Nothing in this montage is interactive — the real cards
         // have hover states, filters and copy buttons that would invite clicks
         // that do nothing on a landing page.
