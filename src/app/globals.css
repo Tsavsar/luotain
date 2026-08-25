@@ -2520,27 +2520,40 @@ html {
 }
 
 /* --- Plans ---
-   No scroll container. Three 312px columns and two 32px gaps come to exactly
-   1000, which is the column, so there is nothing to scroll — the wrapper I had
-   here was reserving space for a scrollbar that never appears at this width.
 
-   Narrow viewports are handled by the media queries below, which drop the
-   columns to a wrap rather than pushing the page sideways. */
+   zoom, not transform. The picker's type is sized for the settings panel and
+   reads as fine print next to the site's 14px body — but a transform doesn't
+   affect layout, so a scaled picker overlaps whatever follows it. zoom scales
+   layout too, so the page below simply reflows.
+
+   1.15 takes its 12px to ~14, and 268px columns render at ~308 so three of
+   them plus gaps come to 998. */
 .landing-plans-wrap {
   width: 100%;
+  zoom: 1.15;
 }
 
-/* The picker's own row is width: max-content so its columns never wrap in the
-   settings panel. On a narrow page that would run off the edge, so here it
-   wraps instead. */
 @media (max-width: 1100px) {
+  /* Back to natural size. Zooming on a narrow screen only makes the overflow
+     worse, and the columns wrap here anyway. */
+  .landing-plans-wrap {
+    zoom: 1;
+  }
   .landing-plans-wrap > div > div:last-child {
     width: 100% !important;
     flex-wrap: wrap !important;
   }
   .landing-plans-wrap > div > div:last-child > * {
     width: 100% !important;
-    max-width: 340px;
+    max-width: 360px;
+  }
+}
+
+/* Full width on a phone, as asked — a 268px column in a 340px viewport leaves
+   an odd margin down one side. */
+@media (max-width: 700px) {
+  .landing-plans-wrap > div > div:last-child > * {
+    max-width: 100% !important;
   }
 }
 
@@ -2606,6 +2619,37 @@ html {
   }
 }
 
+/* --- Use cases on mobile ---
+   Sideways rather than stacked. Three cards stacked is three screens of
+   scrolling for what is one idea shown three ways — swiping through them keeps
+   the comparison intact, which is the whole point of having three.
+
+   Snap points so a swipe lands on a card rather than between two. */
+@media (max-width: 700px) {
+  .landing-scroller {
+    display: flex !important;
+    grid-template-columns: none !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    /* Bleeds to the screen edges, then pads back — a card cut off at the
+       viewport edge is what tells you there are more. */
+    margin-inline: -20px;
+    padding-inline: 20px;
+    padding-bottom: 4px;
+    gap: 12px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .landing-scroller::-webkit-scrollbar {
+    display: none;
+  }
+  .landing-scroller > * {
+    flex: 0 0 78% !important;
+    max-width: 300px;
+    scroll-snap-align: start;
+  }
+}
+
 /* 700: two columns of card copy no longer hold a readable measure. */
 @media (max-width: 700px) {
   .landing-cards > * {
@@ -2652,5 +2696,60 @@ html {
   }
   .landing-pill:active {
     transform: none;
+  }
+}
+
+/* --- Mobile nav ---
+   The burger and sheet only exist below 700. Above it the links and buttons
+   fit, and a menu button next to visible links is a control with nothing to
+   do. */
+@media (max-width: 700px) {
+  .landing-navlinks,
+  .landing-navactions,
+  .landing-navdivider {
+    display: none !important;
+  }
+  .landing-burger {
+    display: flex !important;
+  }
+  .landing-nav {
+    flex-wrap: nowrap !important;
+    gap: 0 !important;
+  }
+}
+
+/* Full screen below the bar. A dropdown panel on a phone gets covered by the
+   keyboard and clipped by the viewport; a sheet has neither problem. */
+.landing-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: color-mix(in oklab, var(--bg-default) 92%, transparent);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: stretch;
+  padding: 120px 20px 20px;
+  animation: landingSheetIn 200ms var(--ease-out);
+}
+.landing-sheet-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+@keyframes landingSheetIn {
+  from {
+    opacity: 0;
+    /* 6px, not a slide from off-screen — the sheet is already where it belongs,
+       it just arrives. */
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-sheet {
+    animation: none;
   }
 }

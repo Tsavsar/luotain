@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import LogoMark from '@/components/logomark'
 import Reveal from '@/components/reveal'
@@ -25,7 +26,68 @@ import {
 // product drifts from it the first time either changes.
 
 // ─── Nav (555:2461) ───
+const NAV_LINKS = [
+  ['Home', '#top'],
+  ['Features', '#features'],
+  ['Use cases', '#use-cases'],
+  ['Price', '#plans'],
+]
+
+function MenuIcon({ open }) {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 20 20'
+      fill='none'
+      aria-hidden='true'
+    >
+      {/* Two lines that rotate into a cross rather than swapping icons — the
+          same element moving is what makes the state change legible. */}
+      <path
+        d='M3.5 7h13'
+        stroke='currentColor'
+        strokeWidth='1.6'
+        strokeLinecap='round'
+        style={{
+          transformOrigin: 'center',
+          transform: open ? 'translateY(3px) rotate(45deg)' : 'none',
+          transition: 'transform 220ms var(--ease-out)',
+        }}
+      />
+      <path
+        d='M3.5 13h13'
+        stroke='currentColor'
+        strokeWidth='1.6'
+        strokeLinecap='round'
+        style={{
+          transformOrigin: 'center',
+          transform: open ? 'translateY(-3px) rotate(-45deg)' : 'none',
+          transition: 'transform 220ms var(--ease-out)',
+        }}
+      />
+    </svg>
+  )
+}
+
 function Nav() {
+  const [open, setOpen] = useState(false)
+
+  // Closes on Escape and locks the page behind the sheet. Without the lock the
+  // page scrolls under an open menu, which on a phone means closing it to find
+  // you've moved somewhere else.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [open])
+
   return (
     <nav
       className='landing-nav'
@@ -38,17 +100,16 @@ function Nav() {
         margin: '0 auto',
         padding: '54px 20px 0',
         boxSizing: 'border-box',
+        position: 'relative',
+        zIndex: 50,
       }}
     >
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-        {/* 20.577 × 21.711 in the design. LogoMark is square, so 21 matches the
-            height and the width follows the mark's own ratio. */}
         <LogoMark size={26} />
 
-        {/* A 1.5px rule, not a border — it has its own radius and sits as a
-            sibling, which a border-left on the list couldn't reproduce. */}
         <span
           aria-hidden='true'
+          className='landing-navdivider'
           style={{
             width: '1.5px',
             height: '24px',
@@ -62,20 +123,13 @@ function Nav() {
           className='landing-navlinks'
           style={{ display: 'flex', gap: '34px', alignItems: 'center' }}
         >
-          {[
-            ['Home', '#top'],
-            ['Features', '#features'],
-            ['Use cases', '#use-cases'],
-            ['Price', '#plans'],
-          ].map(([label, href]) => (
+          {NAV_LINKS.map(([label, href]) => (
             <a
               key={label}
               href={href}
               className='landing-nav-link'
               style={{
                 fontFamily: 'var(--font-sans)',
-                // 15, up from 12. Nav sat two steps under the page's body
-                // size, which read as fine print rather than as navigation.
                 fontSize: '15px',
                 lineHeight: '20px',
                 letterSpacing: '0.3px',
@@ -90,7 +144,10 @@ function Nav() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+      <div
+        className='landing-navactions'
+        style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
+      >
         <Pill href='/login' tone='soft'>
           Demo
         </Pill>
@@ -98,6 +155,78 @@ function Nav() {
           Get started
         </Pill>
       </div>
+
+      {/* Only on mobile. Four links and two buttons don't fit a phone, and
+          shrinking them to fit is how nav ends up unreadable. */}
+      <button
+        type='button'
+        className='landing-burger'
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? 'Close menu' : 'Open menu'}
+        aria-expanded={open}
+        style={{
+          display: 'none',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '40px',
+          height: '40px',
+          borderRadius: 'var(--radius-full)',
+          border: 'none',
+          background: 'var(--bg-surface)',
+          color: 'var(--text-strong)',
+          cursor: 'pointer',
+        }}
+      >
+        <MenuIcon open={open} />
+      </button>
+
+      {open ? (
+        <div
+          className='landing-sheet'
+          onClick={() => setOpen(false)}
+          role='presentation'
+        >
+          <div
+            className='landing-sheet-inner'
+            onClick={(e) => e.stopPropagation()}
+          >
+            {NAV_LINKS.map(([label, href]) => (
+              <a
+                key={label}
+                href={href}
+                onClick={() => setOpen(false)}
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '18px',
+                  lineHeight: '26px',
+                  letterSpacing: '0.36px',
+                  color: 'var(--text-strong)',
+                  textDecoration: 'none',
+                  padding: '6px 0',
+                }}
+              >
+                {label}
+              </a>
+            ))}
+
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                paddingTop: '10px',
+              }}
+            >
+              <Pill href='/login' tone='soft'>
+                Demo
+              </Pill>
+              <Pill href='/get-started' tone='dark'>
+                Get started
+              </Pill>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </nav>
   )
 }
@@ -252,7 +381,7 @@ function UseCases() {
           <Body width={300}>Same link, three very different jobs.</Body>
         </div>
 
-        <div className='landing-grid'>
+        <div className='landing-grid landing-scroller'>
           <Card
             title='Print and packaging'
             lead='You put a code on something physical'
@@ -326,14 +455,14 @@ function Plans() {
 
           currentPlan is null: nobody visiting this page is on a plan, so every
           column offers to start rather than one saying "current". */}
-      {/* 312 rather than the settings panel's 230: three columns and two 32px
-          gaps come to 1000, so the plans fill the page instead of stopping
-          246px short and looking like a widget dropped onto it. */}
+      {/* 268 columns, zoomed 1.15 by the CSS below — (3 x 268 + 64) x 1.15 is
+          998, so it fills the page AND its 12px type lands at ~14, matching
+          the rest of the site instead of reading as fine print. */}
       <div className='landing-plans-wrap'>
         <PlanPicker
           currentPlan={null}
           showIntro={false}
-          columnWidth={312}
+          columnWidth={268}
           onChoose={() => router.push('/get-started')}
         />
       </div>

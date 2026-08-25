@@ -164,8 +164,7 @@ export default function HeroCard() {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: '8px',
-        background: 'var(--bg-surface)',
+        gap: '6px',
         width: '503px',
         maxWidth: '100%',
         flexShrink: 0,
@@ -176,7 +175,6 @@ export default function HeroCard() {
           position: 'relative',
           minHeight: '343px',
           borderRadius: '8px',
-          border: '2px solid var(--stroke-soft)',
           overflow: 'hidden',
           width: '100%',
           boxSizing: 'border-box',
@@ -191,9 +189,9 @@ export default function HeroCard() {
           alt=''
           style={{
             position: 'absolute',
-            inset: '-2px',
-            width: 'calc(100% + 4px)',
-            height: 'calc(100% + 4px)',
+            inset: 0,
+            width: '100%',
+            height: '100%',
             objectFit: 'cover',
             pointerEvents: 'none',
           }}
@@ -383,11 +381,13 @@ export default function HeroCard() {
                   padding: '6px 6px 6px 16px',
                   borderRadius: '48px',
                   background: 'var(--bg-default)',
-                  border: `1px solid ${error ? 'var(--error-base)' : 'transparent'}`,
-                  boxShadow: '0 4px 20px rgba(54, 54, 54, 0.10)',
+                  border: 'none',
+                  boxShadow: error
+                    ? '0 0 0 1.5px var(--error-base), 0 4px 20px rgba(54, 54, 54, 0.10)'
+                    : '0 4px 20px rgba(54, 54, 54, 0.10)',
                   width: '100%',
                   boxSizing: 'border-box',
-                  transition: 'border-color 160ms var(--ease-out)',
+                  transition: 'box-shadow 160ms var(--ease-out)',
                 }}
               >
                 <span
@@ -491,8 +491,8 @@ export default function HeroCard() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '12px',
-          borderRadius: '16px',
+          padding: '12px 16px',
+          borderRadius: '8px',
           background: 'var(--bg-surface)',
           width: '100%',
           boxSizing: 'border-box',
