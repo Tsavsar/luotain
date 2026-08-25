@@ -2492,29 +2492,49 @@ html {
 }
 
 /* --- Plans ---
-   No zoom. The picker takes a `scale` prop instead, which sizes its type and
-   icons properly — zoom also scales shadows and borders, and those start
-   looking heavy well before the type looks right.
 
-   Three 312px columns plus two 32px gaps come to exactly 1000. */
+   Targets .plan-picker-columns, the class the picker itself sets. The rules
+   here used to reach in with "> div > div:last-child" — guessing at the
+   component's DOM, which broke every time its structure moved and made this
+   far harder than it needed to be.
+
+   The picker's own sizing is inline so it works in the settings panel; the
+   BREAKPOINT is here, which is the right split. */
 .landing-plans-wrap {
   width: 100%;
 }
 
+/* Stacked, not scrolled. Three plans is squarely in the range where stacking
+   is the standard answer — a horizontally scrolled pricing table hides tiers
+   people never discover, which is the one thing a pricing page must not do. */
 @media (max-width: 1100px) {
-  .landing-plans-wrap > div > div:last-child {
+  .landing-plans-wrap .plan-picker-columns {
+    flex-wrap: wrap;
     width: 100% !important;
-    flex-wrap: wrap !important;
+    gap: 36px;
   }
-  .landing-plans-wrap > div > div:last-child > * {
-    width: 100% !important;
-    max-width: 360px;
+  .landing-plans-wrap .plan-picker-columns > * {
+    /* Two up while there's room for two readable columns. */
+    flex: 1 1 300px;
+    width: auto !important;
+    min-width: 0;
   }
 }
 
-/* Full width on a phone. */
-@media (max-width: 700px) {
-  .landing-plans-wrap > div > div:last-child > * {
+@media (max-width: 760px) {
+  /* One per row, full width. */
+  .landing-plans-wrap .plan-picker-columns {
+    flex-direction: column;
+    gap: 40px;
+  }
+  .landing-plans-wrap .plan-picker-columns > * {
+    width: 100% !important;
+    flex: none;
+  }
+  /* 48px minimum. A pricing CTA is the most important tap on the page and the
+     standard touch target floor. */
+  .landing-plans-wrap .plan-picker-columns button {
+    min-height: 48px;
     max-width: 100% !important;
   }
 }

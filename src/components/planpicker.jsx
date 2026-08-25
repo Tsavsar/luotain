@@ -162,7 +162,9 @@ export default function PlanPicker({
         style={{
           display: 'flex',
           flexDirection: 'row',
-          flexWrap: 'nowrap',
+          // flex-wrap is NOT set inline — the stylesheet owns it, so the
+          // stacking breakpoint lives with the other breakpoints rather
+          // than fighting an inline nowrap it can't override cleanly.
           gap: '32px',
           alignItems: 'flex-start',
           // Takes the width it needs and overflows its container rather
@@ -274,13 +276,13 @@ export default function PlanPicker({
                     </p>
                     <p
                       style={{
+                        margin: 0,
+                        paddingBottom: '3px',
                         fontFamily: 'var(--font-sans)',
                         fontSize: `${12 * scale}px`,
                         lineHeight: `${16 * scale}px`,
                         letterSpacing: `${0.24 * scale}px`,
                         color: 'var(--text-sub)',
-                        margin: 0,
-                        paddingBottom: '3px',
                       }}
                     >
                       /month
@@ -399,11 +401,11 @@ export default function PlanPicker({
                       </span>
                       <p
                         style={{
+                          margin: 0,
                           fontFamily: 'var(--font-sans)',
                           fontSize: `${12 * scale}px`,
                           lineHeight: `${16 * scale}px`,
                           letterSpacing: `${0.24 * scale}px`,
-                          margin: 0,
                           color: on
                             ? 'var(--text-sub)'
                             : 'var(--text-disabled)',
