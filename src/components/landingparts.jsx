@@ -41,7 +41,7 @@ export function Pill({ href, tone = 'dark', children }) {
 // 440 is a real weight, not a rounding of 400. Inter is variable in this
 // project, so the design's font-[440] renders exactly — on a static Inter it
 // would round to 500 and read heavier than intended.
-export function Heading({ size, width, weight = 440, children, id }) {
+export function Heading({ size, width, weight = 440, children, id, lead }) {
   return (
     <h2
       id={id}
@@ -57,8 +57,17 @@ export function Heading({ size, width, weight = 440, children, id }) {
         color: 'var(--text-strong)',
         width: width ? `${width}px` : undefined,
         maxWidth: '100%',
+        // Stops a heading breaking with one word on the last line.
+        textWrap: 'balance',
       }}
     >
+      {/* Two-tone: the setup in --text-sub, the point in --text-strong. The
+          contrast does the emphasis, so neither half needs extra weight. */}
+      {lead ? (
+        <>
+          <span style={{ color: 'var(--text-sub)' }}>{lead}</span>{' '}
+        </>
+      ) : null}
       {children}
     </h2>
   )
@@ -68,9 +77,15 @@ export function Heading({ size, width, weight = 440, children, id }) {
 export function Body({ children, width, tone = 'sub' }) {
   return (
     <p
-      className='para-xs'
       style={{
         margin: 0,
+        fontFamily: 'var(--font-sans)',
+        // 14, up from the design's 12. Twelve is the floor for body text, and
+        // sitting ON the floor left nowhere for the card copy to go except
+        // under it — which is how it ended up at 10.
+        fontSize: '14px',
+        lineHeight: 1.5,
+        letterSpacing: '0.28px',
         color: tone === 'strong' ? 'var(--text-strong)' : 'var(--text-sub)',
         width: width ? `${width}px` : undefined,
         maxWidth: '100%',
@@ -81,7 +96,7 @@ export function Body({ children, width, tone = 'sub' }) {
   )
 }
 
-// 10 / 1.4 / 0.2. Not a token in the app — the dashboard's smallest is
+// 13 / 1.55. Not a token in the app — the dashboard's smallest is
 // para-xs at 12 — so it's spelled out here rather than bent into an existing
 // class that would render 2px larger.
 export function Caption({ children, tone = 'sub' }) {
@@ -90,10 +105,15 @@ export function Caption({ children, tone = 'sub' }) {
       style={{
         margin: 0,
         fontFamily: 'var(--font-sans)',
-        fontSize: '10px',
-        lineHeight: 1.4,
-        letterSpacing: '0.2px',
+        // 13, not 10. Card copy is two sentences of reading — a caption size
+        // is for a label under an image, not for the thing being read. 1.55
+        // rather than 1.4 because line height matters more as size drops.
+        fontSize: '13px',
+        lineHeight: 1.55,
+        letterSpacing: '0.26px',
         color: tone === 'strong' ? 'var(--text-strong)' : 'var(--text-sub)',
+        // Avoids a one-word last line, which at this measure happens often.
+        textWrap: 'pretty',
       }}
     >
       {children}
@@ -101,8 +121,11 @@ export function Caption({ children, tone = 'sub' }) {
   )
 }
 
-// Features and use cases share this: a 230px well, a 16px title, and copy.
-// The use-case variant adds a lead line in text-strong above the body.
+// Features and use cases share this: a well, a title, and copy.
+//
+// The well is empty on purpose — illustrations are coming. It keeps its
+// dimensions and radius so the layout is already correct when they land, and
+// takes an `image` when they do.
 export function Card({ title, lead, body, image }) {
   return (
     <article
@@ -111,13 +134,17 @@ export function Card({ title, lead, body, image }) {
         display: 'flex',
         flexDirection: 'column',
         gap: '21px',
-        width: '256px',
-        flexShrink: 0,
+        // No fixed width any more — the grid sizes these now, so a hardcoded
+        // 256 fought the column it sits in.
+        minWidth: 0,
       }}
     >
       <div
         style={{
-          height: '230px',
+          // Aspect ratio rather than a fixed height, so the well stays
+          // proportional as the column narrows instead of turning into a
+          // letterbox on a phone.
+          aspectRatio: '256 / 230',
           borderRadius: '8px',
           background: 'var(--bg-surface)',
           width: '100%',

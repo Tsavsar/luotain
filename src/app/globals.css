@@ -2491,6 +2491,7 @@ html {
     display: none;
   }
 }
+
 /* ─── Landing page ─── */
 
 .landing-nav-link {
@@ -2518,12 +2519,33 @@ html {
   transform: scale(0.97);
 }
 
+/* --- The card grid ---
+
+   Three equal columns. This is what fixes the misalignment: the old layout was
+   two flex rows, one 754px wide (heading 210 + two 256 cards) and one 800px
+   (three cards at flex-1). They were never on the same columns, so nothing
+   below the first row lined up with anything above it.
+
+   1fr rather than 256px, so the columns divide whatever width there is instead
+   of leaving a remainder. */
+.landing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px 16px;
+  width: 100%;
+  /* Cards in a row match the tallest, so titles and copy share a baseline
+     across the row rather than each floating at its own height. */
+  align-items: stretch;
+}
+
 /* Cards cascade rather than arriving together. 60ms: past 80 the last one
    feels late, below 30 it stops reading as a stagger at all. */
-.landing-cards > *:nth-child(2) {
+.landing-cards > *:nth-child(2),
+.landing-grid > *:nth-child(2) {
   transition-delay: 60ms;
 }
-.landing-cards > *:nth-child(3) {
+.landing-cards > *:nth-child(3),
+.landing-grid > *:nth-child(3) {
   transition-delay: 120ms;
 }
 
@@ -2544,11 +2566,14 @@ html {
   .landing-cards {
     flex-wrap: wrap;
   }
-  /* 2-up. Three 256px cards need 800px; two need 528, which fits from here
-     down to the next stop. */
   .landing-cards > * {
     width: auto !important;
     flex: 1 1 256px !important;
+  }
+  /* 2-up. Three columns in under 900px puts card copy at ~28 characters a
+     line, which is too narrow to read even at 13px. */
+  .landing-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
   .landing-stack {
     gap: 88px !important;
@@ -2559,6 +2584,11 @@ html {
 @media (max-width: 620px) {
   .landing-cards > * {
     flex: 1 1 100% !important;
+  }
+  /* Single column. Two columns below 620 is two narrow strips. */
+  .landing-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
   }
   .landing-stack {
     gap: 72px !important;
@@ -2590,7 +2620,8 @@ html {
   .landing-reveal {
     transform: none !important;
   }
-  .landing-cards > * {
+  .landing-cards > *,
+  .landing-grid > * {
     transition-delay: 0ms !important;
   }
   .landing-pill:active {

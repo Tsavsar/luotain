@@ -122,9 +122,9 @@ function Hero() {
               margin: 0,
               fontFamily: 'var(--font-sans)',
               fontWeight: 440,
-              fontSize: '32px',
+              fontSize: '36px',
               lineHeight: 1.1,
-              letterSpacing: '0.64px',
+              letterSpacing: '0.72px',
               color: 'var(--text-strong)',
               width: '341px',
               maxWidth: '100%',
@@ -132,7 +132,7 @@ function Hero() {
           >
             No link you share goes unmeasured.
           </h1>
-          <Body width={322}>
+          <Body width={360}>
             Shorten a link, get a QR code with it, and see exactly who clicked
             from where. Clicks, scans, countries and devices, all in one place.
           </Body>
@@ -165,73 +165,53 @@ function Features() {
         width: '100%',
       }}
     >
-      <div
-        className='landing-split'
-        style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          width: '100%',
-        }}
-      >
-        {/* The "Features" tag from the design is gone, as asked. The gap drops
-            from 20 to 10 with it — 20 was the space between the tag and the
-            heading, and keeping it would leave a hole where the tag was. */}
+      {/* One 3-column grid, not two rows that happen to look similar. The
+          heading takes the first cell and five cards fill the rest, so every
+          column lines up by construction rather than by arithmetic.
+
+          The heading column widens 210 -> 256 as a result, which is what makes
+          the two rows share edges. */}
+      <div className='landing-grid'>
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: '10px',
-            width: '210px',
-            flexShrink: 0,
+            // Bottom-aligned in its cell, so the heading sits on the same
+            // baseline as the card titles beside it rather than floating at
+            // the top of a 230px-tall row.
+            justifyContent: 'flex-end',
+            paddingBottom: '4px',
+            minWidth: 0,
           }}
         >
-          <Heading size={20}>
-            The whole link,
-            <br />
+          <Heading size={24} lead='The whole link,'>
             not just the redirect.
           </Heading>
           <Body>
-            Shortening is the easy part. What happens after someone clicks is
-            the rest of it.
+            Shortening is the easy part. What happens after is the rest.
           </Body>
         </div>
 
-        <div
-          className='landing-cards'
-          style={{ display: 'flex', gap: '16px', alignItems: 'center' }}
-        >
-          <Card
-            title='Clicks with context'
-            body='Country, device, browser and referrer on every click. Not a running total you have to guess at.'
-          />
-          <Card
-            title='A QR code with every link'
-            body='Design the pattern and colours, drop your logo in the middle, download it at whatever size you need.'
-          />
-        </div>
-      </div>
-
-      <div
-        className='landing-cards'
-        style={{
-          display: 'flex',
-          gap: '16px',
-          alignItems: 'center',
-          width: '100%',
-        }}
-      >
+        <Card
+          title='Clicks with context'
+          body='Country, device, browser and referrer on every click. Not a running total.'
+        />
+        <Card
+          title='A QR code with every link'
+          body='Design the pattern and colours, add your logo, download at any size.'
+        />
         <Card
           title='Control where it goes'
-          body='Edit the destination and every link and code already shared follows. The QR itself never changes.'
+          body='Change the destination and every code already shared follows.'
         />
         <Card
           title='Your own domain'
-          body='Point go.yourbrand.com at Luotain and every link carries your name instead of ours.'
+          body='Point go.yourbrand.com at Luotain and links carry your name, not ours.'
         />
         <Card
           title='Nothing to install'
-          body='No script on your site, no tag manager, no consent banner. The link is the measurement.'
+          body='No script, no tag manager, no consent banner. The link is the measurement.'
         />
       </div>
     </section>
@@ -260,35 +240,27 @@ function UseCases() {
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <Heading size={20} width={389}>
-            Here&rsquo;s how you can use Luotain.
+          <Heading size={24} width={430} lead='Here&rsquo;s how'>
+            you can use Luotain.
           </Heading>
-          <Body width={257}>Same link, three very different jobs.</Body>
+          <Body width={300}>Same link, three very different jobs.</Body>
         </div>
 
-        <div
-          className='landing-cards'
-          style={{
-            display: 'flex',
-            gap: '16px',
-            alignItems: 'flex-start',
-            width: '100%',
-          }}
-        >
+        <div className='landing-grid'>
           <Card
             title='Print and packaging'
             lead='You put a code on something physical'
-            body='Give each placement its own and you find out which one people actually scan, not just that someone did. If the destination changes later, edit it once and every code already printed follows.'
+            body='Give each placement its own code and you learn which one people actually scan.'
           />
           <Card
             title='Campaigns and social'
             lead='You share the same link in five places'
-            body='The bio link, the newsletter, the post, the DM. One short link each, and the referrer tells you which one earned the traffic. No UTM strings to build or remember.'
+            body='One short link each, and the referrer tells you which earned the traffic.'
           />
           <Card
             title='Client work'
             lead='You need to show someone the numbers'
-            body="Every link reports country, device and source, so a monthly update takes a screenshot rather than an afternoon. On your own domain, the links look like the client's, not like a tool you're using."
+            body='Country, device and source on every link, so an update is a screenshot.'
           />
         </div>
       </div>
@@ -331,7 +303,7 @@ function Plans() {
         {/* 400, not 440. The design uses font-normal on this one heading where
             every other section title is 440 — transcribed rather than
             normalised, since a heavier "Plans" would be visibly off. */}
-        <Heading size={20} weight={400}>
+        <Heading size={24} weight={400}>
           Plans
         </Heading>
         <Body>
@@ -374,13 +346,13 @@ function Closing() {
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <Heading size={20} weight={400} width={297}>
+          <Heading size={24} weight={400} width={330}>
             Start measuring your links.
           </Heading>
           {/* text-strong here, not text-sub. Every other body on the page is
               sub; the design darkens this one because it's the last thing read
               before the button. */}
-          <Body width={277} tone='strong'>
+          <Body width={310} tone='strong'>
             Five links free, no card. See where your traffic actually comes
             from.
           </Body>
