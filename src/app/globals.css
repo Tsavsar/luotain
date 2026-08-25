@@ -2373,9 +2373,7 @@ html {
    The row itself is set INLINE on the element, deliberately. This rule carries
    only the mobile override, because a media query can't be inline.
    
-   That split is the point: if this file is ever out of step with the component,
-   the failure is "doesn't stack on a phone" rather than "stacked on every
-   screen" — which is what happened when the whole layout lived here.
+   That split is the point: if this file is ever out of step with the component,   screen" — which is what happened when the whole layout lived here.
    
    640px, not 900: three 230px columns need 754px, so between 640 and 754 the
    row overflows and scrolls, which on a laptop is fine and preserves the
