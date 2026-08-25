@@ -95,8 +95,8 @@ export default function ClosingCard() {
       className='landing-closingcard'
       style={{
         position: 'relative',
-        height: '277px',
         width: '571px',
+        aspectRatio: '571 / 277',
         maxWidth: '100%',
         borderRadius: '8px',
         background: 'var(--bg-surface)',
@@ -121,34 +121,42 @@ export default function ClosingCard() {
         }}
       />
 
-      <StackedCard {...STACK[0]}>
-        <Card
-          title='Devices'
-          columnOptions={['Type']}
-          showDropdown={false}
-          dataByColumn={DEVICES}
-        />
-      </StackedCard>
+      {/* One wrapper at the design's own 571x277, scaled as a unit.
+          
+          The cards were positioned in pixels directly on the well — so when the
+          well shrank to fit a phone, the offsets didn't, and the cascade hung
+          off both edges. Scaling the whole montage keeps its internal geometry
+          exactly and only changes how big it is. */}
+      <div className='landing-montage'>
+        <StackedCard {...STACK[0]}>
+          <Card
+            title='Devices'
+            columnOptions={['Type']}
+            showDropdown={false}
+            dataByColumn={DEVICES}
+          />
+        </StackedCard>
 
-      <StackedCard {...STACK[1]}>
-        <Card
-          title='Sources'
-          columnOptions={['Visitors']}
-          showDropdown={false}
-          dataByColumn={SOURCES}
-          iconType='favicon'
-        />
-      </StackedCard>
+        <StackedCard {...STACK[1]}>
+          <Card
+            title='Sources'
+            columnOptions={['Visitors']}
+            showDropdown={false}
+            dataByColumn={SOURCES}
+            iconType='favicon'
+          />
+        </StackedCard>
 
-      <StackedCard {...STACK[2]}>
-        <Card
-          title='Geography'
-          columnOptions={['Countries']}
-          showDropdown={false}
-          dataByColumn={GEOGRAPHY}
-          iconType='flag'
-        />
-      </StackedCard>
+        <StackedCard {...STACK[2]}>
+          <Card
+            title='Geography'
+            columnOptions={['Countries']}
+            showDropdown={false}
+            dataByColumn={GEOGRAPHY}
+            iconType='flag'
+          />
+        </StackedCard>
+      </div>
     </div>
   )
 }

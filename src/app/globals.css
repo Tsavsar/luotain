@@ -2362,34 +2362,6 @@ html {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
-/* --- Plan picker columns ---
-   The pricing row, shared by the billing page and the upgrade overlay.
-   
-   Always horizontal. Three 230px columns come to 754px and the settings panel
-   is about 494, so width: max-content lets it overflow the panel to the right
-   — the panel has min-width 0, so a child sized to its content overflows
-   visually without forcing the panel wider and squeezing the sidebar. */
-/* --- Plan picker columns ---
-   The row itself is set INLINE on the element, deliberately. This rule carries
-   only the mobile override, because a media query can't be inline.
-   
-   That split is the point: if this file is ever out of step with the component,   screen" — which is what happened when the whole layout lived here.
-   
-   640px, not 900: three 230px columns need 754px, so between 640 and 754 the
-   row overflows and scrolls, which on a laptop is fine and preserves the
-   comparison. Below 640 there's no room to scroll usefully and stacking is the
-   only readable option. */
-.plan-picker-columns {
-  /* Nothing here for desktop — the element carries it. */
-}
-@media (max-width: 640px) {
-  .plan-picker-columns {
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 28px !important;
-  }
-}
-
 /* --- Plan icon blooms ---
    A slow breath on the orange growth.
    
@@ -2750,11 +2722,17 @@ html {
    padding, a 32px gap and two buttons that duplicate what's already reachable.
    Removing them lifts it roughly 190px. */
 @media (max-width: 700px) {
+  /* 56, not 32. Cutting to 32 put the headline almost against the nav — the
+     space above a hero is what makes it read as a beginning rather than as the
+     top of a scroll. This still lifts the form ~170px over the desktop
+     spacing, which was the point. */
   .landing-stack {
-    padding-top: 32px !important;
+    padding-top: 56px !important;
   }
+  /* A little padding back, rather than none — zero made the headline sit hard
+     against the nav above it. */
   .landing-herotext {
-    padding: 0 !important;
+    padding: 8px 0 0 !important;
     gap: 20px !important;
   }
   /* The card's own button is the action, and Get started sits in the menu. */
@@ -2764,13 +2742,56 @@ html {
   .landing-split {
     gap: 24px !important;
   }
-  /* 48, up from 26. Once the links collapse into the burger this is the only
-     brand element left, and at 26 it looked incidental beside a 40px button. */
+  /* 32, up from 26. Once the links collapse into the burger this is the only
+     brand element left, so it grows — but 48 sat taller than the 40px menu
+     button beside it, which made the bar look lopsided. 32 reads as the anchor
+     without overpowering it. */
   .landing-logo svg {
-    width: 48px !important;
-    height: 48px !important;
+    width: 32px !important;
+    height: 32px !important;
   }
+  /* 36, between the desktop 54 and the 24 I had. Enough that the bar isn't
+     jammed against the top of the screen. */
   .landing-nav {
-    padding-top: 24px !important;
+    padding-top: 36px !important;
+  }
+}
+
+/* --- Closing montage ---
+   The three cards are positioned in pixels against a 571x277 design. This
+   wrapper holds that size no matter what the well is, and scales as a unit —
+   so the cascade keeps its geometry instead of the offsets staying put while
+   the container shrinks around them. */
+.landing-montage {
+  position: absolute;
+  inset: 0;
+  width: 571px;
+  height: 277px;
+  transform-origin: top left;
+}
+
+/* Below the design width, scale by the ratio of the viewport to 571. Each stop
+   is a fraction of 571 rather than a round number, so the montage always fills
+   the well exactly rather than leaving a band of texture at one edge. */
+@media (max-width: 1100px) {
+  .landing-montage {
+    transform: scale(0.86);
+  }
+}
+@media (max-width: 700px) {
+  .landing-montage {
+    transform: scale(0.72);
+  }
+}
+@media (max-width: 560px) {
+  /* At this point the well is the viewport width less padding, so the montage
+     tracks it: 320/571 is about 0.56. */
+  .landing-montage {
+    transform: scale(0.56);
+  }
+}
+@media (max-width: 400px) {
+  .landing-montage {
+    transform: scale(0.48);
   }
 }
