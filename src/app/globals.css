@@ -2491,51 +2491,112 @@ html {
   transform: scale(0.97);
 }
 
-/* --- Plans ---
+/* --- Plan picker ---
 
-   Targets .plan-picker-columns, the class the picker itself sets. The rules
-   here used to reach in with "> div > div:last-child" — guessing at the
-   component's DOM, which broke every time its structure moved and made this
-   far harder than it needed to be.
+   The component's LAYOUT lives here, not in its inline styles. That's the fix
+   for a real problem: inline styles beat every stylesheet rule that isn't
+   !important, so with width and gap set inline, the landing page needed ten
+   !important overrides to lay the same component out differently. Colours and
+   anything conditional stay inline where they belong.
 
-   The picker's own sizing is inline so it works in the settings panel; the
-   BREAKPOINT is here, which is the right split. */
+   These are the defaults, and the settings panel gets them unchanged. */
+.plan-picker-columns {
+  display: flex;
+  flex-direction: row;
+  gap: 32px;
+  align-items: flex-start;
+  /* Takes the width it needs rather than squeezing three columns into the
+     settings panel's ~494px. */
+  width: max-content;
+}
+
+.plan-column {
+  display: flex;
+  flex-direction: column;
+  /* 16, not 20 — the plan icon adds a row, and at 20 the column read as five
+     loose blocks rather than one card. */
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.plan-price-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plan-cta-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  /* Fills the column. Sized to its label instead, the three CTAs come out at
+     three different widths — "Current plan", "Upgrade plan" and "Get pro plan"
+     are all different lengths — which reads as three unrelated buttons rather
+     than one choice made three ways. */
+  width: 100%;
+  max-width: 220px;
+}
+
+/* --- Plan picker on the landing page ---
+   No !important anywhere below. Two class names beat one, so these simply win
+   on specificity — which is how it should have worked from the start. */
 .landing-plans-wrap {
   width: 100%;
 }
 
-/* Stacked, not scrolled. Three plans is squarely in the range where stacking
-   is the standard answer — a horizontally scrolled pricing table hides tiers
-   people never discover, which is the one thing a pricing page must not do. */
+/* Stacked, not scrolled. Three plans is where stacking is the standard answer;
+   a horizontally scrolled pricing table hides tiers people never discover,
+   which is the one thing a pricing page must not do. */
 @media (max-width: 1100px) {
   .landing-plans-wrap .plan-picker-columns {
     flex-wrap: wrap;
-    width: 100% !important;
+    width: 100%;
     gap: 36px;
   }
-  .landing-plans-wrap .plan-picker-columns > * {
-    /* Two up while there's room for two readable columns. */
+  .landing-plans-wrap .plan-column {
     flex: 1 1 300px;
-    width: auto !important;
+    width: auto;
     min-width: 0;
   }
 }
 
 @media (max-width: 760px) {
-  /* One per row, full width. */
   .landing-plans-wrap .plan-picker-columns {
     flex-direction: column;
     gap: 40px;
   }
-  .landing-plans-wrap .plan-picker-columns > * {
-    width: 100% !important;
+  .landing-plans-wrap .plan-column {
+    width: 100%;
     flex: none;
+    /* Wider on a full-width card: at 16 the parts sat closer than the card's
+       own padding, which made it read as cramped rather than grouped. */
+    gap: 20px;
   }
-  /* 48px minimum. A pricing CTA is the most important tap on the page and the
-     standard touch target floor. */
-  .landing-plans-wrap .plan-picker-columns button {
-    min-height: 48px;
-    max-width: 100% !important;
+
+  /* Price left, button right. Stacked they took two rows for one decision, and
+     a full-width button under a short price left a lot of empty card. */
+  .landing-plans-wrap .plan-price-row {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .landing-plans-wrap .plan-price-row > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .landing-plans-wrap .plan-cta-button {
+    width: auto;
+    max-width: none;
+    /* A floor rather than a fixed width, so the three tiers stay consistent
+       without any of them being sized to its longest label. */
+    min-width: 132px;
+    min-height: 44px;
+    padding-left: 18px;
+    padding-right: 18px;
+    flex: 0 0 auto;
   }
 }
 

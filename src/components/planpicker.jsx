@@ -188,15 +188,8 @@ export default function PlanPicker({
           return (
             <div
               key={plan.id}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                // 16px, down from 20 — the icon adds a row, and the original
-                // rhythm left the column reading as five loose blocks.
-                gap: '16px',
-                width: `${columnWidth}px`,
-                flexShrink: 0,
-              }}
+              className='plan-column'
+              style={{ width: `${columnWidth}px` }}
             >
               {/* The same plant, so the tier you're reading about in the picker
                   and the one shown on the page above are marked the same way. */}
@@ -232,13 +225,9 @@ export default function PlanPicker({
                 </p>
               </div>
 
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                }}
-              >
+              {/* Price and CTA. A column here, but the landing page turns
+                    it into a row on mobile — see .plan-price-row. */}
+              <div className='plan-price-row'>
                 <div
                   style={{
                     display: 'flex',
@@ -310,20 +299,14 @@ export default function PlanPicker({
                   type='button'
                   onClick={() => !isCurrent && onChoose(plan.id, annual)}
                   disabled={isCurrent || busy}
-                  className={isCurrent ? 'create-secondary' : 'plan-cta'}
+                  className={`plan-cta-button ${isCurrent ? 'create-secondary' : 'plan-cta'}`}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '8px 16px',
-                    borderRadius: 'var(--radius-full)',
                     cursor: isCurrent || busy ? 'default' : 'pointer',
                     // Fills the column. Sized to its label instead, the three
                     // CTAs came out at three different widths — "Current plan",
                     // "Upgrade plan" and "Get pro plan" are all different
                     // lengths — which read as three unrelated buttons rather
                     // than one choice made three ways.
-                    width: '100%',
                     fontFamily: 'var(--font-sans)',
                     fontSize: '12px',
                     lineHeight: '16px',

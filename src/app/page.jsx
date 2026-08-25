@@ -587,8 +587,11 @@ export default function LandingPage() {
           width: '100%',
           maxWidth: `${COLUMN}px`,
           margin: '0 auto',
-          // 150 from the top of the page, less the 54 the nav already sits at.
-          padding: '96px 20px 0',
+          // 200 between the nav and the hero. The design had 96, which put the
+          // headline close under the bar — the extra air is what makes the
+          // hero read as the start of something rather than as the next thing
+          // after the nav.
+          padding: '200px 20px 0',
           boxSizing: 'border-box',
         }}
       >
