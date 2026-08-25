@@ -132,15 +132,25 @@ export default function PlanPicker({
 
           The old .plan-columns is gone — it stacked below 900px, and the two
           surfaces using this had drifted onto different rules. */}
+      {/* ALWAYS a row. The layout is INLINE, not in a class, so a stale or
+              missing stylesheet cannot turn this into a column — that has now
+              broken twice, once from a class-name collision and once from CSS
+              that shipped a turn late.
+
+              The class carries ONLY the mobile override, which has to be a media
+              query and so can't be inline. If that rule ever goes missing the
+              failure is 'doesn't stack on a phone', not 'stacked everywhere',
+              which is the right direction to fail in. */}
       <div
+        className='plan-picker-columns'
         style={{
           display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'nowrap',
           gap: '32px',
           alignItems: 'flex-start',
-          // max-content, so the row takes the width it needs and overflows its
-          // container rather than wrapping. NOT a class: this lived in
-          // globals.css, and a component whose layout sits in another file
-          // stacks into a column the moment that file is out of step.
+          // Takes the width it needs and overflows its container rather
+          // than squeezing three columns into the panel's ~494px.
           width: 'max-content',
         }}
       >
@@ -310,13 +320,19 @@ export default function PlanPicker({
                       distrust the rest of the page. */}
                   {isCurrent
                     ? 'Current plan'
-                    : busy
-                      ? 'Opening…'
-                      : direction < 0
-                        ? 'Downgrade plan'
-                        : plan.id === 'PRO'
-                          ? 'Get pro plan'
-                          : 'Upgrade plan'}
+                    : // No current plan means a visitor rather than a customer
+                      // — the landing page passes null. Free is where they'd
+                      // begin, so it says so; "Upgrade plan" on the free tier
+                      // is an offer to pay for what costs nothing.
+                      !currentPlan && plan.id === 'FREE'
+                      ? 'Get started'
+                      : busy
+                        ? 'Opening…'
+                        : direction < 0
+                          ? 'Downgrade plan'
+                          : plan.id === 'PRO'
+                            ? 'Get pro plan'
+                            : 'Upgrade plan'}
                 </button>
               </div>
 
