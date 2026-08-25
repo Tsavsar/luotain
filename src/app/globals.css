@@ -2519,6 +2519,18 @@ html {
   transform: scale(0.97);
 }
 
+/* --- Plans ---
+   The picker sets its own row to width: max-content so the columns never wrap.
+   At 312 each that comes to exactly 1000, but a narrower viewport would push
+   it past the edge — so it scrolls rather than overflowing the page. */
+.landing-plans-wrap {
+  width: 100%;
+  overflow-x: auto;
+  /* Room for the scrollbar on the platforms that reserve one, so it doesn't
+     sit on top of the feature list. */
+  padding-bottom: 4px;
+}
+
 /* --- The card grid ---
 
    Three equal columns. This is what fixes the misalignment: the old layout was

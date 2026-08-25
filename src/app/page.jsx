@@ -43,7 +43,7 @@ function Nav() {
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
         {/* 20.577 × 21.711 in the design. LogoMark is square, so 21 matches the
             height and the width follows the mark's own ratio. */}
-        <LogoMark size={21} />
+        <LogoMark size={26} />
 
         {/* A 1.5px rule, not a border — it has its own radius and sits as a
             sibling, which a border-left on the list couldn't reproduce. */}
@@ -51,7 +51,7 @@ function Nav() {
           aria-hidden='true'
           style={{
             width: '1.5px',
-            height: '20px',
+            height: '24px',
             borderRadius: '19px',
             background: 'var(--bg-surface)',
             flexShrink: 0,
@@ -60,7 +60,7 @@ function Nav() {
 
         <div
           className='landing-navlinks'
-          style={{ display: 'flex', gap: '31px', alignItems: 'center' }}
+          style={{ display: 'flex', gap: '34px', alignItems: 'center' }}
         >
           {[
             ['Home', '#top'],
@@ -71,8 +71,14 @@ function Nav() {
             <a
               key={label}
               href={href}
-              className='landing-nav-link para-xs'
+              className='landing-nav-link'
               style={{
+                fontFamily: 'var(--font-sans)',
+                // 15, up from 12. Nav sat two steps under the page's body
+                // size, which read as fine print rather than as navigation.
+                fontSize: '15px',
+                lineHeight: '20px',
+                letterSpacing: '0.3px',
                 color: 'var(--text-strong)',
                 textDecoration: 'none',
                 whiteSpace: 'nowrap',
@@ -320,11 +326,17 @@ function Plans() {
 
           currentPlan is null: nobody visiting this page is on a plan, so every
           column offers to start rather than one saying "current". */}
-      <PlanPicker
-        currentPlan={null}
-        showIntro={false}
-        onChoose={() => router.push('/get-started')}
-      />
+      {/* 312 rather than the settings panel's 230: three columns and two 32px
+          gaps come to 1000, so the plans fill the page instead of stopping
+          246px short and looking like a widget dropped onto it. */}
+      <div className='landing-plans-wrap'>
+        <PlanPicker
+          currentPlan={null}
+          showIntro={false}
+          columnWidth={312}
+          onChoose={() => router.push('/get-started')}
+        />
+      </div>
     </section>
   )
 }

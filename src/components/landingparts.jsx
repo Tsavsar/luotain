@@ -24,14 +24,16 @@ export function Pill({ href, tone = 'dark', children }) {
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '8px 20px',
+        // Grown with the nav links beside them — a 12px button next to a 15px
+        // link reads as the button being less important, which is backwards.
+        padding: '10px 22px',
         borderRadius: '48px',
         textDecoration: 'none',
         whiteSpace: 'nowrap',
         fontFamily: 'var(--font-sans)',
-        fontSize: '12px',
-        lineHeight: '16px',
-        letterSpacing: '0.24px',
+        fontSize: '14px',
+        lineHeight: '18px',
+        letterSpacing: '0.28px',
         background: dark ? 'var(--text-strong)' : 'var(--bg-surface)',
         color: dark ? 'var(--bg-default)' : 'var(--text-sub)',
       }}

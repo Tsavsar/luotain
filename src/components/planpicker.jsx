@@ -63,6 +63,14 @@ export default function PlanPicker({
   onBack,
   onChoose,
   busyPlan,
+  // Column width. 230 suits the settings panel it was built for; the landing
+  // page passes a wider value so three columns fill a 1000px page instead of
+  // leaving 246px empty.
+  //
+  // A prop rather than a CSS transform: transforms don't affect layout, so a
+  // scaled picker would either clip at the bottom or overlap the section
+  // below, depending on which hack papered over it.
+  columnWidth = 230,
   // The lead-in above the table. The overlay has its own title, so it passes
   // false rather than repeating the sentence under one.
   showIntro = true,
@@ -176,7 +184,7 @@ export default function PlanPicker({
                 // 16px, down from 20 — the icon adds a row, and the original
                 // rhythm left the column reading as five loose blocks.
                 gap: '16px',
-                width: '230px',
+                width: `${columnWidth}px`,
                 flexShrink: 0,
               }}
             >
