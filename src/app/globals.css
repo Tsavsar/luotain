@@ -2492,35 +2492,109 @@ html {
   }
 }
 
-/* --- Landing page --- */
+/* ─── Landing page ─── */
 
-/* Nav and footer links. Underline on hover rather than a colour change: on a
-   page this restrained, a second colour would read as an accent rather than as
-   a link. */
 .landing-nav-link {
+  /* Named properties, not `all` — `all` transitions layout properties too and
+     costs a paint on things that never change. */
   transition: opacity var(--duration-fast) ease;
 }
-.landing-nav-link:hover {
-  opacity: 0.6;
+@media (hover: hover) and (pointer: fine) {
+  .landing-nav-link:hover {
+    opacity: 0.6;
+  }
 }
 
 .landing-pill {
   transition:
     opacity var(--duration-fast) ease,
-    transform var(--duration-press) ease-out;
+    transform 160ms var(--ease-out);
 }
-.landing-pill:hover {
-  opacity: 0.9;
+@media (hover: hover) and (pointer: fine) {
+  .landing-pill:hover {
+    opacity: 0.9;
+  }
 }
+/* Press feedback on every button. Not gated behind a hover query — this is the
+   one state touch devices need MOST, since there's no hover to tell you the tap
+   registered. */
 .landing-pill:active {
   transform: scale(0.97);
 }
 
-/* Below the 800px column the sections need room to breathe rather than the
-   120px gap they carry on desktop, which on a phone is most of a screen of
-   nothing between each one. */
-@media (max-width: 720px) {
+/* --- Cards --- */
+
+/* Staggered, so a row of three arrives as a cascade rather than a block. 60ms
+   apart: past about 80 the last card feels late, below 30 the stagger stops
+   reading as one. */
+.landing-cards > * {
+  transition-delay: 0ms;
+}
+.landing-cards > *:nth-child(2) {
+  transition-delay: 60ms;
+}
+.landing-cards > *:nth-child(3) {
+  transition-delay: 120ms;
+}
+
+/* --- Breakpoints --- */
+
+/* 860, not 800: the column is 800 plus 20px of padding each side, so the
+   layout starts being squeezed slightly before the column itself runs out. */
+@media (max-width: 860px) {
+  .landing-hero {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+  .landing-cards {
+    flex-wrap: wrap;
+  }
+  /* 2-up rather than 3. Three 256px cards in a 720px viewport leaves each one
+     too narrow to read the body copy. */
+  .landing-cards > * {
+    flex: 1 1 260px !important;
+  }
+  .landing-plans {
+    flex-wrap: wrap;
+    gap: 28px !important;
+  }
+  .landing-stack {
+    gap: 88px !important;
+  }
+}
+
+@media (max-width: 620px) {
+  /* Everything stacks. Below this a two-up grid is two narrow columns rather
+     than a comparison. */
+  .landing-cards > * {
+    flex: 1 1 100% !important;
+  }
+  .landing-plans > * {
+    width: 100% !important;
+  }
   .landing-stack {
     gap: 72px !important;
+  }
+  /* The nav links wrap under the logo rather than shrinking to nothing. */
+  .landing-nav {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+}
+
+/* --- Reduced motion --- */
+
+/* Reduced motion means gentler, not none. The opacity fade stays because it
+   aids comprehension — sections still announce themselves as they arrive — and
+   only the movement goes. */
+@media (prefers-reduced-motion: reduce) {
+  .landing-reveal {
+    transform: none !important;
+  }
+  .landing-cards > * {
+    transition-delay: 0ms !important;
+  }
+  .landing-pill:active {
+    transform: none;
   }
 }

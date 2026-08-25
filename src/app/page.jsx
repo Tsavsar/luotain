@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import LogoMark from '@/components/logomark'
 import { PLANS, PLAN_FEATURES } from '@/lib/plans'
+import Reveal from '@/components/reveal'
 
 // ─── Landing page ───
 // Node 554:2445. One 800px column, centred, on white.
@@ -24,6 +25,7 @@ const COLUMN = 800
 function Nav() {
   return (
     <nav
+      className='landing-nav'
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -238,12 +240,12 @@ function Hero() {
   return (
     <section
       id='top'
+      className='landing-hero'
       style={{
         display: 'flex',
         alignItems: 'flex-end',
         gap: '24px',
         width: '100%',
-        flexWrap: 'wrap',
       }}
     >
       <div
@@ -509,8 +511,8 @@ function Features() {
           justifyContent: 'space-between',
           gap: '24px',
           width: '100%',
-          flexWrap: 'wrap',
         }}
+        className='landing-hero'
       >
         <div
           style={{
@@ -538,6 +540,7 @@ function Features() {
         </div>
 
         <div
+          className='landing-cards'
           style={{
             display: 'flex',
             gap: '16px',
@@ -557,12 +560,8 @@ function Features() {
       </div>
 
       <div
-        style={{
-          display: 'flex',
-          gap: '16px',
-          width: '100%',
-          flexWrap: 'wrap',
-        }}
+        className='landing-cards'
+        style={{ display: 'flex', gap: '16px', width: '100%' }}
       >
         <Card
           title='Control where it goes'
@@ -609,12 +608,8 @@ function UseCases() {
         </div>
 
         <div
-          style={{
-            display: 'flex',
-            gap: '16px',
-            width: '100%',
-            flexWrap: 'wrap',
-          }}
+          className='landing-cards'
+          style={{ display: 'flex', gap: '16px', width: '100%' }}
         >
           <Card
             title='Print and packaging'
@@ -740,12 +735,8 @@ function Plans() {
       </div>
 
       <div
-        style={{
-          display: 'flex',
-          gap: '32px',
-          width: '100%',
-          flexWrap: 'wrap',
-        }}
+        className='landing-plans'
+        style={{ display: 'flex', gap: '32px', width: '100%' }}
       >
         {Object.values(PLANS).map((plan) => {
           const price = annual ? plan.priceAnnual : plan.priceMonthly
@@ -948,12 +939,12 @@ function Plans() {
 function Closing() {
   return (
     <section
+      className='landing-hero'
       style={{
         display: 'flex',
         alignItems: 'flex-end',
         gap: '24px',
         width: '100%',
-        flexWrap: 'wrap',
       }}
     >
       <div
@@ -1106,10 +1097,18 @@ export default function LandingPage() {
         }}
       >
         <Hero />
-        <Features />
-        <UseCases />
-        <Plans />
-        <Closing />
+        <Reveal>
+          <Features />
+        </Reveal>
+        <Reveal>
+          <UseCases />
+        </Reveal>
+        <Reveal>
+          <Plans />
+        </Reveal>
+        <Reveal>
+          <Closing />
+        </Reveal>
         <Footer />
       </div>
     </main>
