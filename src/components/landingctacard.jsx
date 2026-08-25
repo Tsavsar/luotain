@@ -25,13 +25,16 @@ const STACK = [
 // Static sample. Not the mock generator: that produces a fresh random spread
 // per render, and a marketing page should show the same numbers to everyone —
 // a screenshot that changes between visits reads as a bug.
+// FOUR rows, not five. The card gives its row list a fixed height and scrolls
+// the overflow — five rows put a scrollbar on a decorative card, which is both
+// ugly and an invitation to interact with something that isn't interactive.
+// Every card here has four so they end level.
 const DEVICES = {
   Type: [
     { label: 'Desktop', value: 15 },
     { label: 'Mobile', value: 11 },
     { label: 'Tablet', value: 8 },
     { label: 'Smart TV', value: 3 },
-    { label: 'Console', value: 2 },
   ],
 }
 
@@ -44,12 +47,15 @@ const SOURCES = {
   ],
 }
 
+// Country NAMES, not ISO codes. CountryFlag is called with `country || label`
+// and the app's own data uses names — "Norway", not "NO" — so the codes I had
+// here resolved to nothing and the flags never rendered.
 const GEOGRAPHY = {
   Countries: [
-    { label: 'Norway', value: 42, country: 'NO' },
-    { label: 'United States', value: 21, country: 'US' },
-    { label: 'United Kingdom', value: 8, country: 'GB' },
-    { label: 'Singapore', value: 1, country: 'SG' },
+    { label: 'Norway', value: 42 },
+    { label: 'United States', value: 21 },
+    { label: 'United Kingdom', value: 8 },
+    { label: 'Singapore', value: 1 },
   ],
 }
 

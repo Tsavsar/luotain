@@ -2520,15 +2520,28 @@ html {
 }
 
 /* --- Plans ---
-   The picker sets its own row to width: max-content so the columns never wrap.
-   At 312 each that comes to exactly 1000, but a narrower viewport would push
-   it past the edge — so it scrolls rather than overflowing the page. */
+   No scroll container. Three 312px columns and two 32px gaps come to exactly
+   1000, which is the column, so there is nothing to scroll — the wrapper I had
+   here was reserving space for a scrollbar that never appears at this width.
+
+   Narrow viewports are handled by the media queries below, which drop the
+   columns to a wrap rather than pushing the page sideways. */
 .landing-plans-wrap {
   width: 100%;
-  overflow-x: auto;
-  /* Room for the scrollbar on the platforms that reserve one, so it doesn't
-     sit on top of the feature list. */
-  padding-bottom: 4px;
+}
+
+/* The picker's own row is width: max-content so its columns never wrap in the
+   settings panel. On a narrow page that would run off the edge, so here it
+   wraps instead. */
+@media (max-width: 1100px) {
+  .landing-plans-wrap > div > div:last-child {
+    width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+  .landing-plans-wrap > div > div:last-child > * {
+    width: 100% !important;
+    max-width: 340px;
+  }
 }
 
 /* --- The card grid ---

@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { QrCode } from '@/components/qrdesigner'
-import { toast } from '@/components/toast'
 
 // ─── Hero card ───
 // A working creator, not a picture of one. Paste a link, get a short URL and a
@@ -105,7 +104,7 @@ export default function HeroCard() {
   const [destination, setDestination] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
-  const [errored, setErrored] = useState(false)
+  const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
   const timers = useRef([])
 
@@ -115,12 +114,12 @@ export default function HeroCard() {
     if (busy) return
     const value = destination.trim()
     if (!value) {
-      setErrored(true)
-      timers.current.push(setTimeout(() => setErrored(false), 2000))
+      setError('Paste a link first')
       return
     }
 
     setBusy(true)
+    setError(null)
     try {
       const res = await fetch('/api/public/links', {
         method: 'POST',
@@ -130,15 +129,16 @@ export default function HeroCard() {
       const d = await res.json().catch(() => null)
 
       if (!res.ok) {
-        setErrored(true)
-        timers.current.push(setTimeout(() => setErrored(false), 2000))
-        toast.error(d?.error || 'Could not create the link')
+        // The server's own message, not a generic one. It knows whether the
+        // problem was the URL, the rate limit or a missing PUBLIC_ORG_ID, and
+        // swallowing that leaves someone with nothing to act on.
+        setError(d?.error || `Could not create the link (${res.status})`)
         return
       }
       setResult(d.link)
     } catch (err) {
       console.error('[HeroCard]', err)
-      toast.error('Could not create the link')
+      setError('Could not reach the server. Check your connection.')
     } finally {
       setBusy(false)
     }
@@ -155,6 +155,7 @@ export default function HeroCard() {
     setResult(null)
     setDestination('')
     setCopied(false)
+    setError(null)
   }
 
   return (
@@ -382,7 +383,7 @@ export default function HeroCard() {
                   padding: '6px 6px 6px 16px',
                   borderRadius: '48px',
                   background: 'var(--bg-default)',
-                  border: `1px solid ${errored ? 'var(--error-base)' : 'transparent'}`,
+                  border: `1px solid ${error ? 'var(--error-base)' : 'transparent'}`,
                   boxShadow: '0 4px 20px rgba(54, 54, 54, 0.10)',
                   width: '100%',
                   boxSizing: 'border-box',
@@ -408,7 +409,7 @@ export default function HeroCard() {
                   value={destination}
                   onChange={(e) => {
                     setDestination(e.target.value)
-                    setErrored(false)
+                    setError(null)
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleCreate()
@@ -457,6 +458,29 @@ export default function HeroCard() {
                   {busy ? 'Creating' : mode === 'qr' ? 'Get code' : 'Shorten'}
                 </button>
               </div>
+
+              {/* Under the field, in the card. A toast would be the obvious
+                  home for this, but the root layout mounts no ToastStack — so
+                  every failure here was invisible. */}
+              {error ? (
+                <p
+                  role='alert'
+                  style={{
+                    margin: 0,
+                    padding: '8px 14px',
+                    borderRadius: '48px',
+                    background: 'var(--bg-default)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '13px',
+                    lineHeight: '18px',
+                    letterSpacing: '0.26px',
+                    color: 'var(--error-base)',
+                    textAlign: 'center',
+                  }}
+                >
+                  {error}
+                </p>
+              ) : null}
             </>
           )}
         </div>
