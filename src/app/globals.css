@@ -2987,3 +2987,83 @@ html {
     color: var(--text-strong);
   }
 }
+
+/* --- Cookie banner ---
+   The design is the card alone, so the placement is mine. Bottom left, fixed,
+   capped at 420 — a full-width bar across the bottom covers content on a
+   phone, and a centred modal blocks the page for something that isn't
+   blocking. */
+.cookie-banner {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 80;
+  width: 420px;
+  max-width: calc(100vw - 40px);
+  animation: cookieIn 260ms var(--ease-out);
+}
+
+@keyframes cookieIn {
+  from {
+    opacity: 0;
+    /* Rises 8px. Sliding in from off-screen would pull the eye away from
+       whatever someone is reading, which is the opposite of what a
+       non-blocking notice should do. */
+    transform: translateY(8px);
+  }
+}
+
+.cookie-close {
+  transition: color var(--duration-fast) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cookie-close:hover {
+    color: var(--text-strong);
+  }
+}
+
+.cookie-btn {
+  transition:
+    opacity var(--duration-fast) ease,
+    transform var(--duration-press) ease-out;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cookie-btn:hover {
+    opacity: 0.9;
+  }
+}
+.cookie-btn:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 560px) {
+  .cookie-banner {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
+    max-width: none;
+    padding: 20px !important;
+    gap: 20px !important;
+  }
+  /* Full width and stacked. Two 172px buttons don't fit a 320px card, and
+     shrinking the reject button to fit is how it ends up looking like the
+     lesser option. */
+  .cookie-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px !important;
+  }
+  .cookie-actions > * {
+    width: 100% !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cookie-banner {
+    animation: none;
+  }
+  .cookie-btn:active {
+    transform: none;
+  }
+}

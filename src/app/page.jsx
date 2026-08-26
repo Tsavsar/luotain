@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import LogoWordmark from '@/components/logowordmark'
 import NavAccount from '@/components/landingaccount'
+import CookieBanner from '@/components/cookiebanner'
 import Reveal from '@/components/reveal'
 import PlanPicker from '@/components/planpicker'
 import HeroCard from '@/components/landingherocard'
@@ -562,6 +563,11 @@ export default function LandingPage() {
   return (
     <main style={{ background: 'var(--bg-default)', minHeight: '100vh' }}>
       <Nav />
+
+      {/* Dormant. Nothing sets an optional cookie yet, so it renders nothing —
+          see COOKIES_ACTIVE in the component. Mounted now so that turning it
+          on is one boolean rather than a hunt for where it should go. */}
+      <CookieBanner />
 
       <div
         className='landing-stack'
