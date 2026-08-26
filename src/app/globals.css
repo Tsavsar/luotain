@@ -2953,21 +2953,6 @@ html {
   }
 }
 
-/* --- Create page mode toggle ---
-   Short link or QR code. The selected tab is a raised plate on the track,
-   which is the same treatment the app uses everywhere a segmented control
-   appears. */
-.create-mode-tab {
-  transition:
-    background var(--duration-fast) ease,
-    color var(--duration-fast) ease;
-}
-@media (hover: hover) and (pointer: fine) {
-  .create-mode-tab:hover {
-    color: var(--text-strong);
-  }
-}
-
 /* --- Nav account ---
    The signed-in avatar in place of Get started. Just the avatar — no plate and
    no name, so hover has to act on the avatar itself rather than a container
@@ -2989,5 +2974,16 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .landing-account:active {
     transform: none;
+  }
+}
+
+/* --- Create page: pick an existing link ---
+   A quiet text trigger under the destination field, on the QR path only. */
+.create-pick-link {
+  transition: color var(--duration-fast) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .create-pick-link:hover {
+    color: var(--text-strong);
   }
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import BackButton from '@/components/backbutton'
+import SegmentedTabs from '@/components/segmentedtabs'
 import Inputfield from '@/components/input'
 import Tooltip from '@/components/tooltip'
 import QrDesigner from '@/components/qrdesigner'
@@ -631,60 +632,25 @@ export default function CreatePage() {
           </p>
         </div>
 
-        {/* Short link or QR code, chosen up front.
-              
-              Both paths create the SAME link — the toggle only decides what
-              happens after: a QR selection continues into the designer instead
-              of landing on the link page. It isn't a mode that changes the
-              form, which is why the fields below don't move.
+        {/* The app's own SegmentedTabs, not a hand-rolled pair of buttons —
+              it carries the sliding pill and the measured transitions that
+              every other segmented control here uses.
 
-              Hidden while editing and while designing: neither is a moment to
+              Both options create the SAME link. The toggle decides what happens
+              after: land on the link page, or continue into the designer.
+
+              Hidden while editing and while designing — neither is a moment to
               start a different kind of thing. */}
         {!isEditing && !(mode === 'qr' && step === 'design') ? (
-          <div
-            style={{
-              display: 'flex',
-              gap: '2px',
-              padding: '2px',
-              borderRadius: '21px',
-              background: 'var(--bg-surface)',
-              alignSelf: 'flex-start',
-            }}
-          >
-            {[
-              ['link', 'Short link'],
-              ['qr', 'QR code'],
-            ].map(([id, label]) => (
-              <button
-                key={id}
-                type='button'
-                onClick={() => setIntent(id)}
-                className='create-mode-tab'
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-lg)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background:
-                    intent === id ? 'var(--bg-default)' : 'transparent',
-                  boxShadow:
-                    intent === id ? '0 1px 3px rgba(54, 54, 54, 0.08)' : 'none',
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '12px',
-                  lineHeight: '16px',
-                  letterSpacing: '0.24px',
-                  color:
-                    intent === id ? 'var(--text-strong)' : 'var(--text-sub)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <SegmentedTabs
+            items={[
+              { id: 'link', label: 'Short link' },
+              { id: 'qr', label: 'QR code' },
+            ]}
+            activeId={intent}
+            onChange={setIntent}
+            padX='16px'
+          />
         ) : null}
 
         {mode === 'qr' && step === 'design' ? (
@@ -836,6 +802,63 @@ export default function CreatePage() {
                   error={Boolean(errors.destination)}
                   shaking={Boolean(shaking.destination)}
                 />
+                {/* Only on the QR path. A code is usually FOR something that
+                    already exists — the sticker goes on a menu whose link you
+                    made last week — so the list is the common case there and
+                    noise on the shorten screen, where you're by definition
+                    creating something new.
+
+                    It fills the field above rather than replacing it, so a
+                    destination can still be typed by hand. */}
+                {intent === 'qr' && existingLinks?.length > 0 ? (
+                  <Dropdown
+                    align='left'
+                    trigger={
+                      <button
+                        type='button'
+                        className='create-pick-link'
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          marginTop: '8px',
+                          cursor: 'pointer',
+                          fontFamily: 'var(--font-sans)',
+                          fontSize: '12px',
+                          lineHeight: '16px',
+                          letterSpacing: '0.24px',
+                          color: 'var(--text-sub)',
+                        }}
+                      >
+                        Or pick one of your links
+                        <ChevronIcon />
+                      </button>
+                    }
+                  >
+                    <DropdownMenu width='260px'>
+                      {existingLinks.map((l) => (
+                        <DropdownOption
+                          key={l.id}
+                          onClick={() => {
+                            // The link's DESTINATION, not its short URL. A code
+                            // pointing at a short link that points somewhere
+                            // else is two redirects for one scan, and the
+                            // click would be counted against the wrong link.
+                            setDestination(
+                              l.destination || l.destinationUrl || ''
+                            )
+                            clearError('destination')
+                          }}
+                        >
+                          {l.shortUrl}
+                        </DropdownOption>
+                      ))}
+                    </DropdownMenu>
+                  </Dropdown>
+                ) : null}
               </FieldLabel>
             ) : null}
 
