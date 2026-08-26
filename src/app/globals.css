@@ -2476,7 +2476,7 @@ html {
      so below that width this padding is the only thing keeping content off the
      screen edge. It was lost when the inline padding moved here and only the
      top value came with it. */
-  padding: 96px 20px 0;
+  padding: 40px 20px 0;
 }
 
 .landing-stack {
@@ -2904,8 +2904,8 @@ html {
      button beside it, which made the bar look lopsided. 32 reads as the anchor
      without overpowering it. */
   .landing-logo svg {
-    width: 32px;
-    height: 32px;
+    height: 24px;
+    width: auto;
   }
   /* 36, between the desktop 54 and the 24 I had. Enough that the bar isn't
      jammed against the top of the screen. */

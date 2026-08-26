@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import LogoMark from '@/components/logomark'
+import LogoWordmark from '@/components/logowordmark'
 import Reveal from '@/components/reveal'
 import PlanPicker from '@/components/planpicker'
 import HeroCard from '@/components/landingherocard'
@@ -22,7 +22,7 @@ import {
 //
 // Everything the app already owns is pulled in rather than rebuilt: the plan
 // columns are the real PlanPicker, the closing montage is the real analytics
-// Card, and the logo is LogoMark. A marketing page that reimplements the
+// Card, and the logo is the real wordmark. A marketing page that reimplements
 // product drifts from it the first time either changes.
 
 // ─── Nav (555:2461) ───
@@ -105,37 +105,10 @@ function Nav() {
     >
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
         {/* Sized by CSS so the mobile rule doesn't have to fight a prop. */}
-        {/* Mark and wordmark as one unit, so they scale and align together
-            rather than as two things that happen to sit near each other. */}
-        <Link
-          href='/'
-          className='landing-logo'
-          aria-label='Luotain, home'
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            textDecoration: 'none',
-          }}
-        >
-          <LogoMark size={26} />
-          <span
-            style={{
-              fontFamily: 'var(--font-sans)',
-              // 450, between regular and medium. Inter is variable here, so
-              // this renders as a real weight — on a static Inter it would
-              // round to 500 and sit heavier than the nav links beside it.
-              fontWeight: 450,
-              fontSize: '18px',
-              lineHeight: 1,
-              // Tightened slightly. A wordmark at this size reads better a
-              // little closer than body tracking, which is set for reading.
-              letterSpacing: '-0.1px',
-              color: 'var(--text-strong)',
-            }}
-          >
-            Luotain
-          </span>
+        {/* The real wordmark — mark and name in one SVG, so the spacing
+            between them is the designed spacing rather than a gap I picked. */}
+        <Link href='/' className='landing-logo' aria-label='Luotain, home'>
+          <LogoWordmark height={26} />
         </Link>
 
         <span
@@ -571,9 +544,10 @@ function Footer() {
         </span>
       </div>
 
-      {/* 34 × 22 in the design — the wordmark, wider than it is tall, rather
-          than the square logomark used in the nav. */}
-      <LogoMark size={22} muted />
+      {/* The design has a wordmark here too — wider than tall — which is why
+          a square LogoMark never quite fit. Smaller than the nav's, since a
+          footer mark is a sign-off rather than a heading. */}
+      <LogoWordmark height={20} className='landing-footermark' />
     </footer>
   )
 }
