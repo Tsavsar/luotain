@@ -1114,7 +1114,12 @@ export default function CreatePage() {
 
           <button
             type='button'
-            onClick={() => handleCreate('link')}
+            // No argument — it defaults to the toggle. This passed 'link'
+            // outright, left over from when a second button passed 'qr', so
+            // the QR branch could never fire and picking an existing link fell
+            // through to the create call, which then failed for want of a
+            // destination.
+            onClick={() => handleCreate()}
             disabled={submitting}
             className='create-submit'
             style={{
