@@ -105,9 +105,38 @@ function Nav() {
     >
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
         {/* Sized by CSS so the mobile rule doesn't have to fight a prop. */}
-        <span className='landing-logo'>
+        {/* Mark and wordmark as one unit, so they scale and align together
+            rather than as two things that happen to sit near each other. */}
+        <Link
+          href='/'
+          className='landing-logo'
+          aria-label='Luotain, home'
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            textDecoration: 'none',
+          }}
+        >
           <LogoMark size={26} />
-        </span>
+          <span
+            style={{
+              fontFamily: 'var(--font-sans)',
+              // 450, between regular and medium. Inter is variable here, so
+              // this renders as a real weight — on a static Inter it would
+              // round to 500 and sit heavier than the nav links beside it.
+              fontWeight: 450,
+              fontSize: '18px',
+              lineHeight: 1,
+              // Tightened slightly. A wordmark at this size reads better a
+              // little closer than body tracking, which is set for reading.
+              letterSpacing: '-0.1px',
+              color: 'var(--text-strong)',
+            }}
+          >
+            Luotain
+          </span>
+        </Link>
 
         <span
           aria-hidden='true'
