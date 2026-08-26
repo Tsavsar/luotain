@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import LogoWordmark from '@/components/logowordmark'
+import NavAccount from '@/components/landingaccount'
 import Reveal from '@/components/reveal'
 import PlanPicker from '@/components/planpicker'
 import HeroCard from '@/components/landingherocard'
@@ -155,9 +156,11 @@ function Nav() {
         <Pill href='/login' tone='soft'>
           Demo
         </Pill>
-        <Pill href='/get-started' tone='dark'>
-          Get started
-        </Pill>
+        {/* Get started, or the signed-in person's avatar. Asking someone who
+            already has an account to "Get started" is the site not recognising
+            them — and the way back into the app is what they actually want
+            from a marketing page. */}
+        <NavAccount />
       </div>
 
       {/* Only on mobile. Four links and two buttons don't fit a phone, and
@@ -217,16 +220,15 @@ function Nav() {
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px',
+                gap: '10px',
                 paddingTop: '10px',
+                alignItems: 'flex-start',
               }}
             >
               <Pill href='/login' tone='soft'>
                 Demo
               </Pill>
-              <Pill href='/get-started' tone='dark'>
-                Get started
-              </Pill>
+              <NavAccount />
             </div>
           </div>
         </div>
