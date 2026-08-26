@@ -175,7 +175,12 @@ export default function PlanPicker({
             <div
               key={plan.id}
               className='plan-column'
-              style={{ width: `${columnWidth}px` }}
+              // A custom PROPERTY, not width. An inline width beats every
+              // media query, so the column stayed 312px on a phone and left
+              // a gap down the right — the same inline-versus-CSS fight this
+              // component keeps losing. As a variable, CSS reads it as a
+              // default and can still override the width itself.
+              style={{ '--plan-column-width': `${columnWidth}px` }}
             >
               {/* The same plant, so the tier you're reading about in the picker
                   and the one shown on the page above are marked the same way. */}
@@ -251,13 +256,13 @@ export default function PlanPicker({
                     </p>
                     <p
                       style={{
+                        margin: 0,
+                        color: 'var(--text-sub)',
+                        paddingBottom: '3px',
                         fontFamily: 'var(--font-sans)',
                         fontSize: `${12 * scale}px`,
                         lineHeight: `${16 * scale}px`,
                         letterSpacing: `${0.24 * scale}px`,
-                        color: 'var(--text-sub)',
-                        margin: 0,
-                        paddingBottom: '3px',
                       }}
                     >
                       /month
