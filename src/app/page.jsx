@@ -108,7 +108,7 @@ function Nav() {
         {/* The real wordmark — mark and name in one SVG, so the spacing
             between them is the designed spacing rather than a gap I picked. */}
         <Link href='/' className='landing-logo' aria-label='Luotain, home'>
-          <LogoWordmark height={26} />
+          <LogoWordmark height={19} />
         </Link>
 
         <span
@@ -454,6 +454,10 @@ function Plans() {
           showIntro={false}
           columnWidth={312}
           scale={1.2}
+          // 22, not the 34 the text scale would give. The icon is a marker for
+          // the tier, not a heading for it — at 34 it was larger than the plan
+          // name it sat above.
+          iconSize={22}
           onChoose={() => router.push('/get-started')}
         />
       </div>
@@ -547,7 +551,7 @@ function Footer() {
       {/* The design has a wordmark here too — wider than tall — which is why
           a square LogoMark never quite fit. Smaller than the nav's, since a
           footer mark is a sign-off rather than a heading. */}
-      <LogoWordmark height={20} className='landing-footermark' />
+      <LogoWordmark height={16} className='landing-footermark' />
     </footer>
   )
 }

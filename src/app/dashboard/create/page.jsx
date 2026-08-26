@@ -224,6 +224,11 @@ export default function CreatePage() {
   // Typing a new destination instead creates a link, and a QR comes with it.
   const [mode, setMode] = useState('link')
 
+  // Which of the two the toggle is on. Both create the same link — this only
+  // decides whether the flow ends on the link page or continues into the QR
+  // designer.
+  const [intent, setIntent] = useState('link')
+
   // ?edit=<id> turns this page into an edit form. Reusing it rather than a
   // modal was the right call: the modal had to reimplement slug generation and
   // the domain picker, and it had neither — so editing could only change a
@@ -433,10 +438,12 @@ export default function CreatePage() {
     return true
   }
 
-  // Takes the intent as an ARGUMENT rather than reading state. setIntent()
-  // followed by handleCreate() in the same handler reads the previous value,
-  // so the QR button would have created a plain link on its first press.
-  async function handleCreate(wanted = 'link') {
+  // Takes an explicit argument, defaulting to whatever the toggle is on.
+  //
+  // The argument matters: setIntent() followed by handleCreate() in the same
+  // handler would read the PREVIOUS value, since state updates aren't visible
+  // within the tick that set them. Callers that change the intent pass it.
+  async function handleCreate(wanted = intent) {
     if (submitting) return
     if (!validate()) return
 
@@ -623,6 +630,62 @@ export default function CreatePage() {
                 : 'Create a short link'}
           </p>
         </div>
+
+        {/* Short link or QR code, chosen up front.
+              
+              Both paths create the SAME link — the toggle only decides what
+              happens after: a QR selection continues into the designer instead
+              of landing on the link page. It isn't a mode that changes the
+              form, which is why the fields below don't move.
+
+              Hidden while editing and while designing: neither is a moment to
+              start a different kind of thing. */}
+        {!isEditing && !(mode === 'qr' && step === 'design') ? (
+          <div
+            style={{
+              display: 'flex',
+              gap: '2px',
+              padding: '2px',
+              borderRadius: '21px',
+              background: 'var(--bg-surface)',
+              alignSelf: 'flex-start',
+            }}
+          >
+            {[
+              ['link', 'Short link'],
+              ['qr', 'QR code'],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type='button'
+                onClick={() => setIntent(id)}
+                className='create-mode-tab'
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px 16px',
+                  borderRadius: 'var(--radius-lg)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background:
+                    intent === id ? 'var(--bg-default)' : 'transparent',
+                  boxShadow:
+                    intent === id ? '0 1px 3px rgba(54, 54, 54, 0.08)' : 'none',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '12px',
+                  lineHeight: '16px',
+                  letterSpacing: '0.24px',
+                  color:
+                    intent === id ? 'var(--text-strong)' : 'var(--text-sub)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         {mode === 'qr' && step === 'design' ? (
           <QrDesigner
@@ -1004,41 +1067,6 @@ export default function CreatePage() {
             </button>
           ) : null}
 
-          {/* A second action, not a mode. The choice of link-or-code happens
-              HERE, once there's a destination to apply it to — asking up front
-              meant someone wanting a code had to already own a link, which is
-              the thing that never worked.
-
-              Hidden while editing and while designing: neither is a moment to
-              start a second thing. */}
-          {mode === 'link' && !isEditing ? (
-            <button
-              type='button'
-              onClick={() => handleCreate('qr')}
-              disabled={submitting}
-              className='create-secondary'
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px 20px',
-                borderRadius: 'var(--radius-full)',
-                background: 'var(--bg-surface)',
-                border: 'none',
-                cursor: submitting ? 'default' : 'pointer',
-                marginRight: '10px',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '14px',
-                lineHeight: '20px',
-                letterSpacing: '0.28px',
-                color: 'var(--text-sub)',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Create QR code
-            </button>
-          ) : null}
-
           <button
             type='button'
             onClick={() => handleCreate('link')}
@@ -1064,13 +1092,13 @@ export default function CreatePage() {
               ? isEditing
                 ? 'Saving…'
                 : 'Creating…'
-              : mode === 'link'
-                ? isEditing
+              : mode === 'qr' && step === 'design'
+                ? 'Create code'
+                : isEditing
                   ? 'Save changes'
-                  : 'Create link'
-                : step === 'details'
-                  ? 'Design QR code'
-                  : 'Create code'}
+                  : intent === 'qr'
+                    ? 'Continue to design'
+                    : 'Create link'}
           </button>
         </div>
       </div>
