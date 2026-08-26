@@ -2472,14 +2472,21 @@ html {
    losing. Nothing in this section uses !important. */
 
 .landing-nav {
-  padding-top: 54px;
+  /* The 20px sides matter as much as the top — the column is capped at 1000,
+     so below that width this padding is the only thing keeping content off the
+     screen edge. It was lost when the inline padding moved here and only the
+     top value came with it. */
+  padding: 54px 20px 0;
 }
 
 .landing-stack {
   /* 200 between the nav and the hero. The design had 96, which put the headline
      close under the bar — the extra air is what makes the hero read as the
-     start of something rather than the next thing after it. */
-  padding-top: 200px;
+     start of something rather than the next thing after it.
+     
+     20px sides, which is what stops the content touching the screen edge
+     below 1040px. */
+  padding: 200px 20px 0;
   /* 120 between sections, from the design's own gap. */
   gap: 120px;
 }
@@ -2848,6 +2855,12 @@ html {
      spacing, which was the point. */
   .landing-stack {
     padding-top: 56px;
+  }
+  /* Tighter sides on a phone: 20 of every 375 is a lot of a small screen. */
+  .landing-nav,
+  .landing-stack {
+    padding-left: 18px;
+    padding-right: 18px;
   }
   /* A little padding back, rather than none — zero made the headline sit hard
      against the nav above it. */
