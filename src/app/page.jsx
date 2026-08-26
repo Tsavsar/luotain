@@ -98,13 +98,13 @@ function Nav() {
         width: '100%',
         maxWidth: `${COLUMN}px`,
         margin: '0 auto',
-        padding: '54px 20px 0',
         boxSizing: 'border-box',
         position: 'relative',
         zIndex: 50,
       }}
     >
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        {/* Sized by CSS so the mobile rule doesn't have to fight a prop. */}
         <span className='landing-logo'>
           <LogoMark size={26} />
         </span>
@@ -236,25 +236,8 @@ function Nav() {
 // ─── Hero (611:1114) ───
 function Hero() {
   return (
-    <section
-      id='top'
-      className='landing-split'
-      style={{ display: 'flex', alignItems: 'flex-end', width: '100%' }}
-    >
-      <div
-        className='landing-herotext'
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '32px',
-          flex: '1 0 0',
-          minWidth: 0,
-          // 37px top and bottom, which is what sits the block's baseline
-          // against the card beside it.
-          padding: '37px 0',
-          // Tightened on mobile — see .landing-herotext.
-        }}
-      >
+    <section id='top' className='landing-split'>
+      <div className='landing-herotext' style={{ flex: '1 0 0', minWidth: 0 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <h1
             style={{
@@ -277,10 +260,7 @@ function Hero() {
           </Body>
         </div>
 
-        <div
-          className='landing-heropills'
-          style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}
-        >
+        <div className='landing-heropills'>
           <Pill href='/login' tone='soft'>
             View a demo
           </Pill>
@@ -482,10 +462,7 @@ function Plans() {
 // ─── Closing (613:2059) ───
 function Closing() {
   return (
-    <section
-      className='landing-split'
-      style={{ display: 'flex', alignItems: 'flex-end', width: '100%' }}
-    >
+    <section className='landing-split'>
       <div
         style={{
           display: 'flex',
@@ -582,16 +559,9 @@ export default function LandingPage() {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          // 120px between sections, from the design's own gap on 613:2060.
-          gap: '120px',
           width: '100%',
           maxWidth: `${COLUMN}px`,
           margin: '0 auto',
-          // 200 between the nav and the hero. The design had 96, which put the
-          // headline close under the bar — the extra air is what makes the
-          // hero read as the start of something rather than as the next thing
-          // after the nav.
-          padding: '200px 20px 0',
           boxSizing: 'border-box',
         }}
       >
