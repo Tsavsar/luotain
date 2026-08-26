@@ -667,10 +667,11 @@ export default function CreatePage() {
               ? 'Design your QR code'
               : isEditing
                 ? 'Edit link'
-                : // Not "Create a short link" — the toggle right below it
-                  // offers a QR code too, so naming one of the two in the
-                  // heading contradicts the control under it.
-                  'Create'}
+                : // A question, because the toggle right below it is the
+                  // answer. "Create a short link" named one of the two options
+                  // and contradicted the control under it; "Create" alone said
+                  // nothing at all.
+                  'What would you like to create?'}
           </p>
         </div>
 
