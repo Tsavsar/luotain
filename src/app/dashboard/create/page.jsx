@@ -956,7 +956,9 @@ export default function CreatePage() {
             <div
               style={{
                 display:
-                  mode === 'qr' && qrSource === 'existing' ? 'none' : 'flex',
+                  intent === 'qr' && qrSource === 'existing' && hasLinks
+                    ? 'none'
+                    : 'flex',
                 gap: '8px',
                 alignItems: 'flex-start',
               }}
@@ -1042,7 +1044,10 @@ export default function CreatePage() {
               style={{
                 color: 'var(--text-soft)',
                 margin: 0,
-                display: mode === 'qr' && qrSource !== 'new' ? 'none' : 'block',
+                display:
+                  intent === 'qr' && qrSource === 'existing' && hasLinks
+                    ? 'none'
+                    : 'block',
               }}
             >
               Leave the slug blank and we&rsquo;ll generate one. Only verified
