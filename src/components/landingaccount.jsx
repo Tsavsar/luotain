@@ -11,7 +11,7 @@ import GradientAvatar, { seedFor } from '@/components/gradientavatar'
 // failing to recognise them — and the thing they actually want from the
 // marketing page is the way back into the app.
 
-export default function NavAccount({ compact = false }) {
+export default function NavAccount() {
   // Three states, and the third matters: `null` means we haven't asked yet.
   // Rendering the signed-out button while the check is in flight would flash
   // "Get started" at someone who's signed in, every single page load.
@@ -45,7 +45,7 @@ export default function NavAccount({ compact = false }) {
         aria-hidden='true'
         style={{
           display: 'block',
-          width: compact ? '34px' : '96px',
+          width: '34px',
           height: '34px',
           borderRadius: 'var(--radius-full)',
           background: 'var(--bg-surface)',
@@ -88,61 +88,41 @@ export default function NavAccount({ compact = false }) {
     <Link
       href='/dashboard/analytics'
       className='landing-account'
-      // The destination in the label, not just the name. "Shater" alone
-      // doesn't say it's a link anywhere, let alone into the app.
+      // The destination in the label. An avatar on its own says nothing about
+      // where it goes, and it's the only thing here a screen reader gets.
       aria-label={`Open Luotain as ${label}`}
       title={`Open Luotain as ${label}`}
       style={{
         display: 'inline-flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '4px 4px 4px 12px',
-        borderRadius: '48px',
-        background: 'var(--bg-surface)',
+        // No plate, no name — the avatar IS the control. A pill around a round
+        // avatar is a second shape doing nothing the first one didn't.
+        borderRadius: 'var(--radius-full)',
         textDecoration: 'none',
         flexShrink: 0,
+        lineHeight: 0,
       }}
     >
-      {/* The name only where there's room. In the mobile sheet it's the avatar
-          alone — a long name next to a burger crowds the bar. */}
-      {!compact ? (
-        <span
-          className='landing-account-name'
-          style={{
-            fontFamily: 'var(--font-sans)',
-            fontSize: '14px',
-            lineHeight: '18px',
-            letterSpacing: '0.28px',
-            color: 'var(--text-strong)',
-            whiteSpace: 'nowrap',
-            maxWidth: '140px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {user.name || 'Open app'}
-        </span>
-      ) : null}
-
       {user.image ? (
         <img
           src={user.image}
           alt=''
-          width={30}
-          height={30}
+          width={34}
+          height={34}
           style={{
-            width: '30px',
-            height: '30px',
+            width: '34px',
+            height: '34px',
             borderRadius: 'var(--radius-full)',
             objectFit: 'cover',
-            flexShrink: 0,
+            display: 'block',
           }}
         />
       ) : (
+        // 34, matching the pill height it replaced, so the bar doesn't change
+        // height between signed-in and signed-out.
         <GradientAvatar
           seed={seedFor({ seed: user.avatarSeed, id: user.id, name: label })}
           name={label}
-          size={30}
+          size={34}
         />
       )}
     </Link>

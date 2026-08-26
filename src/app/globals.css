@@ -2969,30 +2969,21 @@ html {
 }
 
 /* --- Nav account ---
-   The signed-in avatar in place of Get started. */
+   The signed-in avatar in place of Get started. Just the avatar — no plate and
+   no name, so hover has to act on the avatar itself rather than a container
+   behind it. */
 .landing-account {
   transition:
-    background var(--duration-fast) ease,
+    opacity var(--duration-fast) ease,
     transform var(--duration-press) ease-out;
 }
 @media (hover: hover) and (pointer: fine) {
   .landing-account:hover {
-    background: var(--bg-layer);
+    opacity: 0.85;
   }
 }
 .landing-account:active {
-  transform: scale(0.97);
-}
-
-/* The name goes below 900 even in the desktop bar — it's the first thing that
-   crowds once the nav links and the logo are competing for the same row. */
-@media (max-width: 900px) {
-  .landing-account-name {
-    display: none;
-  }
-  .landing-account {
-    padding-left: 4px;
-  }
+  transform: scale(0.94);
 }
 
 @media (prefers-reduced-motion: reduce) {
