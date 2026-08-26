@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/next'
 import AuthProvider from '@/components/authprovider'
 import './globals.css'
 
@@ -54,6 +55,14 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <AuthProvider>{children}</AuthProvider>
+        {/* Last in the body, after the app. It injects a script tag and
+            nothing renders around it, so putting it earlier would only delay
+            the content people came for.
+            
+            In the ROOT layout rather than the dashboard's, so the landing page
+            and the legal pages are counted too — those are where anyone
+            arriving from outside lands first. */}
+        <Analytics />
       </body>
     </html>
   )
