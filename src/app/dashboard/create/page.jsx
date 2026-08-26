@@ -435,9 +435,13 @@ export default function CreatePage() {
   function validate() {
     const bad = {}
 
-    // Picking an existing link means there IS no destination field — the link
-    // already has one. Validating it anyway would fail the form over a value
-    // that isn't on screen.
+    // Nothing to validate in the designer — the form is behind you, and the
+    // only inputs there are colours. Checking a destination at this point
+    // would gate saving a code on a field that isn't rendered.
+    if (step === 'design') return true
+
+    // Picking an existing link means there IS no destination field either —
+    // the link already has one.
     if (intent === 'qr' && qrSource === 'existing' && hasLinks) {
       return true
     }
@@ -484,7 +488,16 @@ export default function CreatePage() {
     // `wanted`, not `mode` — mode only flips once you're already IN the
     // designer, so on the details step this branch never fired and picking an
     // existing link fell through to the create path.
-    if (wanted === 'qr' && qrSource !== 'new' && hasLinks) {
+    // `step === 'details'` matters. Without it this fired again on the DESIGN
+    // step — where qrSource is 'existing' and a link is selected — and just
+    // re-set step to 'design' and returned. The Create code button ran this,
+    // did nothing visible, and never reached the branch that saves.
+    if (
+      wanted === 'qr' &&
+      step === 'details' &&
+      qrSource !== 'new' &&
+      hasLinks
+    ) {
       // Pointing at an existing link, so there's no destination, domain or slug
       // to validate — only whether one was picked.
       if (!selectedLinkId) {
