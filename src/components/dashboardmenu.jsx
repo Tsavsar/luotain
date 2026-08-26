@@ -279,6 +279,16 @@ function ProfileDropdown({ userImage, userName, avatarSeed }) {
           >
             Contact
           </DropdownOption>
+          {/* Above Log out, below the account items — it's a way OUT of the
+                app rather than an account action, and grouping it with Settings
+                and Upgrade would suggest it's one.
+                
+                A plain push, not a new tab: it's the same site, and forcing a
+                tab on someone who only wanted the pricing page leaves them
+                with two copies of the app open. */}
+          <DropdownOption onClick={() => router.push('/')}>
+            Go to website
+          </DropdownOption>
           <DropdownOption onClick={handleLogout} danger>
             Log out
           </DropdownOption>
