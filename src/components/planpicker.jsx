@@ -157,21 +157,7 @@ export default function PlanPicker({
               query and so can't be inline. If that rule ever goes missing the
               failure is 'doesn't stack on a phone', not 'stacked everywhere',
               which is the right direction to fail in. */}
-      <div
-        className='plan-picker-columns'
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          // flex-wrap is NOT set inline — the stylesheet owns it, so the
-          // stacking breakpoint lives with the other breakpoints rather
-          // than fighting an inline nowrap it can't override cleanly.
-          gap: '32px',
-          alignItems: 'flex-start',
-          // Takes the width it needs and overflows its container rather
-          // than squeezing three columns into the panel's ~494px.
-          width: 'max-content',
-        }}
-      >
+      <div className='plan-picker-columns'>
         {Object.values(PLANS).map((plan) => {
           const isCurrent = plan.id === currentPlan
           // Same rule as the PlanCard: Pro is the featured tier unless you're
@@ -265,13 +251,13 @@ export default function PlanPicker({
                     </p>
                     <p
                       style={{
-                        margin: 0,
-                        paddingBottom: '3px',
                         fontFamily: 'var(--font-sans)',
                         fontSize: `${12 * scale}px`,
                         lineHeight: `${16 * scale}px`,
                         letterSpacing: `${0.24 * scale}px`,
                         color: 'var(--text-sub)',
+                        margin: 0,
+                        paddingBottom: '3px',
                       }}
                     >
                       /month
@@ -385,13 +371,13 @@ export default function PlanPicker({
                       <p
                         style={{
                           margin: 0,
+                          color: on
+                            ? 'var(--text-sub)'
+                            : 'var(--text-disabled)',
                           fontFamily: 'var(--font-sans)',
                           fontSize: `${12 * scale}px`,
                           lineHeight: `${16 * scale}px`,
                           letterSpacing: `${0.24 * scale}px`,
-                          color: on
-                            ? 'var(--text-sub)'
-                            : 'var(--text-disabled)',
                         }}
                       >
                         {label}
