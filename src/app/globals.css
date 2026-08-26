@@ -2299,8 +2299,6 @@ html {
   transform: scale(0.97);
 }
 
-
-
 /* --- Invite composer ---
    Drops in rather than appearing. The button it replaces sits in the same
    place, so without a transition the swap reads as a glitch. */
@@ -2364,8 +2362,6 @@ html {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
-
-
 /* --- Plan icon blooms ---
    A slow breath on the orange growth.
    
@@ -2402,7 +2398,9 @@ html {
 /* --- Domains ---
    The re-check button, on the same plate as the status tag beside it. */
 .domain-recheck {
-  transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
+  transition:
+    color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
 }
 .domain-recheck:hover:not(:disabled) {
   color: var(--text-strong) !important;
@@ -2478,7 +2476,7 @@ html {
      so below that width this padding is the only thing keeping content off the
      screen edge. It was lost when the inline padding moved here and only the
      top value came with it. */
-  padding: 72px 20px 0;
+  padding: 96px 20px 0;
 }
 
 .landing-stack {
@@ -2488,7 +2486,7 @@ html {
      
      20px sides, which is what stops the content touching the screen edge
      below 1040px. */
-  padding: 260px 20px 0;
+  padding: 330px 20px 0;
   /* 120 between sections, from the design's own gap. */
   gap: 120px;
 }
@@ -2513,7 +2511,6 @@ html {
   gap: 8px;
   align-items: flex-start;
 }
-
 
 .landing-nav-link {
   transition: opacity var(--duration-fast) ease;
@@ -2560,6 +2557,9 @@ html {
 }
 
 .plan-column {
+  /* Set by the component as an inline custom property, which a media query can
+     override — unlike an inline `width`, which nothing can. */
+  width: var(--plan-column-width, 230px);
   display: flex;
   flex-direction: column;
   /* 16, not 20 — the plan icon adds a row, and at 20 the column read as five
@@ -2607,6 +2607,7 @@ html {
   .landing-plans-wrap .plan-column {
     flex: 1 1 300px;
     width: auto;
+    max-width: none;
     min-width: 0;
   }
 }
@@ -2617,7 +2618,11 @@ html {
     gap: 40px;
   }
   .landing-plans-wrap .plan-column {
+    /* Edge to edge. The inline width was pinning these to 312px inside a much
+       wider container, which left a band of empty space down the right — the
+       card looked like it had stopped early because it had. */
     width: 100%;
+    max-width: none;
     flex: none;
     /* Wider on a full-width card: at 16 the parts sat closer than the card's
        own padding, which made it read as cramped rather than grouped. */
@@ -2723,10 +2728,18 @@ html {
     grid-template-columns: none !important;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    /* Bleeds to the screen edges, then pads back — a card cut off at the
-       viewport edge is what tells you there are more. */
-    margin-inline: -20px;
-    padding-inline: 20px;
+    /* Snap points sit at the PADDING edge, not the container edge. Without
+       this a snapped card lands 18px inside the screen while the heading above
+       it starts at 18 — so every card after the first looked misaligned. */
+    scroll-padding-left: 18px;
+    /* Bleeds to the screen edges, then pads the first card back to the same
+       left edge as everything above it.
+       
+       18, not 20: the page padding drops to 18 on mobile, so a -20 bleed put
+       the first card 2px left of the heading it sits under — close enough to
+       look like a mistake rather than a decision. */
+    margin-inline: -18px;
+    padding-inline: 18px;
     padding-bottom: 4px;
     gap: 12px;
     -webkit-overflow-scrolling: touch;
@@ -2738,7 +2751,15 @@ html {
   .landing-scroller > * {
     flex: 0 0 78% !important;
     max-width: 300px;
+    /* Snaps to the padding edge, so a card lands flush with the heading above
+       it rather than 18px inside the screen. */
     scroll-snap-align: start;
+  }
+  /* Trailing space after the last card, so it can scroll clear of the edge
+       instead of stopping hard against it. */
+  .landing-scroller::after {
+    content: '';
+    flex: 0 0 6px;
   }
 }
 
