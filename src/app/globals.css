@@ -3067,3 +3067,16 @@ html {
     transform: none;
   }
 }
+
+/* --- Create page: the alternate action ---
+   "New link" under the picker, and "Pick an existing link" under the form. */
+.create-alt-action {
+  transition:
+    color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .create-alt-action:hover {
+    color: var(--text-strong);
+  }
+}

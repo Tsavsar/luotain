@@ -128,6 +128,27 @@ function LinkIcon() {
   )
 }
 
+// Points back, distinct from the chevron that opens a menu.
+function BackArrowIcon() {
+  return (
+    <svg
+      width='14'
+      height='14'
+      viewBox='0 0 16 16'
+      fill='none'
+      aria-hidden='true'
+    >
+      <path
+        d='M12 8H4M7.2 4.4 3.6 8l3.6 3.6'
+        stroke='currentColor'
+        strokeWidth='1.4'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
 function ChevronIcon() {
   return (
     <svg width='20' height='20' viewBox='0 0 20 20' fill='none'>
@@ -243,6 +264,10 @@ export default function CreatePage() {
   // which meant the create screen couldn't do the more common of the two jobs.
   const [qrSource, setQrSource] = useState('existing')
   const [existingLinks, setExistingLinks] = useState(null)
+  // null while loading, so this is false until the answer arrives — which
+  // means the form shows first and the picker replaces it, rather than a
+  // picker flashing empty.
+  const hasLinks = (existingLinks?.length ?? 0) > 0
 
   // When editing, fill the form from the link. The fields are already here —
   // destination, domain, slug, title — so editing needs no new UI at all.
@@ -409,6 +434,14 @@ export default function CreatePage() {
 
   function validate() {
     const bad = {}
+
+    // Picking an existing link means there IS no destination field — the link
+    // already has one. Validating it anyway would fail the form over a value
+    // that isn't on screen.
+    if (intent === 'qr' && qrSource === 'existing' && hasLinks) {
+      return true
+    }
+
     if (!destination.trim()) {
       bad.destination = true
     } else {
@@ -448,14 +481,20 @@ export default function CreatePage() {
     if (submitting) return
     if (!validate()) return
 
-    if (mode === 'qr' && qrSource !== 'new') {
+    // `wanted`, not `mode` — mode only flips once you're already IN the
+    // designer, so on the details step this branch never fired and picking an
+    // existing link fell through to the create path.
+    if (wanted === 'qr' && qrSource !== 'new' && hasLinks) {
       // Pointing at an existing link, so there's no destination, domain or slug
       // to validate — only whether one was picked.
       if (!selectedLinkId) {
         flagError({ destination: true })
-        toast.error('Choose a link, or create a new one')
+        toast.error('Choose a link, or make a new one')
         return
       }
+      // Straight to the designer: the link already exists, so there's nothing
+      // to create first.
+      setMode('qr')
       setStep('design')
       return
     }
@@ -682,7 +721,7 @@ export default function CreatePage() {
           <div
             style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
           >
-            {mode === 'qr' ? (
+            {intent === 'qr' && hasLinks && qrSource === 'existing' ? (
               <FieldLabel label='Link'>
                 <Dropdown
                   fullWidth
@@ -757,29 +796,6 @@ export default function CreatePage() {
                         </DropdownOption>
                       ))
                     )}
-
-                    {/* The second path, as an option rather than a toggle above
-                        the field. This replaced an Existing link / New link
-                        segmented control — which was a whole extra control to
-                        answer a question the dropdown was already asking. */}
-                    <div
-                      aria-hidden='true'
-                      style={{
-                        height: '1px',
-                        margin: '4px 6px',
-                        background: 'var(--stroke-soft)',
-                      }}
-                    />
-                    <DropdownOption
-                      selected={qrSource === 'new'}
-                      onClick={() => {
-                        setQrSource('new')
-                        setSelectedLinkId(null)
-                        clearError('destination')
-                      }}
-                    >
-                      Create a new link
-                    </DropdownOption>
                   </DropdownMenu>
                 </Dropdown>
               </FieldLabel>
@@ -789,7 +805,74 @@ export default function CreatePage() {
                 aren't alternatives, since a new link needs a destination either
                 way. It used to be an either/or with the picker above, which meant
                 choosing "new link" left nowhere to type the URL. */}
-            {mode !== 'qr' || qrSource === 'new' ? (
+            {/* Secondary, under the picker. A separate button rather than a row
+                inside the dropdown: making a new link isn't one of the links,
+                and listing it among them makes it findable only by people who
+                open a menu looking for something else. */}
+            {intent === 'qr' && hasLinks && qrSource === 'existing' ? (
+              <button
+                type='button'
+                onClick={() => {
+                  setQrSource('new')
+                  setSelectedLinkId(null)
+                  clearError('destination')
+                }}
+                className='create-alt-action'
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px 18px',
+                  borderRadius: 'var(--radius-full)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  alignSelf: 'flex-start',
+                  background: 'var(--bg-surface)',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '12px',
+                  lineHeight: '16px',
+                  letterSpacing: '0.24px',
+                  color: 'var(--text-sub)',
+                }}
+              >
+                New link
+              </button>
+            ) : null}
+
+            {/* Back to the picker. Only when there were links to go back TO —
+                with none, the form is the only thing there is and a back button
+                would lead nowhere. */}
+            {intent === 'qr' && hasLinks && qrSource === 'new' ? (
+              <button
+                type='button'
+                onClick={() => {
+                  setQrSource('existing')
+                  setDestination('')
+                  clearError('destination')
+                }}
+                className='create-alt-action'
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  alignSelf: 'flex-start',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '12px',
+                  lineHeight: '16px',
+                  letterSpacing: '0.24px',
+                  color: 'var(--text-sub)',
+                }}
+              >
+                <BackArrowIcon />
+                Pick an existing link
+              </button>
+            ) : null}
+
+            {intent !== 'qr' || qrSource === 'new' || !hasLinks ? (
               <FieldLabel label='Destination'>
                 <Inputfield
                   lefticon={<LinkIcon />}
