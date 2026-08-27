@@ -495,7 +495,10 @@ export default function HeroCard() {
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
-            gap: '14px',
+            // No gap. The toggle and the card space themselves with their own
+            // margins, and the alert below sets its own — a gap here added to
+            // that margin, which is why 12px rendered as 26.
+            gap: 0,
             alignItems: 'stretch',
             width: '100%',
             maxWidth: '380px',
@@ -513,6 +516,7 @@ export default function HeroCard() {
                 background: 'var(--bg-default)',
                 boxShadow: '0 2px 10px rgba(54, 54, 54, 0.08)',
                 alignSelf: 'center',
+                marginBottom: '14px',
               }}
             >
               {[
