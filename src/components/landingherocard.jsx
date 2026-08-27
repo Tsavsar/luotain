@@ -202,6 +202,58 @@ function AlertIcon() {
   )
 }
 
+// A labelled row of colour swatches. Used twice — the code's colour and its
+// three corner markers.
+function SwatchRow({ label, value, onPick }) {
+  return (
+    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+      <span
+        style={{
+          // Fixed width so both rows' swatches line up in a column rather
+          // than starting at whatever their label happens to measure.
+          width: '52px',
+          flexShrink: 0,
+          fontFamily: 'var(--font-sans)',
+          fontSize: '11px',
+          lineHeight: 1,
+          letterSpacing: '0.22px',
+          color: 'var(--text-soft)',
+        }}
+      >
+        {label}
+      </span>
+      <div
+        style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', flex: '1 0 0' }}
+      >
+        {QR_COLORS.map((c) => (
+          <button
+            key={c.id}
+            type='button'
+            onClick={() => onPick(c.hex)}
+            aria-label={`${label}: ${c.id}`}
+            aria-pressed={value === c.hex}
+            className='hero-swatch'
+            style={{
+              width: '20px',
+              height: '20px',
+              borderRadius: 'var(--radius-full)',
+              border: 'none',
+              cursor: 'pointer',
+              background: c.hex,
+              // A ring rather than an outline: it marks the choice without
+              // changing the element's box, so the row never reflows.
+              boxShadow:
+                value === c.hex
+                  ? '0 0 0 2px var(--bg-default), 0 0 0 3.5px var(--text-strong)'
+                  : 'none',
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function QrGlyph() {
   return (
     <svg
@@ -340,6 +392,10 @@ export default function HeroCard() {
 
   // Design state, only used on the QR path.
   const [color, setColor] = useState('#000000')
+  // The three corner finders, separately. They're what a scanner locks onto,
+  // so they read as their own element — the app's designer treats them the
+  // same way.
+  const [markerColor, setMarkerColor] = useState('#000000')
   const [pattern, setPattern] = useState('square')
 
   const timers = useRef([])
@@ -450,6 +506,11 @@ export default function HeroCard() {
     setErrorField(null)
     setCopied(false)
     setStep('form')
+    // Colours reset too. Without this the next code silently inherits the last
+    // one's palette, which looks like a bug the second time someone uses it.
+    setColor('#000000')
+    setMarkerColor('#000000')
+    setPattern('square')
   }
 
   const shortUrl = result ? result.shortUrl : null
@@ -666,7 +727,7 @@ export default function HeroCard() {
                       card={150}
                       margin={12}
                       color={color}
-                      markerColor={color}
+                      markerColor={markerColor}
                       pattern={pattern}
                       // No branding on the public version — the logo cut-out
                       // needs an upload, and an upload needs somewhere to put
@@ -678,38 +739,15 @@ export default function HeroCard() {
 
                 {step === 'design' ? (
                   <>
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: '6px',
-                        flexWrap: 'wrap',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {QR_COLORS.map((c) => (
-                        <button
-                          key={c.id}
-                          type='button'
-                          onClick={() => setColor(c.hex)}
-                          aria-label={c.id}
-                          className='hero-swatch'
-                          style={{
-                            width: '22px',
-                            height: '22px',
-                            borderRadius: 'var(--radius-full)',
-                            border: 'none',
-                            cursor: 'pointer',
-                            background: c.hex,
-                            // The ring marks the choice without moving
-                            // anything — an outline would shift the row.
-                            boxShadow:
-                              color === c.hex
-                                ? '0 0 0 2px var(--bg-default), 0 0 0 3.5px var(--text-strong)'
-                                : 'none',
-                          }}
-                        />
-                      ))}
-                    </div>
+                    {/* Two rows, one component. Duplicating the markup would
+                        mean two places to keep in step the first time a swatch
+                        size or ring changes. */}
+                    <SwatchRow label='Color' value={color} onPick={setColor} />
+                    <SwatchRow
+                      label='Markers'
+                      value={markerColor}
+                      onPick={setMarkerColor}
+                    />
 
                     <div
                       style={{
