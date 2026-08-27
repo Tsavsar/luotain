@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { QrCode, useTilt } from '@/components/qrdesigner'
+import { QrCode, QrLightbox } from '@/components/qrdesigner'
 import { QR_COLORS, QR_PATTERNS } from '@/lib/qrdesign'
 import { SHORT_DOMAIN } from '@/lib/shortlink'
 import Inputfield from '@/components/input'
@@ -205,9 +205,9 @@ function AlertIcon() {
 // A labelled row of colour swatches. Used twice — the code's colour and its
 // three corner markers.
 //
-// The label sits ABOVE, matching the form's own fields directly overhead. It
-// was in a fixed 52px column to the left, which pushed the swatches
-// off-centre and made the row read as a table rather than as a control.
+// Everything centred — label over its swatches, both centred in the card, the
+// same axis as the code above and the buttons below. A left-aligned block in a
+// centred card was the thing pulling the composition apart.
 function SwatchRow({ label, value, onPick }) {
   return (
     <div
@@ -216,21 +216,28 @@ function SwatchRow({ label, value, onPick }) {
         flexDirection: 'column',
         gap: '7px',
         width: '100%',
+        alignItems: 'center',
       }}
     >
       <span
         style={{
           fontFamily: 'var(--font-sans)',
-          fontWeight: 500,
-          fontSize: '12px',
-          lineHeight: '16px',
-          letterSpacing: '0.24px',
-          color: 'var(--text-strong)',
+          fontSize: '11px',
+          lineHeight: 1,
+          letterSpacing: '0.22px',
+          color: 'var(--text-soft)',
         }}
       >
         {label}
       </span>
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '6px',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+        }}
+      >
         {QR_COLORS.map((c) => (
           <button
             key={c.id}
@@ -257,6 +264,26 @@ function SwatchRow({ label, value, onPick }) {
         ))}
       </div>
     </div>
+  )
+}
+
+function EyeIcon() {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 24 24'
+      fill='none'
+      aria-hidden='true'
+    >
+      <path
+        d='M2.6 12s3.4-6 9.4-6 9.4 6 9.4 6-3.4 6-9.4 6-9.4-6-9.4-6Z'
+        stroke='currentColor'
+        strokeWidth='1.7'
+        strokeLinejoin='round'
+      />
+      <circle cx='12' cy='12' r='2.7' stroke='currentColor' strokeWidth='1.7' />
+    </svg>
   )
 }
 
@@ -404,10 +431,10 @@ export default function HeroCard() {
   const [markerColor, setMarkerColor] = useState('#000000')
   const [pattern, setPattern] = useState('square')
 
-  // The app's own tilt, not a second implementation. It lerps toward the
-  // cursor on a rAF loop rather than tracking it exactly, which is what reads
-  // as weight instead of twitch.
-  const tilt = useTilt({ max: 9, perspective: 620 })
+  // The app's own lightbox — the full parallax preview, not a tilt on the
+  // inline code. Writing a second one would have been a worse copy of
+  // something that already exists.
+  const [previewing, setPreviewing] = useState(false)
 
   const timers = useRef([])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
@@ -731,24 +758,24 @@ export default function HeroCard() {
                       paddingBottom: '2px',
                     }}
                   >
-                    {/* Tilts toward the cursor and says what it is. A code on
-                        a landing page looks like an image until it moves —
-                        the tilt is what tells you it's the real thing. */}
-                    <div
-                      ref={tilt.nodeRef}
-                      onMouseMove={tilt.onMove}
-                      onMouseLeave={tilt.onLeave}
-                      className='hero-qr-tilt'
+                    {/* A button, not a decoration. Hovering reveals an eye;
+                        pressing opens the app's full parallax preview. */}
+                    <button
+                      type='button'
+                      onClick={() => setPreviewing(true)}
+                      aria-label='Preview this QR code'
+                      className='hero-qr-open'
                       style={{
                         position: 'relative',
-                        // Its own layer, so the tilt composites rather than
-                        // repainting the code every frame.
-                        willChange: 'transform',
+                        display: 'block',
+                        padding: 0,
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
                         borderRadius: '18px',
+                        lineHeight: 0,
                       }}
                     >
-                      {/* The app's own renderer, so what's downloaded here is
-                        what the product makes. */}
                       <QrCode
                         value={`https://${shortUrl}`}
                         card={150}
@@ -756,16 +783,13 @@ export default function HeroCard() {
                         color={color}
                         markerColor={markerColor}
                         pattern={pattern}
-                        // No branding on the public version — the logo cut-out
-                        // needs an upload, and an upload needs somewhere to put
-                        // a file and someone to own it.
                         branding={false}
                       />
 
-                      <span className='hero-qr-hint' aria-hidden='true'>
-                        Preview
+                      <span className='hero-qr-veil' aria-hidden='true'>
+                        <EyeIcon />
                       </span>
-                    </div>
+                    </button>
                   </div>
                 ) : null}
 
@@ -1016,6 +1040,19 @@ export default function HeroCard() {
           </div>
         </div>
       </div>
+
+      {/* Mounted at the root, not inside the card. A fixed overlay nested in a
+          transformed ancestor is positioned against that ancestor instead of
+          the viewport, and the card's tilt would have trapped it. */}
+      <QrLightbox
+        open={previewing}
+        onClose={() => setPreviewing(false)}
+        shortUrl={shortUrl || ''}
+        color={color}
+        markerColor={markerColor}
+        pattern={pattern}
+        branding={false}
+      />
 
       <div
         style={{

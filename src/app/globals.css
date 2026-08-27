@@ -2299,8 +2299,6 @@ html {
   transform: scale(0.97);
 }
 
-
-
 /* --- Invite composer ---
    Drops in rather than appearing. The button it replaces sits in the same
    place, so without a transition the swap reads as a glitch. */
@@ -2364,8 +2362,6 @@ html {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
-
-
 /* --- Plan icon blooms ---
    A slow breath on the orange growth.
    
@@ -2402,7 +2398,9 @@ html {
 /* --- Domains ---
    The re-check button, on the same plate as the status tag beside it. */
 .domain-recheck {
-  transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
+  transition:
+    color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
 }
 .domain-recheck:hover:not(:disabled) {
   color: var(--text-strong) !important;
@@ -2545,7 +2543,6 @@ html {
   gap: 8px;
   align-items: flex-start;
 }
-
 
 .landing-nav-link {
   transition: opacity var(--duration-fast) ease;
@@ -3001,7 +2998,7 @@ html {
 }
 @media (max-width: 1000px) {
   .landing-montage {
-    transform: scale(1.70);
+    transform: scale(1.7);
   }
 }
 @media (max-width: 900px) {
@@ -3016,7 +3013,7 @@ html {
 }
 @media (max-width: 700px) {
   .landing-montage {
-    transform: scale(1.20);
+    transform: scale(1.2);
   }
 }
 @media (max-width: 600px) {
@@ -3072,48 +3069,62 @@ html {
 }
 
 /* --- Hero QR preview ---
-   The code tilts toward the cursor. On a landing page a QR reads as an image
-   until it moves — the tilt is what says it's live. */
-.hero-qr-tilt {
-  transform-style: preserve-3d;
+   The inline code is a button. Hovering veils it and shows an eye; pressing
+   opens the app's full parallax lightbox.
+
+   The tilt lives in the lightbox, not here — tilting the small inline code
+   AND then opening a tilting overlay is the same gesture twice. */
+.hero-qr-open {
+  transition: transform var(--duration-press) ease-out;
+}
+.hero-qr-open:active {
+  transform: scale(0.98);
 }
 
-/* Named "Preview" because that's what it is: in mock mode the link doesn't
-   resolve, so calling it anything more confident would be a small lie. */
-.hero-qr-hint {
+.hero-qr-veil {
   position: absolute;
-  left: 50%;
-  bottom: -10px;
-  transform: translate(-50%, 4px);
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  background: var(--text-strong);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  /* Dark enough to read the eye against any code colour, light enough that
+     the pattern still shows through — it should look like the code being
+     covered, not replaced. */
+  background: rgba(23, 23, 23, 0.55);
   color: var(--bg-default);
-  font-family: var(--font-sans);
-  font-size: 10px;
-  line-height: 14px;
-  letter-spacing: 0.2px;
-  white-space: nowrap;
   opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity 180ms var(--ease-out),
-    transform 220ms var(--ease-spring);
+  transition: opacity 180ms var(--ease-out);
+}
+.hero-qr-veil > svg {
+  transform: scale(0.85);
+  transition: transform 260ms var(--ease-spring);
 }
 
-/* Hover only. On touch there's no cursor to tilt toward and no hover to
-   reveal it, so the label would either never appear or never leave. */
+/* Hover and focus. Keyboard users get the same affordance, which a
+   hover-only rule would deny them. */
 @media (hover: hover) and (pointer: fine) {
-  .hero-qr-tilt:hover .hero-qr-hint {
+  .hero-qr-open:hover .hero-qr-veil {
     opacity: 1;
-    transform: translate(-50%, 0);
   }
+  .hero-qr-open:hover .hero-qr-veil > svg {
+    transform: scale(1);
+  }
+}
+.hero-qr-open:focus-visible .hero-qr-veil {
+  opacity: 1;
+}
+.hero-qr-open:focus-visible .hero-qr-veil > svg {
+  transform: scale(1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-qr-hint {
-    transition: opacity 140ms ease;
-    transform: translate(-50%, 0);
+  .hero-qr-open:active {
+    transform: none;
+  }
+  .hero-qr-veil > svg {
+    transition: none;
+    transform: none;
   }
 }
 
