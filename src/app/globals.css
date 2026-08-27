@@ -2299,6 +2299,8 @@ html {
   transform: scale(0.97);
 }
 
+
+
 /* --- Invite composer ---
    Drops in rather than appearing. The button it replaces sits in the same
    place, so without a transition the swap reads as a glitch. */
@@ -2362,6 +2364,8 @@ html {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
+
+
 /* --- Plan icon blooms ---
    A slow breath on the orange growth.
    
@@ -2398,9 +2402,7 @@ html {
 /* --- Domains ---
    The re-check button, on the same plate as the status tag beside it. */
 .domain-recheck {
-  transition:
-    color var(--duration-fast) ease,
-    background var(--duration-fast) ease;
+  transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
 }
 .domain-recheck:hover:not(:disabled) {
   color: var(--text-strong) !important;
@@ -2476,7 +2478,7 @@ html {
      so below that width this padding is the only thing keeping content off the
      screen edge. It was lost when the inline padding moved here and only the
      top value came with it. */
-  padding: 40px 20px 0;
+  padding: 28px 20px 0;
 }
 
 .landing-stack {
@@ -2485,15 +2487,23 @@ html {
      start of something rather than the next thing after it.
      
      20px sides, which is what stops the content touching the screen edge
-     below 1040px. */
-  padding: 330px 20px 0;
+     below 1040px.
+     
+     140, down from 330. The card has to hold the QR designer now — a code plus
+     two rows of controls plus the URL row — and the whole hero should still sit
+     in one viewport. That space had to come from somewhere, and above the fold
+     it's worth less than the thing people came to use. */
+  padding: 140px 20px 0;
   /* 120 between sections, from the design's own gap. */
   gap: 120px;
 }
 
 .landing-split {
   display: flex;
-  align-items: flex-end;
+  /* Centred, not bottom-aligned. Against a 402px card the baselines lined up;
+     against a 600px one the headline sat stranded at the bottom with a third
+     of the row empty above it. */
+  align-items: center;
   width: 100%;
 }
 
@@ -2501,9 +2511,9 @@ html {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  /* Top and bottom, which sits the block's baseline against the card beside
-     it. */
-  padding: 37px 0;
+  /* No vertical padding — the column is centred in the row now, so padding
+     would only offset it from the middle it was just centred in. */
+  padding: 0;
 }
 
 .landing-heropills {
@@ -2511,6 +2521,7 @@ html {
   gap: 8px;
   align-items: flex-start;
 }
+
 
 .landing-nav-link {
   transition: opacity var(--duration-fast) ease;
@@ -2950,7 +2961,7 @@ html {
 }
 @media (max-width: 1000px) {
   .landing-montage {
-    transform: scale(1.7);
+    transform: scale(1.70);
   }
 }
 @media (max-width: 900px) {
@@ -2965,7 +2976,7 @@ html {
 }
 @media (max-width: 700px) {
   .landing-montage {
-    transform: scale(1.2);
+    transform: scale(1.20);
   }
 }
 @media (max-width: 600px) {
@@ -2985,18 +2996,21 @@ html {
 }
 
 /* --- Hero card ---
-   A minimum, not a fixed height. The card now holds a real form and, on the QR
-   path, a code plus two rows of controls — so it has to grow. A fixed 343
-   clipped the designer entirely. */
+   A minimum, not a fixed height — the card has to hold the QR designer, which
+   is a code plus two rows of controls plus the URL row.
+
+   600 rather than 420: the form step doesn't need it, but a card that jumps
+   180px taller the moment you press Design code shoves the whole page down
+   under you. Sizing for the taller state means the layout holds still. */
 .landing-herowell {
-  min-height: 420px;
+  min-height: 600px;
 }
 
 @media (max-width: 1100px) {
-  /* Taller once it's full width, so the form isn't a narrow strip in a wide
-     box. */
+  /* Slightly less once it's full width — the controls have more room across,
+     so they need fewer rows down. */
   .landing-herowell {
-    min-height: 460px;
+    min-height: 560px;
   }
 }
 
