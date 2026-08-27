@@ -2299,6 +2299,8 @@ html {
   transform: scale(0.97);
 }
 
+
+
 /* --- Invite composer ---
    Drops in rather than appearing. The button it replaces sits in the same
    place, so without a transition the swap reads as a glitch. */
@@ -2362,6 +2364,8 @@ html {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
+
+
 /* --- Plan icon blooms ---
    A slow breath on the orange growth.
    
@@ -2398,9 +2402,7 @@ html {
 /* --- Domains ---
    The re-check button, on the same plate as the status tag beside it. */
 .domain-recheck {
-  transition:
-    color var(--duration-fast) ease,
-    background var(--duration-fast) ease;
+  transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
 }
 .domain-recheck:hover:not(:disabled) {
   color: var(--text-strong) !important;
@@ -2511,6 +2513,7 @@ html {
   gap: 8px;
   align-items: flex-start;
 }
+
 
 .landing-nav-link {
   transition: opacity var(--duration-fast) ease;
@@ -2786,10 +2789,15 @@ html {
   }
 }
 
-/* The hero card and closing card are fixed-width by design. Below their own
-   width they'd overflow the viewport, so they shrink from here rather than
-   forcing a horizontal scrollbar on the whole page. */
-@media (max-width: 560px) {
+/* The hero card and closing card are fixed-width by design — 503 and 571.
+   That's right beside a text column, but the moment the hero STACKS they're
+   sitting alone on a full-width row, and a 503px card in a 1000px column reads
+   as something that failed to load rather than as a deliberate width.
+   
+   1100 is where .landing-split goes to a column, so it's where these should
+   fill it. It was 560, which left a 540px band where the card was stranded at
+   half the width of everything around it. */
+@media (max-width: 1100px) {
   .landing-herocard,
   .landing-closingcard {
     width: 100% !important;
@@ -2927,29 +2935,55 @@ html {
   transform-origin: top left;
 }
 
-/* Below the design width, scale by the ratio of the viewport to 571. Each stop
-   is a fraction of 571 rather than a round number, so the montage always fills
-   the well exactly rather than leaving a band of texture at one edge. */
+/* The montage is a fixed 571 x 277, right-anchored, so it does NOT grow with
+   its container — widen the card and you get bare texture on the left rather
+   than a bigger montage.
+   
+   Each step is the card's own width at that breakpoint divided by 571, so the
+   montage fills the well at every size. Finer steps than feels necessary,
+   because a coarse one leaves a visible band of empty texture halfway through
+   its range.
+   
+   Above 1100 the card sits beside the text at its design width and needs no
+   scaling at all. */
 @media (max-width: 1100px) {
   .landing-montage {
-    transform: scale(0.86);
+    transform: scale(1.78);
+  }
+}
+@media (max-width: 1000px) {
+  .landing-montage {
+    transform: scale(1.70);
+  }
+}
+@media (max-width: 900px) {
+  .landing-montage {
+    transform: scale(1.55);
+  }
+}
+@media (max-width: 800px) {
+  .landing-montage {
+    transform: scale(1.36);
   }
 }
 @media (max-width: 700px) {
   .landing-montage {
-    transform: scale(0.72);
+    transform: scale(1.20);
   }
 }
-@media (max-width: 560px) {
-  /* At this point the well is the viewport width less padding, so the montage
-     tracks it: 320/571 is about 0.56. */
+@media (max-width: 600px) {
   .landing-montage {
-    transform: scale(0.56);
+    transform: scale(1.02);
+  }
+}
+@media (max-width: 500px) {
+  .landing-montage {
+    transform: scale(0.85);
   }
 }
 @media (max-width: 400px) {
   .landing-montage {
-    transform: scale(0.48);
+    transform: scale(0.68);
   }
 }
 
