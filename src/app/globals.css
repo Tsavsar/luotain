@@ -3007,6 +3007,27 @@ html {
   }
 }
 
+/* The error message fades and collapses rather than appearing and vanishing.
+   It's on a 2s timer, and a hard cut on a timed element reads as a glitch
+   rather than as the notice finishing. */
+.hero-error {
+  overflow: hidden;
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 200ms var(--ease-out),
+    max-height 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+.hero-error[data-shown='true'] {
+  opacity: 1;
+  /* A ceiling rather than a measured height — max-height can't animate from
+     auto, and two lines is the most this message ever runs to. */
+  max-height: 48px;
+  transform: translateY(0);
+}
+
 .hero-swatch,
 .hero-pattern {
   transition:

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { QrCode } from '@/components/qrdesigner'
 import { QR_COLORS, QR_PATTERNS } from '@/lib/qrdesign'
 import { SHORT_DOMAIN } from '@/lib/shortlink'
+import Inputfield from '@/components/input'
 
 // ─── Hero card ───
 // The real thing, not a picture of it. Paste a link, name it if you want, and
@@ -195,48 +196,6 @@ function Field({ label, hint, children }) {
   )
 }
 
-function Plate({ children, invalid }) {
-  return (
-    <span
-      style={{
-        display: 'flex',
-        gap: '8px',
-        alignItems: 'center',
-        paddingLeft: '14px',
-        paddingRight: '8px',
-        paddingTop: '10px',
-        paddingBottom: '10px',
-        borderRadius: 'var(--radius-lg)',
-        background: 'var(--bg-default)',
-        border: `1px solid ${invalid ? 'var(--error-base)' : 'var(--stroke-soft)'}`,
-        boxShadow: '0 2px 4px rgba(54, 54, 54, 0.04)',
-        overflow: 'hidden',
-        width: '100%',
-        boxSizing: 'border-box',
-        transition: 'border-color 160ms var(--ease-out)',
-      }}
-    >
-      {children}
-    </span>
-  )
-}
-
-const INPUT_STYLE = {
-  flex: '1 0 0',
-  minWidth: 0,
-  border: 'none',
-  outline: 'none',
-  background: 'transparent',
-  fontFamily: 'var(--font-sans)',
-  // 16 on the destination so iOS doesn't zoom the page on focus; the design's
-  // 14 is kept on the narrower fields, which are less likely to be tapped
-  // first and where 16 would crowd the placeholder.
-  fontSize: '14px',
-  lineHeight: '20px',
-  letterSpacing: '0.28px',
-  color: 'var(--text-strong)',
-}
-
 export default function HeroCard() {
   const [mode, setMode] = useState('link')
   const [step, setStep] = useState('form') // form | done | design
@@ -246,6 +205,7 @@ export default function HeroCard() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [errorField, setErrorField] = useState(null)
+  const [shaking, setShaking] = useState(false)
   const [copied, setCopied] = useState(false)
 
   // Design state, only used on the QR path.
@@ -255,18 +215,43 @@ export default function HeroCard() {
   const timers = useRef([])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
+  // Same timings the app uses everywhere: the shake runs 320ms, the red border
+  // and the message clear at 2s. An error that stays until you fix it turns
+  // into part of the furniture; one that leaves says "try again" without
+  // being asked to.
+  function flag(message, field) {
+    timers.current.forEach(clearTimeout)
+    timers.current = []
+    setError(message)
+    setErrorField(field || 'destination')
+    setShaking(true)
+    timers.current.push(setTimeout(() => setShaking(false), 320))
+    timers.current.push(
+      setTimeout(() => {
+        setError(null)
+        setErrorField(null)
+      }, 2000)
+    )
+  }
+
+  function clearFlag() {
+    timers.current.forEach(clearTimeout)
+    timers.current = []
+    setError(null)
+    setErrorField(null)
+    setShaking(false)
+  }
+
   async function handleCreate() {
     if (busy) return
     const value = destination.trim()
     if (!value) {
-      setError('Paste a link first')
-      setErrorField('destination')
+      flag('Paste a link first', 'destination')
       return
     }
 
     setBusy(true)
-    setError(null)
-    setErrorField(null)
+    clearFlag()
     try {
       const res = await fetch('/api/public/links', {
         method: 'POST',
@@ -276,8 +261,7 @@ export default function HeroCard() {
       const d = await res.json().catch(() => null)
 
       if (!res.ok) {
-        setError(d?.error || `Could not create the link (${res.status})`)
-        setErrorField(d?.field || 'destination')
+        flag(d?.error || `Could not create the link (${res.status})`, d?.field)
         return
       }
       setResult(d.link)
@@ -285,7 +269,7 @@ export default function HeroCard() {
       setStep(mode === 'qr' ? 'design' : 'done')
     } catch (err) {
       console.error('[HeroCard]', err)
-      setError('Could not reach the server. Check your connection.')
+      flag('Could not reach the server. Check your connection.')
     } finally {
       setBusy(false)
     }
@@ -433,33 +417,25 @@ export default function HeroCard() {
           >
             {step === 'form' ? (
               <>
+                {/* The app's own Inputfield, not a hand-built plate. It brings
+                    the focus morph, the shake, and the red border at rest —
+                    the same behaviour every field in the product has, which
+                    is the point of the landing page being the product. */}
                 <Field label='Destination'>
-                  <Plate invalid={errorField === 'destination'}>
-                    <span
-                      style={{ display: 'flex', color: 'var(--text-soft)' }}
-                    >
-                      <LinkIcon />
-                    </span>
-                    <input
-                      type='url'
-                      inputMode='url'
-                      autoComplete='off'
-                      placeholder='https://example.com/your-page'
-                      value={destination}
-                      onChange={(e) => {
-                        setDestination(e.target.value)
-                        setError(null)
-                        setErrorField(null)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleCreate()
-                      }}
-                      // 16 here specifically: iOS zooms the page when a focused
-                      // input's text is smaller, and this is the first field
-                      // anyone taps.
-                      style={{ ...INPUT_STYLE, fontSize: '16px' }}
-                    />
-                  </Plate>
+                  <Inputfield
+                    lefticon={<LinkIcon />}
+                    placeholder='https://example.com/your-page'
+                    value={destination}
+                    onChange={(e) => {
+                      setDestination(e.target.value)
+                      clearFlag()
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreate()
+                    }}
+                    error={errorField === 'destination'}
+                    shaking={shaking && errorField === 'destination'}
+                  />
                 </Field>
 
                 {/* Node 147:770. Domain is fixed on the public form — an
@@ -475,45 +451,31 @@ export default function HeroCard() {
                 >
                   <div style={{ width: '150px', flexShrink: 0 }}>
                     <Field label='Domain'>
-                      <Plate>
-                        <span
-                          style={{
-                            flex: '1 0 0',
-                            minWidth: 0,
-                            fontFamily: 'var(--font-sans)',
-                            fontSize: '14px',
-                            lineHeight: '20px',
-                            letterSpacing: '0.28px',
-                            color: 'var(--text-strong)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {SHORT_DOMAIN}
-                        </span>
-                      </Plate>
+                      {/* readOnly, not disabled — the value stays selectable
+                          and readable to a screen reader, which a disabled
+                          input isn't. */}
+                      <Inputfield
+                        value={SHORT_DOMAIN}
+                        onChange={() => {}}
+                        readOnly
+                      />
                     </Field>
                   </div>
 
                   <Field label='Slug' hint='(Optional)'>
-                    <Plate invalid={errorField === 'slug'}>
-                      <input
-                        type='text'
-                        autoComplete='off'
-                        placeholder='swift-otter'
-                        value={slug}
-                        onChange={(e) => {
-                          setSlug(e.target.value)
-                          setError(null)
-                          setErrorField(null)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleCreate()
-                        }}
-                        style={INPUT_STYLE}
-                      />
-                    </Plate>
+                    <Inputfield
+                      placeholder='swift-otter'
+                      value={slug}
+                      onChange={(e) => {
+                        setSlug(e.target.value)
+                        clearFlag()
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCreate()
+                      }}
+                      error={errorField === 'slug'}
+                      shaking={shaking && errorField === 'slug'}
+                    />
                   </Field>
                 </div>
 
@@ -789,21 +751,26 @@ export default function HeroCard() {
               </>
             ) : null}
 
-            {error ? (
-              <p
-                role='alert'
-                style={{
-                  margin: 0,
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '12px',
-                  lineHeight: '16px',
-                  letterSpacing: '0.24px',
-                  color: 'var(--error-base)',
-                }}
-              >
-                {error}
-              </p>
-            ) : null}
+            {/* Always mounted, so it can animate out as well as in — a
+                conditional would unmount it mid-fade and cut the transition
+                short. Height collapses too, so the card doesn't hold a gap
+                where a message used to be. */}
+            <p
+              role='alert'
+              aria-hidden={!error}
+              className='hero-error'
+              data-shown={error ? 'true' : 'false'}
+              style={{
+                margin: 0,
+                fontFamily: 'var(--font-sans)',
+                fontSize: '12px',
+                lineHeight: '16px',
+                letterSpacing: '0.24px',
+                color: 'var(--error-base)',
+              }}
+            >
+              {error}
+            </p>
           </div>
         </div>
       </div>
