@@ -2299,6 +2299,8 @@ html {
   transform: scale(0.97);
 }
 
+
+
 /* --- Invite composer ---
    Drops in rather than appearing. The button it replaces sits in the same
    place, so without a transition the swap reads as a glitch. */
@@ -2362,6 +2364,8 @@ html {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
+
+
 /* --- Plan icon blooms ---
    A slow breath on the orange growth.
    
@@ -2398,9 +2402,7 @@ html {
 /* --- Domains ---
    The re-check button, on the same plate as the status tag beside it. */
 .domain-recheck {
-  transition:
-    color var(--duration-fast) ease,
-    background var(--duration-fast) ease;
+  transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
 }
 .domain-recheck:hover:not(:disabled) {
   color: var(--text-strong) !important;
@@ -2519,6 +2521,7 @@ html {
   gap: 8px;
   align-items: flex-start;
 }
+
 
 .landing-nav-link {
   transition: opacity var(--duration-fast) ease;
@@ -2958,7 +2961,7 @@ html {
 }
 @media (max-width: 1000px) {
   .landing-montage {
-    transform: scale(1.7);
+    transform: scale(1.70);
   }
 }
 @media (max-width: 900px) {
@@ -2973,7 +2976,7 @@ html {
 }
 @media (max-width: 700px) {
   .landing-montage {
-    transform: scale(1.2);
+    transform: scale(1.20);
   }
 }
 @media (max-width: 600px) {
