@@ -3007,25 +3007,57 @@ html {
   }
 }
 
-/* The error message fades and collapses rather than appearing and vanishing.
-   It's on a 2s timer, and a hard cut on a timed element reads as a glitch
-   rather than as the notice finishing. */
-.hero-error {
+/* --- Hero alert ---
+   Drops from under the card, holds, then goes back up. Full width of the card
+   rather than sized to its text, so it reads as an extension of the thing it's
+   about rather than a floating label.
+
+   Mounted always, animated by the attribute — a conditional would unmount it
+   mid-exit and cut the transition. */
+.hero-alert {
   overflow: hidden;
+  width: 100%;
   opacity: 0;
   max-height: 0;
-  transform: translateY(-2px);
+  /* Starts tucked behind the card and slides down out of it. */
+  transform: translateY(-10px) scale(0.97);
+  /* Exit is quicker than entry: arriving wants to be noticed, leaving
+     shouldn't hold attention on its way out. */
   transition:
-    opacity 200ms var(--ease-out),
-    max-height 200ms var(--ease-out),
-    transform 200ms var(--ease-out);
+    opacity 180ms var(--ease-out),
+    max-height 180ms var(--ease-out),
+    transform 180ms var(--ease-out),
+    margin-top 180ms var(--ease-out);
+  margin-top: 0;
+  pointer-events: none;
 }
-.hero-error[data-shown='true'] {
+
+.hero-alert[data-shown='true'] {
   opacity: 1;
-  /* A ceiling rather than a measured height — max-height can't animate from
-     auto, and two lines is the most this message ever runs to. */
-  max-height: 48px;
-  transform: translateY(0);
+  /* A ceiling, since max-height can't animate from auto. Two lines is the
+     most this ever runs to. */
+  max-height: 80px;
+  transform: translateY(0) scale(1);
+  margin-top: 10px;
+  pointer-events: auto;
+  /* Slower in than out, and with a slight overshoot so it settles rather than
+     stopping dead — that settle is what reads as a morph rather than a snap. */
+  transition:
+    opacity 260ms var(--ease-out),
+    max-height 300ms cubic-bezier(0.34, 1.4, 0.64, 1),
+    transform 300ms cubic-bezier(0.34, 1.4, 0.64, 1),
+    margin-top 300ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-alert,
+  .hero-alert[data-shown='true'] {
+    transform: none;
+    transition:
+      opacity 160ms ease,
+      max-height 160ms ease,
+      margin-top 160ms ease;
+  }
 }
 
 .hero-swatch,

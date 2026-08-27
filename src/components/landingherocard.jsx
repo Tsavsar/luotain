@@ -6,6 +6,7 @@ import { QrCode } from '@/components/qrdesigner'
 import { QR_COLORS, QR_PATTERNS } from '@/lib/qrdesign'
 import { SHORT_DOMAIN } from '@/lib/shortlink'
 import Inputfield from '@/components/input'
+import Alert from '@/components/alert'
 
 // ─── Hero card ───
 // The real thing, not a picture of it. Paste a link, name it if you want, and
@@ -184,6 +185,35 @@ const SHORT_URL_STYLE = {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+}
+
+// Red glyph, black message — the alert's own colours handle the text, so only
+// the icon carries the tone.
+function AlertIcon() {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 20 20'
+      fill='none'
+      aria-hidden='true'
+    >
+      <circle
+        cx='10'
+        cy='10'
+        r='7.4'
+        stroke='var(--error-base)'
+        strokeWidth='1.5'
+      />
+      <path
+        d='M10 6.2v4.6'
+        stroke='var(--error-base)'
+        strokeWidth='1.5'
+        strokeLinecap='round'
+      />
+      <circle cx='10' cy='13.4' r='0.9' fill='var(--error-base)' />
+    </svg>
+  )
 }
 
 function Spinner() {
@@ -829,27 +859,16 @@ export default function HeroCard() {
                 </div>
               </>
             ) : null}
+          </div>
 
-            {/* Always mounted, so it can animate out as well as in — a
-                conditional would unmount it mid-fade and cut the transition
-                short. Height collapses too, so the card doesn't hold a gap
-                where a message used to be. */}
-            <p
-              role='alert'
-              aria-hidden={!error}
-              className='hero-error'
-              data-shown={error ? 'true' : 'false'}
-              style={{
-                margin: 0,
-                fontFamily: 'var(--font-sans)',
-                fontSize: '12px',
-                lineHeight: '16px',
-                letterSpacing: '0.24px',
-                color: 'var(--error-base)',
-              }}
-            >
-              {error}
-            </p>
+          {/* Below the card, not inside it. Inside, its collapsed height still
+              took the column's 14px gap — a strip of dead space under the
+              button whether or not there was an error.
+
+              The app's own Alert, card variant: white, soft stroke, red glyph,
+              black text. */}
+          <div className='hero-alert' data-shown={error ? 'true' : 'false'}>
+            <Alert icon={<AlertIcon />} message={error || ''} />
           </div>
         </div>
       </div>
