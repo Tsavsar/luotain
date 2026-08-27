@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { QrCode } from '@/components/qrdesigner'
+import { QrCode, useTilt } from '@/components/qrdesigner'
 import { QR_COLORS, QR_PATTERNS } from '@/lib/qrdesign'
 import { SHORT_DOMAIN } from '@/lib/shortlink'
 import Inputfield from '@/components/input'
@@ -204,27 +204,33 @@ function AlertIcon() {
 
 // A labelled row of colour swatches. Used twice — the code's colour and its
 // three corner markers.
+//
+// The label sits ABOVE, matching the form's own fields directly overhead. It
+// was in a fixed 52px column to the left, which pushed the swatches
+// off-centre and made the row read as a table rather than as a control.
 function SwatchRow({ label, value, onPick }) {
   return (
-    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '7px',
+        width: '100%',
+      }}
+    >
       <span
         style={{
-          // Fixed width so both rows' swatches line up in a column rather
-          // than starting at whatever their label happens to measure.
-          width: '52px',
-          flexShrink: 0,
           fontFamily: 'var(--font-sans)',
-          fontSize: '11px',
-          lineHeight: 1,
-          letterSpacing: '0.22px',
-          color: 'var(--text-soft)',
+          fontWeight: 500,
+          fontSize: '12px',
+          lineHeight: '16px',
+          letterSpacing: '0.24px',
+          color: 'var(--text-strong)',
         }}
       >
         {label}
       </span>
-      <div
-        style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', flex: '1 0 0' }}
-      >
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
         {QR_COLORS.map((c) => (
           <button
             key={c.id}
@@ -397,6 +403,11 @@ export default function HeroCard() {
   // same way.
   const [markerColor, setMarkerColor] = useState('#000000')
   const [pattern, setPattern] = useState('square')
+
+  // The app's own tilt, not a second implementation. It lerps toward the
+  // cursor on a rAF loop rather than tracking it exactly, which is what reads
+  // as weight instead of twitch.
+  const tilt = useTilt({ max: 9, perspective: 620 })
 
   const timers = useRef([])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
@@ -720,20 +731,41 @@ export default function HeroCard() {
                       paddingBottom: '2px',
                     }}
                   >
-                    {/* The app's own renderer, so what's downloaded here is
+                    {/* Tilts toward the cursor and says what it is. A code on
+                        a landing page looks like an image until it moves —
+                        the tilt is what tells you it's the real thing. */}
+                    <div
+                      ref={tilt.nodeRef}
+                      onMouseMove={tilt.onMove}
+                      onMouseLeave={tilt.onLeave}
+                      className='hero-qr-tilt'
+                      style={{
+                        position: 'relative',
+                        // Its own layer, so the tilt composites rather than
+                        // repainting the code every frame.
+                        willChange: 'transform',
+                        borderRadius: '18px',
+                      }}
+                    >
+                      {/* The app's own renderer, so what's downloaded here is
                         what the product makes. */}
-                    <QrCode
-                      value={`https://${shortUrl}`}
-                      card={150}
-                      margin={12}
-                      color={color}
-                      markerColor={markerColor}
-                      pattern={pattern}
-                      // No branding on the public version — the logo cut-out
-                      // needs an upload, and an upload needs somewhere to put
-                      // a file and someone to own it.
-                      branding={false}
-                    />
+                      <QrCode
+                        value={`https://${shortUrl}`}
+                        card={150}
+                        margin={12}
+                        color={color}
+                        markerColor={markerColor}
+                        pattern={pattern}
+                        // No branding on the public version — the logo cut-out
+                        // needs an upload, and an upload needs somewhere to put
+                        // a file and someone to own it.
+                        branding={false}
+                      />
+
+                      <span className='hero-qr-hint' aria-hidden='true'>
+                        Preview
+                      </span>
+                    </div>
                   </div>
                 ) : null}
 
@@ -744,7 +776,9 @@ export default function HeroCard() {
                         size or ring changes. */}
                     <SwatchRow label='Color' value={color} onPick={setColor} />
                     <SwatchRow
-                      label='Markers'
+                      // The app's own wording, so the two surfaces name the
+                      // same thing the same way.
+                      label='Marker color'
                       value={markerColor}
                       onPick={setMarkerColor}
                     />

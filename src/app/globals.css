@@ -3071,6 +3071,52 @@ html {
   }
 }
 
+/* --- Hero QR preview ---
+   The code tilts toward the cursor. On a landing page a QR reads as an image
+   until it moves — the tilt is what says it's live. */
+.hero-qr-tilt {
+  transform-style: preserve-3d;
+}
+
+/* Named "Preview" because that's what it is: in mock mode the link doesn't
+   resolve, so calling it anything more confident would be a small lie. */
+.hero-qr-hint {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translate(-50%, 4px);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--text-strong);
+  color: var(--bg-default);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 220ms var(--ease-spring);
+}
+
+/* Hover only. On touch there's no cursor to tilt toward and no hover to
+   reveal it, so the label would either never appear or never leave. */
+@media (hover: hover) and (pointer: fine) {
+  .hero-qr-tilt:hover .hero-qr-hint {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-qr-hint {
+    transition: opacity 140ms ease;
+    transform: translate(-50%, 0);
+  }
+}
+
 /* --- Copy button glyph ---
    Copy and check stacked, cross-fading. Both are always in the DOM: swapping
    one for the other leaves nothing to transition between, which is why the

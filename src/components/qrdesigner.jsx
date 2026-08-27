@@ -319,7 +319,10 @@ function Finder({ x, y, pattern, color }) {
 // second for a value nothing else reads. And it lerps toward the target
 // instead of snapping — jumping to the exact cursor angle feels twitchy;
 // trailing slightly is what reads as weight.
-function useTilt({
+// Exported so the landing hero can use the same tilt rather than a second
+// implementation of it — the lerp and the rAF loop are the whole reason it
+// feels like weight instead of tracking.
+export function useTilt({
   max,
   ease = 0.12,
   perspective = 700,
