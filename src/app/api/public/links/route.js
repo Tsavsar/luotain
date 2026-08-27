@@ -277,11 +277,12 @@ export async function POST(request) {
     // saturated namespace would hang the request.
     let link = null
     for (let attempt = 0; attempt < 6 && !link; attempt++) {
+      // One extra character after a few misses, rather than a hyphenated
+      // suffix — at 887 million combinations a collision is already unlikely,
+      // and lengthening beats making the code look different.
       const shortCode = requestedSlug
         ? requestedSlug
-        : attempt < 3
-          ? candidate()
-          : `${candidate()}-${crypto.randomBytes(2).toString('hex')}`
+        : candidate(attempt < 3 ? 6 : 7)
       const taken = await prisma.link.findUnique({
         where: { domainId_shortCode: { domainId: domain.id, shortCode } },
         select: { id: true },

@@ -26,35 +26,19 @@ const IMAGE = '/assets/websiteimage.png'
 // that 404s when they share it. Flip this to false once the endpoint is live.
 const USE_MOCK = true
 
-const ADJECTIVES = [
-  'swift',
-  'calm',
-  'brave',
-  'keen',
-  'plain',
-  'warm',
-  'sharp',
-  'proud',
-  'quick',
-  'bright',
-]
-const NOUNS = [
-  'otter',
-  'heron',
-  'pike',
-  'crow',
-  'hare',
-  'newt',
-  'moth',
-  'toad',
-  'finch',
-  'lynx',
-]
+// Six characters, not adjective-noun. "swift-otter" makes a 21-character URL
+// where this makes 16, and the whole point of a short link is the length.
+//
+// The alphabet drops 0/O and 1/l/I — a short code gets read aloud and typed by
+// hand, and those are the pairs that get confused when it is.
+const SLUG_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789'
 
-function mockSlug() {
-  const a = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
-  const n = NOUNS[Math.floor(Math.random() * NOUNS.length)]
-  return `${a}-${n}`
+function mockSlug(length = 6) {
+  let out = ''
+  for (let i = 0; i < length; i++) {
+    out += SLUG_ALPHABET[Math.floor(Math.random() * SLUG_ALPHABET.length)]
+  }
+  return out
 }
 
 // The same shape the API returns, so switching to the real one is one constant
@@ -212,6 +196,50 @@ function AlertIcon() {
         strokeLinecap='round'
       />
       <circle cx='10' cy='13.4' r='0.9' fill='var(--error-base)' />
+    </svg>
+  )
+}
+
+function QrGlyph() {
+  return (
+    <svg
+      width='14'
+      height='14'
+      viewBox='0 0 16 16'
+      fill='none'
+      aria-hidden='true'
+    >
+      <rect
+        x='2.2'
+        y='2.2'
+        width='4.4'
+        height='4.4'
+        rx='1'
+        stroke='currentColor'
+        strokeWidth='1.3'
+      />
+      <rect
+        x='9.4'
+        y='2.2'
+        width='4.4'
+        height='4.4'
+        rx='1'
+        stroke='currentColor'
+        strokeWidth='1.3'
+      />
+      <rect
+        x='2.2'
+        y='9.4'
+        width='4.4'
+        height='4.4'
+        rx='1'
+        stroke='currentColor'
+        strokeWidth='1.3'
+      />
+      <path
+        d='M9.4 9.4h1.8v1.8H9.4zM12.4 12.4h1.4v1.4h-1.4z'
+        fill='currentColor'
+      />
     </svg>
   )
 }
@@ -805,58 +833,6 @@ export default function HeroCard() {
                     </button>
                   </div>
                 </div>
-
-                <div
-                  style={{ display: 'flex', gap: '14px', alignItems: 'center' }}
-                >
-                  <button
-                    type='button'
-                    onClick={reset}
-                    className='landing-pill'
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      fontFamily: 'var(--font-sans)',
-                      fontSize: '12px',
-                      lineHeight: '16px',
-                      letterSpacing: '0.24px',
-                      color: 'var(--text-sub)',
-                    }}
-                  >
-                    <BackIcon />
-                    Make another
-                  </button>
-
-                  {step === 'design' ? (
-                    <button
-                      type='button'
-                      onClick={handleDownload}
-                      className='landing-pill'
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: 'none',
-                        border: 'none',
-                        padding: 0,
-                        cursor: 'pointer',
-                        fontFamily: 'var(--font-sans)',
-                        fontSize: '12px',
-                        lineHeight: '16px',
-                        letterSpacing: '0.24px',
-                        color: 'var(--text-sub)',
-                      }}
-                    >
-                      <DownloadIcon />
-                      Download SVG
-                    </button>
-                  ) : null}
-                </div>
               </>
             ) : null}
           </div>
@@ -873,6 +849,100 @@ export default function HeroCard() {
         </div>
       </div>
 
+      {/* New link left, the next step right — the same reading
+                    order as everywhere else: the way back is where you came
+                    from, the way forward is where you're going. */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          width: '100%',
+        }}
+      >
+        <button
+          type='button'
+          onClick={reset}
+          className='landing-pill'
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            flexShrink: 0,
+            fontFamily: 'var(--font-sans)',
+            fontSize: '12px',
+            lineHeight: '16px',
+            letterSpacing: '0.24px',
+            color: 'var(--text-sub)',
+          }}
+        >
+          <BackIcon />
+          New link
+        </button>
+
+        {step === 'done' ? (
+          // The link already exists, so this only opens the
+          // designer — nothing is created twice.
+          <button
+            type='button'
+            onClick={() => setStep('design')}
+            className='landing-pill'
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '7px',
+              padding: '9px 16px',
+              borderRadius: '48px',
+              border: 'none',
+              cursor: 'pointer',
+              flexShrink: 0,
+              background: 'var(--bg-surface)',
+              color: 'var(--text-sub)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '12px',
+              lineHeight: '16px',
+              letterSpacing: '0.24px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <QrGlyph />
+            Generate QR code
+          </button>
+        ) : (
+          <button
+            type='button'
+            onClick={handleDownload}
+            className='landing-pill'
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '7px',
+              padding: '9px 16px',
+              borderRadius: '48px',
+              border: 'none',
+              cursor: 'pointer',
+              flexShrink: 0,
+              background: 'var(--bg-surface)',
+              color: 'var(--text-sub)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '12px',
+              lineHeight: '16px',
+              letterSpacing: '0.24px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <DownloadIcon />
+            Download SVG
+          </button>
+        )}
+      </div>
       <div
         style={{
           display: 'flex',
