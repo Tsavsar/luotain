@@ -156,26 +156,6 @@ function DownloadIcon() {
   )
 }
 
-function BackIcon() {
-  return (
-    <svg
-      width='14'
-      height='14'
-      viewBox='0 0 16 16'
-      fill='none'
-      aria-hidden='true'
-    >
-      <path
-        d='M12 8H4M7.2 4.4 3.6 8l3.6 3.6'
-        stroke='currentColor'
-        strokeWidth='1.4'
-        strokeLinecap='round'
-        strokeLinejoin='round'
-      />
-    </svg>
-  )
-}
-
 // Shared by the anchor and its mock counterpart, so the two are identical
 // apart from being clickable.
 const SHORT_URL_STYLE = {
@@ -478,6 +458,8 @@ export default function HeroCard() {
     <div
       className='landing-herocard'
       style={{
+        // relative, so the alert can sit under it without being in flow.
+        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         gap: '6px',
@@ -891,7 +873,6 @@ export default function HeroCard() {
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    <BackIcon />
                     New link
                   </button>
 
@@ -974,11 +955,18 @@ export default function HeroCard() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '12px 16px',
+          paddingTop: '12px',
+          paddingBottom: '12px',
+          paddingLeft: '16px',
+          paddingRight: '16px',
           borderRadius: '8px',
           background: 'var(--bg-surface)',
           width: '100%',
           boxSizing: 'border-box',
+          // Pinned to two lines. The copy changes when a link is made, and a
+          // strip that grows or shrinks with its own text moves everything
+          // around it — the same shifting the well was doing.
+          minHeight: '60px',
         }}
       >
         <p

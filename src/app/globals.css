@@ -2478,7 +2478,13 @@ html {
      so below that width this padding is the only thing keeping content off the
      screen edge. It was lost when the inline padding moved here and only the
      top value came with it. */
-  padding: 28px 20px 0;
+  /* Longhands, not `padding: 28px 20px 0`. The media queries below override
+     padding-top on its own — with a shorthand here, whichever came last in
+     the file silently reset the sides to 0. That's cost two bugs already. */
+  padding-top: 28px;
+  padding-right: 20px;
+  padding-bottom: 0;
+  padding-left: 20px;
 }
 
 .landing-stack {
@@ -2493,7 +2499,10 @@ html {
      two rows of controls plus the URL row — and the whole hero should still sit
      in one viewport. That space had to come from somewhere, and above the fold
      it's worth less than the thing people came to use. */
-  padding: 140px 20px 0;
+  padding-top: 140px;
+  padding-right: 20px;
+  padding-bottom: 0;
+  padding-left: 20px;
   /* 120 between sections, from the design's own gap. */
   gap: 120px;
 }
@@ -2508,11 +2517,10 @@ html {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  /* No vertical padding by default. The hero overrides it below — and that
-     override has to come AFTER this rule, because `padding` is a shorthand:
-     it rewrites all four sides, so declared later it wipes a padding-bottom
-     set earlier no matter how specific that selector was. */
-  padding: 0;
+  /* Longhands, so the hero's padding-bottom override below survives whatever
+     order these end up in. */
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 /* The hero specifically. Its card is 600 tall, so a centred text column floats
@@ -2605,7 +2613,13 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
+  /* Longhands: the landing override below sets padding-left and -right on
+     their own, and a shorthand here only survives because it happens to come
+     first in the file. */
+  padding-top: 8px;
+  padding-right: 16px;
+  padding-bottom: 8px;
+  padding-left: 16px;
   border-radius: var(--radius-full);
   /* Fills the column. Sized to its label instead, the three CTAs come out at
      three different widths — "Current plan", "Upgrade plan" and "Get pro plan"
@@ -2930,7 +2944,8 @@ html {
   /* A little padding back, rather than none — zero made the headline sit hard
      against the nav above it. */
   .landing-herotext {
-    padding: 8px 0 0;
+    padding-top: 8px;
+    padding-bottom: 0;
     gap: 20px;
   }
   /* The card's own button is the action, and Get started sits in the menu. */
@@ -3024,25 +3039,35 @@ html {
    A minimum, not a fixed height — the card has to hold the QR designer, which
    is a code plus two rows of controls plus the URL row.
 
-   600 rather than 420: the form step doesn't need it, but a card that jumps
-   180px taller the moment you press Design code shoves the whole page down
-   under you. Sizing for the taller state means the layout holds still. */
+   A FIXED height, not a minimum. min-height still grows when the design step's
+   content is taller than the form's, and the hero row is bottom-aligned — so
+   any change in the card's height moves the text column beside it. Fixed means
+   nothing moves between steps.
+   
+   600 fits both: the form needs ~346 and the designer ~440, including the
+   well's own padding. */
 .landing-herowell {
-  min-height: 600px;
+  height: 600px;
 }
 
 @media (max-width: 1100px) {
   /* Slightly less once it's full width — the controls have more room across,
      so they need fewer rows down. */
   .landing-herowell {
-    min-height: 560px;
+    height: 560px;
   }
 }
 
 @media (max-width: 560px) {
   .landing-herowell {
+    /* auto on a phone: the card is full width and the content is stacked, so
+       a fixed height would either clip it or leave a lot of empty image. */
+    height: auto;
     min-height: 0;
-    padding: 24px 16px !important;
+    padding-top: 24px;
+    padding-right: 16px;
+    padding-bottom: 24px;
+    padding-left: 16px;
   }
 }
 
@@ -3121,6 +3146,13 @@ html {
    Mounted always, animated by the attribute — a conditional would unmount it
    mid-exit and cut the transition. */
 .hero-alert {
+  /* Out of flow. In flow it added its own height to the card, and with the
+     hero row bottom-aligned that shifted the text column every time an error
+     appeared. */
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   overflow: hidden;
   width: 100%;
   opacity: 0;
@@ -3284,8 +3316,8 @@ html {
     bottom: 16px;
     width: auto;
     max-width: none;
-    padding: 20px !important;
-    gap: 20px !important;
+    padding: 20px;
+    gap: 20px;
   }
   /* Full width and stacked. Two 172px buttons don't fit a 320px card, and
      shrinking the reject button to fit is how it ends up looking like the
