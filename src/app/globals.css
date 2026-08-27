@@ -3018,6 +3018,73 @@ html {
   }
 }
 
+/* --- Copy button glyph ---
+   Copy and check stacked, cross-fading. Both are always in the DOM: swapping
+   one for the other leaves nothing to transition between, which is why the
+   change read as a snap.
+
+   Same idea as the app's .check-reveal, but this icon is 14px against that
+   one's 20, so the numbers are its own. */
+.copy-glyph > svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: visible;
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 260ms var(--ease-spring);
+}
+
+.copy-glyph-copy {
+  opacity: 1;
+  transform: scale(1);
+}
+.copy-glyph[data-done='true'] .copy-glyph-copy {
+  opacity: 0;
+  /* Shrinks slightly as it leaves so the two aren't the same size mid-fade,
+     which would read as a blur rather than a swap. */
+  transform: scale(0.7);
+}
+
+.copy-glyph-check {
+  opacity: 0;
+  transform: scale(0.7);
+}
+.copy-glyph[data-done='true'] .copy-glyph-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 13 is this path's real length, 3.82 + 8.91 across its two segments. Guessing
+   it leaves the stroke either short of the end or finished before the
+   animation is. */
+.copy-glyph-check path {
+  stroke-dasharray: 13;
+  stroke-dashoffset: 13;
+}
+.copy-glyph[data-done='true'] .copy-glyph-check path {
+  /* 80ms behind the fade, so the tick draws INTO a glyph that's already
+     arriving rather than drawing on something invisible. */
+  animation: copyCheckDraw 340ms var(--ease-out) 80ms forwards;
+}
+
+@keyframes copyCheckDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copy-glyph > svg {
+    transition: opacity 140ms ease;
+    transform: none !important;
+  }
+  .copy-glyph[data-done='true'] .copy-glyph-check path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
 /* --- Hero alert ---
    Drops from under the card, holds, then goes back up. Full width of the card
    rather than sized to its text, so it reads as an extension of the thing it's
@@ -3071,10 +3138,20 @@ html {
   }
 }
 
-.hero-swatch,
+/* The selection ring grows in rather than appearing. box-shadow animates on
+   the compositor, so a ring can expand without touching layout — which is why
+   it's a shadow rather than a border. */
+.hero-swatch {
+  transition:
+    box-shadow 260ms var(--ease-spring),
+    transform var(--duration-press) ease-out;
+}
+
+/* Pattern chips fade between states rather than cutting. */
 .hero-pattern {
   transition:
-    box-shadow var(--duration-fast) ease,
+    background 240ms var(--ease-out),
+    color 240ms var(--ease-out),
     transform var(--duration-press) ease-out;
 }
 .hero-swatch:active,

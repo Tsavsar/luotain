@@ -74,43 +74,64 @@ function LinkIcon() {
   )
 }
 
+// Both states are always in the DOM, stacked, and cross-fade between them.
+// Swapping one for the other leaves nothing to animate — you can't transition
+// an element that was just unmounted.
 function CopyIcon({ done }) {
   return (
-    <svg
-      width='14'
-      height='14'
-      viewBox='0 0 16 16'
-      fill='none'
+    <span
+      className='copy-glyph'
+      data-done={done ? 'true' : 'false'}
       aria-hidden='true'
+      style={{
+        position: 'relative',
+        width: '14px',
+        height: '14px',
+        flexShrink: 0,
+      }}
     >
-      {done ? (
+      <svg
+        className='copy-glyph-copy'
+        width='14'
+        height='14'
+        viewBox='0 0 16 16'
+        fill='none'
+      >
+        <rect
+          x='5.5'
+          y='5.5'
+          width='7.5'
+          height='7.5'
+          rx='2'
+          stroke='currentColor'
+          strokeWidth='1.3'
+        />
+        <path
+          d='M10.5 5.5v-.8a2 2 0 0 0-2-2H4.7a2 2 0 0 0-2 2v3.8a2 2 0 0 0 2 2h.8'
+          stroke='currentColor'
+          strokeWidth='1.3'
+          strokeLinecap='round'
+        />
+      </svg>
+      <svg
+        className='copy-glyph-check'
+        width='14'
+        height='14'
+        viewBox='0 0 16 16'
+        fill='none'
+      >
+        {/* dasharray 13 is this path's real length — 3.82 + 8.91 across its two
+            segments. The app's check-reveal uses 19 because its icon is 20px;
+            reusing that number here would leave the draw unfinished. */}
         <path
           d='M3.5 8.5 6.2 11.2 12.5 4.9'
           stroke='currentColor'
-          strokeWidth='1.6'
+          strokeWidth='1.7'
           strokeLinecap='round'
           strokeLinejoin='round'
         />
-      ) : (
-        <>
-          <rect
-            x='5.5'
-            y='5.5'
-            width='7.5'
-            height='7.5'
-            rx='2'
-            stroke='currentColor'
-            strokeWidth='1.3'
-          />
-          <path
-            d='M10.5 5.5v-.8a2 2 0 0 0-2-2H4.7a2 2 0 0 0-2 2v3.8a2 2 0 0 0 2 2h.8'
-            stroke='currentColor'
-            strokeWidth='1.3'
-            strokeLinecap='round'
-          />
-        </>
-      )}
-    </svg>
+      </svg>
+    </span>
   )
 }
 
@@ -829,7 +850,11 @@ export default function HeroCard() {
                         fontSize: '12px',
                         lineHeight: '16px',
                         letterSpacing: '0.24px',
-                        transition: 'background 200ms var(--ease-out)',
+                        // Slower out than in: going green should register,
+                        // coming back shouldn't pull the eye a second time.
+                        transition: copied
+                          ? 'background 220ms var(--ease-out)'
+                          : 'background 420ms var(--ease-out)',
                       }}
                     >
                       <CopyIcon done={copied} />
