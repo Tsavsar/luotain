@@ -833,6 +833,101 @@ export default function HeroCard() {
                     </button>
                   </div>
                 </div>
+
+                {/* New link left, the next step right — the same reading
+                    order as everywhere else: the way back is where you came
+                    from, the way forward is where you're going. */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    width: '100%',
+                  }}
+                >
+                  <button
+                    type='button'
+                    onClick={reset}
+                    className='landing-pill'
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: '12px',
+                      lineHeight: '16px',
+                      letterSpacing: '0.24px',
+                      color: 'var(--text-sub)',
+                    }}
+                  >
+                    <BackIcon />
+                    New link
+                  </button>
+
+                  {step === 'done' ? (
+                    // The link already exists, so this only opens the
+                    // designer — nothing is created twice.
+                    <button
+                      type='button'
+                      onClick={() => setStep('design')}
+                      className='landing-pill'
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '7px',
+                        padding: '9px 16px',
+                        borderRadius: '48px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        background: 'var(--bg-surface)',
+                        color: 'var(--text-sub)',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '12px',
+                        lineHeight: '16px',
+                        letterSpacing: '0.24px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <QrGlyph />
+                      Generate QR code
+                    </button>
+                  ) : (
+                    <button
+                      type='button'
+                      onClick={handleDownload}
+                      className='landing-pill'
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '7px',
+                        padding: '9px 16px',
+                        borderRadius: '48px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        background: 'var(--bg-surface)',
+                        color: 'var(--text-sub)',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '12px',
+                        lineHeight: '16px',
+                        letterSpacing: '0.24px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <DownloadIcon />
+                      Download SVG
+                    </button>
+                  )}
+                </div>
               </>
             ) : null}
           </div>
@@ -849,100 +944,6 @@ export default function HeroCard() {
         </div>
       </div>
 
-      {/* New link left, the next step right — the same reading
-                    order as everywhere else: the way back is where you came
-                    from, the way forward is where you're going. */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          width: '100%',
-        }}
-      >
-        <button
-          type='button'
-          onClick={reset}
-          className='landing-pill'
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            flexShrink: 0,
-            fontFamily: 'var(--font-sans)',
-            fontSize: '12px',
-            lineHeight: '16px',
-            letterSpacing: '0.24px',
-            color: 'var(--text-sub)',
-          }}
-        >
-          <BackIcon />
-          New link
-        </button>
-
-        {step === 'done' ? (
-          // The link already exists, so this only opens the
-          // designer — nothing is created twice.
-          <button
-            type='button'
-            onClick={() => setStep('design')}
-            className='landing-pill'
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '7px',
-              padding: '9px 16px',
-              borderRadius: '48px',
-              border: 'none',
-              cursor: 'pointer',
-              flexShrink: 0,
-              background: 'var(--bg-surface)',
-              color: 'var(--text-sub)',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '12px',
-              lineHeight: '16px',
-              letterSpacing: '0.24px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <QrGlyph />
-            Generate QR code
-          </button>
-        ) : (
-          <button
-            type='button'
-            onClick={handleDownload}
-            className='landing-pill'
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '7px',
-              padding: '9px 16px',
-              borderRadius: '48px',
-              border: 'none',
-              cursor: 'pointer',
-              flexShrink: 0,
-              background: 'var(--bg-surface)',
-              color: 'var(--text-sub)',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '12px',
-              lineHeight: '16px',
-              letterSpacing: '0.24px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <DownloadIcon />
-            Download SVG
-          </button>
-        )}
-      </div>
       <div
         style={{
           display: 'flex',
