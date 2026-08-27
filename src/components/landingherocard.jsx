@@ -15,6 +15,59 @@ import Inputfield from '@/components/input'
 // does is to let someone do it.
 const IMAGE = '/assets/websiteimage.png'
 
+// ─── Mock mode ───
+// The public endpoint needs PUBLIC_ORG_ID and a Domain row before it can
+// create anything, so until that's set up this generates the link in the
+// browser instead.
+//
+// The link LOOKS real and the QR code is genuinely encoded from it — but it
+// resolves to nothing, so the card says so rather than handing someone a URL
+// that 404s when they share it. Flip this to false once the endpoint is live.
+const USE_MOCK = true
+
+const ADJECTIVES = [
+  'swift',
+  'calm',
+  'brave',
+  'keen',
+  'plain',
+  'warm',
+  'sharp',
+  'proud',
+  'quick',
+  'bright',
+]
+const NOUNS = [
+  'otter',
+  'heron',
+  'pike',
+  'crow',
+  'hare',
+  'newt',
+  'moth',
+  'toad',
+  'finch',
+  'lynx',
+]
+
+function mockSlug() {
+  const a = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
+  const n = NOUNS[Math.floor(Math.random() * NOUNS.length)]
+  return `${a}-${n}`
+}
+
+// The same shape the API returns, so switching to the real one is one constant
+// and nothing downstream changes.
+function mockLink(destination, requested) {
+  const shortCode = requested || mockSlug()
+  return {
+    shortCode,
+    shortUrl: `${SHORT_DOMAIN}/${shortCode}`,
+    destination,
+    mock: true,
+  }
+}
+
 function LinkIcon() {
   return (
     <svg
@@ -114,6 +167,23 @@ function BackIcon() {
       />
     </svg>
   )
+}
+
+// Shared by the anchor and its mock counterpart, so the two are identical
+// apart from being clickable.
+const SHORT_URL_STYLE = {
+  flex: '1 0 0',
+  minWidth: 0,
+  fontFamily: 'var(--font-sans)',
+  fontSize: '14px',
+  fontWeight: 500,
+  lineHeight: '20px',
+  letterSpacing: '0.28px',
+  color: 'var(--text-strong)',
+  textDecoration: 'none',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 }
 
 function Spinner() {
@@ -252,6 +322,21 @@ export default function HeroCard() {
 
     setBusy(true)
     clearFlag()
+
+    if (USE_MOCK) {
+      // A beat before the result. Instant would read as nothing having
+      // happened — the pause is what makes the button feel like it did
+      // something, and it's what the real request will cost anyway.
+      timers.current.push(
+        setTimeout(() => {
+          setResult(mockLink(value, slug.trim()))
+          setStep(mode === 'qr' ? 'design' : 'done')
+          setBusy(false)
+        }, 420)
+      )
+      return
+    }
+
     try {
       const res = await fetch('/api/public/links', {
         method: 'POST',
@@ -645,27 +730,21 @@ export default function HeroCard() {
                       background: 'var(--bg-layer)',
                     }}
                   >
-                    <a
-                      href={`https://${shortUrl}`}
-                      target='_blank'
-                      rel='noreferrer'
-                      style={{
-                        flex: '1 0 0',
-                        minWidth: 0,
-                        fontFamily: 'var(--font-sans)',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        lineHeight: '20px',
-                        letterSpacing: '0.28px',
-                        color: 'var(--text-strong)',
-                        textDecoration: 'none',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {shortUrl}
-                    </a>
+                    {/* An anchor only when it goes somewhere. A mock link is
+                        rendered as plain text — a clickable URL that 404s is
+                        worse than one you can't click. */}
+                    {result?.mock ? (
+                      <span style={SHORT_URL_STYLE}>{shortUrl}</span>
+                    ) : (
+                      <a
+                        href={`https://${shortUrl}`}
+                        target='_blank'
+                        rel='noreferrer'
+                        style={SHORT_URL_STYLE}
+                      >
+                        {shortUrl}
+                      </a>
+                    )}
                     <button
                       type='button'
                       onClick={handleCopy}
@@ -798,7 +877,18 @@ export default function HeroCard() {
             textAlign: 'center',
           }}
         >
-          {result ? (
+          {result?.mock ? (
+            <>
+              {/* Said plainly. A preview that looks identical to the real
+                  thing, without saying so, is how someone ends up printing a
+                  code that goes nowhere. */}
+              This is a preview, so the link won&rsquo;t open yet.{' '}
+              <Link href='/get-started' style={{ color: 'var(--text-strong)' }}>
+                Create an account
+              </Link>{' '}
+              for links that actually resolve.
+            </>
+          ) : result ? (
             <>
               Want the analytics behind it?{' '}
               <Link href='/get-started' style={{ color: 'var(--text-strong)' }}>
