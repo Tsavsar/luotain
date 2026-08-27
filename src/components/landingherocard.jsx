@@ -531,9 +531,23 @@ export default function HeroCard() {
               pair of pills by hand, which looked close and behaved differently.
 
               Hidden once there's a result: switching then would throw away
-              what was just made. */}
+              what was just made.
+
+              The wrapper below is a plate: SegmentedTabs draws its own sliding
+              pill but no track — fine on the create page, which is white, but
+              here it sits over a photograph and would otherwise float on the
+              image with nothing for the pill to slide against. */}
           {step === 'form' ? (
-            <div style={{ alignSelf: 'center', marginBottom: '14px' }}>
+            <div
+              style={{
+                alignSelf: 'center',
+                marginBottom: '14px',
+                padding: '3px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--bg-default)',
+                boxShadow: '0 2px 10px rgba(54, 54, 54, 0.08)',
+              }}
+            >
               <SegmentedTabs
                 items={[
                   { id: 'link', label: 'Short link' },

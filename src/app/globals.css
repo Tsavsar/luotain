@@ -2500,9 +2500,6 @@ html {
 
 .landing-split {
   display: flex;
-  /* Centred, not bottom-aligned. Against a 402px card the baselines lined up;
-     against a 600px one the headline sat stranded at the bottom with a third
-     of the row empty above it. */
   align-items: center;
   width: 100%;
 }
@@ -2511,9 +2508,28 @@ html {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  /* No vertical padding — the column is centred in the row now, so padding
-     would only offset it from the middle it was just centred in. */
+  /* No vertical padding by default. The hero overrides it below — and that
+     override has to come AFTER this rule, because `padding` is a shorthand:
+     it rewrites all four sides, so declared later it wipes a padding-bottom
+     set earlier no matter how specific that selector was. */
   padding: 0;
+}
+
+/* The hero specifically. Its card is 600 tall, so a centred text column floats
+   in the middle of a lot of height — the block reads better sitting low, near
+   the card's own action.
+   
+   flex-end plus padding rather than flex-end alone: hard against the bottom
+   edge would line the last button up with the card's border, which looks like
+   an accident rather than a decision.
+   
+   Scoped by id — the closing section shares this class and its card is only
+   277 tall, where centred is right. */
+#top.landing-split {
+  align-items: flex-end;
+}
+#top .landing-herotext {
+  padding-bottom: 64px;
 }
 
 .landing-heropills {
@@ -2705,10 +2721,19 @@ html {
    the text column drops under the 380px the headline is set to and starts
    breaking mid-phrase. */
 @media (max-width: 1100px) {
-  .landing-split {
+  .landing-split,
+  /* #top beats a bare class on specificity, so the stacked rule has to match
+     it — without this the hero stayed bottom-aligned in a column, which puts
+     the text under the card instead of above it. */
+  #top.landing-split {
     flex-direction: column;
     align-items: flex-start;
     gap: 40px;
+  }
+  /* No bottom padding once stacked — it would sit the headline 64px off the
+     card below it for no reason. */
+  #top .landing-herotext {
+    padding-bottom: 0;
   }
   .landing-cards {
     flex-wrap: wrap;
