@@ -124,7 +124,11 @@ export default function SegmentedTabs({
         // optically aligns with content above and below, using the
         // SAME value as the padding itself. One number, so it can't
         // drift out of sync with itself.
-        marginLeft: `calc(-1 * ${padX})`,
+        // Off when there's a track: the plate is the alignment reference
+        // then, and this margin would shift the tablist out of it — taking
+        // the pill, which is positioned against the tablist, outside the
+        // plate with it. That is exactly what was escaping.
+        marginLeft: bleeding ? `calc(-1 * ${padX})` : 0,
       }}
     >
       <div
@@ -215,6 +219,11 @@ export default function SegmentedTabs({
         borderRadius: 'var(--radius-full)',
         background: 'var(--bg-default)',
         boxShadow: '0 2px 10px rgba(54, 54, 54, 0.08)',
+        // A guarantee, not a fix. The margin is already 0 when there's a
+        // track, so nothing should reach this edge — but the pill is absolutely
+        // positioned and I'd rather it be physically unable to draw outside
+        // the plate than rely on one number staying right.
+        overflow: 'hidden',
         ...style,
       }}
     >
