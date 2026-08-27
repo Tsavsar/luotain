@@ -49,10 +49,24 @@ export default function SegmentedTabs({
   linkAs: LinkAs = 'a',
   padX = '16px',
   // The negative margin below exists to align the first label with content
-  // above and below it. Inside a centred container there's nothing to align
-  // TO, and it just drags the control off-centre — so it's opt-out.
+  // above and below it. Inside a container there's nothing to align TO, and
+  // it drags the control off-centre — so it's opt-out.
   bleed = true,
+  // Draws a plate behind the tabs. It belongs INSIDE this component rather
+  // than as a wrapper around it: the pill is positioned against the tablist,
+  // so a plate outside can't contain it — the pill escapes the moment the
+  // tablist is offset for any reason. Owning both means they can't drift.
+  //
+  // Turning it on turns the bleed off, since the two are contradictory: one
+  // pulls the control out to align with its surroundings, the other draws a
+  // box around it.
+  track = false,
+  // Applied to the outermost element, so a caller can centre or space the
+  // control without adding a wrapper — a wrapper around this is exactly what
+  // let the pill escape.
+  style,
 }) {
+  const bleeding = bleed && !track
   const itemRefs = useRef(new Map())
   const [pill, setPill] = useState({ left: 0, width: 0 })
   // Transitions stay off until after the first measured paint,
@@ -99,7 +113,7 @@ export default function SegmentedTabs({
     return () => cancelAnimationFrame(raf)
   }, [])
 
-  return (
+  const tablist = (
     <div
       role='tablist'
       style={{
@@ -184,6 +198,27 @@ export default function SegmentedTabs({
           </button>
         )
       })}
+    </div>
+  )
+
+  // No track: the tablist as it always was.
+  if (!track) return tablist
+
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        // 4, matching the app's other segmented containers. The pill sits
+        // flush to the tablist's edges, so less than this lets it nearly touch
+        // the plate and read as a rendering fault.
+        padding: '4px',
+        borderRadius: 'var(--radius-full)',
+        background: 'var(--bg-default)',
+        boxShadow: '0 2px 10px rgba(54, 54, 54, 0.08)',
+        ...style,
+      }}
+    >
+      {tablist}
     </div>
   )
 }
