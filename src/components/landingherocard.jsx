@@ -524,7 +524,10 @@ export default function HeroCard() {
               style={{
                 alignSelf: 'center',
                 marginBottom: '14px',
-                padding: '3px',
+                // 4, and even on all sides. The control's own pill sits flush
+                // to its edges, so anything less lets the pill nearly touch
+                // the plate and reads as a rendering fault rather than a gap.
+                padding: '4px',
                 borderRadius: 'var(--radius-full)',
                 background: 'var(--bg-default)',
                 boxShadow: '0 2px 10px rgba(54, 54, 54, 0.08)',
@@ -538,6 +541,10 @@ export default function HeroCard() {
                 activeId={mode}
                 onChange={setMode}
                 padX='16px'
+                // No bleed: the control is centred in its own plate here, so
+                // the negative margin has nothing to align to and only pulls
+                // it off-centre.
+                bleed={false}
               />
             </div>
           ) : null}

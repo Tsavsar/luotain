@@ -48,6 +48,10 @@ export default function SegmentedTabs({
   onChange,
   linkAs: LinkAs = 'a',
   padX = '16px',
+  // The negative margin below exists to align the first label with content
+  // above and below it. Inside a centred container there's nothing to align
+  // TO, and it just drags the control off-centre — so it's opt-out.
+  bleed = true,
 }) {
   const itemRefs = useRef(new Map())
   const [pill, setPill] = useState({ left: 0, width: 0 })
