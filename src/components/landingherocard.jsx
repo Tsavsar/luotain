@@ -3,21 +3,22 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { QrCode } from '@/components/qrdesigner'
+import { QR_COLORS, QR_PATTERNS } from '@/lib/qrdesign'
+import { SHORT_DOMAIN } from '@/lib/shortlink'
 
 // ─── Hero card ───
-// A working creator, not a picture of one. Paste a link, get a short URL and a
-// QR code for it, without an account.
+// The real thing, not a picture of it. Paste a link, name it if you want, and
+// get a working short URL — or a QR code you can style and download.
 //
-// The design draws a miniature of the app's form at 4-8px type. That reads as
-// decoration in Figma and as illegible on a screen, so this is the same layout
-// at usable sizes — the point is that someone can actually use it.
+// No account needed. That's the point: the fastest way to show what a product
+// does is to let someone do it.
 const IMAGE = '/assets/websiteimage.png'
 
 function LinkIcon() {
   return (
     <svg
-      width='16'
-      height='16'
+      width='18'
+      height='18'
       viewBox='0 0 20 20'
       fill='none'
       aria-hidden='true'
@@ -47,7 +48,7 @@ function CopyIcon({ done }) {
         <path
           d='M3.5 8.5 6.2 11.2 12.5 4.9'
           stroke='currentColor'
-          strokeWidth='1.5'
+          strokeWidth='1.6'
           strokeLinecap='round'
           strokeLinejoin='round'
         />
@@ -70,6 +71,46 @@ function CopyIcon({ done }) {
           />
         </>
       )}
+    </svg>
+  )
+}
+
+function DownloadIcon() {
+  return (
+    <svg
+      width='14'
+      height='14'
+      viewBox='0 0 16 16'
+      fill='none'
+      aria-hidden='true'
+    >
+      <path
+        d='M8 2.6v7.2M5.2 7.4 8 10.2l2.8-2.8M3 12.4h10'
+        stroke='currentColor'
+        strokeWidth='1.4'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
+function BackIcon() {
+  return (
+    <svg
+      width='14'
+      height='14'
+      viewBox='0 0 16 16'
+      fill='none'
+      aria-hidden='true'
+    >
+      <path
+        d='M12 8H4M7.2 4.4 3.6 8l3.6 3.6'
+        stroke='currentColor'
+        strokeWidth='1.4'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
     </svg>
   )
 }
@@ -99,15 +140,119 @@ function Spinner() {
   )
 }
 
+// ─── Field ───
+// Node 147:769 / 147:770: a 12px medium label, then a 14px input on a soft
+// bordered plate.
+function Field({ label, hint, children }) {
+  return (
+    <label
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        flex: '1 0 0',
+        minWidth: 0,
+      }}
+    >
+      <span
+        style={{
+          display: 'flex',
+          gap: '6px',
+          alignItems: 'center',
+          paddingRight: '4px',
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'var(--font-sans)',
+            fontWeight: 500,
+            fontSize: '12px',
+            lineHeight: '16px',
+            letterSpacing: '0.24px',
+            color: 'var(--text-strong)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {label}
+        </span>
+        {hint ? (
+          <span
+            style={{
+              flex: '1 0 0',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '12px',
+              lineHeight: '16px',
+              letterSpacing: '0.24px',
+              color: 'var(--bg-muted)',
+            }}
+          >
+            {hint}
+          </span>
+        ) : null}
+      </span>
+      {children}
+    </label>
+  )
+}
+
+function Plate({ children, invalid }) {
+  return (
+    <span
+      style={{
+        display: 'flex',
+        gap: '8px',
+        alignItems: 'center',
+        paddingLeft: '14px',
+        paddingRight: '8px',
+        paddingTop: '10px',
+        paddingBottom: '10px',
+        borderRadius: 'var(--radius-lg)',
+        background: 'var(--bg-default)',
+        border: `1px solid ${invalid ? 'var(--error-base)' : 'var(--stroke-soft)'}`,
+        boxShadow: '0 2px 4px rgba(54, 54, 54, 0.04)',
+        overflow: 'hidden',
+        width: '100%',
+        boxSizing: 'border-box',
+        transition: 'border-color 160ms var(--ease-out)',
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
+const INPUT_STYLE = {
+  flex: '1 0 0',
+  minWidth: 0,
+  border: 'none',
+  outline: 'none',
+  background: 'transparent',
+  fontFamily: 'var(--font-sans)',
+  // 16 on the destination so iOS doesn't zoom the page on focus; the design's
+  // 14 is kept on the narrower fields, which are less likely to be tapped
+  // first and where 16 would crowd the placeholder.
+  fontSize: '14px',
+  lineHeight: '20px',
+  letterSpacing: '0.28px',
+  color: 'var(--text-strong)',
+}
+
 export default function HeroCard() {
   const [mode, setMode] = useState('link')
+  const [step, setStep] = useState('form') // form | done | design
   const [destination, setDestination] = useState('')
+  const [slug, setSlug] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [errorField, setErrorField] = useState(null)
   const [copied, setCopied] = useState(false)
-  const timers = useRef([])
 
+  // Design state, only used on the QR path.
+  const [color, setColor] = useState('#000000')
+  const [pattern, setPattern] = useState('square')
+
+  const timers = useRef([])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
   async function handleCreate() {
@@ -115,27 +260,29 @@ export default function HeroCard() {
     const value = destination.trim()
     if (!value) {
       setError('Paste a link first')
+      setErrorField('destination')
       return
     }
 
     setBusy(true)
     setError(null)
+    setErrorField(null)
     try {
       const res = await fetch('/api/public/links', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ destination: value }),
+        body: JSON.stringify({ destination: value, slug: slug.trim() }),
       })
       const d = await res.json().catch(() => null)
 
       if (!res.ok) {
-        // The server's own message, not a generic one. It knows whether the
-        // problem was the URL, the rate limit or a missing PUBLIC_ORG_ID, and
-        // swallowing that leaves someone with nothing to act on.
         setError(d?.error || `Could not create the link (${res.status})`)
+        setErrorField(d?.field || 'destination')
         return
       }
       setResult(d.link)
+      // A QR goes straight to the designer; a plain link is already finished.
+      setStep(mode === 'qr' ? 'design' : 'done')
     } catch (err) {
       console.error('[HeroCard]', err)
       setError('Could not reach the server. Check your connection.')
@@ -151,12 +298,32 @@ export default function HeroCard() {
     timers.current.push(setTimeout(() => setCopied(false), 1600))
   }
 
+  // Serialises the rendered SVG rather than re-drawing it, so the download is
+  // exactly what's on screen — including the colour and pattern just chosen.
+  function handleDownload() {
+    const svg = document.querySelector('[data-hero-qr] svg')
+    if (!svg) return
+    const source = new XMLSerializer().serializeToString(svg)
+    const blob = new Blob([source], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${result?.shortCode || 'luotain'}-qr.svg`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   function reset() {
     setResult(null)
     setDestination('')
-    setCopied(false)
+    setSlug('')
     setError(null)
+    setErrorField(null)
+    setCopied(false)
+    setStep('form')
   }
+
+  const shortUrl = result ? result.shortUrl : null
 
   return (
     <div
@@ -167,13 +334,12 @@ export default function HeroCard() {
         gap: '6px',
         width: '503px',
         maxWidth: '100%',
-        flexShrink: 0,
       }}
     >
       <div
+        className='landing-herowell'
         style={{
           position: 'relative',
-          minHeight: '343px',
           borderRadius: '8px',
           overflow: 'hidden',
           width: '100%',
@@ -181,7 +347,7 @@ export default function HeroCard() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '40px 24px',
+          padding: '32px 24px',
         }}
       >
         <img
@@ -197,239 +363,160 @@ export default function HeroCard() {
           }}
         />
 
-        {/* One row: field and action together.
-            
-            The previous version was a bordered card inside the well with a
-            label above the field and the button below it — three stacked
-            elements and two nested containers for what is one input and one
-            button. */}
         <div
           style={{
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
             gap: '14px',
-            alignItems: 'center',
+            alignItems: 'stretch',
             width: '100%',
-            maxWidth: '400px',
+            maxWidth: '380px',
           }}
         >
-          {result ? (
-            <>
-              {mode === 'qr' ? (
-                <div
-                  style={{
-                    padding: '14px',
-                    borderRadius: '18px',
-                    background: 'var(--bg-default)',
-                    boxShadow: '0 6px 24px rgba(54, 54, 54, 0.10)',
-                    lineHeight: 0,
-                  }}
-                >
-                  {/* The app's own renderer — what someone scans here is what
-                      the product makes, not a lookalike. */}
-                  <QrCode
-                    value={`https://${result.shortUrl}`}
-                    card={128}
-                    margin={10}
-                    color='var(--text-strong)'
-                    markerColor='var(--text-strong)'
-                    pattern='square'
-                    branding={false}
-                  />
-                </div>
-              ) : null}
-
-              {/* The result takes the field's place rather than appearing
-                  under it, so the eye stays where the action happened. */}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '8px',
-                  alignItems: 'center',
-                  padding: '6px 6px 6px 18px',
-                  borderRadius: '48px',
-                  background: 'var(--bg-default)',
-                  boxShadow: '0 4px 20px rgba(54, 54, 54, 0.10)',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <a
-                  href={`https://${result.shortUrl}`}
-                  target='_blank'
-                  rel='noreferrer'
-                  style={{
-                    flex: '1 0 0',
-                    minWidth: 0,
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: '15px',
-                    fontWeight: 500,
-                    lineHeight: '22px',
-                    letterSpacing: '0.3px',
-                    color: 'var(--text-strong)',
-                    textDecoration: 'none',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {result.shortUrl}
-                </a>
+          {/* Short link or QR code. Hidden once there's a result — at that
+              point switching would throw away what was just made. */}
+          {step === 'form' ? (
+            <div
+              style={{
+                display: 'flex',
+                gap: '2px',
+                padding: '3px',
+                borderRadius: '48px',
+                background: 'var(--bg-default)',
+                boxShadow: '0 2px 10px rgba(54, 54, 54, 0.08)',
+                alignSelf: 'center',
+              }}
+            >
+              {[
+                ['link', 'Short link'],
+                ['qr', 'QR code'],
+              ].map(([id, label]) => (
                 <button
+                  key={id}
                   type='button'
-                  onClick={handleCopy}
+                  onClick={() => setMode(id)}
                   className='landing-pill'
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    padding: '9px 16px',
+                    padding: '8px 16px',
                     borderRadius: '48px',
                     border: 'none',
                     cursor: 'pointer',
-                    flexShrink: 0,
-                    background: copied
-                      ? 'var(--success-base)'
-                      : 'var(--text-strong)',
-                    color: 'var(--bg-default)',
+                    background: mode === id ? 'var(--bg-layer)' : 'transparent',
                     fontFamily: 'var(--font-sans)',
                     fontSize: '13px',
-                    lineHeight: '18px',
+                    lineHeight: 1,
                     letterSpacing: '0.26px',
-                    transition: 'background 200ms var(--ease-out)',
+                    color:
+                      mode === id ? 'var(--text-strong)' : 'var(--text-sub)',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  <CopyIcon done={copied} />
-                  {copied ? 'Copied' : 'Copy'}
+                  {label}
                 </button>
-              </div>
+              ))}
+            </div>
+          ) : null}
 
-              <button
-                type='button'
-                onClick={reset}
-                className='landing-pill'
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '13px',
-                  lineHeight: '18px',
-                  letterSpacing: '0.26px',
-                  color: 'var(--text-sub)',
-                }}
-              >
-                Shorten another
-              </button>
-            </>
-          ) : (
-            <>
-              {/* Above the field, because it changes what the button says —
-                  putting it after would mean reading the button, looking up,
-                  then back. */}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '2px',
-                  padding: '3px',
-                  borderRadius: '48px',
-                  background: 'var(--bg-default)',
-                  boxShadow: '0 2px 10px rgba(54, 54, 54, 0.08)',
-                }}
-              >
-                {[
-                  ['link', 'Short link'],
-                  ['qr', 'QR code'],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    type='button'
-                    onClick={() => setMode(id)}
-                    className='landing-pill'
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '48px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      background:
-                        mode === id ? 'var(--bg-layer)' : 'transparent',
-                      fontFamily: 'var(--font-sans)',
-                      fontSize: '13px',
-                      lineHeight: 1,
-                      letterSpacing: '0.26px',
-                      color:
-                        mode === id ? 'var(--text-strong)' : 'var(--text-sub)',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+              padding: '18px',
+              borderRadius: '18px',
+              background: 'var(--bg-default)',
+              boxShadow: '0 6px 24px rgba(54, 54, 54, 0.10)',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            {step === 'form' ? (
+              <>
+                <Field label='Destination'>
+                  <Plate invalid={errorField === 'destination'}>
+                    <span
+                      style={{ display: 'flex', color: 'var(--text-soft)' }}
+                    >
+                      <LinkIcon />
+                    </span>
+                    <input
+                      type='url'
+                      inputMode='url'
+                      autoComplete='off'
+                      placeholder='https://example.com/your-page'
+                      value={destination}
+                      onChange={(e) => {
+                        setDestination(e.target.value)
+                        setError(null)
+                        setErrorField(null)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCreate()
+                      }}
+                      // 16 here specifically: iOS zooms the page when a focused
+                      // input's text is smaller, and this is the first field
+                      // anyone taps.
+                      style={{ ...INPUT_STYLE, fontSize: '16px' }}
+                    />
+                  </Plate>
+                </Field>
 
-              {/* Field and action on one line. No label: a single input with a
-                  placeholder that shows the shape of what goes in needs no
-                  second explanation above it. */}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '8px',
-                  alignItems: 'center',
-                  padding: '6px 6px 6px 16px',
-                  borderRadius: '48px',
-                  background: 'var(--bg-default)',
-                  border: 'none',
-                  boxShadow: error
-                    ? '0 0 0 1.5px var(--error-base), 0 4px 20px rgba(54, 54, 54, 0.10)'
-                    : '0 4px 20px rgba(54, 54, 54, 0.10)',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  transition: 'box-shadow 160ms var(--ease-out)',
-                }}
-              >
-                <span
+                {/* Node 147:770. Domain is fixed on the public form — an
+                    anonymous link can only live on the platform domain — so
+                    it's shown rather than offered, which is honest about what
+                    the choice actually is. */}
+                <div
                   style={{
                     display: 'flex',
-                    color: 'var(--text-soft)',
-                    flexShrink: 0,
+                    gap: '8px',
+                    alignItems: 'flex-start',
                   }}
                 >
-                  <LinkIcon />
-                </span>
-                <input
-                  id='hero-destination'
-                  type='url'
-                  inputMode='url'
-                  autoComplete='off'
-                  aria-label='Link to shorten'
-                  placeholder='Paste a link'
-                  value={destination}
-                  onChange={(e) => {
-                    setDestination(e.target.value)
-                    setError(null)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreate()
-                  }}
-                  style={{
-                    flex: '1 0 0',
-                    minWidth: 0,
-                    border: 'none',
-                    outline: 'none',
-                    background: 'transparent',
-                    fontFamily: 'var(--font-sans)',
-                    // 16 exactly. iOS Safari zooms the page when an input's
-                    // text is smaller, and a zoomed hero on first tap is a
-                    // poor first impression.
-                    fontSize: '16px',
-                    lineHeight: '22px',
-                    letterSpacing: '0.32px',
-                    color: 'var(--text-strong)',
-                  }}
-                />
+                  <div style={{ width: '150px', flexShrink: 0 }}>
+                    <Field label='Domain'>
+                      <Plate>
+                        <span
+                          style={{
+                            flex: '1 0 0',
+                            minWidth: 0,
+                            fontFamily: 'var(--font-sans)',
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            letterSpacing: '0.28px',
+                            color: 'var(--text-strong)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {SHORT_DOMAIN}
+                        </span>
+                      </Plate>
+                    </Field>
+                  </div>
+
+                  <Field label='Slug' hint='(Optional)'>
+                    <Plate invalid={errorField === 'slug'}>
+                      <input
+                        type='text'
+                        autoComplete='off'
+                        placeholder='swift-otter'
+                        value={slug}
+                        onChange={(e) => {
+                          setSlug(e.target.value)
+                          setError(null)
+                          setErrorField(null)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleCreate()
+                        }}
+                        style={INPUT_STYLE}
+                      />
+                    </Plate>
+                  </Field>
+                </div>
+
                 <button
                   type='button'
                   onClick={handleCreate}
@@ -439,50 +526,285 @@ export default function HeroCard() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '7px',
-                    padding: '9px 18px',
+                    gap: '8px',
+                    padding: '11px 20px',
                     borderRadius: '48px',
                     border: 'none',
                     cursor: busy ? 'default' : 'pointer',
-                    flexShrink: 0,
+                    alignSelf: 'flex-start',
                     background: 'var(--text-strong)',
                     color: 'var(--bg-default)',
                     fontFamily: 'var(--font-sans)',
                     fontSize: '13px',
                     lineHeight: '18px',
                     letterSpacing: '0.26px',
-                    whiteSpace: 'nowrap',
                   }}
                 >
                   {busy ? <Spinner /> : null}
-                  {busy ? 'Creating' : mode === 'qr' ? 'Get code' : 'Shorten'}
+                  {busy
+                    ? 'Creating'
+                    : mode === 'qr'
+                      ? 'Design code'
+                      : 'Create link'}
                 </button>
-              </div>
+              </>
+            ) : null}
 
-              {/* Under the field, in the card. A toast would be the obvious
-                  home for this, but the root layout mounts no ToastStack — so
-                  every failure here was invisible. */}
-              {error ? (
-                <p
-                  role='alert'
+            {/* ─── The result ─── */}
+            {step !== 'form' ? (
+              <>
+                {step === 'design' ? (
+                  <div
+                    data-hero-qr
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      paddingBottom: '2px',
+                    }}
+                  >
+                    {/* The app's own renderer, so what's downloaded here is
+                        what the product makes. */}
+                    <QrCode
+                      value={`https://${shortUrl}`}
+                      card={150}
+                      margin={12}
+                      color={color}
+                      markerColor={color}
+                      pattern={pattern}
+                      // No branding on the public version — the logo cut-out
+                      // needs an upload, and an upload needs somewhere to put
+                      // a file and someone to own it.
+                      branding={false}
+                    />
+                  </div>
+                ) : null}
+
+                {step === 'design' ? (
+                  <>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '6px',
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {QR_COLORS.map((c) => (
+                        <button
+                          key={c.id}
+                          type='button'
+                          onClick={() => setColor(c.hex)}
+                          aria-label={c.id}
+                          className='hero-swatch'
+                          style={{
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: 'var(--radius-full)',
+                            border: 'none',
+                            cursor: 'pointer',
+                            background: c.hex,
+                            // The ring marks the choice without moving
+                            // anything — an outline would shift the row.
+                            boxShadow:
+                              color === c.hex
+                                ? '0 0 0 2px var(--bg-default), 0 0 0 3.5px var(--text-strong)'
+                                : 'none',
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '6px',
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {QR_PATTERNS.map((pt) => (
+                        <button
+                          key={pt.id}
+                          type='button'
+                          onClick={() => setPattern(pt.id)}
+                          className='hero-pattern'
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '48px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            background:
+                              pattern === pt.id
+                                ? 'var(--bg-weak)'
+                                : 'var(--bg-surface)',
+                            color:
+                              pattern === pt.id
+                                ? 'var(--text-inverse)'
+                                : 'var(--text-sub)',
+                            fontFamily: 'var(--font-sans)',
+                            fontSize: '12px',
+                            lineHeight: '16px',
+                            letterSpacing: '0.24px',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {pt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : null}
+
+                <div
                   style={{
-                    margin: 0,
-                    padding: '8px 14px',
-                    borderRadius: '48px',
-                    background: 'var(--bg-default)',
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: '13px',
-                    lineHeight: '18px',
-                    letterSpacing: '0.26px',
-                    color: 'var(--error-base)',
-                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
                   }}
                 >
-                  {error}
-                </p>
-              ) : null}
-            </>
-          )}
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: '11px',
+                      lineHeight: 1,
+                      letterSpacing: '0.22px',
+                      color: 'var(--text-soft)',
+                    }}
+                  >
+                    Your short link
+                  </span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '8px',
+                      alignItems: 'center',
+                      padding: '8px 8px 8px 14px',
+                      borderRadius: 'var(--radius-lg)',
+                      background: 'var(--bg-layer)',
+                    }}
+                  >
+                    <a
+                      href={`https://${shortUrl}`}
+                      target='_blank'
+                      rel='noreferrer'
+                      style={{
+                        flex: '1 0 0',
+                        minWidth: 0,
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        lineHeight: '20px',
+                        letterSpacing: '0.28px',
+                        color: 'var(--text-strong)',
+                        textDecoration: 'none',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {shortUrl}
+                    </a>
+                    <button
+                      type='button'
+                      onClick={handleCopy}
+                      className='landing-pill'
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '7px 14px',
+                        borderRadius: '48px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        background: copied
+                          ? 'var(--success-base)'
+                          : 'var(--text-strong)',
+                        color: 'var(--bg-default)',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '12px',
+                        lineHeight: '16px',
+                        letterSpacing: '0.24px',
+                        transition: 'background 200ms var(--ease-out)',
+                      }}
+                    >
+                      <CopyIcon done={copied} />
+                      {copied ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  style={{ display: 'flex', gap: '14px', alignItems: 'center' }}
+                >
+                  <button
+                    type='button'
+                    onClick={reset}
+                    className='landing-pill'
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: '12px',
+                      lineHeight: '16px',
+                      letterSpacing: '0.24px',
+                      color: 'var(--text-sub)',
+                    }}
+                  >
+                    <BackIcon />
+                    Make another
+                  </button>
+
+                  {step === 'design' ? (
+                    <button
+                      type='button'
+                      onClick={handleDownload}
+                      className='landing-pill'
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '12px',
+                        lineHeight: '16px',
+                        letterSpacing: '0.24px',
+                        color: 'var(--text-sub)',
+                      }}
+                    >
+                      <DownloadIcon />
+                      Download SVG
+                    </button>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
+
+            {error ? (
+              <p
+                role='alert'
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '12px',
+                  lineHeight: '16px',
+                  letterSpacing: '0.24px',
+                  color: 'var(--error-base)',
+                }}
+              >
+                {error}
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
 

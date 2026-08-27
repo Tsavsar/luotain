@@ -52,6 +52,32 @@ function rateLimited(ip) {
 
 // Adjective + noun, matching the app's own generated slugs so a public link
 // looks like any other.
+const SLUG = /^[a-zA-Z0-9._-]+$/
+
+// Paths the app itself owns, plus the obvious impersonation targets. This list
+// matters more on an anonymous form than in the app: there's no account to
+// trace a bad slug back to.
+const RESERVED = new Set([
+  'api',
+  'dashboard',
+  'login',
+  'logout',
+  'get-started',
+  'onboarding',
+  'invite',
+  'new-org',
+  'verification-code',
+  'terms',
+  'privacy',
+  'admin',
+  'support',
+  'help',
+  'billing',
+  'account',
+  'settings',
+  'security',
+])
+
 const ADJECTIVES = [
   'swift',
   'calm',
@@ -110,6 +136,13 @@ export async function POST(request) {
   } catch {
     return Response.json({ error: 'Invalid request body' }, { status: 400 })
   }
+
+  // A requested slug, optional. Anonymous links can name themselves, which is
+  // what the form offers — but the reserved list below matters more here than
+  // in the app, since there's no account behind the request.
+  const requestedSlug = String(body?.slug || '')
+    .trim()
+    .toLowerCase()
 
   const raw = String(body?.destination || '').trim()
   if (!raw) {
@@ -197,13 +230,56 @@ export async function POST(request) {
       )
     }
 
+    // A requested slug is checked once and refused if taken — no silent
+    // fallback to a generated one. Someone who typed a name and got a random
+    // word instead would reasonably think the form ignored them.
+    if (requestedSlug) {
+      if (!SLUG.test(requestedSlug)) {
+        return Response.json(
+          {
+            error: 'Use letters, numbers, dots, dashes or underscores',
+            field: 'slug',
+          },
+          { status: 400 }
+        )
+      }
+      if (RESERVED.has(requestedSlug)) {
+        return Response.json(
+          { error: 'That one is reserved', field: 'slug' },
+          { status: 400 }
+        )
+      }
+      const domainRow = await prisma.domain.findFirst({
+        where: { hostname: SHORT_DOMAIN },
+        select: { id: true },
+      })
+      const taken = domainRow
+        ? await prisma.link.findUnique({
+            where: {
+              domainId_shortCode: {
+                domainId: domainRow.id,
+                shortCode: requestedSlug,
+              },
+            },
+            select: { id: true },
+          })
+        : null
+      if (taken) {
+        return Response.json(
+          { error: 'That link is already taken', field: 'slug' },
+          { status: 409 }
+        )
+      }
+    }
+
     // A few attempts, then give up rather than loop. Collisions are rare at
     // 100 combinations × a random suffix, and an unbounded retry on a
     // saturated namespace would hang the request.
     let link = null
     for (let attempt = 0; attempt < 6 && !link; attempt++) {
-      const shortCode =
-        attempt < 3
+      const shortCode = requestedSlug
+        ? requestedSlug
+        : attempt < 3
           ? candidate()
           : `${candidate()}-${crypto.randomBytes(2).toString('hex')}`
       const taken = await prisma.link.findUnique({

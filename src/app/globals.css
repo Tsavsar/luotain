@@ -2299,8 +2299,6 @@ html {
   transform: scale(0.97);
 }
 
-
-
 /* --- Invite composer ---
    Drops in rather than appearing. The button it replaces sits in the same
    place, so without a transition the swap reads as a glitch. */
@@ -2364,8 +2362,6 @@ html {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
-
-
 /* --- Plan icon blooms ---
    A slow breath on the orange growth.
    
@@ -2402,7 +2398,9 @@ html {
 /* --- Domains ---
    The re-check button, on the same plate as the status tag beside it. */
 .domain-recheck {
-  transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
+  transition:
+    color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
 }
 .domain-recheck:hover:not(:disabled) {
   color: var(--text-strong) !important;
@@ -2513,7 +2511,6 @@ html {
   gap: 8px;
   align-items: flex-start;
 }
-
 
 .landing-nav-link {
   transition: opacity var(--duration-fast) ease;
@@ -2953,7 +2950,7 @@ html {
 }
 @media (max-width: 1000px) {
   .landing-montage {
-    transform: scale(1.70);
+    transform: scale(1.7);
   }
 }
 @media (max-width: 900px) {
@@ -2968,7 +2965,7 @@ html {
 }
 @media (max-width: 700px) {
   .landing-montage {
-    transform: scale(1.20);
+    transform: scale(1.2);
   }
 }
 @media (max-width: 600px) {
@@ -2984,6 +2981,47 @@ html {
 @media (max-width: 400px) {
   .landing-montage {
     transform: scale(0.68);
+  }
+}
+
+/* --- Hero card ---
+   A minimum, not a fixed height. The card now holds a real form and, on the QR
+   path, a code plus two rows of controls — so it has to grow. A fixed 343
+   clipped the designer entirely. */
+.landing-herowell {
+  min-height: 420px;
+}
+
+@media (max-width: 1100px) {
+  /* Taller once it's full width, so the form isn't a narrow strip in a wide
+     box. */
+  .landing-herowell {
+    min-height: 460px;
+  }
+}
+
+@media (max-width: 560px) {
+  .landing-herowell {
+    min-height: 0;
+    padding: 24px 16px !important;
+  }
+}
+
+.hero-swatch,
+.hero-pattern {
+  transition:
+    box-shadow var(--duration-fast) ease,
+    transform var(--duration-press) ease-out;
+}
+.hero-swatch:active,
+.hero-pattern:active {
+  transform: scale(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-swatch:active,
+  .hero-pattern:active {
+    transform: none;
   }
 }
 
