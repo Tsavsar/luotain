@@ -7,6 +7,7 @@ import { QR_COLORS, QR_PATTERNS } from '@/lib/qrdesign'
 import { SHORT_DOMAIN } from '@/lib/shortlink'
 import Inputfield from '@/components/input'
 import Alert from '@/components/alert'
+import SegmentedTabs from '@/components/segmentedtabs'
 
 // ─── Hero card ───
 // The real thing, not a picture of it. Paste a link, name it if you want, and
@@ -525,48 +526,23 @@ export default function HeroCard() {
             maxWidth: '380px',
           }}
         >
-          {/* Short link or QR code. Hidden once there's a result — at that
-              point switching would throw away what was just made. */}
+          {/* The app's own SegmentedTabs — the same control the create page
+              uses, with its sliding pill and measured transitions. I'd built a
+              pair of pills by hand, which looked close and behaved differently.
+
+              Hidden once there's a result: switching then would throw away
+              what was just made. */}
           {step === 'form' ? (
-            <div
-              style={{
-                display: 'flex',
-                gap: '2px',
-                padding: '3px',
-                borderRadius: '48px',
-                background: 'var(--bg-default)',
-                boxShadow: '0 2px 10px rgba(54, 54, 54, 0.08)',
-                alignSelf: 'center',
-                marginBottom: '14px',
-              }}
-            >
-              {[
-                ['link', 'Short link'],
-                ['qr', 'QR code'],
-              ].map(([id, label]) => (
-                <button
-                  key={id}
-                  type='button'
-                  onClick={() => setMode(id)}
-                  className='landing-pill'
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '48px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: mode === id ? 'var(--bg-layer)' : 'transparent',
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: '13px',
-                    lineHeight: 1,
-                    letterSpacing: '0.26px',
-                    color:
-                      mode === id ? 'var(--text-strong)' : 'var(--text-sub)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
+            <div style={{ alignSelf: 'center', marginBottom: '14px' }}>
+              <SegmentedTabs
+                items={[
+                  { id: 'link', label: 'Short link' },
+                  { id: 'qr', label: 'QR code' },
+                ]}
+                activeId={mode}
+                onChange={setMode}
+                padX='16px'
+              />
             </div>
           ) : null}
 
@@ -875,24 +851,30 @@ export default function HeroCard() {
                     width: '100%',
                   }}
                 >
+                  {/* The app's established secondary: bg-surface plate,
+                      radius-full, text-sub. It was a bare text link, which is
+                      a third button style the product doesn't have. */}
                   <button
                     type='button'
                     onClick={reset}
-                    className='landing-pill'
+                    className='create-secondary'
                     style={{
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '6px',
-                      background: 'none',
+                      padding: '8px 18px',
+                      borderRadius: 'var(--radius-full)',
                       border: 'none',
-                      padding: 0,
                       cursor: 'pointer',
                       flexShrink: 0,
+                      background: 'var(--bg-surface)',
                       fontFamily: 'var(--font-sans)',
                       fontSize: '12px',
                       lineHeight: '16px',
                       letterSpacing: '0.24px',
                       color: 'var(--text-sub)',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     <BackIcon />
@@ -905,14 +887,14 @@ export default function HeroCard() {
                     <button
                       type='button'
                       onClick={() => setStep('design')}
-                      className='landing-pill'
+                      className='create-secondary'
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '7px',
-                        padding: '9px 16px',
-                        borderRadius: '48px',
+                        gap: '6px',
+                        padding: '8px 18px',
+                        borderRadius: 'var(--radius-full)',
                         border: 'none',
                         cursor: 'pointer',
                         flexShrink: 0,
@@ -932,14 +914,14 @@ export default function HeroCard() {
                     <button
                       type='button'
                       onClick={handleDownload}
-                      className='landing-pill'
+                      className='create-secondary'
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '7px',
-                        padding: '9px 16px',
-                        borderRadius: '48px',
+                        gap: '6px',
+                        padding: '8px 18px',
+                        borderRadius: 'var(--radius-full)',
                         border: 'none',
                         cursor: 'pointer',
                         flexShrink: 0,
