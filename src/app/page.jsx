@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import LogoWordmark from '@/components/logowordmark'
 import NavAccount from '@/components/landingaccount'
 import CookieBanner from '@/components/cookiebanner'
+import LogoMenu from '@/components/logomenu'
 import Reveal from '@/components/reveal'
 import PlanPicker from '@/components/planpicker'
 import HeroCard from '@/components/landingherocard'
@@ -109,9 +110,13 @@ function Nav() {
         {/* Sized by CSS so the mobile rule doesn't have to fight a prop. */}
         {/* The real wordmark — mark and name in one SVG, so the spacing
             between them is the designed spacing rather than a gap I picked. */}
-        <Link href='/' className='landing-logo' aria-label='Luotain, home'>
-          <LogoWordmark height={19} />
-        </Link>
+        {/* Right-click downloads the mark. Left-click still goes home — the
+            two gestures don't collide, so the link keeps working. */}
+        <LogoMenu>
+          <Link href='/' className='landing-logo' aria-label='Luotain, home'>
+            <LogoWordmark height={19} />
+          </Link>
+        </LogoMenu>
 
         <span
           aria-hidden='true'
@@ -554,7 +559,9 @@ function Footer() {
       {/* The design has a wordmark here too — wider than tall — which is why
           a square LogoMark never quite fit. Smaller than the nav's, since a
           footer mark is a sign-off rather than a heading. */}
-      <LogoWordmark height={16} className='landing-footermark' />
+      <LogoMenu>
+        <LogoWordmark height={16} className='landing-footermark' />
+      </LogoMenu>
     </footer>
   )
 }

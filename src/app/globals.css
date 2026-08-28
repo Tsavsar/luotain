@@ -2299,6 +2299,8 @@ html {
   transform: scale(0.97);
 }
 
+
+
 /* --- Invite composer ---
    Drops in rather than appearing. The button it replaces sits in the same
    place, so without a transition the swap reads as a glitch. */
@@ -2362,6 +2364,8 @@ html {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
+
+
 /* --- Plan icon blooms ---
    A slow breath on the orange growth.
    
@@ -2398,9 +2402,7 @@ html {
 /* --- Domains ---
    The re-check button, on the same plate as the status tag beside it. */
 .domain-recheck {
-  transition:
-    color var(--duration-fast) ease,
-    background var(--duration-fast) ease;
+  transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
 }
 .domain-recheck:hover:not(:disabled) {
   color: var(--text-strong) !important;
@@ -2543,6 +2545,7 @@ html {
   gap: 8px;
   align-items: flex-start;
 }
+
 
 .landing-nav-link {
   transition: opacity var(--duration-fast) ease;
@@ -2998,7 +3001,7 @@ html {
 }
 @media (max-width: 1000px) {
   .landing-montage {
-    transform: scale(1.7);
+    transform: scale(1.70);
   }
 }
 @media (max-width: 900px) {
@@ -3013,7 +3016,7 @@ html {
 }
 @media (max-width: 700px) {
   .landing-montage {
-    transform: scale(1.2);
+    transform: scale(1.20);
   }
 }
 @media (max-width: 600px) {
@@ -3065,6 +3068,62 @@ html {
     padding-right: 16px;
     padding-bottom: 24px;
     padding-left: 16px;
+  }
+}
+
+/* --- Logo context menu ---
+   Positioned at the cursor, so `fixed` rather than absolute — the coordinates
+   come from a click event and those are viewport-relative. */
+.logo-menu {
+  position: fixed;
+  z-index: 90;
+  min-width: 170px;
+  padding: 6px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-default);
+  border: 1px solid var(--stroke-soft);
+  box-shadow: 0 12px 32px rgba(23, 23, 23, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: logoMenuIn 140ms var(--ease-out);
+}
+
+.logo-menu button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0.26px;
+  color: var(--text-strong);
+  transition: background var(--duration-fast) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .logo-menu button:hover {
+    background: var(--bg-surface);
+  }
+}
+
+@keyframes logoMenuIn {
+  from {
+    opacity: 0;
+    /* From the corner it was opened at, which is the cursor. */
+    transform: scale(0.96) translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-menu {
+    animation: none;
   }
 }
 
