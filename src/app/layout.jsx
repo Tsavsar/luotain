@@ -28,23 +28,36 @@ export const viewport = {
 // 'system' is stored as the literal string and clears the attribute, which lets
 // the CSS fall through to prefers-color-scheme — a missing key can't be told
 // apart from a first visit, which is why it isn't stored as an absence.
+// Runs before first paint, so the page never renders in one theme and swaps.
+//
+// The important part is the fallback: no stored choice means LIGHT, not the
+// system preference. Following the OS by default threw anyone with a dark
+// system into a theme they never picked on a first visit.
+//
+// "system" is now an explicit choice like the other two, and it's the only
+// value the prefers-color-scheme query in globals.css responds to.
 const THEME_SCRIPT = `
 (function () {
   try {
     var t = localStorage.getItem('theme');
-    if (t === 'light' || t === 'dark') {
+    if (t === 'light' || t === 'dark' || t === 'system') {
       document.documentElement.setAttribute('data-theme', t);
     } else {
-      document.documentElement.removeAttribute('data-theme');
+      document.documentElement.setAttribute('data-theme', 'light');
     }
-  } catch (e) {}
+  } catch (e) {
+    // Private browsing throws on localStorage. Light rather than nothing —
+    // an unset attribute is the same as light now, but being explicit means
+    // this can't drift if that ever changes.
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
 })();
 `
 
 export default function RootLayout({ children }) {
   return (
-    // No data-theme here. With one hardcoded, the script below would have to
-    // fight it, and 'system' could never fall through to the media query.
+    // data-theme is set by the script below rather than here — hardcoding it
+    // would mean the script has to fight the server-rendered value.
     <html lang='en'>
       <head>
         <meta

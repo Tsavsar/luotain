@@ -164,8 +164,19 @@
 }
 
 /* ─── Dark mode (follows OS setting) ─────────────── */
+/* ─── System dark ───
+   Only when the person has explicitly CHOSEN to follow their system, which is
+   what data-theme="system" marks. Without that qualifier this fired for
+   everyone whose OS is dark, so a first visit landed in a theme nobody picked.
+   
+   Light is the default now: no attribute, or any value other than "system",
+   means the light tokens above stand. */
+[data-theme='system'] {
+  color-scheme: light dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  [data-theme='system'] {
     --scrim: rgba(10, 10, 10, 0.72);
     --bg-default: #171717;
     --bg-surface: #1c1c1c;

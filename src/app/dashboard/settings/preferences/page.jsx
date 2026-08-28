@@ -7,7 +7,10 @@ import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
 import Inputfield from '@/components/input'
 import { toast } from '@/components/toast'
 import SaveBar from '@/components/savebar'
-import { useUnsavedChanges, UnsavedBanner } from '@/components/unsavedchanges'
+import {
+  useUnsavedChanges,
+  UnsavedBanner,
+} from '@/components/unsavedchanges'
 import {
   DEFAULT_PREFERENCES,
   COMMON_TIMEZONES,
@@ -154,7 +157,14 @@ export default function PreferencesPage() {
       // selected after every reload — System was stored as a MISSING key, so it
       // was indistinguishable from a first visit. It's stored explicitly now.
       const saved = localStorage.getItem('theme')
-      setTheme(saved === 'light' || saved === 'dark' ? saved : 'system')
+      // Light when nothing is stored. Someone who has never opened this page
+      // hasn't chosen to follow their system, and defaulting to System put
+      // anyone with a dark OS into a theme they didn't pick.
+      setTheme(
+        saved === 'light' || saved === 'dark' || saved === 'system'
+          ? saved
+          : 'light'
+      )
     } catch {}
 
     let cancelled = false
@@ -185,17 +195,12 @@ export default function PreferencesPage() {
   function applyTheme(next) {
     setTheme(next)
     try {
-      if (next === 'system') {
-        // The attribute is removed so the CSS falls through to
-        // prefers-color-scheme — but the CHOICE is still written down, so the
-        // picker can show it as selected next time. Removing the key instead
-        // lost the distinction between "chose system" and "never chose".
-        document.documentElement.removeAttribute('data-theme')
-        localStorage.setItem('theme', 'system')
-      } else {
+        // 'system' is an attribute VALUE now, not the absence of one. The
+        // prefers-color-scheme rule in globals.css matches
+        // [data-theme='system'] specifically — removing the attribute would
+        // now fall through to light, which is the new default.
         document.documentElement.setAttribute('data-theme', next)
         localStorage.setItem('theme', next)
-      }
     } catch {}
   }
 
