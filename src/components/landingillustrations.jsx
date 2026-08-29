@@ -1,429 +1,426 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import CountryFlag from '@/components/countryflag'
-import SourceIcon from '@/components/sourceicon'
 import { QrCode } from '@/components/qrdesigner'
 
 // ─── Feature illustrations ───
-// Node 613:1223 and its siblings.
 //
-// Each one is a real surface from the app, floating on the card's well: the
-// same rows, the same plates, the same type. That's deliberate — an
-// illustration that invents its own visual language is a drawing OF the
-// product rather than the product, and it dates the moment either changes.
+// The grammar, taken from the Mintlify reference: a panel of SKELETON rows —
+// grey blocks, not text — with exactly ONE real, accented detail that names
+// the feature. The eye reads structure at a glance and lands on the one thing
+// that matters.
 //
-// They're built from the app's own components where one exists (CountryFlag,
-// SourceIcon, QrCode) and from the app's tokens where one doesn't.
+// The previous version rendered everything literally, which meant the
+// illustration competed with the copy beneath it instead of supporting it.
+// Nothing here is meant to be read closely.
 
-// The floating white card every illustration sits on.
-//
-// Centred and 240 wide rather than 328 inset from the left. A stacked deck
-// only reads as a deck if it's surrounded by space on both sides — pinned to
-// one edge, the cards behind look like a rendering fault rather than depth.
-//
-// It sits high in the well because the stack grows DOWNWARD: the cards behind
-// need room beneath the front one.
-function Sheet({ label, children }) {
+// ─── Primitives ───
+
+// A skeleton line. Width is a percentage so a row reads as proportional
+// content rather than a fixed-size bar.
+function Bar({ w = 60, h = 6, tone = 'layer' }) {
   return (
-    // Its own centring wrapper, so a Sheet used on its own — the QR and
-    // Sources cards are — sits correctly without depending on a parent that
-    // only the cycling stack provides.
-    <div
+    <span
       style={{
-        position: 'absolute',
-        inset: 0,
-        display: 'flex',
+        display: 'block',
+        width: `${w}%`,
+        height: `${h}px`,
+        borderRadius: '3px',
+        background:
+          tone === 'accent' ? 'var(--primary-base)' : 'var(--bg-layer)',
+        opacity: tone === 'accent' ? 0.9 : 1,
+      }}
+    />
+  )
+}
+
+function Dot({ tone = 'layer', size = 14 }) {
+  return (
+    <span
+      style={{
+        display: 'block',
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: 'var(--radius-full)',
+        background:
+          tone === 'accent' ? 'var(--primary-base)' : 'var(--bg-layer)',
+        flexShrink: 0,
+      }}
+    />
+  )
+}
+
+// The one literal element per illustration. Small, in the brand orange, on a
+// tinted plate — it should read as a tag on a diagram, not as UI copy.
+function Marker({ children }) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        gap: '5px',
+        padding: '3px 7px',
+        borderRadius: '5px',
+        background: 'var(--primary-base)',
+        color: 'var(--bg-default)',
+        fontFamily: 'var(--font-sans)',
+        fontWeight: 500,
+        fontSize: '9px',
+        lineHeight: '12px',
+        letterSpacing: '0.18px',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
       }}
     >
-      <div
-        style={{
-          width: '240px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '5px',
-          padding: '10px',
-          borderRadius: '12px',
-          background: 'var(--bg-default)',
-          // Separates the cards from each other, not just from the well — with
-          // three overlapping, the edge between them is the only thing telling
-          // you there's more than one.
-          // Eased right back. Three of these overlap, and each one's shadow
-          // falls on the card below — at 0.08 the stack picked up a grey cast
-          // that made the whole illustration look dirty.
-          boxShadow: '0 2px 8px rgba(23, 23, 23, 0.04)',
-          boxSizing: 'border-box',
-        }}
-      >
-        {/* Says which card you're looking at. Without it the deck is three
-          near-identical lists and the point — one surface, three questions —
-          doesn't land. */}
-        {label ? (
-          <span
-            style={{
-              paddingLeft: '2px',
-              paddingBottom: '2px',
-              fontFamily: 'var(--font-sans)',
-              fontWeight: 500,
-              fontSize: '11px',
-              lineHeight: '14px',
-              letterSpacing: '0.22px',
-              color: 'var(--text-soft)',
-            }}
-          >
-            {label}
-          </span>
-        ) : null}
-        {children}
-      </div>
+      {children}
+    </span>
+  )
+}
+
+// A skeleton row on the panel. `active` gives it the outlined treatment the
+// reference uses for the one row being pointed at.
+function Row({ children, active, gap = 8 }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: `${gap}px`,
+        padding: '8px 10px',
+        borderRadius: '8px',
+        background: active ? 'var(--bg-default)' : 'transparent',
+        // The ring rather than a border, so an active row is the same height
+        // as an inactive one and the list doesn't shift.
+        boxShadow: active ? '0 0 0 1.5px var(--primary-base)' : 'none',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}
+    >
+      {children}
     </div>
   )
 }
 
-// A measured row: an icon, a label on a bar sized to its value, and the count.
-// The app's DataRow draws exactly this.
-function Row({ icon, label, value, max }) {
-  // Proportional from a floor, so a value of 1 is still a visible bar rather
-  // than a sliver.
-  //
-  // The range is wider than it was — 46 to 196 across a narrower card, where
-  // it used to be 41 to 273 across a wide one. A bigger spread over less width
-  // is what makes the difference between 15 and 11 legible at a glance rather
-  // than a subtle nudge.
-  const MIN = 46
-  const FULL = 196
-  const width = MIN + (value / max) * (FULL - MIN)
-
+// The floating panel. Wider than the well and pulled left, so it crops on the
+// right — the reference's panels all run off their cards, which is what makes
+// them read as a window rather than a diagram.
+function Panel({ children, width = 260, top = '50%' }) {
   return (
     <div
       style={{
+        position: 'absolute',
+        top,
+        left: '16px',
+        transform: top === '50%' ? 'translateY(-50%)' : 'none',
+        width: `${width}px`,
         display: 'flex',
-        alignItems: 'center',
-        // No space-between: the count sits just past the end of its own bar
-        // rather than in a fixed right-hand column. Pinned right it read as a
-        // table of figures; trailing the bar, it reads as that bar's value.
-        gap: '8px',
-        width: '100%',
+        flexDirection: 'column',
+        gap: '4px',
+        padding: '10px',
+        borderRadius: '12px',
+        background: 'var(--bg-default)',
+        boxShadow: '0 2px 10px rgba(23, 23, 23, 0.05)',
+        boxSizing: 'border-box',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          gap: '8px',
-          alignItems: 'center',
-          paddingLeft: '8px',
-          paddingRight: '8px',
-          paddingTop: '5px',
-          paddingBottom: '5px',
-          borderRadius: '8px',
-          background: 'var(--bg-layer)',
-          width: `${Math.round(width)}px`,
-          flexShrink: 0,
-          // The bar is the measurement, so a long label must not stretch it.
-          overflow: 'hidden',
-        }}
-      >
-        {icon ? (
-          <span
-            style={{
-              display: 'flex',
-              flexShrink: 0,
-              width: '16px',
-              height: '16px',
-            }}
-          >
-            {icon}
-          </span>
-        ) : null}
-        <span
-          style={{
-            fontFamily: 'var(--font-sans)',
-            // 12, down from 14 — the sheet is 240 rather than 328, and the
-            // type has to come with it or the bars become all label.
-            fontSize: '12px',
-            lineHeight: '16px',
-            letterSpacing: '0.24px',
-            color: 'var(--text-strong)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {label}
-        </span>
-      </div>
-
-      <span
-        style={{
-          fontFamily: 'var(--font-sans)',
-          fontWeight: 500,
-          fontSize: '12px',
-          lineHeight: '16px',
-          letterSpacing: '0.24px',
-          // Softer than the label. The bar length already carries the
-          // comparison, so the figure is a confirmation rather than the
-          // headline.
-          color: 'var(--text-sub)',
-          flexShrink: 0,
-        }}
-      >
-        {value}
-      </span>
+      {children}
     </div>
   )
 }
 
 // ─── Clicks with context ───
-// Node 613:1223, verbatim: four countries, flags from the app's own component.
+// A ranked list, one row surfaced with a real flag and a real number.
 export function GeographyIllustration() {
-  const rows = [
-    ['Norway', 248],
-    ['United States', 96],
-    ['United Kingdom', 41],
-    ['Singapore', 12],
-  ]
   return (
-    <Sheet label='Geography'>
-      {rows.map(([label, value]) => (
-        <Row
-          key={label}
-          label={label}
-          value={value}
-          max={248}
-          icon={<CountryFlag country={label} size={18} />}
-        />
-      ))}
-    </Sheet>
-  )
-}
-
-// ─── Campaigns and social ───
-// The same rows, measuring referrers instead — which is the point being made:
-// one surface answers both questions.
-export function SourcesIllustration() {
-  const rows = [
-    ['t.co', 173],
-    ['i.instagram.com', 88],
-    ['linkedin.com', 34],
-    ['direct', 7],
-  ]
-  return (
-    <Sheet label='Sources'>
-      {rows.map(([label, value]) => (
-        <Row
-          key={label}
-          label={label}
-          value={value}
-          max={173}
-          icon={<SourceIcon domain={label} />}
-        />
-      ))}
-    </Sheet>
-  )
-}
-
-// ─── Devices ───
-// No icon column: the app's Devices card doesn't draw one either, because a
-// generic phone glyph next to the word "Mobile" says nothing the word didn't.
-export function DevicesIllustration() {
-  const rows = [
-    // Mobile leads, which is what a QR-heavy product would actually see —
-    // desktop first would be the giveaway that these numbers are made up.
-    ['Mobile', 204],
-    ['Desktop', 121],
-    ['Tablet', 29],
-    ['Smart TV', 4],
-  ]
-  return (
-    <Sheet label='Devices'>
-      {rows.map(([label, value]) => (
-        <Row key={label} label={label} value={value} max={204} />
-      ))}
-    </Sheet>
+    <Panel>
+      <Row>
+        <Dot />
+        <Bar w={44} />
+      </Row>
+      <Row active>
+        <CountryFlag country='Norway' size={14} />
+        <Bar w={38} />
+        <span style={{ flex: '1 0 0' }} />
+        <Marker>248</Marker>
+      </Row>
+      <Row>
+        <Dot />
+        <Bar w={52} />
+      </Row>
+      <Row>
+        <Dot />
+        <Bar w={30} />
+      </Row>
+    </Panel>
   )
 }
 
 // ─── A QR code with every link ───
-// The real renderer, on the same white sheet. A drawn stand-in would be a
-// picture of a QR code that doesn't scan, which on a page selling QR codes is
-// the wrong thing to show.
+// The real renderer beside a skeleton control column, one swatch lit.
 export function QrIllustration() {
-  const SWATCHES = ['#171717', '#fa7319', '#2563eb', '#16a34a', '#db2777']
   return (
-    <Sheet top={30} left={40}>
+    <Panel width={250}>
       <div
         style={{
           display: 'flex',
-          gap: '16px',
+          gap: '14px',
           alignItems: 'center',
-          padding: '8px 4px',
+          padding: '4px 2px',
         }}
       >
         <QrCode
           value='https://luot.link/k3mq7t'
-          card={104}
-          margin={9}
+          card={86}
+          margin={7}
           color='#171717'
           markerColor='#fa7319'
           pattern='rounded'
           branding={false}
         />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <span
-            style={{
-              fontFamily: 'var(--font-sans)',
-              fontSize: '12px',
-              lineHeight: 1,
-              letterSpacing: '0.24px',
-              color: 'var(--text-soft)',
-            }}
-          >
-            Marker color
-          </span>
-          <div style={{ display: 'flex', gap: '7px' }}>
-            {SWATCHES.map((hex, i) => (
-              <span
-                key={hex}
-                style={{
-                  width: '22px',
-                  height: '22px',
-                  borderRadius: 'var(--radius-full)',
-                  background: hex,
-                  // The second is ringed, matching the marker colour on the
-                  // code beside it — the illustration shows a state, not a
-                  // palette floating free of anything.
-                  boxShadow:
-                    i === 1
-                      ? '0 0 0 2px var(--bg-default), 0 0 0 3.5px var(--text-strong)'
-                      : 'none',
-                }}
-              />
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            flex: '1 0 0',
+          }}
+        >
+          <Bar w={54} h={5} />
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {[0, 1, 2, 3].map((i) => (
+              <Dot key={i} size={13} tone={i === 1 ? 'accent' : 'layer'} />
             ))}
           </div>
+          <Bar w={38} h={5} />
+          <Bar w={68} h={5} />
         </div>
       </div>
-    </Sheet>
+    </Panel>
   )
 }
 
-// ─── Cycling stack ───
-// Three sheets stacked with depth. Every few seconds the front one drops to
-// the back and the next comes forward, so the card shows geography, then
-// sources, then devices, then round again.
-//
-// A card that loops forever is the point — it says "this is one surface
-// answering three questions" better than three static cards would.
-// 2000, down from 2600. At the slower pace the card sat still long enough to
-// read as static between turns; this keeps it visibly in motion without
-// rushing the transition itself.
-const CYCLE_MS = 2000
-
-export function CyclingStack({ items }) {
-  const [front, setFront] = useState(0)
-  const [visible, setVisible] = useState(false)
-  const wrapRef = useRef(null)
-
-  // Only runs while it's on screen. A timer looping in a card nobody is
-  // looking at costs battery and, on a page with several of these, a
-  // measurable amount of it.
-  useEffect(() => {
-    const el = wrapRef.current
-    if (!el) return
-    const io = new IntersectionObserver(
-      ([entry]) => setVisible(entry.isIntersecting),
-      { threshold: 0.35 }
-    )
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
-
-  useEffect(() => {
-    if (!visible) return
-    // Respects the OS setting: a card that cycles on its own is exactly the
-    // kind of unprompted motion reduced-motion exists to stop. It settles on
-    // the first item and stays there.
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-    if (reduced?.matches) return
-
-    const id = setInterval(() => {
-      setFront((f) => (f + 1) % items.length)
-    }, CYCLE_MS)
-    return () => clearInterval(id)
-  }, [visible, items.length])
-
+// ─── Control where it goes ───
+// One row's destination replaced, the marker naming the change.
+export function DestinationIllustration() {
   return (
-    <div
-      ref={wrapRef}
-      style={{
-        position: 'absolute',
-        inset: 0,
-        // Padded by the stack's own depth, so centring accounts for the cards
-        // BEHIND the front one. Without it the front card centres and the
-        // stack as a whole sits low.
-        paddingBottom: `${(items.length - 1) * 26}px`,
-      }}
-    >
-      {items.map((item, i) => {
-        // How far back this card sits, 0 at the front. Modulo so the card
-        // that just left the front becomes the deepest rather than jumping
-        // to a negative depth.
-        const depth = (i - front + items.length) % items.length
+    <Panel>
+      <Row>
+        <Bar w={30} h={5} />
+        <span style={{ flex: '1 0 0' }} />
+        <Bar w={14} h={5} />
+      </Row>
+      <Row active gap={7}>
+        <Bar w={26} h={5} />
+        <span style={{ flex: '1 0 0' }} />
+        <Marker>Updated</Marker>
+      </Row>
+      <Row>
+        <Bar w={44} h={5} />
+        <span style={{ flex: '1 0 0' }} />
+        <Bar w={14} h={5} />
+      </Row>
+      <Row>
+        <Bar w={36} h={5} />
+        <span style={{ flex: '1 0 0' }} />
+        <Bar w={14} h={5} />
+      </Row>
+    </Panel>
+  )
+}
 
-        return (
+// ─── Your own domain ───
+// A domain list, one verified. The tick is the accent rather than a plate,
+// since "verified" is a state rather than a label.
+export function DomainIllustration() {
+  return (
+    <Panel>
+      <Row>
+        <Bar w={40} h={5} />
+      </Row>
+      <Row active>
+        <Bar w={46} h={5} />
+        <span style={{ flex: '1 0 0' }} />
+        <Marker>
+          <svg
+            width='8'
+            height='8'
+            viewBox='0 0 10 10'
+            fill='none'
+            aria-hidden='true'
+          >
+            <path
+              d='M2 5.2 4.1 7.3 8 3.2'
+              stroke='currentColor'
+              strokeWidth='1.6'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            />
+          </svg>
+          Verified
+        </Marker>
+      </Row>
+      <Row>
+        <Bar w={34} h={5} />
+      </Row>
+      <Row>
+        <Bar w={52} h={5} />
+      </Row>
+    </Panel>
+  )
+}
+
+// ─── Nothing to install ───
+// Two stacked plates: what you'd normally add, and what you add instead. The
+// contrast IS the illustration, so neither carries a marker.
+export function NoScriptIllustration() {
+  return (
+    <Panel width={244}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '7px',
+          padding: '10px',
+          borderRadius: '9px',
+          background: 'var(--bg-surface)',
+          // Dimmed and struck through: this is the thing you DON'T do.
+          opacity: 0.55,
+        }}
+      >
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <Bar w={22} h={5} />
+          <Bar w={44} h={5} />
+        </div>
+        <Bar w={62} h={5} />
+      </div>
+
+      <div style={{ height: '4px' }} />
+
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          alignItems: 'center',
+          padding: '10px',
+          borderRadius: '9px',
+          background: 'var(--bg-default)',
+          boxShadow: '0 0 0 1.5px var(--primary-base)',
+        }}
+      >
+        <Bar w={40} h={5} />
+        <span style={{ flex: '1 0 0' }} />
+        <Marker>Done</Marker>
+      </div>
+    </Panel>
+  )
+}
+
+// ─── Print and packaging ───
+// Two codes, different placements, different scan counts — which is the point
+// the copy makes.
+export function PrintIllustration() {
+  return (
+    <Panel width={252}>
+      <div style={{ display: 'flex', gap: '12px', padding: '2px' }}>
+        {[0, 1].map((i) => (
           <div
             key={i}
-            className='landing-stack-card'
-            // A data attribute, not a z-index match in CSS. Matching on the
-            // inline style string would also match z-index: 10 the moment
-            // there were more than nine of these.
-            data-depth={depth === items.length - 1 ? 'last' : 'front'}
             style={{
-              position: 'absolute',
-              inset: 0,
-              // Back cards sit lower and smaller. Down rather than up, so the
-              // stack reads as cards laid on a surface rather than floating.
-              //
-              // 26 and 0.09, up from 16 and 0.055 — at the smaller sheet size
-              // the old offsets left the deck looking like one slightly
-              // blurred card rather than three.
-              transform: `translateY(${depth * 26}px) scale(${1 - depth * 0.09})`,
-              // The deepest fades out — it's about to become the front, and
-              // seeing it swap contents while visible would break the
-              // illusion that these are three separate cards.
-              opacity: depth === items.length - 1 ? 0 : 1,
-              zIndex: items.length - depth,
-              // Top centre, matching the sheet's own centring. A default
-              // centre origin would scale the back cards inward AND upward,
-              // closing the vertical gap that makes the stack read as a stack.
-              // Top centre: a default centre origin would scale the back
-              // cards upward as well as inward, closing the vertical gap that
-              // makes the stack read as a stack.
-              transformOrigin: 'top center',
-              // Its own layer only while it matters.
-              willChange: 'transform, opacity',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              alignItems: 'center',
+              flex: '1 0 0',
+              padding: '10px 8px',
+              borderRadius: '9px',
+              background: i === 0 ? 'var(--bg-default)' : 'var(--bg-surface)',
+              boxShadow: i === 0 ? '0 0 0 1.5px var(--primary-base)' : 'none',
+              opacity: i === 0 ? 1 : 0.6,
             }}
           >
-            {item}
+            <QrCode
+              value={
+                i === 0
+                  ? 'https://luot.link/k3mq7t'
+                  : 'https://luot.link/p8xw2n'
+              }
+              card={62}
+              margin={5}
+              color='#171717'
+              markerColor='#171717'
+              pattern='square'
+              branding={false}
+            />
+            {i === 0 ? <Marker>82 scans</Marker> : <Bar w={54} h={5} />}
           </div>
-        )
-      })}
-    </div>
+        ))}
+      </div>
+    </Panel>
+  )
+}
+
+// ─── Client work ───
+// A row of stat tiles, one carrying a real figure.
+export function StatsIllustration() {
+  return (
+    <Panel width={256}>
+      <div style={{ display: 'flex', gap: '8px', padding: '2px' }}>
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '9px',
+              flex: '1 0 0',
+              padding: '10px',
+              borderRadius: '9px',
+              background: i === 1 ? 'var(--bg-default)' : 'var(--bg-surface)',
+              boxShadow: i === 1 ? '0 0 0 1.5px var(--primary-base)' : 'none',
+            }}
+          >
+            <Bar w={62} h={4} />
+            {i === 1 ? (
+              <span
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 500,
+                  fontSize: '15px',
+                  lineHeight: '18px',
+                  letterSpacing: '0.3px',
+                  color: 'var(--text-strong)',
+                }}
+              >
+                1,204
+              </span>
+            ) : (
+              <Bar w={44} h={9} />
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ height: '2px' }} />
+      <Row>
+        <Dot size={12} />
+        <Bar w={48} h={5} />
+      </Row>
+      <Row>
+        <Dot size={12} />
+        <Bar w={34} h={5} />
+      </Row>
+    </Panel>
   )
 }
 
 // ─── The well ───
-// Wraps any illustration in the card's own surface, cropping whatever runs
-// past its edges.
 export default function Illustration({ children }) {
   return (
     <div
       style={{
         position: 'relative',
         width: '100%',
-        aspectRatio: '256 / 230',
-        borderRadius: '8px',
-        background: 'var(--bg-surface)',
+        height: '100%',
         overflow: 'hidden',
       }}
     >

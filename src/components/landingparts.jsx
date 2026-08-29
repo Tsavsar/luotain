@@ -155,7 +155,7 @@ export function Card({ title, lead, body, image, illustration }) {
           // at the original ratio the third card sat close enough to the
           // bottom edge to look like it was falling out rather than resting
           // behind.
-          aspectRatio: '256 / 290',
+          aspectRatio: '256 / 230',
           borderRadius: '8px',
           background: 'var(--bg-surface)',
           width: '100%',

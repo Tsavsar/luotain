@@ -7,10 +7,12 @@ import LogoWordmark from '@/components/logowordmark'
 import NavAccount from '@/components/landingaccount'
 import {
   GeographyIllustration,
-  SourcesIllustration,
-  DevicesIllustration,
   QrIllustration,
-  CyclingStack,
+  DestinationIllustration,
+  DomainIllustration,
+  NoScriptIllustration,
+  PrintIllustration,
+  StatsIllustration,
 } from '@/components/landingillustrations'
 import CookieBanner from '@/components/cookiebanner'
 import LogoMenu from '@/components/logomenu'
@@ -335,18 +337,7 @@ function Features() {
         <Card
           title='Clicks with context'
           body='Country, device, browser and referrer on every click. Not a running total.'
-          // Geography, then sources, then devices, then round again — the
-          // same card answering three questions, which is what the copy
-          // beside it claims.
-          illustration={
-            <CyclingStack
-              items={[
-                <GeographyIllustration key='geo' />,
-                <SourcesIllustration key='src' />,
-                <DevicesIllustration key='dev' />,
-              ]}
-            />
-          }
+          illustration={<GeographyIllustration />}
         />
         <Card
           title='A QR code with every link'
@@ -356,14 +347,17 @@ function Features() {
         <Card
           title='Control where it goes'
           body='Change the destination and every code already shared follows.'
+          illustration={<DestinationIllustration />}
         />
         <Card
           title='Your own domain'
           body='Point go.yourbrand.com at Luotain and links carry your name, not ours.'
+          illustration={<DomainIllustration />}
         />
         <Card
           title='Nothing to install'
           body='No script, no tag manager, no consent banner. The link is the measurement.'
+          illustration={<NoScriptIllustration />}
         />
       </div>
     </section>
@@ -403,17 +397,18 @@ function UseCases() {
             title='Print and packaging'
             lead='You put a code on something physical'
             body='Give each placement its own code and you learn which one people actually scan.'
+            illustration={<PrintIllustration />}
           />
           <Card
             title='Campaigns and social'
             lead='You share the same link in five places'
             body='One short link each, and the referrer tells you which earned the traffic.'
-            illustration={<SourcesIllustration />}
           />
           <Card
             title='Client work'
             lead='You need to show someone the numbers'
             body='Country, device and source on every link, so an update is a screenshot.'
+            illustration={<StatsIllustration />}
           />
         </div>
       </div>
