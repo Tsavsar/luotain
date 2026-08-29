@@ -16,26 +16,55 @@ import { QrCode } from '@/components/qrdesigner'
 // They're built from the app's own components where one exists (CountryFlag,
 // SourceIcon, QrCode) and from the app's tokens where one doesn't.
 
-// The floating white card every illustration sits on. 328 wide, inset 28 from
-// the left and 34 from the top, cropped by the well — it runs off the right
-// edge, which is what makes it read as a window onto something larger rather
-// than a diagram sized to fit.
-function Sheet({ children, top = 34, left = 28 }) {
+// The floating white card every illustration sits on.
+//
+// Centred and 240 wide rather than 328 inset from the left. A stacked deck
+// only reads as a deck if it's surrounded by space on both sides — pinned to
+// one edge, the cards behind look like a rendering fault rather than depth.
+//
+// It sits high in the well because the stack grows DOWNWARD: the cards behind
+// need room beneath the front one.
+function Sheet({ label, children }) {
   return (
     <div
       style={{
         position: 'absolute',
-        top: `${top}px`,
-        left: `${left}px`,
-        width: '328px',
+        top: '30px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '240px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '6px',
-        padding: '8px',
+        gap: '5px',
+        padding: '10px',
         borderRadius: '12px',
         background: 'var(--bg-default)',
+        // Separates the cards from each other, not just from the well — with
+        // three overlapping, the edge between them is the only thing telling
+        // you there's more than one.
+        boxShadow: '0 4px 16px rgba(23, 23, 23, 0.08)',
+        boxSizing: 'border-box',
       }}
     >
+      {/* Says which card you're looking at. Without it the deck is three
+          near-identical lists and the point — one surface, three questions —
+          doesn't land. */}
+      {label ? (
+        <span
+          style={{
+            paddingLeft: '2px',
+            paddingBottom: '2px',
+            fontFamily: 'var(--font-sans)',
+            fontWeight: 500,
+            fontSize: '11px',
+            lineHeight: '14px',
+            letterSpacing: '0.22px',
+            color: 'var(--text-soft)',
+          }}
+        >
+          {label}
+        </span>
+      ) : null}
       {children}
     </div>
   )
@@ -45,10 +74,14 @@ function Sheet({ children, top = 34, left = 28 }) {
 // The app's DataRow draws exactly this.
 function Row({ icon, label, value, max }) {
   // Proportional from a floor, so a value of 1 is still a visible bar rather
-  // than a sliver. The design's widths are hand-set; deriving them means a
-  // different data set can't produce a nonsense chart.
-  const MIN = 41
-  const FULL = 273
+  // than a sliver.
+  //
+  // The range is wider than it was — 46 to 196 across a narrower card, where
+  // it used to be 41 to 273 across a wide one. A bigger spread over less width
+  // is what makes the difference between 15 and 11 legible at a glance rather
+  // than a subtle nudge.
+  const MIN = 46
+  const FULL = 196
   const width = MIN + (value / max) * (FULL - MIN)
 
   return (
@@ -57,7 +90,7 @@ function Row({ icon, label, value, max }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingRight: '10px',
+        paddingRight: '6px',
         width: '100%',
       }}
     >
@@ -66,11 +99,11 @@ function Row({ icon, label, value, max }) {
           display: 'flex',
           gap: '8px',
           alignItems: 'center',
-          paddingLeft: '10px',
-          paddingRight: '10px',
-          paddingTop: '6px',
-          paddingBottom: '6px',
-          borderRadius: '9px',
+          paddingLeft: '8px',
+          paddingRight: '8px',
+          paddingTop: '5px',
+          paddingBottom: '5px',
+          borderRadius: '8px',
           background: 'var(--bg-layer)',
           width: `${Math.round(width)}px`,
           flexShrink: 0,
@@ -83,8 +116,8 @@ function Row({ icon, label, value, max }) {
             style={{
               display: 'flex',
               flexShrink: 0,
-              width: '18px',
-              height: '18px',
+              width: '16px',
+              height: '16px',
             }}
           >
             {icon}
@@ -93,9 +126,11 @@ function Row({ icon, label, value, max }) {
         <span
           style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: '14px',
-            lineHeight: '20px',
-            letterSpacing: '0.28px',
+            // 12, down from 14 — the sheet is 240 rather than 328, and the
+            // type has to come with it or the bars become all label.
+            fontSize: '12px',
+            lineHeight: '16px',
+            letterSpacing: '0.24px',
             color: 'var(--text-strong)',
             whiteSpace: 'nowrap',
           }}
@@ -108,9 +143,9 @@ function Row({ icon, label, value, max }) {
         style={{
           fontFamily: 'var(--font-sans)',
           fontWeight: 500,
-          fontSize: '14px',
-          lineHeight: '20px',
-          letterSpacing: '0.28px',
+          fontSize: '12px',
+          lineHeight: '16px',
+          letterSpacing: '0.24px',
           color: 'var(--text-strong)',
           flexShrink: 0,
         }}
@@ -131,7 +166,7 @@ export function GeographyIllustration() {
     ['Singapore', 1],
   ]
   return (
-    <Sheet>
+    <Sheet label='Geography'>
       {rows.map(([label, value]) => (
         <Row
           key={label}
@@ -156,7 +191,7 @@ export function SourcesIllustration() {
     ['direct', 1],
   ]
   return (
-    <Sheet>
+    <Sheet label='Sources'>
       {rows.map(([label, value]) => (
         <Row
           key={label}
@@ -181,7 +216,7 @@ export function DevicesIllustration() {
     ['Smart TV', 3],
   ]
   return (
-    <Sheet>
+    <Sheet label='Devices'>
       {rows.map(([label, value]) => (
         <Row key={label} label={label} value={value} max={15} />
       ))}
@@ -260,7 +295,10 @@ export function QrIllustration() {
 //
 // A card that loops forever is the point — it says "this is one surface
 // answering three questions" better than three static cards would.
-const CYCLE_MS = 2600
+// 2000, down from 2600. At the slower pace the card sat still long enough to
+// read as static between turns; this keeps it visibly in motion without
+// rushing the transition itself.
+const CYCLE_MS = 2000
 
 export function CyclingStack({ items }) {
   const [front, setFront] = useState(0)
@@ -316,12 +354,19 @@ export function CyclingStack({ items }) {
               inset: 0,
               // Back cards sit lower and smaller. Down rather than up, so the
               // stack reads as cards laid on a surface rather than floating.
-              transform: `translateY(${depth * 16}px) scale(${1 - depth * 0.055})`,
+              //
+              // 26 and 0.09, up from 16 and 0.055 — at the smaller sheet size
+              // the old offsets left the deck looking like one slightly
+              // blurred card rather than three.
+              transform: `translateY(${depth * 26}px) scale(${1 - depth * 0.09})`,
               // The deepest fades out — it's about to become the front, and
               // seeing it swap contents while visible would break the
               // illusion that these are three separate cards.
               opacity: depth === items.length - 1 ? 0 : 1,
               zIndex: items.length - depth,
+              // Top centre, matching the sheet's own centring. A default
+              // centre origin would scale the back cards inward AND upward,
+              // closing the vertical gap that makes the stack read as a stack.
               transformOrigin: 'top center',
               // Its own layer only while it matters.
               willChange: 'transform, opacity',
