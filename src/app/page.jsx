@@ -8,7 +8,9 @@ import NavAccount from '@/components/landingaccount'
 import {
   GeographyIllustration,
   SourcesIllustration,
+  DevicesIllustration,
   QrIllustration,
+  CyclingStack,
 } from '@/components/landingillustrations'
 import CookieBanner from '@/components/cookiebanner'
 import LogoMenu from '@/components/logomenu'
@@ -333,7 +335,18 @@ function Features() {
         <Card
           title='Clicks with context'
           body='Country, device, browser and referrer on every click. Not a running total.'
-          illustration={<GeographyIllustration />}
+          // Geography, then sources, then devices, then round again — the
+          // same card answering three questions, which is what the copy
+          // beside it claims.
+          illustration={
+            <CyclingStack
+              items={[
+                <GeographyIllustration key='geo' />,
+                <SourcesIllustration key='src' />,
+                <DevicesIllustration key='dev' />,
+              ]}
+            />
+          }
         />
         <Card
           title='A QR code with every link'

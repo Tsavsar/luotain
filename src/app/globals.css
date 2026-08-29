@@ -3082,6 +3082,34 @@ html {
   }
 }
 
+/* --- Cycling illustration stack ---
+   The transition lives here rather than inline so the curve is one value
+   rather than repeated per card.
+
+   Long and soft: this runs unprompted in the corner of the eye, and a quick
+   snappy version of the same movement reads as a glitch rather than as
+   something turning over. */
+.landing-stack-card {
+  transition:
+    transform 720ms cubic-bezier(0.32, 0.9, 0.28, 1),
+    opacity 520ms var(--ease-out);
+}
+
+/* The card leaving the front fades faster than it moves, so it's gone before
+   it reaches the back and swaps places — otherwise you'd watch it pass
+   through the others. */
+.landing-stack-card[data-depth='last'] {
+  transition:
+    transform 720ms cubic-bezier(0.32, 0.9, 0.28, 1),
+    opacity 300ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-stack-card {
+    transition: none;
+  }
+}
+
 /* --- Logo context menu ---
    Positioned at the cursor, so `fixed` rather than absolute — the coordinates
    come from a click event and those are viewport-relative. */

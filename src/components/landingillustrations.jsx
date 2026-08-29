@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import CountryFlag from '@/components/countryflag'
 import SourceIcon from '@/components/sourceicon'
 import { QrCode } from '@/components/qrdesigner'
@@ -77,16 +78,18 @@ function Row({ icon, label, value, max }) {
           overflow: 'hidden',
         }}
       >
-        <span
-          style={{
-            display: 'flex',
-            flexShrink: 0,
-            width: '18px',
-            height: '18px',
-          }}
-        >
-          {icon}
-        </span>
+        {icon ? (
+          <span
+            style={{
+              display: 'flex',
+              flexShrink: 0,
+              width: '18px',
+              height: '18px',
+            }}
+          >
+            {icon}
+          </span>
+        ) : null}
         <span
           style={{
             fontFamily: 'var(--font-sans)',
@@ -167,6 +170,25 @@ export function SourcesIllustration() {
   )
 }
 
+// ─── Devices ───
+// No icon column: the app's Devices card doesn't draw one either, because a
+// generic phone glyph next to the word "Mobile" says nothing the word didn't.
+export function DevicesIllustration() {
+  const rows = [
+    ['Desktop', 15],
+    ['Mobile', 11],
+    ['Tablet', 8],
+    ['Smart TV', 3],
+  ]
+  return (
+    <Sheet>
+      {rows.map(([label, value]) => (
+        <Row key={label} label={label} value={value} max={15} />
+      ))}
+    </Sheet>
+  )
+}
+
 // ─── A QR code with every link ───
 // The real renderer, on the same white sheet. A drawn stand-in would be a
 // picture of a QR code that doesn't scan, which on a page selling QR codes is
@@ -228,6 +250,88 @@ export function QrIllustration() {
         </div>
       </div>
     </Sheet>
+  )
+}
+
+// ─── Cycling stack ───
+// Three sheets stacked with depth. Every few seconds the front one drops to
+// the back and the next comes forward, so the card shows geography, then
+// sources, then devices, then round again.
+//
+// A card that loops forever is the point — it says "this is one surface
+// answering three questions" better than three static cards would.
+const CYCLE_MS = 2600
+
+export function CyclingStack({ items }) {
+  const [front, setFront] = useState(0)
+  const [visible, setVisible] = useState(false)
+  const wrapRef = useRef(null)
+
+  // Only runs while it's on screen. A timer looping in a card nobody is
+  // looking at costs battery and, on a page with several of these, a
+  // measurable amount of it.
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { threshold: 0.35 }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!visible) return
+    // Respects the OS setting: a card that cycles on its own is exactly the
+    // kind of unprompted motion reduced-motion exists to stop. It settles on
+    // the first item and stays there.
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    if (reduced?.matches) return
+
+    const id = setInterval(() => {
+      setFront((f) => (f + 1) % items.length)
+    }, CYCLE_MS)
+    return () => clearInterval(id)
+  }, [visible, items.length])
+
+  return (
+    <div ref={wrapRef} style={{ position: 'absolute', inset: 0 }}>
+      {items.map((item, i) => {
+        // How far back this card sits, 0 at the front. Modulo so the card
+        // that just left the front becomes the deepest rather than jumping
+        // to a negative depth.
+        const depth = (i - front + items.length) % items.length
+
+        return (
+          <div
+            key={i}
+            className='landing-stack-card'
+            // A data attribute, not a z-index match in CSS. Matching on the
+            // inline style string would also match z-index: 10 the moment
+            // there were more than nine of these.
+            data-depth={depth === items.length - 1 ? 'last' : 'front'}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              // Back cards sit lower and smaller. Down rather than up, so the
+              // stack reads as cards laid on a surface rather than floating.
+              transform: `translateY(${depth * 16}px) scale(${1 - depth * 0.055})`,
+              // The deepest fades out — it's about to become the front, and
+              // seeing it swap contents while visible would break the
+              // illusion that these are three separate cards.
+              opacity: depth === items.length - 1 ? 0 : 1,
+              zIndex: items.length - depth,
+              transformOrigin: 'top center',
+              // Its own layer only while it matters.
+              willChange: 'transform, opacity',
+            }}
+          >
+            {item}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
