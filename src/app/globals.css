@@ -3083,52 +3083,47 @@ html {
 }
 
 /* --- Feature illustrations ---
-   Motion on HOVER, not on a loop. Five cards animating unprompted in a row is
-   noise; one responding when you attend to it is an answer.
+   Motion on hover of the card, not on a loop — five cards animating unprompted
+   in a row is noise; one responding when you attend to it is an answer.
 
-   Everything below is transform and opacity only, so it composites rather than
-   repainting the skeleton on every frame. */
-.landing-illo-panel {
-  transition: transform 520ms var(--ease-out);
+   Transform and opacity only, so it composites rather than repainting eight
+   rows of text every frame. */
+.illo-panel {
+  transition: transform 560ms var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .landing-card:hover .landing-illo-panel {
-    /* Rises slightly, as if the card came forward. Small — 4px is enough to
-       register when the whole panel moves together. */
-    transform: translateY(-4px);
+  .landing-card:hover .illo-panel {
+    /* Scrolls UP, so more of the list comes into view. The panel already runs
+       past the bottom edge — this reveals what was below it, which is a more
+       useful thing to show than the panel simply lifting. */
+    transform: translateY(-22px);
   }
 }
 
-/* The accented row lifts further and its ring brightens, so the eye lands on
-   the one element that names the feature. */
-.landing-illo-row {
+.illo-row {
   transition:
-    transform 520ms var(--ease-out),
+    transform 460ms var(--ease-out),
+    opacity 400ms var(--ease-out),
     box-shadow 400ms var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .landing-card:hover .landing-illo-row[data-active='true'] {
-    transform: translateY(-3px) scale(1.02);
+  .landing-card:hover .illo-row[data-accent='true'] {
     box-shadow:
-      inset 0 0 0 1.5px var(--primary-base),
-      0 6px 16px rgba(250, 115, 25, 0.18);
+      inset 0 0 0 1px rgba(250, 115, 25, 0.5),
+      0 4px 14px rgba(250, 115, 25, 0.16);
+  }
+  /* The rest recede, which is what makes the accented row advance rather than
+     the whole list simply moving. */
+  .landing-card:hover .illo-row[data-accent='false'] {
+    opacity: 0.5;
   }
 }
 
-/* The quiet rows recede, which is what makes the active one advance rather
-   than everything simply moving. */
-.landing-card:hover .landing-illo-row[data-active='false'] {
-  opacity: 0.55;
-}
-.landing-illo-row[data-active='false'] {
-  transition: opacity 400ms var(--ease-out);
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .landing-illo-panel,
-  .landing-illo-row {
+  .illo-panel,
+  .illo-row {
     transition: none;
     transform: none !important;
   }

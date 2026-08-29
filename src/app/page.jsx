@@ -7,6 +7,7 @@ import LogoWordmark from '@/components/logowordmark'
 import NavAccount from '@/components/landingaccount'
 import {
   GeographyIllustration,
+  SourcesIllustration,
   QrIllustration,
   DestinationIllustration,
   DomainIllustration,
@@ -403,6 +404,7 @@ function UseCases() {
             title='Campaigns and social'
             lead='You share the same link in five places'
             body='One short link each, and the referrer tells you which earned the traffic.'
+            illustration={<SourcesIllustration />}
           />
           <Card
             title='Client work'
