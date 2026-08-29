@@ -150,7 +150,12 @@ export function Card({ title, lead, body, image, illustration }) {
           // Aspect ratio rather than a fixed height, so the well stays
           // proportional as the column narrows instead of turning into a
           // letterbox on a phone.
-          aspectRatio: '256 / 230',
+          //
+          // Taller than the design's 256/230. The stack grows downward, and
+          // at the original ratio the third card sat close enough to the
+          // bottom edge to look like it was falling out rather than resting
+          // behind.
+          aspectRatio: '256 / 290',
           borderRadius: '8px',
           background: 'var(--bg-surface)',
           width: '100%',

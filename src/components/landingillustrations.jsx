@@ -26,46 +26,58 @@ import { QrCode } from '@/components/qrdesigner'
 // need room beneath the front one.
 function Sheet({ label, children }) {
   return (
+    // Its own centring wrapper, so a Sheet used on its own — the QR and
+    // Sources cards are — sits correctly without depending on a parent that
+    // only the cycling stack provides.
     <div
       style={{
         position: 'absolute',
-        top: '30px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '240px',
+        inset: 0,
         display: 'flex',
-        flexDirection: 'column',
-        gap: '5px',
-        padding: '10px',
-        borderRadius: '12px',
-        background: 'var(--bg-default)',
-        // Separates the cards from each other, not just from the well — with
-        // three overlapping, the edge between them is the only thing telling
-        // you there's more than one.
-        boxShadow: '0 4px 16px rgba(23, 23, 23, 0.08)',
-        boxSizing: 'border-box',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
-      {/* Says which card you're looking at. Without it the deck is three
+      <div
+        style={{
+          width: '240px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '5px',
+          padding: '10px',
+          borderRadius: '12px',
+          background: 'var(--bg-default)',
+          // Separates the cards from each other, not just from the well — with
+          // three overlapping, the edge between them is the only thing telling
+          // you there's more than one.
+          // Eased right back. Three of these overlap, and each one's shadow
+          // falls on the card below — at 0.08 the stack picked up a grey cast
+          // that made the whole illustration look dirty.
+          boxShadow: '0 2px 8px rgba(23, 23, 23, 0.04)',
+          boxSizing: 'border-box',
+        }}
+      >
+        {/* Says which card you're looking at. Without it the deck is three
           near-identical lists and the point — one surface, three questions —
           doesn't land. */}
-      {label ? (
-        <span
-          style={{
-            paddingLeft: '2px',
-            paddingBottom: '2px',
-            fontFamily: 'var(--font-sans)',
-            fontWeight: 500,
-            fontSize: '11px',
-            lineHeight: '14px',
-            letterSpacing: '0.22px',
-            color: 'var(--text-soft)',
-          }}
-        >
-          {label}
-        </span>
-      ) : null}
-      {children}
+        {label ? (
+          <span
+            style={{
+              paddingLeft: '2px',
+              paddingBottom: '2px',
+              fontFamily: 'var(--font-sans)',
+              fontWeight: 500,
+              fontSize: '11px',
+              lineHeight: '14px',
+              letterSpacing: '0.22px',
+              color: 'var(--text-soft)',
+            }}
+          >
+            {label}
+          </span>
+        ) : null}
+        {children}
+      </div>
     </div>
   )
 }
@@ -89,8 +101,10 @@ function Row({ icon, label, value, max }) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingRight: '6px',
+        // No space-between: the count sits just past the end of its own bar
+        // rather than in a fixed right-hand column. Pinned right it read as a
+        // table of figures; trailing the bar, it reads as that bar's value.
+        gap: '8px',
         width: '100%',
       }}
     >
@@ -146,7 +160,10 @@ function Row({ icon, label, value, max }) {
           fontSize: '12px',
           lineHeight: '16px',
           letterSpacing: '0.24px',
-          color: 'var(--text-strong)',
+          // Softer than the label. The bar length already carries the
+          // comparison, so the figure is a confirmation rather than the
+          // headline.
+          color: 'var(--text-sub)',
           flexShrink: 0,
         }}
       >
@@ -160,10 +177,10 @@ function Row({ icon, label, value, max }) {
 // Node 613:1223, verbatim: four countries, flags from the app's own component.
 export function GeographyIllustration() {
   const rows = [
-    ['Norway', 15],
-    ['United States', 11],
-    ['United Kingdom', 8],
-    ['Singapore', 1],
+    ['Norway', 248],
+    ['United States', 96],
+    ['United Kingdom', 41],
+    ['Singapore', 12],
   ]
   return (
     <Sheet label='Geography'>
@@ -172,7 +189,7 @@ export function GeographyIllustration() {
           key={label}
           label={label}
           value={value}
-          max={15}
+          max={248}
           icon={<CountryFlag country={label} size={18} />}
         />
       ))}
@@ -185,10 +202,10 @@ export function GeographyIllustration() {
 // one surface answers both questions.
 export function SourcesIllustration() {
   const rows = [
-    ['t.co', 32],
-    ['i.instagram.com', 12],
-    ['linkedin.com', 9],
-    ['direct', 1],
+    ['t.co', 173],
+    ['i.instagram.com', 88],
+    ['linkedin.com', 34],
+    ['direct', 7],
   ]
   return (
     <Sheet label='Sources'>
@@ -197,7 +214,7 @@ export function SourcesIllustration() {
           key={label}
           label={label}
           value={value}
-          max={32}
+          max={173}
           icon={<SourceIcon domain={label} />}
         />
       ))}
@@ -210,15 +227,17 @@ export function SourcesIllustration() {
 // generic phone glyph next to the word "Mobile" says nothing the word didn't.
 export function DevicesIllustration() {
   const rows = [
-    ['Desktop', 15],
-    ['Mobile', 11],
-    ['Tablet', 8],
-    ['Smart TV', 3],
+    // Mobile leads, which is what a QR-heavy product would actually see —
+    // desktop first would be the giveaway that these numbers are made up.
+    ['Mobile', 204],
+    ['Desktop', 121],
+    ['Tablet', 29],
+    ['Smart TV', 4],
   ]
   return (
     <Sheet label='Devices'>
       {rows.map(([label, value]) => (
-        <Row key={label} label={label} value={value} max={15} />
+        <Row key={label} label={label} value={value} max={204} />
       ))}
     </Sheet>
   )
@@ -334,7 +353,17 @@ export function CyclingStack({ items }) {
   }, [visible, items.length])
 
   return (
-    <div ref={wrapRef} style={{ position: 'absolute', inset: 0 }}>
+    <div
+      ref={wrapRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        // Padded by the stack's own depth, so centring accounts for the cards
+        // BEHIND the front one. Without it the front card centres and the
+        // stack as a whole sits low.
+        paddingBottom: `${(items.length - 1) * 26}px`,
+      }}
+    >
       {items.map((item, i) => {
         // How far back this card sits, 0 at the front. Modulo so the card
         // that just left the front becomes the deepest rather than jumping
@@ -367,6 +396,9 @@ export function CyclingStack({ items }) {
               // Top centre, matching the sheet's own centring. A default
               // centre origin would scale the back cards inward AND upward,
               // closing the vertical gap that makes the stack read as a stack.
+              // Top centre: a default centre origin would scale the back
+              // cards upward as well as inward, closing the vertical gap that
+              // makes the stack read as a stack.
               transformOrigin: 'top center',
               // Its own layer only while it matters.
               willChange: 'transform, opacity',
