@@ -7,13 +7,10 @@ import LogoWordmark from '@/components/logowordmark'
 import NavAccount from '@/components/landingaccount'
 import {
   GeographyIllustration,
-  SourcesIllustration,
   QrIllustration,
   DestinationIllustration,
   DomainIllustration,
   NoScriptIllustration,
-  PrintIllustration,
-  StatsIllustration,
 } from '@/components/landingillustrations'
 import CookieBanner from '@/components/cookiebanner'
 import LogoMenu from '@/components/logomenu'
@@ -398,19 +395,16 @@ function UseCases() {
             title='Print and packaging'
             lead='You put a code on something physical'
             body='Give each placement its own code and you learn which one people actually scan.'
-            illustration={<PrintIllustration />}
           />
           <Card
             title='Campaigns and social'
             lead='You share the same link in five places'
             body='One short link each, and the referrer tells you which earned the traffic.'
-            illustration={<SourcesIllustration />}
           />
           <Card
             title='Client work'
             lead='You need to show someone the numbers'
             body='Country, device and source on every link, so an update is a screenshot.'
-            illustration={<StatsIllustration />}
           />
         </div>
       </div>
