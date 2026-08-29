@@ -70,6 +70,50 @@ function Tag({ children }) {
   )
 }
 
+// An endlessly scrolling column. The children are rendered TWICE and the
+// track moves up by half its own height — at the moment the first copy has
+// fully left, the second is exactly where the first started, so there's no
+// visible seam.
+//
+// aria-hidden on the duplicate: it's the same content, and a screen reader
+// shouldn't hear the list twice.
+function Marquee({ children }) {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        flex: '1 0 0',
+        minHeight: 0,
+      }}
+    >
+      <div className='illo-marquee'>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '5px',
+            paddingBottom: '5px',
+          }}
+        >
+          {children}
+        </div>
+        <div
+          aria-hidden='true'
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '5px',
+            paddingBottom: '5px',
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // A row: icon, label, and a right-aligned figure. The whole grammar.
 function Row({ icon, label, value, accent }) {
   return (
@@ -270,9 +314,33 @@ export function DestinationIllustration() {
           height: '100%',
         }}
       >
-        <Mono size={13} tone='strong'>
-          luot.link/spring-menu
-        </Mono>
+        {/* The code sits above, unchanged, while the destination beneath it
+            is replaced — which is precisely the claim. Without it this is just
+            two URLs. */}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <QrCode
+            value='https://luot.link/spring-menu'
+            card={52}
+            margin={4}
+            color='#171717'
+            markerColor='#171717'
+            pattern='square'
+            branding={false}
+          />
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '3px',
+              minWidth: 0,
+            }}
+          >
+            <Mono size={12} tone='strong'>
+              luot.link/spring-menu
+            </Mono>
+            <Mono size={9}>unchanged</Mono>
+          </div>
+        </div>
 
         <div
           style={{
@@ -320,67 +388,89 @@ export function DestinationIllustration() {
 }
 
 // ─── Your own domain ───
-// The domain is the subject, so it's the largest thing on the card, with the
-// DNS beneath it as the quiet supporting detail.
+// A workspace with several domains, scrolling forever. The feature isn't one
+// domain — it's that you can bring as many as you like — and a list that never
+// runs out says that better than a single example does.
 export function DomainIllustration() {
+  const domains = [
+    ['go.yourbrand.com', 'Verified', true],
+    ['links.acme.co', 'Verified'],
+    ['s.northwind.io', 'Verified'],
+    ['on.parcel.dev', 'Pending'],
+    ['go.meridian.studio', 'Verified'],
+    ['l.fieldnotes.co', 'Verified'],
+    ['short.atlas.app', 'Pending'],
+    ['go.harbour.design', 'Verified'],
+  ]
+
   return (
-    <Panel pad={14} bleed={false}>
+    <Panel pad={12} bleed={false}>
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '14px',
-          justifyContent: 'center',
           height: '100%',
+          // Fades at both ends, so rows arrive and leave rather than appearing
+          // and vanishing at a hard edge.
+          maskImage:
+            'linear-gradient(to bottom, transparent 0%, #000 14%, #000 86%, transparent 100%)',
+          WebkitMaskImage:
+            'linear-gradient(to bottom, transparent 0%, #000 14%, #000 86%, transparent 100%)',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: '1px',
-            flexWrap: 'wrap',
-          }}
-        >
-          <Mono size={15} tone='strong'>
-            go.yourbrand.com
-          </Mono>
-          <Mono size={15}>/k3mq7t</Mono>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          {[
-            ['CNAME', 'go', 'cname.vercel-dns.com'],
-            ['A', '@', '76.76.21.21'],
-          ].map(([type, host, value]) => (
+        <Marquee>
+          {domains.map(([host, state, accent]) => (
             <div
-              key={type}
+              key={host}
+              className='illo-row'
+              data-accent={accent ? 'true' : 'false'}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                padding: '7px 9px',
-                borderRadius: '7px',
-                background: 'var(--bg-surface)',
+                padding: '8px 10px',
+                borderRadius: '8px',
+                background: accent
+                  ? 'rgba(250, 115, 25, 0.08)'
+                  : 'var(--bg-surface)',
+                boxShadow: accent
+                  ? 'inset 0 0 0 1px rgba(250, 115, 25, 0.35)'
+                  : 'none',
+                flexShrink: 0,
               }}
             >
-              <Mono size={9} tone='strong'>
-                {type}
+              <Mono size={11} tone={accent ? 'strong' : 'sub'}>
+                {host}
               </Mono>
-              <Mono size={9}>{host}</Mono>
               <span style={{ flex: '1 0 0' }} />
-              <Mono size={9}>{value}</Mono>
+              <span
+                style={{
+                  width: '5px',
+                  height: '5px',
+                  borderRadius: 'var(--radius-full)',
+                  background:
+                    state === 'Verified'
+                      ? 'var(--success-base)'
+                      : 'var(--primary-base)',
+                  flexShrink: 0,
+                }}
+              />
+              <Mono size={9}>{state}</Mono>
             </div>
           ))}
-        </div>
+        </Marquee>
       </div>
     </Panel>
   )
 }
 
 // ─── Nothing to install ───
-// A comparison. The contrast between the two blocks IS the illustration, so
-// neither carries an accent — adding one would point at half a point.
+// A comparison, captioned. The contrast between the blocks IS the point, so
+// neither carries an accent — pointing at one half would weaken it.
+//
+// It sits centred with air around it rather than filling the frame: two small
+// blocks with space between them read as a comparison, where two large ones
+// read as a wall of code.
 export function NoScriptIllustration() {
   return (
     <Panel pad={14} bleed={false}>
@@ -388,49 +478,53 @@ export function NoScriptIllustration() {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '12px',
+          gap: '16px',
           justifyContent: 'center',
           height: '100%',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-            padding: '11px',
-            borderRadius: '9px',
-            background: 'var(--bg-surface)',
-            opacity: 0.5,
-          }}
-        >
-          <Mono size={9} strike>
-            &lt;script src=&quot;analytics.js&quot;&gt;
-          </Mono>
-          <Mono size={9} strike>
-            &nbsp;&nbsp;window.dataLayer = []
-          </Mono>
-          <Mono size={9} strike>
-            &lt;/script&gt;
-          </Mono>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <Mono size={9}>Everywhere else</Mono>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '3px',
+              padding: '10px',
+              borderRadius: '9px',
+              background: 'var(--bg-surface)',
+              opacity: 0.45,
+            }}
+          >
+            <Mono size={9} strike>
+              &lt;script src=&quot;analytics.js&quot;&gt;
+            </Mono>
+            <Mono size={9} strike>
+              &nbsp;&nbsp;window.dataLayer = []
+            </Mono>
+            <Mono size={9} strike>
+              &lt;/script&gt;
+            </Mono>
+          </div>
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '13px 11px',
-            borderRadius: '9px',
-            background: 'var(--bg-default)',
-            boxShadow: 'inset 0 0 0 1px var(--stroke-soft)',
-          }}
-        >
-          <Mono size={11} tone='strong'>
-            luot.link/k3mq7t
-          </Mono>
-          <span style={{ flex: '1 0 0' }} />
-          <Mono size={9}>that&rsquo;s it</Mono>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <Mono size={9}>Here</Mono>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 10px',
+              borderRadius: '9px',
+              background: 'var(--bg-default)',
+              boxShadow: 'inset 0 0 0 1px var(--stroke-soft)',
+            }}
+          >
+            <Mono size={11} tone='strong'>
+              luot.link/k3mq7t
+            </Mono>
+          </div>
         </div>
       </div>
     </Panel>
@@ -503,12 +597,12 @@ export function PrintIllustration() {
 // One link fanning out to its placements — a spread, not a table.
 export function SourcesIllustration() {
   const chips = [
-    't.co',
-    'instagram',
-    'linkedin',
-    'newsletter',
-    'reddit',
-    'direct',
+    ['t.co', '2,341'],
+    ['i.instagram.com', '1,892'],
+    ['linkedin.com', '743'],
+    ['newsletter', '521'],
+    ['reddit.com', '412'],
+    ['direct', '187'],
   ]
   return (
     <Panel pad={14} bleed={false}>
@@ -541,7 +635,7 @@ export function SourcesIllustration() {
         {/* The fan. Six placements, indented progressively so they read as
             branching from the link above rather than listed under it. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          {chips.map((c, i) => (
+          {chips.map(([c, count], i) => (
             <div
               key={c}
               style={{
@@ -559,6 +653,12 @@ export function SourcesIllustration() {
             >
               <SourceIcon domain={c} />
               <Mono size={9}>{c}</Mono>
+              {/* The count is the point — the copy claims the referrer tells
+                  you which placement earned the traffic, so the fan has to
+                  measure rather than merely list. */}
+              <Mono size={9} tone='strong'>
+                {count}
+              </Mono>
             </div>
           ))}
         </div>

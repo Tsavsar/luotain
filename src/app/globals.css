@@ -2310,8 +2310,6 @@ html {
   transform: scale(0.97);
 }
 
-
-
 /* --- Invite composer ---
    Drops in rather than appearing. The button it replaces sits in the same
    place, so without a transition the swap reads as a glitch. */
@@ -2375,8 +2373,6 @@ html {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
-
-
 /* --- Plan icon blooms ---
    A slow breath on the orange growth.
    
@@ -2413,7 +2409,9 @@ html {
 /* --- Domains ---
    The re-check button, on the same plate as the status tag beside it. */
 .domain-recheck {
-  transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
+  transition:
+    color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
 }
 .domain-recheck:hover:not(:disabled) {
   color: var(--text-strong) !important;
@@ -2556,7 +2554,6 @@ html {
   gap: 8px;
   align-items: flex-start;
 }
-
 
 .landing-nav-link {
   transition: opacity var(--duration-fast) ease;
@@ -3012,7 +3009,7 @@ html {
 }
 @media (max-width: 1000px) {
   .landing-montage {
-    transform: scale(1.70);
+    transform: scale(1.7);
   }
 }
 @media (max-width: 900px) {
@@ -3027,7 +3024,7 @@ html {
 }
 @media (max-width: 700px) {
   .landing-montage {
-    transform: scale(1.20);
+    transform: scale(1.2);
   }
 }
 @media (max-width: 600px) {
@@ -3083,27 +3080,14 @@ html {
 }
 
 /* --- Feature illustrations ---
-   Motion on hover of the card, not on a loop — five cards animating unprompted
-   in a row is noise; one responding when you attend to it is an answer.
+   No panel movement on hover. It shifted the whole illustration, which on a
+   grid of five made the page feel loose — and on the composed cards there was
+   nothing below to reveal, so it was motion with no payload.
 
-   Transform and opacity only, so it composites rather than repainting eight
-   rows of text every frame. */
-.illo-panel {
-  transition: transform 560ms var(--ease-out);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .landing-card:hover .illo-panel {
-    /* Scrolls UP, so more of the list comes into view. The panel already runs
-       past the bottom edge — this reveals what was below it, which is a more
-       useful thing to show than the panel simply lifting. */
-    transform: translateY(-22px);
-  }
-}
-
+   What's left is the accent responding, which is the one thing hover should
+   answer. */
 .illo-row {
   transition:
-    transform 460ms var(--ease-out),
     opacity 400ms var(--ease-out),
     box-shadow 400ms var(--ease-out);
 }
@@ -3115,17 +3099,48 @@ html {
       0 4px 14px rgba(250, 115, 25, 0.16);
   }
   /* The rest recede, which is what makes the accented row advance rather than
-     the whole list simply moving. */
+     the whole list brightening. */
   .landing-card:hover .illo-row[data-accent='false'] {
     opacity: 0.5;
   }
 }
 
+/* --- Infinite domain marquee ---
+   Two identical copies of the list, translated up by exactly half the track's
+   height. At the moment the first copy has fully left, the second sits exactly
+   where the first began — so the loop point is invisible.
+
+   translate3d rather than top: it composites, where animating position would
+   lay out and paint every frame. */
+.illo-marquee {
+  display: flex;
+  flex-direction: column;
+  animation: illoScroll 22s linear infinite;
+}
+
+@keyframes illoScroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+/* Pauses on hover, so someone who wants to read a domain can. Continuous
+   motion you can't stop is the thing that makes a marquee annoying. */
+@media (hover: hover) and (pointer: fine) {
+  .landing-card:hover .illo-marquee {
+    animation-play-state: paused;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .illo-panel,
+  .illo-marquee {
+    animation: none;
+  }
   .illo-row {
     transition: none;
-    transform: none !important;
   }
 }
 
