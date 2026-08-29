@@ -341,7 +341,6 @@ export function useTilt({
     ).matches
     if (reduced) {
       // A card pitching around under the cursor is exactly the motion
-      // this setting exists to switch off, so it renders flat.
       if (nodeRef.current) nodeRef.current.style.transform = 'none'
       extraRef.current?.(0, 0)
       return

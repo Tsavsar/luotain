@@ -14,12 +14,10 @@ export const viewport = {
   userScalable: false,
 }
 
-// Applies the saved theme BEFORE the first paint.
 //
 // This had to be added for any theme to survive a reload. `data-theme='light'`
 // was hardcoded on <html> and nothing re-applied the stored value on load, so
 // picking Dark worked until you refreshed and then silently reverted. The
-// preferences page's effect only set its own picker state, not the attribute.
 //
 // It's a blocking inline script rather than an effect on purpose: an effect runs
 // after the first paint, so a dark theme would flash white first. This
