@@ -5,6 +5,11 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import LogoWordmark from '@/components/logowordmark'
 import NavAccount from '@/components/landingaccount'
+import {
+  GeographyIllustration,
+  SourcesIllustration,
+  QrIllustration,
+} from '@/components/landingillustrations'
 import CookieBanner from '@/components/cookiebanner'
 import LogoMenu from '@/components/logomenu'
 import Reveal from '@/components/reveal'
@@ -328,10 +333,12 @@ function Features() {
         <Card
           title='Clicks with context'
           body='Country, device, browser and referrer on every click. Not a running total.'
+          illustration={<GeographyIllustration />}
         />
         <Card
           title='A QR code with every link'
           body='Design the pattern and colours, add your logo, download at any size.'
+          illustration={<QrIllustration />}
         />
         <Card
           title='Control where it goes'
@@ -388,6 +395,7 @@ function UseCases() {
             title='Campaigns and social'
             lead='You share the same link in five places'
             body='One short link each, and the referrer tells you which earned the traffic.'
+            illustration={<SourcesIllustration />}
           />
           <Card
             title='Client work'

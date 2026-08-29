@@ -131,7 +131,7 @@ export function Caption({ children, tone = 'sub' }) {
 // The well is empty on purpose — illustrations are coming. It keeps its
 // dimensions and radius so the layout is already correct when they land, and
 // takes an `image` when they do.
-export function Card({ title, lead, body, image }) {
+export function Card({ title, lead, body, image, illustration }) {
   return (
     <article
       className='landing-card'
@@ -146,6 +146,7 @@ export function Card({ title, lead, body, image }) {
     >
       <div
         style={{
+          position: 'relative',
           // Aspect ratio rather than a fixed height, so the well stays
           // proportional as the column narrows instead of turning into a
           // letterbox on a phone.
@@ -153,10 +154,14 @@ export function Card({ title, lead, body, image }) {
           borderRadius: '8px',
           background: 'var(--bg-surface)',
           width: '100%',
+          // Illustrations are drawn larger than the well and cropped by it —
+          // that's what makes them read as a window onto the product rather
+          // than a diagram sized to fit a box.
           overflow: 'hidden',
         }}
       >
-        {image ? (
+        {illustration || null}
+        {!illustration && image ? (
           <img
             src={image}
             alt=''
