@@ -3082,6 +3082,58 @@ html {
   }
 }
 
+/* --- Feature illustrations ---
+   Motion on HOVER, not on a loop. Five cards animating unprompted in a row is
+   noise; one responding when you attend to it is an answer.
+
+   Everything below is transform and opacity only, so it composites rather than
+   repainting the skeleton on every frame. */
+.landing-illo-panel {
+  transition: transform 520ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .landing-card:hover .landing-illo-panel {
+    /* Rises slightly, as if the card came forward. Small — 4px is enough to
+       register when the whole panel moves together. */
+    transform: translateY(-4px);
+  }
+}
+
+/* The accented row lifts further and its ring brightens, so the eye lands on
+   the one element that names the feature. */
+.landing-illo-row {
+  transition:
+    transform 520ms var(--ease-out),
+    box-shadow 400ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .landing-card:hover .landing-illo-row[data-active='true'] {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+      inset 0 0 0 1.5px var(--primary-base),
+      0 6px 16px rgba(250, 115, 25, 0.18);
+  }
+}
+
+/* The quiet rows recede, which is what makes the active one advance rather
+   than everything simply moving. */
+.landing-card:hover .landing-illo-row[data-active='false'] {
+  opacity: 0.55;
+}
+.landing-illo-row[data-active='false'] {
+  transition: opacity 400ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-illo-panel,
+  .landing-illo-row {
+    transition: none;
+    transform: none !important;
+  }
+}
+
 /* --- Logo context menu ---
    Positioned at the cursor, so `fixed` rather than absolute — the coordinates
    come from a click event and those are viewport-relative. */

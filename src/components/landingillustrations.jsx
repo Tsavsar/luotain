@@ -18,7 +18,19 @@ import { QrCode } from '@/components/qrdesigner'
 
 // A skeleton line. Width is a percentage so a row reads as proportional
 // content rather than a fixed-size bar.
-function Bar({ w = 60, h = 6, tone = 'layer' }) {
+// Skeleton lines were --bg-layer on --bg-surface: #f5f5f5 on #f7f7f7, two
+// values apart and effectively invisible. They're a real step darker now, and
+// the panel behind them is white, so there's actual contrast to read.
+const SKELETON = 'rgba(23, 23, 23, 0.10)'
+const SKELETON_SOFT = 'rgba(23, 23, 23, 0.06)'
+
+function Bar({ w = 60, h = 6, tone = 'skeleton' }) {
+  const bg =
+    tone === 'accent'
+      ? 'var(--primary-base)'
+      : tone === 'soft'
+        ? SKELETON_SOFT
+        : SKELETON
   return (
     <span
       style={{
@@ -26,9 +38,7 @@ function Bar({ w = 60, h = 6, tone = 'layer' }) {
         width: `${w}%`,
         height: `${h}px`,
         borderRadius: '3px',
-        background:
-          tone === 'accent' ? 'var(--primary-base)' : 'var(--bg-layer)',
-        opacity: tone === 'accent' ? 0.9 : 1,
+        background: bg,
       }}
     />
   )
@@ -42,8 +52,7 @@ function Dot({ tone = 'layer', size = 14 }) {
         width: `${size}px`,
         height: `${size}px`,
         borderRadius: 'var(--radius-full)',
-        background:
-          tone === 'accent' ? 'var(--primary-base)' : 'var(--bg-layer)',
+        background: tone === 'accent' ? 'var(--primary-base)' : SKELETON,
         flexShrink: 0,
       }}
     />
@@ -82,16 +91,21 @@ function Marker({ children }) {
 function Row({ children, active, gap = 8 }) {
   return (
     <div
+      className='landing-illo-row'
+      data-active={active ? 'true' : 'false'}
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: `${gap}px`,
         padding: '8px 10px',
         borderRadius: '8px',
-        background: active ? 'var(--bg-default)' : 'transparent',
-        // The ring rather than a border, so an active row is the same height
-        // as an inactive one and the list doesn't shift.
-        boxShadow: active ? '0 0 0 1.5px var(--primary-base)' : 'none',
+        // A tint AND a ring. The ring alone was a hairline on white, which
+        // isn't enough colour to anchor the card — this is the one element
+        // the eye is meant to land on.
+        background: active ? 'rgba(250, 115, 25, 0.07)' : 'transparent',
+        // A ring rather than a border, so an active row is the same height as
+        // an inactive one and the list doesn't shift.
+        boxShadow: active ? 'inset 0 0 0 1.5px var(--primary-base)' : 'none',
         width: '100%',
         boxSizing: 'border-box',
       }}
@@ -104,23 +118,31 @@ function Row({ children, active, gap = 8 }) {
 // The floating panel. Wider than the well and pulled left, so it crops on the
 // right — the reference's panels all run off their cards, which is what makes
 // them read as a window rather than a diagram.
-function Panel({ children, width = 260, top = '50%' }) {
+// Fills the well rather than floating in the middle of it. It was 260 wide in
+// a 323 column — 63px of empty surface framing a small object, which is most
+// of why the cards read as empty.
+//
+// Now it's inset 14 on three sides and runs PAST the bottom, so the list
+// continues out of frame instead of stopping politely.
+function Panel({ children, tall = false }) {
   return (
     <div
+      className='landing-illo-panel'
       style={{
         position: 'absolute',
-        top,
-        left: '16px',
-        transform: top === '50%' ? 'translateY(-50%)' : 'none',
-        width: `${width}px`,
+        top: '14px',
+        left: '14px',
+        right: '14px',
+        bottom: tall ? '-28px' : '14px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '4px',
-        padding: '10px',
+        gap: '5px',
+        padding: '12px',
         borderRadius: '12px',
         background: 'var(--bg-default)',
-        boxShadow: '0 2px 10px rgba(23, 23, 23, 0.05)',
+        boxShadow: '0 2px 12px rgba(23, 23, 23, 0.06)',
         boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
     >
       {children}
@@ -132,14 +154,16 @@ function Panel({ children, width = 260, top = '50%' }) {
 // A ranked list, one row surfaced with a real flag and a real number.
 export function GeographyIllustration() {
   return (
-    <Panel>
+    // tall: the list runs off the bottom of the well, so it reads as the top
+    // of a longer list rather than four rows that happen to end.
+    <Panel tall>
       <Row>
         <Dot />
         <Bar w={44} />
       </Row>
       <Row active>
-        <CountryFlag country='Norway' size={14} />
-        <Bar w={38} />
+        <CountryFlag country='Norway' size={15} />
+        <Bar w={38} tone='soft' />
         <span style={{ flex: '1 0 0' }} />
         <Marker>248</Marker>
       </Row>
@@ -151,6 +175,10 @@ export function GeographyIllustration() {
         <Dot />
         <Bar w={30} />
       </Row>
+      <Row>
+        <Dot />
+        <Bar w={46} />
+      </Row>
     </Panel>
   )
 }
@@ -159,7 +187,7 @@ export function GeographyIllustration() {
 // The real renderer beside a skeleton control column, one swatch lit.
 export function QrIllustration() {
   return (
-    <Panel width={250}>
+    <Panel>
       <div
         style={{
           display: 'flex',
@@ -274,7 +302,7 @@ export function DomainIllustration() {
 // contrast IS the illustration, so neither carries a marker.
 export function NoScriptIllustration() {
   return (
-    <Panel width={244}>
+    <Panel>
       <div
         style={{
           display: 'flex',
@@ -320,7 +348,7 @@ export function NoScriptIllustration() {
 // the copy makes.
 export function PrintIllustration() {
   return (
-    <Panel width={252}>
+    <Panel>
       <div style={{ display: 'flex', gap: '12px', padding: '2px' }}>
         {[0, 1].map((i) => (
           <div
@@ -363,7 +391,7 @@ export function PrintIllustration() {
 // A row of stat tiles, one carrying a real figure.
 export function StatsIllustration() {
   return (
-    <Panel width={256}>
+    <Panel>
       <div style={{ display: 'flex', gap: '8px', padding: '2px' }}>
         {[0, 1, 2].map((i) => (
           <div

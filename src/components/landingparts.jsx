@@ -133,6 +133,8 @@ export function Caption({ children, tone = 'sub' }) {
 // takes an `image` when they do.
 export function Card({ title, lead, body, image, illustration }) {
   return (
+    // The card is the hover target, not the well — the motion should answer
+    // the whole card, including its title, rather than only the picture.
     <article
       className='landing-card'
       style={{
