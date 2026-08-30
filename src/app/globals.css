@@ -3139,6 +3139,74 @@ html {
   }
 }
 
+/* --- QR context menu ---
+   Fixed, because its coordinates come from a click event and those are
+   viewport-relative. */
+.qr-context-menu {
+  position: fixed;
+  z-index: 90;
+  min-width: 178px;
+  padding: 6px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-default);
+  border: 1px solid var(--stroke-soft);
+  box-shadow: 0 12px 32px rgba(23, 23, 23, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: qrMenuIn 140ms var(--ease-out);
+}
+
+.qr-context-menu button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0.26px;
+  color: var(--text-strong);
+  transition: background var(--duration-fast) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .qr-context-menu button:hover {
+    background: var(--bg-surface);
+  }
+}
+
+.qr-context-rule {
+  display: block;
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--stroke-soft);
+}
+
+/* Red only once it's armed — a destructive item sitting red next to Edit
+   draws the eye to the wrong option every time the menu opens. */
+.qr-context-danger {
+  color: var(--error-base) !important;
+}
+
+@keyframes qrMenuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qr-context-menu {
+    animation: none;
+  }
+}
+
 /* --- Logo context menu ---
    Positioned at the cursor, so `fixed` rather than absolute — the coordinates
    come from a click event and those are viewport-relative. */

@@ -423,6 +423,11 @@ export default function CreatePage() {
   const selectedLink =
     existingLinks?.find((l) => l.id === selectedLinkId) || null
 
+  // Whether the chosen link ALREADY has a code. The design step said "Create
+  // code" regardless, so re-designing an existing one offered to create a
+  // second — and the button contradicted what the request actually does.
+  const editingCode = Boolean(selectedLink?.hasQrCode || selectedLink?.qrCodeId)
+
   const clearError = useCallback((field) => {
     setErrors((prev) => {
       if (!prev[field]) return prev
@@ -1156,7 +1161,9 @@ export default function CreatePage() {
                 ? 'Saving…'
                 : 'Creating…'
               : mode === 'qr' && step === 'design'
-                ? 'Create code'
+                ? editingCode || isEditing
+                  ? 'Save changes'
+                  : 'Create code'
                 : isEditing
                   ? 'Save changes'
                   : intent === 'qr'

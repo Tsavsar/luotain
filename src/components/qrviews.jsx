@@ -241,7 +241,7 @@ function RowMenu({ code, onOpen, onEdit, onDelete }) {
         </div>
       }
     >
-      <DropdownMenu width='160px'>
+      <DropdownMenu>
         <DropdownOption onClick={() => onOpen?.(code)}>
           View code
         </DropdownOption>
@@ -403,7 +403,14 @@ function QrRow({ code, zIndex, onOpen, onEdit, onDelete, register }) {
   )
 }
 
-export function QrTable({ codes, onOpen, onEdit, onDelete, register }) {
+export function QrTable({
+  codes,
+  onOpen,
+  onEdit,
+  onDelete,
+  register,
+  bindMenu,
+}) {
   const [sortBy, setSortBy] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
   const { containerRef, onMouseMove, onMouseLeave, layer } =
@@ -463,7 +470,7 @@ export function QrTable({ codes, onOpen, onEdit, onDelete, register }) {
 }
 
 // ─── Cards ───
-export function QrCards({ codes, onOpen, register }) {
+export function QrCards({ codes, onOpen, register, bindMenu }) {
   return (
     <div className='qr-grid-cards'>
       {codes.map((code) => {
@@ -474,6 +481,10 @@ export function QrCards({ codes, onOpen, register }) {
             type='button'
             ref={register?.(code.id)}
             onClick={() => onOpen(code)}
+            // Right-click gives this view the same actions the table
+            // row menu has. Without it a code here could be previewed
+            // but never edited or deleted.
+            {...(bindMenu?.(code) || {})}
             className='qr-card'
             style={{
               position: 'relative',
@@ -583,7 +594,7 @@ export function QrCards({ codes, onOpen, register }) {
 // The code, large, with its name under it. No link and no scan count: this view
 // is for finding the right code by eye, and the numbers are what the other two
 // are for.
-export function QrGallery({ codes, onOpen, register }) {
+export function QrGallery({ codes, onOpen, register, bindMenu }) {
   return (
     <div className='qr-grid-gallery'>
       {codes.map((code) => {
@@ -594,6 +605,10 @@ export function QrGallery({ codes, onOpen, register }) {
             type='button'
             ref={register?.(code.id)}
             onClick={() => onOpen(code)}
+            // Right-click gives this view the same actions the table
+            // row menu has. Without it a code here could be previewed
+            // but never edited or deleted.
+            {...(bindMenu?.(code) || {})}
             className='qr-tile'
             style={{
               position: 'relative',

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import QrContextMenu, { useQrContextMenu } from '@/components/qrcontextmenu'
 import QrDesigner, { QrCode, QrLightbox } from '@/components/qrdesigner'
 import Modal from '@/components/modal'
 import { toast } from '@/components/toast'
@@ -408,6 +409,9 @@ export default function QrCodesPage() {
     setViewerOpen(false)
   }
 
+  // Right-click, available in every view rather than only the table.
+  const ctx = useQrContextMenu()
+
   async function handleDelete(code) {
     // No confirmation dialog here yet, and that's a gap worth naming: deleting
     // a QR is a one-way door — the slug frees immediately and anything already
@@ -635,11 +639,22 @@ export default function QrCodesPage() {
               onOpen={openViewer}
               onEdit={(code) => startEditing(code)}
               onDelete={handleDelete}
+              bindMenu={ctx.bind}
             />
           ) : view === 'gallery' ? (
-            <QrGallery codes={codes} onOpen={openViewer} register={register} />
+            <QrGallery
+              codes={codes}
+              onOpen={openViewer}
+              register={register}
+              bindMenu={ctx.bind}
+            />
           ) : (
-            <QrCards codes={codes} onOpen={openViewer} register={register} />
+            <QrCards
+              codes={codes}
+              onOpen={openViewer}
+              register={register}
+              bindMenu={ctx.bind}
+            />
           )}
         </div>
       </div>
@@ -658,6 +673,14 @@ export default function QrCodesPage() {
         // The lightbox hands back where its card was, which becomes the
         // modal's transform origin.
         onEdit={viewing ? (origin) => startEditing(viewing, origin) : undefined}
+      />
+
+      <QrContextMenu
+        menu={ctx.menu}
+        onClose={ctx.close}
+        onOpen={openViewer}
+        onEdit={(code) => startEditing(code)}
+        onDelete={handleDelete}
       />
 
       <Modal
