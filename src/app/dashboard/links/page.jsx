@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { LinkRowsSkeleton, StatsSkeleton } from '@/components/loadingskeletons'
 import { useMockDataState } from '@/components/mockdatacontext'
 import { useRouter } from 'next/navigation'
 import LinksStats from '@/components/linksstats'
@@ -263,11 +264,15 @@ export default function LinksPage() {
               finding out too late. */}
           <UsageBanner linkCount={links?.length} />
 
-          <LinksStats
-            stats={stats}
-            selectedRange={selectedRange}
-            onRangeChange={setSelectedRange}
-          />
+          {links === null ? (
+            <StatsSkeleton />
+          ) : (
+            <LinksStats
+              stats={stats}
+              selectedRange={selectedRange}
+              onRangeChange={setSelectedRange}
+            />
+          )}
         </div>
       </div>
 
@@ -284,21 +289,28 @@ export default function LinksPage() {
         {/* No mock toggle on, table renders its own empty state —
             same "no data yet" the real app shows before any links
             have been created, not a separate loading state. */}
-        <LinksTable
-          links={links}
-          onOpen={(link) =>
-            router.push(`/dashboard/links/${slugOf(link.shortUrl)}`)
-          }
-          onEdit={(link) => {
-            if (useMockData) {
-              toast('Mock data is on — nothing was changed')
-              return
+        {/* A skeleton shaped like the table, not a spinner — the layout
+              is already correct before the data lands, so nothing reflows
+              when it does. */}
+        {links === null ? (
+          <LinkRowsSkeleton />
+        ) : (
+          <LinksTable
+            links={links}
+            onOpen={(link) =>
+              router.push(`/dashboard/links/${slugOf(link.shortUrl)}`)
             }
-            router.push(`/dashboard/create?edit=${link.id}`)
-          }}
-          onDuplicate={handleDuplicate}
-          onDelete={handleDelete}
-        />
+            onEdit={(link) => {
+              if (useMockData) {
+                toast('Mock data is on — nothing was changed')
+                return
+              }
+              router.push(`/dashboard/create?edit=${link.id}`)
+            }}
+            onDuplicate={handleDuplicate}
+            onDelete={handleDelete}
+          />
+        )}
       </div>
 
       {/* Its own section at the foot of the page rather than tucked

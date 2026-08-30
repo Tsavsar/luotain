@@ -40,6 +40,15 @@ export async function GET() {
       // total would be the single most expensive thing on the page —
       // Click is the highest-volume table in the schema.
       _count: { select: { clicks: true } },
+      // Just the id of the code, if there is one. The create page needs to
+      // know whether designing means CREATING a code or EDITING the existing
+      // one — without this it always said "Create code", and re-designing an
+      // existing code offered to make a second.
+      //
+      // take: 1 rather than the full relation: the answer is "is there one",
+      // and loading every code for every link to answer a boolean would be
+      // wasteful on a page that lists them all.
+      qrCodes: { select: { id: true }, take: 1 },
     },
   })
 
@@ -51,6 +60,7 @@ export async function GET() {
       destination: l.destinationUrl,
       title: l.title,
       clicks: l._count.clicks,
+      qrCodeId: l.qrCodes?.[0]?.id ?? null,
       createdAt: l.createdAt,
     })),
   })

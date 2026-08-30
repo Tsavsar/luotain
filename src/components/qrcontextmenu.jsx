@@ -1,14 +1,18 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { DropdownMenu, DropdownOption } from '@/components/dropdown'
 
 // ─── QR context menu ───
 // Right-click a code in any view.
 //
 // The table had a row menu; the gallery and card views had nothing, so a code
-// could only be edited or deleted from one of the three. This gives all three
-// the same actions without adding a visible control to layouts whose whole
-// point is showing the code.
+// could only be edited or deleted from one of the three.
+//
+// It renders the app's own DropdownMenu and DropdownOption — the same
+// components the row menu uses — rather than a second set of styled buttons.
+// The only thing this adds is positioning: Dropdown anchors to a trigger
+// element, and there isn't one here, the anchor is wherever the cursor was.
 
 export function useQrContextMenu() {
   const [menu, setMenu] = useState(null)
@@ -31,7 +35,7 @@ export function useQrContextMenu() {
     }
   }, [menu])
 
-  // Spread onto any element that represents a code.
+  // Spread onto any element representing a code.
   function bind(code) {
     return {
       onContextMenu: (e) => {
@@ -40,8 +44,8 @@ export function useQrContextMenu() {
           code,
           // Clamped, so a right-click near an edge doesn't open the menu
           // off-screen.
-          x: Math.min(e.clientX, window.innerWidth - 190),
-          y: Math.min(e.clientY, window.innerHeight - 160),
+          x: Math.min(e.clientX, window.innerWidth - 200),
+          y: Math.min(e.clientY, window.innerHeight - 170),
         })
       },
     }
@@ -57,16 +61,6 @@ export default function QrContextMenu({
   onDelete,
   onClose,
 }) {
-  const confirmRef = useRef(false)
-  const [confirming, setConfirming] = useState(false)
-
-  // Reset between openings, or a menu closed mid-confirm reopens already
-  // asking about a code you didn't choose.
-  useEffect(() => {
-    setConfirming(false)
-    confirmRef.current = false
-  }, [menu])
-
   if (!menu) return null
 
   function run(fn) {
@@ -76,39 +70,31 @@ export default function QrContextMenu({
 
   return (
     <div
-      role='menu'
-      className='qr-context-menu'
-      style={{ left: `${menu.x}px`, top: `${menu.y}px` }}
+      // Fixed, because the coordinates come from a click event and those are
+      // viewport-relative.
+      style={{
+        position: 'fixed',
+        left: `${menu.x}px`,
+        top: `${menu.y}px`,
+        zIndex: 90,
+      }}
       // The menu's own clicks must not reach the document listener that closes
       // it, or an option would close the menu before it ran.
       onClick={(e) => e.stopPropagation()}
     >
-      <button type='button' role='menuitem' onClick={() => run(onOpen)}>
-        Preview
-      </button>
-      <button type='button' role='menuitem' onClick={() => run(onEdit)}>
-        Edit design
-      </button>
-
-      <span className='qr-context-rule' aria-hidden='true' />
-
-      {/* Two presses, not a dialog. Deleting one code from a grid doesn't
-          warrant a modal, but it does warrant more than a single click next to
-          Edit. */}
-      <button
-        type='button'
-        role='menuitem'
-        className='qr-context-danger'
-        onClick={() => {
-          if (!confirming) {
-            setConfirming(true)
-            return
-          }
-          run(onDelete)
-        }}
-      >
-        {confirming ? 'Click again to delete' : 'Delete'}
-      </button>
+      {/* The same three options, in the same order, as the table's row menu —
+          so right-clicking a card and using the row menu do the same things
+          with the same words. */}
+      {/* An explicit width: the menu defaults to 100% of its parent, and this
+          parent is a zero-width positioning shell. `close` lets an option
+          dismiss the menu through the same path the row menu uses. */}
+      <DropdownMenu width='188px' close={onClose}>
+        <DropdownOption onClick={() => run(onOpen)}>View code</DropdownOption>
+        <DropdownOption onClick={() => run(onEdit)}>Edit</DropdownOption>
+        <DropdownOption danger onClick={() => run(onDelete)}>
+          Delete
+        </DropdownOption>
+      </DropdownMenu>
     </div>
   )
 }

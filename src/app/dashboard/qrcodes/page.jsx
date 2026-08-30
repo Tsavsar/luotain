@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import QrContextMenu, { useQrContextMenu } from '@/components/qrcontextmenu'
+import {
+  QrCardsSkeleton,
+  QrGallerySkeleton,
+  QrTableSkeleton,
+} from '@/components/loadingskeletons'
 import QrDesigner, { QrCode, QrLightbox } from '@/components/qrdesigner'
 import Modal from '@/components/modal'
 import { toast } from '@/components/toast'
@@ -228,60 +233,6 @@ function GalleryIcon() {
         />
       </g>
     </svg>
-  )
-}
-
-function CardSkeleton() {
-  return (
-    <div
-      aria-hidden='true'
-      style={{
-        display: 'flex',
-        gap: '14px',
-        alignItems: 'center',
-        padding: '10px',
-      }}
-    >
-      <div
-        className='skeleton-pulse'
-        style={{
-          width: '72px',
-          height: '72px',
-          borderRadius: '10px',
-          background: 'var(--bg-surface)',
-          flexShrink: 0,
-        }}
-      />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-        <div
-          className='skeleton-pulse'
-          style={{
-            width: '108px',
-            height: '13px',
-            borderRadius: '4px',
-            background: 'var(--bg-surface)',
-          }}
-        />
-        <div
-          className='skeleton-pulse'
-          style={{
-            width: '136px',
-            height: '11px',
-            borderRadius: '4px',
-            background: 'var(--bg-surface)',
-          }}
-        />
-        <div
-          className='skeleton-pulse'
-          style={{
-            width: '62px',
-            height: '15px',
-            borderRadius: '4px',
-            background: 'var(--bg-surface)',
-          }}
-        />
-      </div>
-    </div>
   )
 }
 
@@ -601,10 +552,16 @@ export default function QrCodesPage() {
           ) : null}
 
           {!loaded ? (
-            <div className='qr-grid-cards'>
-              <CardSkeleton />
-              <CardSkeleton />
-            </div>
+            // Matches whichever view is selected. Two generic cards while
+            // the gallery is showing meant the layout jumped the moment
+            // the codes arrived.
+            view === 'table' ? (
+              <QrTableSkeleton />
+            ) : view === 'gallery' ? (
+              <QrGallerySkeleton />
+            ) : (
+              <QrCardsSkeleton />
+            )
           ) : codes.length === 0 ? (
             <div
               style={{

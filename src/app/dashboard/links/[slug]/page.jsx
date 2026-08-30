@@ -964,7 +964,10 @@ export default function LinkDetailPage() {
               className='label-md'
               style={{ color: 'var(--text-strong)', margin: 0 }}
             >
-              Design your QR code
+              {/* The panel is the same either way — what differs is whether
+                  a code already exists. hasQr was already computed for the
+                  button above; it just wasn't reaching these two labels. */}
+              {hasQr ? 'Edit your QR code' : 'Design your QR code'}
             </p>
             <p
               className='para-sm'
@@ -1021,7 +1024,13 @@ export default function LinkDetailPage() {
                 color: 'var(--bg-default)',
               }}
             >
-              {savingQr ? 'Creating…' : 'Create code'}
+              {savingQr
+                ? hasQr
+                  ? 'Saving…'
+                  : 'Creating…'
+                : hasQr
+                  ? 'Save changes'
+                  : 'Create code'}
             </button>
           </div>
         </div>
