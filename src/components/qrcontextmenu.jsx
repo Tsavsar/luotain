@@ -86,7 +86,6 @@ export default function QrContextMenu({
           so right-clicking a card and using the row menu do the same things
           with the same words. */}
       {/* An explicit width: the menu defaults to 100% of its parent, and this
-          parent is a zero-width positioning shell. `close` lets an option
           dismiss the menu through the same path the row menu uses. */}
       <DropdownMenu width='188px' close={onClose}>
         <DropdownOption onClick={() => run(onOpen)}>View code</DropdownOption>
