@@ -92,7 +92,6 @@ function DashboardShell({ children }) {
   }, [router])
 
   // The user's own profile. /api/dashboard-info answers "which org am I
-  // in" and carries no name or avatar seed, so without this the header
   // avatar fell back to a default gradient while settings showed the real
   // one — they were reading different sources.
   useEffect(() => {
