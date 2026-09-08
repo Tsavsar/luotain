@@ -70,7 +70,6 @@ export default function QrContextMenu({
 
   return (
     <div
-      // Fixed, because the coordinates come from a click event and those are
       // viewport-relative.
       style={{
         position: 'fixed',
