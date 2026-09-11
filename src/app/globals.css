@@ -3142,29 +3142,78 @@ html {
 }
 
 /* --- Feature illustrations ---
-   Hover warms the accented field's focus ring. Nothing moves.
 
-   These sit in a grid of five, and anything that shifts position makes the
-   whole row feel loose — the card is the interactive element, not the
-   picture inside it. */
-.illo-row {
-  transition: box-shadow 320ms var(--ease-out);
+   These are flat <img> elements, so nothing can animate INSIDE them — only
+   the image as a whole. That turns out to be the right constraint: one
+   orchestrated reveal per card beats eight illustrations each doing something.
+
+   Transform and opacity only, so it composites rather than repainting a
+   300KB SVG on every frame. */
+.illo-art {
+  opacity: 0;
+  /* 0.96, not 0. Nothing in the real world disappears and reappears — even a
+     barely-visible initial scale reads as the thing arriving rather than
+     materialising. Paired with a 6px rise so it settles downward into place. */
+  transform: scale(0.96) translateY(6px);
+  transition:
+    opacity 520ms var(--ease-out),
+    transform 620ms var(--ease-spring);
+  /* Only while it has somewhere to go. Left on permanently this forces a
+     compositing layer for every illustration on the page. */
+  will-change: opacity, transform;
+}
+
+.illo-art[data-shown='true'] {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  will-change: auto;
+}
+
+/* Staggered across a row, so three cards arriving together read as a cascade
+   rather than one block. 70ms: past about 90 the last card feels late, below
+   40 the stagger stops registering as one movement.
+
+   Keyed off position in the grid, not per-card classes — the grid reflows from
+   three columns to two to one, and nth-child follows it. */
+.landing-grid > *:nth-child(3n + 2) .illo-art {
+  transition-delay: 70ms;
+}
+.landing-grid > *:nth-child(3n) .illo-art {
+  transition-delay: 140ms;
+}
+
+/* Hover lifts the artwork slightly out of its well. Small — 3px on an image
+   that already fills its frame is enough to register, and the card's own
+   title moving with it would be the thing that felt loose. */
+.illo-art img {
+  transition: transform 420ms var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .landing-card:hover .illo-row[data-accent='true'] {
-    /* The design's focus ring, one step warmer: the orange spread goes from
-       24% to 40% and gains a soft cast beneath it. */
-    box-shadow:
-      0 0 0 2.5px var(--bg-default),
-      0 0 0 5px rgba(250, 115, 25, 0.4),
-      0 4px 14px rgba(250, 115, 25, 0.14);
+  .landing-card:hover .illo-art img {
+    transform: scale(1.03);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .illo-row {
+  /* The fade stays because it still signals arrival; only movement goes. */
+  .illo-art {
+    transform: none;
+    transition: opacity 300ms ease;
+  }
+  .illo-art[data-shown='true'] {
+    transform: none;
+  }
+  .illo-art img {
     transition: none;
+  }
+  .landing-card:hover .illo-art img {
+    transform: none;
+  }
+  /* No stagger either — with movement gone, a delayed fade is just an uneven
+     one. */
+  .landing-grid > * .illo-art {
+    transition-delay: 0ms;
   }
 }
 

@@ -572,6 +572,19 @@ function Footer() {
             Privacy Policy.
           </Link>
         </span>
+
+        {/* A plain <a>, not next/link — Link is for internal routes and this
+            goes off-site. It also needs rel='noreferrer', which Link doesn't
+            add for you. */}
+        <a
+          href='https://shatermt.com'
+          target='_blank'
+          rel='noreferrer'
+          className='landing-nav-link para-xs'
+          style={{ color: 'var(--text-sub)', textDecoration: 'none' }}
+        >
+          Made by <span style={{ color: 'var(--text-strong)' }}>@tsavsar</span>
+        </a>
       </div>
 
       {/* The design has a wordmark here too — wider than tall — which is why
