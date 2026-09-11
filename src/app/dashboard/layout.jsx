@@ -5,18 +5,134 @@ import { useRouter, usePathname } from 'next/navigation'
 import DashboardMenu from '@/components/dashboardmenu'
 import DashboardNav from '@/components/dashboardnav'
 import DashboardSkeleton from '@/components/dashboardskeleton'
-import { ToastStack } from '@/components/toast'
-import DevControls from '@/components/devcontrols'
+import { ToastStack, toast } from '@/components/toast'
 import { getProfile } from '@/lib/profilecache'
 import { MotionConfig } from 'motion/react'
+import Switch from '@/components/switch'
 import {
   MockDataProvider,
   useMockDataState,
 } from '@/components/mockdatacontext'
 
+// Split out because it needs to be INSIDE the provider to read it, and
+// DashboardLayout is the thing rendering the provider.
+function MockDataToggle() {
+  const { useMockData, toggleMockData, ready } = useMockDataState()
+  return (
+    <Switch
+      checked={useMockData}
+      onChange={toggleMockData}
+      disabled={!ready}
+      label={`Mock data${useMockData ? '' : ''}`}
+    />
+  )
+}
+
+// A testing switch for plan-gated UI, sitting with the mock-data toggle.
+//
+// Two states rather than three, deliberately: what needs exercising is free
+// versus paid, and a three-way control for a binary question is more fiddly
+// than useful. Switching to paid picks PRO because it's the tier with every
+// capability turned on — Starter's gates are a subset of Free's.
+//
+// Renders nothing unless the endpoint is enabled, so it disappears the moment
+// ALLOW_PLAN_TOGGLE is removed rather than sitting there failing.
+function PlanToggle() {
+  const [plan, setPlan] = useState(null)
+  const [available, setAvailable] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/plan')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return
+        setPlan(d.plan)
+        // One GET, and it tells us both things. The previous version fired a
+        // no-op PATCH to see whether the route was enabled, which 404'd by
+        // design and logged a console error on every load.
+        setAvailable(Boolean(d.toggleAvailable))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (!available || !plan) return null
+
+  const paid = plan !== 'FREE'
+
+  async function toggle() {
+    if (busy) return
+    setBusy(true)
+    const next = paid ? 'FREE' : 'PRO'
+    try {
+      const res = await fetch('/api/plan', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: next }),
+      })
+      if (res.ok) {
+        setPlan(next)
+        // Reloaded rather than announced by event: plan changes what several
+        // pages render and what the API allows, and a plan switch during
+        // testing is worth a clean slate over a partial refresh.
+        window.location.reload()
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Switch
+      checked={paid}
+      onChange={toggle}
+      disabled={busy}
+      tone='primary'
+      label={paid ? 'Pro' : 'Free'}
+    />
+  )
+}
+
 function DashboardShell({ children }) {
   const router = useRouter()
   const pathname = usePathname()
+
+  // Claims any links made anonymously on the homepage hero.
+  //
+  // In the dashboard SHELL rather than an onboarding step, so it fires
+  // whichever route got someone into the app — signup, an invite, or just
+  // signing back in on the browser where they tried the hero.
+  //
+  // Safe on every mount: the endpoint only moves links still sitting in the
+  // public workspace and clears the cookie on success, so a second call finds
+  // nothing to do.
+  useEffect(() => {
+    let cancelled = false
+    // The cookie is httpOnly, so this can't check whether one exists — the
+    // endpoint answers that. One request that usually returns claimed: 0.
+    fetch('/api/public/claim', { method: 'POST' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (cancelled || !d?.claimed) return
+        toast(
+          d.claimed === 1
+            ? 'Your link from the homepage is here'
+            : `${d.claimed} links from the homepage are here`
+        )
+      })
+      .catch(() => {
+        // Not worth surfacing. The cookie survives a failure, so it retries
+        // on the next visit.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   // Pages nested UNDER /dashboard/links (trash, a single link's detail
   // page) are secondary pages one level down, not one of the three
   // top-level tabs — none of Analytics/Links/QR codes corresponds to
@@ -42,8 +158,6 @@ function DashboardShell({ children }) {
   const compactHeader = pathname?.startsWith('/dashboard/create')
   const [checking, setChecking] = useState(true)
   const [orgName, setOrgName] = useState('')
-  const [orgImage, setOrgImage] = useState(null)
-  const [orgAvatarSeed, setOrgAvatarSeed] = useState(null)
   const [allOrgs, setAllOrgs] = useState([])
   const [activeOrgId, setActiveOrgId] = useState(null)
   const [userImage, setUserImage] = useState(null)
@@ -92,6 +206,7 @@ function DashboardShell({ children }) {
   }, [router])
 
   // The user's own profile. /api/dashboard-info answers "which org am I
+  // in" and carries no name or avatar seed, so without this the header
   // avatar fell back to a default gradient while settings showed the real
   // one — they were reading different sources.
   useEffect(() => {
@@ -143,32 +258,12 @@ function DashboardShell({ children }) {
         // removing a photo in settings left the old one in the header and
         // the gradient never got a chance to render.
         setOrgName(data.orgName)
-        setOrgImage(data.orgImage || null)
-        setOrgAvatarSeed(data.orgAvatarSeed || null)
       } catch (err) {
         setOrgName('Your Organization')
       }
     }
     loadInfo()
   }, [checking])
-
-  // Renaming the workspace in settings updates the header immediately.
-  // /api/dashboard-info is fetched once on mount, so without this the old name
-  // sat in the header until a reload — the same problem primeProfile solves for
-  // the account avatar, which is why that one already worked.
-  useEffect(() => {
-    function onOrgUpdated(e) {
-      if (!e.detail) return
-      if (e.detail.name) setOrgName(e.detail.name)
-      // Checked with `in` rather than truthiness: removing the picture sends
-      // null, and a truthy check would treat that as "nothing changed" and
-      // leave the old photo in the header.
-      if ('image' in e.detail) setOrgImage(e.detail.image)
-      if ('avatarSeed' in e.detail) setOrgAvatarSeed(e.detail.avatarSeed)
-    }
-    window.addEventListener('luotain:org-updated', onOrgUpdated)
-    return () => window.removeEventListener('luotain:org-updated', onOrgUpdated)
-  }, [])
 
   if (checking) return <DashboardSkeleton />
 
@@ -202,8 +297,6 @@ function DashboardShell({ children }) {
         >
           <DashboardMenu
             orgName={orgName}
-            orgImage={orgImage}
-            orgAvatarSeed={orgAvatarSeed}
             allOrgs={allOrgs}
             activeOrgId={activeOrgId}
             userImage={userImage}
@@ -233,11 +326,67 @@ function DashboardShell({ children }) {
 
         <ToastStack />
 
-        {/* One panel, collapsible — see DevControls. It was a fixed
-            horizontal strip, and every control added to it made that strip
-            wider: two three-button pickers had stretched it across a third of
-            the screen with nothing labelled. */}
-        <DevControls theme={theme} onToggleTheme={toggleTheme} />
+        {/* Testing controls, one cluster. The mock-data toggle lives here
+          rather than on each page: it used to be a separate button on
+          the links, trash, detail and analytics pages, each with its
+          own state, so switching it on and then navigating anywhere
+          silently turned it back off. One toggle, shared state, and it
+          survives a reload. */}
+        <div
+          style={{
+            position: 'fixed',
+            left: '20px',
+            bottom: '20px',
+            zIndex: 99,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '8px 14px',
+            borderRadius: 'var(--radius-full)',
+            background: '#171717',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          }}
+        >
+          <MockDataToggle />
+
+          <span
+            aria-hidden='true'
+            style={{
+              width: '1px',
+              height: '16px',
+              background: 'rgba(255, 255, 255, 0.15)',
+            }}
+          />
+
+          <PlanToggle />
+
+          <span
+            aria-hidden='true'
+            style={{
+              width: '1px',
+              height: '16px',
+              background: 'rgba(255, 255, 255, 0.15)',
+            }}
+          />
+
+          <button
+            onClick={toggleTheme}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-sans)',
+            }}
+          >
+            <span
+              className='para-xs'
+              style={{ color: 'rgba(255,255,255,0.7)' }}
+            >
+              {theme === 'dark' ? 'Light' : 'Dark'}
+            </span>
+          </button>
+        </div>
       </main>
     </MotionConfig>
   )
