@@ -15,13 +15,13 @@ export async function GET() {
   const out = { checks: {} }
 
   // 1. The env var naming the workspace anonymous links belong to.
-  const orgId = process.env.PUBLIC_ORG_ID
+  const orgId = process.env.ANON_LINKS_ORG_ID
   out.checks.publicOrgIdSet = {
     ok: Boolean(orgId),
     value: orgId || null,
     note: orgId
       ? 'set'
-      : 'MISSING — every request returns 503. Run migration_public_org.sql and set PUBLIC_ORG_ID, then redeploy.',
+      : 'MISSING — every request returns 503. Run the setup SQL and set ANON_LINKS_ORG_ID in Vercel. No redeploy needed: it has no NEXT_PUBLIC_ prefix, so it is read at request time.',
   }
 
   // 2. That workspace has to exist. A set-but-wrong id fails identically to an

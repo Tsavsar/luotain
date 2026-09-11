@@ -15,7 +15,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const CLAIM_COOKIE = 'luotain_pending_links'
-const PUBLIC_ORG = process.env.PUBLIC_ORG_ID
+const PUBLIC_ORG = process.env.ANON_LINKS_ORG_ID
 
 export async function POST() {
   if (!PUBLIC_ORG) {

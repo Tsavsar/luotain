@@ -8,7 +8,12 @@ import { SHORT_DOMAIN } from '@/lib/shortlink'
 // Anonymous link creation, for the hero. No account, no session.
 //
 // Links need an organizationId, so they go to a house workspace named by
-// PUBLIC_ORG_ID. The alternative — making the column nullable — touches every
+// ANON_LINKS_ORG_ID. Named that rather than PUBLIC_ORG_ID because PUBLIC_ is
+// Astro's browser-exposure prefix, and Vercel warns on it generically even
+// though Next only exposes NEXT_PUBLIC_. The value isn't secret, but a name
+// that triggers a security warning on every deploy is a name worth changing.
+//
+// The alternative — making the column nullable — touches every
 // query in the app that scopes by org, which is a large change to support one
 // form.
 //
@@ -110,9 +115,9 @@ function candidate() {
 }
 
 export async function POST(request) {
-  const orgId = process.env.PUBLIC_ORG_ID
+  const orgId = process.env.ANON_LINKS_ORG_ID
   if (!orgId) {
-    console.error('[public/links] PUBLIC_ORG_ID is not set')
+    console.error('[public/links] ANON_LINKS_ORG_ID is not set')
     return Response.json(
       { error: 'Link creation is unavailable right now' },
       { status: 503 }
