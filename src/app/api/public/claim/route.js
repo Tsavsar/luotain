@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import { getCurrentUserEmail } from '@/lib/auth'
+import { getCurrentUserEmail } from '@/lib/session'
 
 // POST /api/public/claim
 //
