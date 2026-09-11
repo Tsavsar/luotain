@@ -22,10 +22,10 @@ const IMAGE = '/assets/websiteimage.png'
 // create anything, so until that's set up this generates the link in the
 // browser instead.
 //
-// The link LOOKS real and the QR code is genuinely encoded from it — but it
-// resolves to nothing, so the card says so rather than handing someone a URL
-// that 404s when they share it. Flip this to false once the endpoint is live.
-const USE_MOCK = true
+// Now false: the endpoint is live, so links are real, resolve, and log clicks
+// like any other. The mock path stays for local work without a database —
+// flip it back and the card generates a slug in the browser instead.
+const USE_MOCK = false
 
 // Six characters, not adjective-noun. "swift-otter" makes a 21-character URL
 // where this makes 16, and the whole point of a short link is the length.
