@@ -8,9 +8,9 @@ import NavAccount from '@/components/landingaccount'
 import {
   GeographyIllustration,
   QrIllustration,
-  DestinationIllustration,
-  DomainIllustration,
+  ShortenIllustration,
   NoScriptIllustration,
+  DomainIllustration,
 } from '@/components/landingillustrations'
 import CookieBanner from '@/components/cookiebanner'
 import LogoMenu from '@/components/logomenu'
@@ -343,9 +343,9 @@ function Features() {
           illustration={<QrIllustration />}
         />
         <Card
-          title='Control where it goes'
-          body='Change the destination and every code already shared follows.'
-          illustration={<DestinationIllustration />}
+          title='No more long links'
+          body='Paste any link and get a short one back. Name it yourself or let us generate it.'
+          illustration={<ShortenIllustration />}
         />
         <Card
           title='Your own domain'

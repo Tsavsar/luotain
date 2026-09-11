@@ -3083,57 +3083,27 @@ html {
 }
 
 /* --- Feature illustrations ---
-   Hover does one thing: the accented row's ring warms. Nothing moves.
+   Hover warms the accented field's focus ring. Nothing moves.
 
-   These sit in a grid of five. Anything that shifts position makes the whole
-   row feel loose, and the illustration isn't the interactive element — the
-   card is. */
+   These sit in a grid of five, and anything that shifts position makes the
+   whole row feel loose — the card is the interactive element, not the
+   picture inside it. */
 .illo-row {
   transition: box-shadow 320ms var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .landing-card:hover .illo-row[data-accent='true'] {
+    /* The design's focus ring, one step warmer: the orange spread goes from
+       24% to 40% and gains a soft cast beneath it. */
     box-shadow:
-      inset 0 0 0 1px rgba(250, 115, 25, 0.55),
-      0 3px 12px rgba(250, 115, 25, 0.14);
-  }
-}
-
-/* --- Domain marquee ---
-   Two copies of the list, the track moving up by exactly half its height. At
-   the moment the first copy has fully left, the second is where the first
-   began — so the loop point is invisible.
-
-   translate3d, not `top`: it composites, where animating position lays out
-   and paints every frame. */
-.illo-marquee {
-  display: flex;
-  flex-direction: column;
-  animation: illoScroll 26s linear infinite;
-}
-
-@keyframes illoScroll {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(0, -50%, 0);
-  }
-}
-
-/* Pauses on hover, so someone who wants to read a domain can. Motion you
-   can't stop is what makes a marquee irritating. */
-@media (hover: hover) and (pointer: fine) {
-  .landing-card:hover .illo-marquee {
-    animation-play-state: paused;
+      0 0 0 2.5px var(--bg-default),
+      0 0 0 5px rgba(250, 115, 25, 0.4),
+      0 4px 14px rgba(250, 115, 25, 0.14);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .illo-marquee {
-    animation: none;
-  }
   .illo-row {
     transition: none;
   }
