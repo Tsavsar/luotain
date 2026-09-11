@@ -83,35 +83,28 @@ const RESERVED = new Set([
   'security',
 ])
 
-const ADJECTIVES = [
-  'swift',
-  'calm',
-  'brave',
-  'keen',
-  'plain',
-  'warm',
-  'sharp',
-  'proud',
-  'quick',
-  'bright',
-]
-const NOUNS = [
-  'otter',
-  'heron',
-  'pike',
-  'crow',
-  'hare',
-  'newt',
-  'moth',
-  'toad',
-  'finch',
-  'lynx',
-]
+// Five random characters. Adjective-noun gave only 100 combinations, so it
+// collided constantly and fell through to a hyphenated suffix — it wasn't
+// reliably short in practice either.
+//
+// The alphabet drops 0/O and 1/l/I: a short code gets read aloud and typed by
+// hand, and those are the pairs people get wrong.
+//
+// 31^5 is about 28.6 million. At 10,000 links there's roughly an 82% chance of
+// at least one collision somewhere in the set, which sounds alarming but is
+// exactly what the retry loop below is for — the chance of any SINGLE
+// generation colliding is 10,000/28.6M, about 0.035%.
+const SLUG_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789'
 
-function candidate() {
-  const a = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
-  const n = NOUNS[Math.floor(Math.random() * NOUNS.length)]
-  return `${a}-${n}`
+function candidate(length = 5) {
+  // randomBytes, not Math.random — a guessable slug lets someone walk the
+  // namespace and read links that were never shared with them.
+  const bytes = crypto.randomBytes(length)
+  let out = ''
+  for (let i = 0; i < length; i++) {
+    out += SLUG_ALPHABET[bytes[i] % SLUG_ALPHABET.length]
+  }
+  return out
 }
 
 export async function POST(request) {
@@ -277,17 +270,17 @@ export async function POST(request) {
       }
     }
 
-    // A few attempts, then give up rather than loop. Collisions are rare at
-    // 100 combinations × a random suffix, and an unbounded retry on a
-    // saturated namespace would hang the request.
+    // Six attempts, then give up rather than loop. An unbounded retry on a
+    // saturated namespace would hang the request rather than fail it.
     let link = null
     for (let attempt = 0; attempt < 6 && !link; attempt++) {
-      // One extra character after a few misses, rather than a hyphenated
-      // suffix — at 887 million combinations a collision is already unlikely,
-      // and lengthening beats making the code look different.
+      // A sixth character after three misses. Three collisions in a row at
+      // 28.6 million means the namespace is genuinely filling up, and
+      // lengthening beats a hyphenated suffix — every code keeps the same
+      // shape.
       const shortCode = requestedSlug
         ? requestedSlug
-        : candidate(attempt < 3 ? 6 : 7)
+        : candidate(attempt < 3 ? 5 : 6)
       const taken = await prisma.link.findUnique({
         where: { domainId_shortCode: { domainId: domain.id, shortCode } },
         select: { id: true },
