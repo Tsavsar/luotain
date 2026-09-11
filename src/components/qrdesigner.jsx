@@ -784,7 +784,17 @@ export function QrLightbox({ open, onClose, shortUrl, onEdit, ...qr }) {
                   overflow: 'hidden',
                 }}
               >
-                <QrCode {...qr} card={300} margin={12} radius={20} />
+                {/* value is derived from shortUrl, not spread from ...qr — shortUrl is a
+                      named param, so it was never in the rest object and the code
+                      fell back to QrCode's default of https://luotain.app. Every
+                      lightbox preview encoded the homepage. */}
+                <QrCode
+                  {...qr}
+                  value={shortUrl ? `https://${shortUrl}` : undefined}
+                  card={300}
+                  margin={12}
+                  radius={20}
+                />
               </div>
 
               {/* The highlight needs its own clipping layer. overflow:hidden
