@@ -19,13 +19,14 @@ const BASE = '/assets/illustrations'
 // One component, because the only thing that differs is which file and what
 // the alt text says. Five near-identical components would be five places to
 // change when the well size does.
-// Capped at 240, below the artwork's own 256. objectFit: contain was stretching
-// it to fill a 323px column — 1.26x the size it was drawn at — which is why the
-// illustrations read as oversized rather than as objects sitting on the card.
+// No cap. I had this at 224, then 240, then 256, on the reasoning that
+// scaling past the design size would soften it — which is wrong. These are
+// vectors; enlarging them is lossless, and hairlines scaling proportionally is
+// correct rather than blurry.
 //
-// A notch under the design size, so the card has visible white around the
-// artwork rather than the artwork being the card.
-const MAX_WIDTH = 240
+// The real constraint is the well. 16px padding, so the artwork nearly fills
+// it with just enough inset that it reads as placed rather than cropped.
+const PADDING = 16
 
 function Illustration({ file, alt }) {
   return (
@@ -40,7 +41,7 @@ function Illustration({ file, alt }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '12px',
+        padding: `${PADDING}px`,
         boxSizing: 'border-box',
       }}
     >
@@ -60,11 +61,11 @@ function Illustration({ file, alt }) {
         draggable={false}
         style={{
           display: 'block',
-          // Its own size, capped — not 100% of the well. The well is the frame;
-          // the artwork sits inside it.
+          // Fills the padded well. The artwork's ratio (256/230) matches the
+          // well's, so `contain` leaves no letterboxing either way — but width
+          // 100% is what actually makes it scale up.
           width: '100%',
-          maxWidth: `${MAX_WIDTH}px`,
-          height: 'auto',
+          height: '100%',
           // contain, not cover: these are diagrams at a fixed aspect ratio, and
           // cover would crop their edges at any other ratio.
           objectFit: 'contain',
@@ -94,4 +95,19 @@ export function DomainIllustration() {
 
 export function NoScriptIllustration() {
   return <Illustration file='nothing-to-install' />
+}
+
+// ─── Use cases ───
+// Same treatment as the features: 256x230 exports, filling a padded well.
+
+export function PrintIllustration() {
+  return <Illustration file='print-and-packaging' />
+}
+
+export function CampaignsIllustration() {
+  return <Illustration file='campaigns-and-social' />
+}
+
+export function ClientWorkIllustration() {
+  return <Illustration file='client-work' />
 }
