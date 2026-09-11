@@ -1,62 +1,44 @@
+// GET /api/host
+//
+// Temporary. Echoes the hostname the redirect handler would resolve against,
+// plus whether a Domain row exists for it.
+//
+// Everything else checks out — the Domain row, the Link, the unique index — so
+// the one remaining unknown is whether the value the server computes matches
+// the row. Behind a proxy, x-forwarded-host and url.hostname can differ, and
+// the redirect uses the former.
+//
+// Delete this once the answer is known.
 import { prisma } from '@/lib/prisma'
-import { SHORT_DOMAIN } from '@/lib/shortlink'
 
-// GET /api/public/links/debug
-//
-// Reports whether anonymous link creation can work, and which piece is missing
-// if it can't. Three things have to be true and the form can only say "could
-// not create the link" — this says which one.
-//
-// No session required: it reveals configuration state, not data.
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
-  const out = { checks: {} }
+export async function GET(request) {
+  const url = new URL(request.url)
 
-  // 1. The env var naming the workspace anonymous links belong to.
-  const orgId = process.env.ANON_LINKS_ORG_ID
-  out.checks.publicOrgIdSet = {
-    ok: Boolean(orgId),
-    value: orgId || null,
-    note: orgId
-      ? 'set'
-      : 'MISSING — every request returns 503. Run the setup SQL and set ANON_LINKS_ORG_ID in Vercel. No redeploy needed: it has no NEXT_PUBLIC_ prefix, so it is read at request time.',
-  }
+  // Exactly the expression [shortCode]/route.js uses, so this can't disagree
+  // with it.
+  const resolved = (request.headers.get('x-forwarded-host') || url.hostname)
+    .split(':')[0]
+    .toLowerCase()
 
-  // 2. That workspace has to exist. A set-but-wrong id fails identically to an
-  //    unset one from the outside.
-  if (orgId) {
-    const org = await prisma.organization
-      .findUnique({ where: { id: orgId }, select: { id: true, name: true } })
-      .catch(() => null)
-    out.checks.orgExists = org
-      ? { ok: true, name: org.name }
-      : {
-          ok: false,
-          note: `No Organization with id "${orgId}". The SQL did not run, or the id differs.`,
-        }
-  }
-
-  // 3. A Domain row for whatever SHORT_DOMAIN resolves to — the create route
-  //    looks it up by hostname and gives up without it.
   const domain = await prisma.domain
-    .findFirst({
-      where: { hostname: SHORT_DOMAIN },
+    .findUnique({
+      where: { hostname: resolved },
       select: { id: true, verified: true },
     })
-    .catch(() => null)
-  out.checks.shortDomain = {
-    hostname: SHORT_DOMAIN,
-    rowExists: Boolean(domain),
-    verified: domain?.verified ?? null,
-    note: domain
-      ? 'ok'
-      : `No Domain row for ${SHORT_DOMAIN}. Links cannot be created or resolved on it.`,
-  }
+    .catch((e) => ({ error: String(e?.code || e?.message || e) }))
 
-  out.ready =
-    Boolean(orgId) && out.checks.orgExists?.ok !== false && Boolean(domain)
-
-  return Response.json(out)
+  return Response.json({
+    resolved,
+    domainFound: Boolean(domain?.id),
+    domain,
+    // The raw values, so it's obvious which one the mismatch is in.
+    raw: {
+      'x-forwarded-host': request.headers.get('x-forwarded-host'),
+      'url.hostname': url.hostname,
+      host: request.headers.get('host'),
+    },
+  })
 }
