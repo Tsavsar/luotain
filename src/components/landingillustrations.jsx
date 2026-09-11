@@ -1,636 +1,151 @@
 'use client'
 
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import LogoWordmark from '@/components/logowordmark'
-import NavAccount from '@/components/landingaccount'
-import {
-  GeographyIllustration,
-  QrIllustration,
-  ShortenIllustration,
-  DomainIllustration,
-  NoScriptIllustration,
-  PrintIllustration,
-  CampaignsIllustration,
-  ClientWorkIllustration,
-} from '@/components/landingillustrations'
-import CookieBanner from '@/components/cookiebanner'
-import LogoMenu from '@/components/logomenu'
-import Reveal from '@/components/reveal'
-import PlanPicker from '@/components/planpicker'
-import HeroCard from '@/components/landingherocard'
-import ClosingCard from '@/components/landingctacard'
-import {
-  COLUMN,
-  Pill,
-  Heading,
-  Body,
-  Caption,
-  Card,
-} from '@/components/landingparts'
+import { useEffect, useRef, useState } from 'react'
 
-// ─── Landing page ───
-// Node 554:2445, transcribed section by section.
+// ─── Feature illustrations ───
+// Exported from Figma at 256×230, matching the card wells exactly.
 //
-// Everything the app already owns is pulled in rather than rebuilt: the plan
-// columns are the real PlanPicker, the closing montage is the real analytics
-// Card, and the logo is the real wordmark. A marketing page that reimplements
-// product drifts from it the first time either changes.
+// Served as <img> rather than inlined. The five come to about 560KB of path
+// data — the "nothing to install" card alone is 292KB, because three blocks of
+// code text got outlined into a few enormous paths. Inlined, that ships in the
+// HTML on every request and can't be cached separately; as files, the browser
+// caches them and the page stays small.
+//
+// They're outlined exports, so the type isn't text and the fills are hardcoded
+// hex. That's why the landing page is pinned to light — see .landing-lock in
+// globals.css. Worth knowing if these ever need to work on a dark background:
+// they'd have to be re-exported, not re-styled.
 
-// ─── Nav (555:2461) ───
-const NAV_LINKS = [
-  ['Home', '#top'],
-  ['Features', '#features'],
-  ['Use cases', '#use-cases'],
-  ['Price', '#plans'],
-]
+const BASE = '/assets/illustrations'
 
-function MenuIcon({ open }) {
-  return (
-    <svg
-      width='20'
-      height='20'
-      viewBox='0 0 20 20'
-      fill='none'
-      aria-hidden='true'
-    >
-      {/* Two lines that rotate into a cross rather than swapping icons — the
-          same element moving is what makes the state change legible. */}
-      <path
-        d='M3.5 7h13'
-        stroke='currentColor'
-        strokeWidth='1.6'
-        strokeLinecap='round'
-        style={{
-          transformOrigin: 'center',
-          transform: open ? 'translateY(3px) rotate(45deg)' : 'none',
-          transition: 'transform 220ms var(--ease-out)',
-        }}
-      />
-      <path
-        d='M3.5 13h13'
-        stroke='currentColor'
-        strokeWidth='1.6'
-        strokeLinecap='round'
-        style={{
-          transformOrigin: 'center',
-          transform: open ? 'translateY(-3px) rotate(-45deg)' : 'none',
-          transition: 'transform 220ms var(--ease-out)',
-        }}
-      />
-    </svg>
-  )
-}
+// One component, because the only thing that differs is which file and what
+// the alt text says. Five near-identical components would be five places to
+// change when the well size does.
+// No cap. I had this at 224, then 240, then 256, on the reasoning that
+// scaling past the design size would soften it — which is wrong. These are
+// vectors; enlarging them is lossless, and hairlines scaling proportionally is
+// correct rather than blurry.
+//
+// The real constraint is the well. 16px padding, so the artwork nearly fills
+// it with just enough inset that it reads as placed rather than cropped.
+const PADDING = 16
 
-function Nav() {
-  const [open, setOpen] = useState(false)
+function Illustration({ file, alt }) {
+  const [shown, setShown] = useState(false)
+  const ref = useRef(null)
 
-  // Closes on Escape and locks the page behind the sheet. Without the lock the
-  // page scrolls under an open menu, which on a phone means closing it to find
-  // you've moved somewhere else.
+  // Reveals once as it scrolls in. IntersectionObserver rather than a scroll
+  // listener — this fires once per card, where a scroll handler runs on every
+  // frame of every scroll for eight of them.
   useEffect(() => {
-    if (!open) return
-    const onKey = (e) => e.key === 'Escape' && setOpen(false)
-    document.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prev
+    const el = ref.current
+    if (!el) return
+
+    // Anything already on screen at load skips the animation. A grid fading in
+    // after the page has painted reads as a slow site; the effect is for cards
+    // you scroll TO.
+    if (el.getBoundingClientRect().top < window.innerHeight) {
+      setShown(true)
+      return
     }
-  }, [open])
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShown(true)
+          io.disconnect()
+        }
+      },
+      // Fires a little before it's fully visible, so the movement has finished
+      // by the time you're looking at it rather than starting then.
+      { rootMargin: '0px 0px -10% 0px', threshold: 0.15 }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   return (
-    <nav
-      className='landing-nav'
+    // Centred in the well, both axes. The image is no longer filling it, so
+    // something has to place it — and the design has the artwork sitting
+    // slightly high, which a flex centre gets closer than a top offset would
+    // at every column width.
+    <span
+      ref={ref}
+      className='illo-art'
+      data-shown={shown ? 'true' : 'false'}
       style={{
+        position: 'absolute',
+        inset: 0,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '100%',
-        maxWidth: `${COLUMN}px`,
-        margin: '0 auto',
+        justifyContent: 'center',
+        padding: `${PADDING}px`,
         boxSizing: 'border-box',
-        position: 'relative',
-        zIndex: 50,
       }}
     >
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-        {/* Sized by CSS so the mobile rule doesn't have to fight a prop. */}
-        {/* The real wordmark — mark and name in one SVG, so the spacing
-            between them is the designed spacing rather than a gap I picked. */}
-        {/* Right-click downloads the mark. Left-click still goes home — the
-            two gestures don't collide, so the link keeps working. */}
-        <LogoMenu>
-          <Link href='/' className='landing-logo' aria-label='Luotain, home'>
-            <LogoWordmark height={19} />
-          </Link>
-        </LogoMenu>
-
-        <span
-          aria-hidden='true'
-          className='landing-navdivider'
-          style={{
-            width: '1.5px',
-            height: '24px',
-            borderRadius: '19px',
-            background: 'var(--bg-surface)',
-            flexShrink: 0,
-          }}
-        />
-
-        <div
-          className='landing-navlinks'
-          style={{ display: 'flex', gap: '34px', alignItems: 'center' }}
-        >
-          {NAV_LINKS.map(([label, href]) => (
-            <a
-              key={label}
-              href={href}
-              className='landing-nav-link'
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: '15px',
-                lineHeight: '20px',
-                letterSpacing: '0.3px',
-                color: 'var(--text-strong)',
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {label}
-            </a>
-          ))}
-        </div>
-      </div>
-
-      <div
-        className='landing-navactions'
-        style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
-      >
-        <Pill href='/login' tone='soft'>
-          Demo
-        </Pill>
-        {/* Get started, or the signed-in person's avatar. Asking someone who
-            already has an account to "Get started" is the site not recognising
-            them — and the way back into the app is what they actually want
-            from a marketing page. */}
-        <NavAccount />
-      </div>
-
-      {/* Only on mobile. Four links and two buttons don't fit a phone, and
-          shrinking them to fit is how nav ends up unreadable. */}
-      <button
-        type='button'
-        className='landing-burger'
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? 'Close menu' : 'Open menu'}
-        aria-expanded={open}
+      <img
+        src={`${BASE}/${file}.svg`}
+        // Empty alt where the illustration restates the copy beside it — a
+        // screen reader reading "three domain fields" after the heading and body
+        // have already said it is noise. Where it shows something the copy
+        // doesn't, it gets a real description.
+        alt={alt || ''}
+        width={256}
+        height={230}
+        // Lazy, since four of the five are below the fold. The eager one is
+        // handled at the call site.
+        loading='lazy'
+        decoding='async'
+        draggable={false}
         style={{
-          display: 'none',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '40px',
-          height: '40px',
-          borderRadius: 'var(--radius-full)',
-          border: 'none',
-          background: 'var(--bg-surface)',
-          color: 'var(--text-strong)',
-          cursor: 'pointer',
-        }}
-      >
-        <MenuIcon open={open} />
-      </button>
-
-      {open ? (
-        <div
-          className='landing-sheet'
-          onClick={() => setOpen(false)}
-          role='presentation'
-        >
-          <div
-            className='landing-sheet-inner'
-            onClick={(e) => e.stopPropagation()}
-          >
-            {NAV_LINKS.map(([label, href]) => (
-              <a
-                key={label}
-                href={href}
-                onClick={() => setOpen(false)}
-                style={{
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '18px',
-                  lineHeight: '26px',
-                  letterSpacing: '0.36px',
-                  color: 'var(--text-strong)',
-                  textDecoration: 'none',
-                  padding: '6px 0',
-                }}
-              >
-                {label}
-              </a>
-            ))}
-
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                paddingTop: '10px',
-                alignItems: 'flex-start',
-              }}
-            >
-              <Pill href='/login' tone='soft'>
-                Demo
-              </Pill>
-              <NavAccount />
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </nav>
-  )
-}
-
-// ─── Hero (611:1114) ───
-function Hero() {
-  return (
-    <section id='top' className='landing-split'>
-      <div className='landing-herotext' style={{ flex: '1 0 0', minWidth: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <h1
-            style={{
-              margin: 0,
-              fontFamily: 'var(--font-sans)',
-              fontWeight: 440,
-              fontSize: '36px',
-              lineHeight: 1.1,
-              letterSpacing: '0.72px',
-              color: 'var(--text-strong)',
-              width: '341px',
-              maxWidth: '100%',
-            }}
-          >
-            No link you share goes unmeasured.
-          </h1>
-          <Body width={360}>
-            Shorten a link, get a QR code with it, and see exactly who clicked
-            from where. Clicks, scans, countries and devices, all in one place.
-          </Body>
-        </div>
-
-        <div className='landing-heropills'>
-          <Pill href='/login' tone='soft'>
-            View a demo
-          </Pill>
-          <Pill href='/get-started' tone='dark'>
-            Get started
-          </Pill>
-        </div>
-      </div>
-
-      <HeroCard />
-    </section>
-  )
-}
-
-// ─── Features (613:1252) ───
-function Features() {
-  return (
-    <section
-      id='features'
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '32px',
-        width: '100%',
-      }}
-    >
-      {/* One 3-column grid, not two rows that happen to look similar. The
-          heading takes the first cell and five cards fill the rest, so every
-          column lines up by construction rather than by arithmetic.
-
-          The heading column widens 210 -> 256 as a result, which is what makes
-          the two rows share edges. */}
-      <div className='landing-grid'>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            // Bottom-aligned in its cell, so the heading sits on the same
-            // baseline as the card titles beside it rather than floating at
-            // the top of a 230px-tall row.
-            justifyContent: 'flex-end',
-            paddingBottom: '4px',
-            minWidth: 0,
-          }}
-        >
-          <Heading size={24} lead='The whole link,'>
-            not just the redirect.
-          </Heading>
-          <Body>
-            Shortening is the easy part. What happens after is the rest.
-          </Body>
-        </div>
-
-        <Card
-          title='Clicks with context'
-          body='Country, device, browser and referrer on every click. Not a running total.'
-          illustration={<GeographyIllustration />}
-        />
-        <Card
-          title='A QR code with every link'
-          body='Design the pattern and colours, add your logo, download at any size.'
-          illustration={<QrIllustration />}
-        />
-        <Card
-          title='No more long links'
-          body='Paste any link and get a short one back. Name it yourself or let us generate it.'
-          illustration={<ShortenIllustration />}
-        />
-        <Card
-          title='Your own domain'
-          body='Point go.yourbrand.com at Luotain and links carry your name, not ours.'
-          illustration={<DomainIllustration />}
-        />
-        <Card
-          title='Nothing to install'
-          body='No script, no tag manager, no consent banner. The link is the measurement.'
-          illustration={<NoScriptIllustration />}
-        />
-      </div>
-    </section>
-  )
-}
-
-// ─── Use cases (613:1253) ───
-function UseCases() {
-  return (
-    <section
-      id='use-cases'
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '32px',
-        alignItems: 'flex-start',
-        width: '100%',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '20px',
+          display: 'block',
+          // Fills the padded well. The artwork's ratio (256/230) matches the
+          // well's, so `contain` leaves no letterboxing either way — but width
+          // 100% is what actually makes it scale up.
           width: '100%',
+          height: '100%',
+          // contain, not cover: these are diagrams at a fixed aspect ratio, and
+          // cover would crop their edges at any other ratio.
+          objectFit: 'contain',
         }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <Heading size={24} width={430} lead='Here&rsquo;s how'>
-            you can use Luotain.
-          </Heading>
-          <Body width={300}>Same link, three very different jobs.</Body>
-        </div>
-
-        <div className='landing-grid landing-scroller'>
-          <Card
-            title='Print and packaging'
-            lead='You put a code on something physical'
-            body='Give each placement its own code and you learn which one people actually scan.'
-            illustration={<PrintIllustration />}
-          />
-          <Card
-            title='Campaigns and social'
-            lead='You share the same link in five places'
-            body='One short link each, and the referrer tells you which earned the traffic.'
-            illustration={<CampaignsIllustration />}
-          />
-          <Card
-            title='Client work'
-            lead='You need to show someone the numbers'
-            body='Country, device and source on every link, so an update is a screenshot.'
-            illustration={<ClientWorkIllustration />}
-          />
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-        <Pill href='/login' tone='soft'>
-          View a demo
-        </Pill>
-        <Pill href='/get-started' tone='dark'>
-          Get started
-        </Pill>
-      </div>
-    </section>
+      />
+    </span>
   )
 }
 
-// ─── Plans (613:1296) ───
-function Plans() {
-  const router = useRouter()
-
-  return (
-    <section
-      id='plans'
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '32px',
-        width: '100%',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
-          width: '392px',
-          maxWidth: '100%',
-        }}
-      >
-        {/* 400, not 440. The design uses font-normal on this one heading where
-            every other section title is 440 — transcribed rather than
-            normalised, since a heavier "Plans" would be visibly off. */}
-        <Heading size={24} weight={400}>
-          Plans
-        </Heading>
-        <Body>
-          Every plan gets full analytics and a QR code with every link. The only
-          thing that changes is how many links you need.
-        </Body>
-      </div>
-
-      {/* The app's own picker, so the tiers, prices, features and the monthly /
-          annually toggle all come from PLANS. The design's table is already
-          stale in two places — it shows custom slugs as paid and custom domains
-          as Pro-only, both of which changed — and a pricing page that
-          contradicts the product is worse than a plain one.
-
-          currentPlan is null: nobody visiting this page is on a plan, so every
-          column offers to start rather than one saying "current". */}
-      {/* scale 1.2 sizes the type and icons for a website rather than a
-          settings panel: 12px feature rows become 14, the plan name 17, the
-          price 22 and the plant icon 34. Columns at 312 fill the 1000 column
-          exactly. */}
-      <div className='landing-plans-wrap'>
-        <PlanPicker
-          currentPlan={null}
-          showIntro={false}
-          columnWidth={312}
-          scale={1.2}
-          // 22, not the 34 the text scale would give. The icon is a marker for
-          // the tier, not a heading for it — at 34 it was larger than the plan
-          // name it sat above.
-          iconSize={22}
-          onChoose={() => router.push('/get-started')}
-        />
-      </div>
-    </section>
-  )
+// full-click, not clicks-with-context: the replacement is the complete
+// composition rather than the three-row crop.
+export function GeographyIllustration() {
+  return <Illustration file='full-click' />
 }
 
-// ─── Closing (613:2059) ───
-function Closing() {
-  return (
-    <section className='landing-split'>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '20px',
-          flex: '1 0 0',
-          minWidth: 0,
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <Heading size={24} weight={400} width={330}>
-            Start measuring your links.
-          </Heading>
-          {/* text-strong here, not text-sub. Every other body on the page is
-              sub; the design darkens this one because it's the last thing read
-              before the button. */}
-          <Body width={310} tone='strong'>
-            Five links free, no card. See where your traffic actually comes
-            from.
-          </Body>
-        </div>
-
-        <div>
-          <Pill href='/get-started' tone='dark'>
-            Start for free
-          </Pill>
-        </div>
-      </div>
-
-      <ClosingCard />
-    </section>
-  )
+export function QrIllustration() {
+  return <Illustration file='qr-code' />
 }
 
-// ─── Footer (613:1495) ───
-function Footer() {
-  return (
-    <footer
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '16px',
-        width: '100%',
-        paddingBottom: '64px',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          gap: '15px',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-        }}
-      >
-        <span className='para-xs' style={{ color: 'var(--text-strong)' }}>
-          Luotain · © {new Date().getFullYear()}
-        </span>
-        <span style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-          <Link
-            href='/terms'
-            className='landing-nav-link para-xs'
-            style={{ color: 'var(--text-strong)', textDecoration: 'none' }}
-          >
-            Terms
-          </Link>
-          <span className='para-xs' style={{ color: 'var(--text-strong)' }}>
-            &amp;
-          </span>
-          <Link
-            href='/privacy'
-            className='landing-nav-link para-xs'
-            style={{ color: 'var(--text-strong)', textDecoration: 'none' }}
-          >
-            Privacy Policy.
-          </Link>
-        </span>
-      </div>
-
-      {/* The design has a wordmark here too — wider than tall — which is why
-          a square LogoMark never quite fit. Smaller than the nav's, since a
-          footer mark is a sign-off rather than a heading. */}
-      <LogoMenu>
-        <LogoWordmark height={16} className='landing-footermark' />
-      </LogoMenu>
-    </footer>
-  )
+export function ShortenIllustration() {
+  return <Illustration file='short-links' />
 }
 
-export default function LandingPage() {
-  return (
-    // landing-lock pins the tokens to their light values for this subtree.
-    // The illustrations are outlined exports that can't invert, so a dark
-    // landing page would be white cards on a near-black background.
-    <main
-      className='landing-lock'
-      style={{ background: 'var(--bg-default)', minHeight: '100vh' }}
-    >
-      <Nav />
+export function DomainIllustration() {
+  return <Illustration file='own-domain' />
+}
 
-      {/* Dormant. Nothing sets an optional cookie yet, so it renders nothing —
-          see COOKIES_ACTIVE in the component. Mounted now so that turning it
-          on is one boolean rather than a hunt for where it should go. */}
-      <CookieBanner />
+export function NoScriptIllustration() {
+  return <Illustration file='nothing-to-install' />
+}
 
-      <div
-        className='landing-stack'
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          maxWidth: `${COLUMN}px`,
-          margin: '0 auto',
-          boxSizing: 'border-box',
-        }}
-      >
-        <Hero />
+// ─── Use cases ───
+// Same treatment as the features: 256x230 exports, filling a padded well.
 
-        <Reveal>
-          <Features />
-        </Reveal>
+export function PrintIllustration() {
+  return <Illustration file='print-and-packaging' />
+}
 
-        <Reveal>
-          <UseCases />
-        </Reveal>
+export function CampaignsIllustration() {
+  return <Illustration file='campaigns-and-social' />
+}
 
-        <Reveal>
-          <Plans />
-        </Reveal>
-
-        <Reveal>
-          <Closing />
-        </Reveal>
-
-        <Footer />
-      </div>
-    </main>
-  )
+export function ClientWorkIllustration() {
+  return <Illustration file='client-work' />
 }
