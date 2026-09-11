@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { QrCode, QrLightbox } from '@/components/qrdesigner'
 import { QR_COLORS, QR_PATTERNS } from '@/lib/qrdesign'
 import { SHORT_DOMAIN } from '@/lib/shortlink'
+import { svgBlob, pngBlob, saveBlob, qrFilename } from '@/lib/qrdownload'
+import { Dropdown, DropdownMenu, DropdownOption } from '@/components/dropdown'
 import Inputfield from '@/components/input'
 import Alert from '@/components/alert'
 import SegmentedTabs from '@/components/segmentedtabs'
@@ -472,17 +474,22 @@ export default function HeroCard() {
 
   // Serialises the rendered SVG rather than re-drawing it, so the download is
   // exactly what's on screen — including the colour and pattern just chosen.
-  function handleDownload() {
+  // Both formats go through the shared helper, so the hero and the app's
+  // lightbox can't drift on things like the white PNG background or the
+  // namespace an SVG file needs.
+  async function handleDownload(format) {
     const svg = document.querySelector('[data-hero-qr] svg')
     if (!svg) return
-    const source = new XMLSerializer().serializeToString(svg)
-    const blob = new Blob([source], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${result?.shortCode || 'luotain'}-qr.svg`
-    a.click()
-    URL.revokeObjectURL(url)
+
+    try {
+      const blob = format === 'png' ? await pngBlob(svg) : svgBlob(svg)
+      saveBlob(blob, qrFilename(shortUrl, format))
+    } catch (err) {
+      console.error('[HeroCard] download', err)
+      // Surfaced, because a download that silently does nothing looks like a
+      // broken button rather than a failure.
+      flag('Could not prepare the download')
+    }
   }
 
   function reset() {
@@ -939,32 +946,46 @@ export default function HeroCard() {
                       Generate QR code
                     </button>
                   ) : (
-                    <button
-                      type='button'
-                      onClick={handleDownload}
-                      className='create-secondary'
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        padding: '8px 18px',
-                        borderRadius: 'var(--radius-full)',
-                        border: 'none',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                        background: 'var(--bg-surface)',
-                        color: 'var(--text-sub)',
-                        fontFamily: 'var(--font-sans)',
-                        fontSize: '12px',
-                        lineHeight: '16px',
-                        letterSpacing: '0.24px',
-                        whiteSpace: 'nowrap',
-                      }}
+                    <Dropdown
+                      align='right'
+                      trigger={
+                        <span
+                          className='create-secondary'
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            padding: '8px 18px',
+                            borderRadius: 'var(--radius-full)',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                            background: 'var(--bg-surface)',
+                            color: 'var(--text-sub)',
+                            fontFamily: 'var(--font-sans)',
+                            fontSize: '12px',
+                            lineHeight: '16px',
+                            letterSpacing: '0.24px',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <DownloadIcon />
+                          Download
+                        </span>
+                      }
                     >
-                      <DownloadIcon />
-                      Download SVG
-                    </button>
+                      {/* PNG first. It's what most people actually need —
+                            print shops and social platforms rarely accept SVG —
+                            even though SVG is the better file. */}
+                      <DropdownMenu width='168px'>
+                        <DropdownOption onClick={() => handleDownload('png')}>
+                          PNG
+                        </DropdownOption>
+                        <DropdownOption onClick={() => handleDownload('svg')}>
+                          SVG
+                        </DropdownOption>
+                      </DropdownMenu>
+                    </Dropdown>
                   )}
                 </div>
               </>

@@ -6,6 +6,8 @@ import Tooltip from '@/components/tooltip'
 import LogoMark from '@/components/logomark'
 import { toast } from '@/components/toast'
 import { QR_COLORS, QR_PATTERNS } from '@/lib/qrdesign'
+import { svgBlob, pngBlob, saveBlob, qrFilename } from '@/lib/qrdownload'
+import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import { encodeQr, moduleRoles } from '@/lib/qrencode'
 
 // Re-exported so anything already importing these from here keeps working —
@@ -893,53 +895,64 @@ export function QrLightbox({ open, onClose, shortUrl, onEdit, ...qr }) {
               </button>
             ) : null}
 
-            <button
-              type='button'
-              onClick={() => {
-                // Serialised straight from the rendered SVG rather than
-                // re-generated. What downloads is exactly what's on screen —
-                // colours, pattern, logo and all — which a second render path
-                // couldn't guarantee.
-                const svg = cardRef.current?.querySelector('svg')
-                if (!svg) return
-                const clone = svg.cloneNode(true)
-                // A standalone file needs the namespace declared; inside a document
-                // the browser infers it.
-                clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
-                const blob = new Blob(
-                  ['<?xml version="1.0" encoding="UTF-8"?>\n', clone.outerHTML],
-                  { type: 'image/svg+xml' }
-                )
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = `${(shortUrl || 'qr-code').replace(/[^a-z0-9]+/gi, '-')}.svg`
-                a.click()
-                // Revoked, or the blob is held in memory for the life of the page.
-                URL.revokeObjectURL(url)
-                toast('QR code downloaded')
-              }}
-              className='qr-lightbox-download'
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 18px',
-                borderRadius: 'var(--radius-full)',
-                background: 'var(--bg-default)',
-                border: '1px solid var(--stroke-soft)',
-                boxShadow: 'var(--shadow-xs)',
-                cursor: 'pointer',
-                color: 'var(--text-strong)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '14px',
-                lineHeight: '20px',
-                letterSpacing: '0.28px',
-              }}
+            <Dropdown
+              align='center'
+              trigger={
+                <span
+                  className='qr-lightbox-download'
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    borderRadius: 'var(--radius-full)',
+                    background: 'var(--bg-default)',
+                    border: '1px solid var(--stroke-soft)',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <DownloadIcon />
+                  Download
+                </span>
+              }
             >
-              <DownloadIcon />
-              Download
-            </button>
+              {/* PNG first: print shops and social platforms rarely accept
+                    SVG, so it's what most people need — even though SVG is the
+                    better file. */}
+              <DropdownMenu width='168px'>
+                <DropdownOption
+                  onClick={async () => {
+                    const svg = cardRef.current?.querySelector('svg')
+                    if (!svg) return
+                    try {
+                      saveBlob(await pngBlob(svg), qrFilename(shortUrl, 'png'))
+                      toast('QR code downloaded')
+                    } catch (err) {
+                      console.error('[QrLightbox] png download', err)
+                      toast.error('Could not prepare the download')
+                    }
+                  }}
+                >
+                  PNG
+                </DropdownOption>
+                <DropdownOption
+                  onClick={() => {
+                    const svg = cardRef.current?.querySelector('svg')
+                    if (!svg) return
+                    try {
+                      saveBlob(svgBlob(svg), qrFilename(shortUrl, 'svg'))
+                      toast('QR code downloaded')
+                    } catch (err) {
+                      console.error('[QrLightbox] svg download', err)
+                      toast.error('Could not prepare the download')
+                    }
+                  }}
+                >
+                  SVG
+                </DropdownOption>
+              </DropdownMenu>
+            </Dropdown>
           </div>
         </>
       )}
