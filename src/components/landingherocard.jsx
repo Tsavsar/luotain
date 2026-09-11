@@ -17,43 +17,6 @@ import SegmentedTabs from '@/components/segmentedtabs'
 // does is to let someone do it.
 const IMAGE = '/assets/websiteimage.png'
 
-// ─── Mock mode ───
-// The public endpoint needs PUBLIC_ORG_ID and a Domain row before it can
-// create anything, so until that's set up this generates the link in the
-// browser instead.
-//
-// Now false: the endpoint is live, so links are real, resolve, and log clicks
-// like any other. The mock path stays for local work without a database —
-// flip it back and the card generates a slug in the browser instead.
-const USE_MOCK = false
-
-// Six characters, not adjective-noun. "swift-otter" makes a 21-character URL
-// where this makes 16, and the whole point of a short link is the length.
-//
-// The alphabet drops 0/O and 1/l/I — a short code gets read aloud and typed by
-// hand, and those are the pairs that get confused when it is.
-const SLUG_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789'
-
-function mockSlug(length = 6) {
-  let out = ''
-  for (let i = 0; i < length; i++) {
-    out += SLUG_ALPHABET[Math.floor(Math.random() * SLUG_ALPHABET.length)]
-  }
-  return out
-}
-
-// The same shape the API returns, so switching to the real one is one constant
-// and nothing downstream changes.
-function mockLink(destination, requested) {
-  const shortCode = requested || mockSlug()
-  return {
-    shortCode,
-    shortUrl: `${SHORT_DOMAIN}/${shortCode}`,
-    destination,
-    mock: true,
-  }
-}
-
 function LinkIcon() {
   return (
     <svg
@@ -477,20 +440,6 @@ export default function HeroCard() {
     setBusy(true)
     clearFlag()
 
-    if (USE_MOCK) {
-      // A beat before the result. Instant would read as nothing having
-      // happened — the pause is what makes the button feel like it did
-      // something, and it's what the real request will cost anyway.
-      timers.current.push(
-        setTimeout(() => {
-          setResult(mockLink(value, slug.trim()))
-          setStep(mode === 'qr' ? 'design' : 'done')
-          setBusy(false)
-        }, 420)
-      )
-      return
-    }
-
     try {
       const res = await fetch('/api/public/links', {
         method: 'POST',
@@ -876,21 +825,14 @@ export default function HeroCard() {
                       background: 'var(--bg-layer)',
                     }}
                   >
-                    {/* An anchor only when it goes somewhere. A mock link is
-                        rendered as plain text — a clickable URL that 404s is
-                        worse than one you can't click. */}
-                    {result?.mock ? (
-                      <span style={SHORT_URL_STYLE}>{shortUrl}</span>
-                    ) : (
-                      <a
-                        href={`https://${shortUrl}`}
-                        target='_blank'
-                        rel='noreferrer'
-                        style={SHORT_URL_STYLE}
-                      >
-                        {shortUrl}
-                      </a>
-                    )}
+                    <a
+                      href={`https://${shortUrl}`}
+                      target='_blank'
+                      rel='noreferrer'
+                      style={SHORT_URL_STYLE}
+                    >
+                      {shortUrl}
+                    </a>
                     <button
                       type='button'
                       onClick={handleCopy}
@@ -1084,18 +1026,7 @@ export default function HeroCard() {
             textAlign: 'center',
           }}
         >
-          {result?.mock ? (
-            <>
-              {/* Said plainly. A preview that looks identical to the real
-                  thing, without saying so, is how someone ends up printing a
-                  code that goes nowhere. */}
-              This is a preview, so the link won&rsquo;t open yet.{' '}
-              <Link href='/get-started' style={{ color: 'var(--text-strong)' }}>
-                Create an account
-              </Link>{' '}
-              for links that actually resolve.
-            </>
-          ) : result ? (
+          {result ? (
             <>
               Want the analytics behind it?{' '}
               <Link href='/get-started' style={{ color: 'var(--text-strong)' }}>
