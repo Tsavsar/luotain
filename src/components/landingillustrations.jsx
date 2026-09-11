@@ -19,13 +19,13 @@ const BASE = '/assets/illustrations'
 // One component, because the only thing that differs is which file and what
 // the alt text says. Five near-identical components would be five places to
 // change when the well size does.
-// Capped at 224, below the artwork's own 256. objectFit: contain was stretching
+// Capped at 240, below the artwork's own 256. objectFit: contain was stretching
 // it to fill a 323px column — 1.26x the size it was drawn at — which is why the
 // illustrations read as oversized rather than as objects sitting on the card.
 //
 // A notch under the design size, so the card has visible white around the
 // artwork rather than the artwork being the card.
-const MAX_WIDTH = 224
+const MAX_WIDTH = 240
 
 function Illustration({ file, alt }) {
   return (
