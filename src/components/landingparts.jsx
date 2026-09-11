@@ -152,14 +152,12 @@ export function Card({ title, lead, body, image, illustration }) {
           // Aspect ratio rather than a fixed height, so the well stays
           // proportional as the column narrows instead of turning into a
           // letterbox on a phone.
-          //
-          // Taller than the design's 256/230. The stack grows downward, and
-          // at the original ratio the third card sat close enough to the
-          // bottom edge to look like it was falling out rather than resting
-          // behind.
           aspectRatio: '256 / 230',
           borderRadius: '8px',
-          background: 'var(--bg-surface)',
+          // White, matching the design's frames. It was --bg-surface, which
+          // put a grey card behind cards that are themselves grey — the
+          // plates inside had nothing to sit against.
+          background: 'var(--bg-default)',
           width: '100%',
           // Illustrations are drawn larger than the well and cropped by it —
           // that's what makes them read as a window onto the product rather

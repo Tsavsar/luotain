@@ -580,7 +580,13 @@ function Footer() {
 
 export default function LandingPage() {
   return (
-    <main style={{ background: 'var(--bg-default)', minHeight: '100vh' }}>
+    // landing-lock pins the tokens to their light values for this subtree.
+    // The illustrations are outlined exports that can't invert, so a dark
+    // landing page would be white cards on a near-black background.
+    <main
+      className='landing-lock'
+      style={{ background: 'var(--bg-default)', minHeight: '100vh' }}
+    >
       <Nav />
 
       {/* Dormant. Nothing sets an optional cookie yet, so it renders nothing —

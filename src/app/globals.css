@@ -315,6 +315,68 @@
   --highlight-faint: rgba(251, 75, 163, 0.24);
   --highlight-mute: rgba(251, 75, 163, 0.16);
 }
+/* ─── Landing page: locked to light ───
+   The feature illustrations are outlined SVG exports with hardcoded fills, so
+   they cannot invert. On a dark page you'd get white cards with near-black
+   text on a #171717 background.
+
+   These are the 43 tokens [data-theme='dark'] overrides, re-asserted at their
+   light values and scoped to the landing page only. The dashboard's dark mode
+   is untouched — this doesn't change the theme, it shadows the variables for
+   one subtree.
+
+   The honest fix is re-exporting the illustrations with currentColor or two
+   variants. Until then this is the smaller lie: a consistently light marketing
+   page beats a broken dark one.
+
+   Also sets color-scheme, so form controls and scrollbars inside this subtree
+   render light too — without it the browser still paints those dark. */
+.landing-lock {
+  color-scheme: light;
+  --bg-default: #ffffff;
+  --bg-surface: #f7f7f7;
+  --bg-light: #fcfcfc;
+  --bg-layer: #f5f5f5;
+  --bg-subtle: #ebebeb;
+  --bg-muted: #d1d1d1;
+  --bg-weak: #1c1c1c;
+  --text-strong: #171717;
+  --text-sub: #5c5c5c;
+  --text-soft: #a3a3a3;
+  --text-disabled: #d1d1d1;
+  --text-inverse: #ffffff;
+  --stroke-soft: rgba(0, 0, 0, 0.05);
+  --stroke-medium: rgba(0, 0, 0, 0.1);
+  --stroke-strong: rgba(0, 0, 0, 0.2);
+  --primary-dark: #71330a;
+  --primary-base: #fa7319;
+  --primary-faint: #ffd9c0;
+  --primary-mute: #fff3eb;
+  --info-dark: #122368;
+  --info-base: #335cff;
+  --info-faint: #c0d5ff;
+  --info-mute: #ebf1ff;
+  --error-dark: #681219;
+  --error-base: #fb3748;
+  --error-faint: #ffc0c5;
+  --error-mute: #ffebec;
+  --success-dark: #0b4627;
+  --success-base: #1fc16b;
+  --success-faint: #c2f5da;
+  --success-mute: #e0faec;
+  --feature-dark: #351a75;
+  --feature-base: #7d52f4;
+  --feature-faint: #cac0ff;
+  --feature-mute: #efebff;
+  --verified-dark: #124b68;
+  --verified-base: #47c2ff;
+  --verified-faint: #c0eaff;
+  --verified-mute: #ebf8ff;
+  --highlight-dark: #68123d;
+  --highlight-base: #fb4ba3;
+  --highlight-faint: #ffc0df;
+  --highlight-mute: #ffebf4;
+}
 
 /* ═══════════════════════════════════════════════════
    BASE RESET & DEFAULTS
@@ -2310,8 +2372,6 @@ html {
   transform: scale(0.97);
 }
 
-
-
 /* --- Invite composer ---
    Drops in rather than appearing. The button it replaces sits in the same
    place, so without a transition the swap reads as a glitch. */
@@ -2375,8 +2435,6 @@ html {
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
-
-
 /* --- Plan icon blooms ---
    A slow breath on the orange growth.
    
@@ -2413,7 +2471,9 @@ html {
 /* --- Domains ---
    The re-check button, on the same plate as the status tag beside it. */
 .domain-recheck {
-  transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
+  transition:
+    color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
 }
 .domain-recheck:hover:not(:disabled) {
   color: var(--text-strong) !important;
@@ -2556,7 +2616,6 @@ html {
   gap: 8px;
   align-items: flex-start;
 }
-
 
 .landing-nav-link {
   transition: opacity var(--duration-fast) ease;
@@ -3012,7 +3071,7 @@ html {
 }
 @media (max-width: 1000px) {
   .landing-montage {
-    transform: scale(1.70);
+    transform: scale(1.7);
   }
 }
 @media (max-width: 900px) {
@@ -3027,7 +3086,7 @@ html {
 }
 @media (max-width: 700px) {
   .landing-montage {
-    transform: scale(1.20);
+    transform: scale(1.2);
   }
 }
 @media (max-width: 600px) {
