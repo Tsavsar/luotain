@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import BackButton from '@/components/backbutton'
+import useUnsavedGuard from '@/lib/useUnsavedGuard'
+import Modal from '@/components/modal'
 import SegmentedTabs from '@/components/segmentedtabs'
 import Inputfield from '@/components/input'
 import Tooltip from '@/components/tooltip'
@@ -371,7 +373,31 @@ export default function CreatePage() {
   }, [useMockData])
   const [errors, setErrors] = useState({})
   const [shaking, setShaking] = useState({})
+  // Where the person was trying to go when the guard stopped them. Holding
+  // the destination rather than a plain boolean means Leave can take them
+  // there instead of somewhere generic.
+  const [leavingTo, setLeavingTo] = useState(null)
+
   const [submitting, setSubmitting] = useState(false)
+
+  // Dirty means "typed something that would be thrown away". Not just any
+  // interaction: switching the toggle or picking a domain costs nothing to
+  // redo, so warning about those would train people to dismiss the modal
+  // without reading it.
+  //
+  // Nothing is dirty once it's submitting or already saved, or the guard would
+  // fire on its own success redirect.
+  const isDirty =
+    !submitting &&
+    !isEditing &&
+    step === 'details' &&
+    (destination.trim().length > 0 || slug.trim().length > 0)
+
+  useUnsavedGuard({
+    dirty: isDirty,
+    onAttempt: (href) => setLeavingTo(href || '/dashboard/analytics'),
+  })
+
   const [swappingSlug, setSwappingSlug] = useState(false)
   const timers = useRef([])
   const swapTimer = useRef(null)
@@ -648,52 +674,55 @@ export default function CreatePage() {
   }
 
   return (
-    <div
-      className='dashboard-section dashboard-section-3 dashboard-page-padding'
-      style={{
-        width: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        // 0, not 36 — the layout's header section already carries 24px
-        // of bottom padding, which is the gap the design wants between
-        // the logo row and Back. More here would stack them.
-        paddingTop: 0,
-        paddingBottom: '64px',
-      }}
-    >
+    <>
       <div
+        className='dashboard-section dashboard-section-3 dashboard-page-padding'
         style={{
           width: '100%',
-          maxWidth: '440px',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '24px',
+          justifyContent: 'center',
+          // 0, not 36 — the layout's header section already carries 24px
+          // of bottom padding, which is the gap the design wants between
+          // the logo row and Back. More here would stack them.
+          paddingTop: 0,
+          paddingBottom: '64px',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {/* Hidden on the design step — its Back lives in the footer
+        <div
+          style={{
+            width: '100%',
+            maxWidth: '440px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px',
+          }}
+        >
+          <div
+            style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+          >
+            {/* Hidden on the design step — its Back lives in the footer
               beside Create code, where step navigation belongs. Two
               Backs doing the same thing is noise, and two Backs doing
               DIFFERENT things (one step, one exit) risks someone losing
               a typed destination to a mis-click. */}
-          {mode === 'qr' && step === 'design' ? null : <BackButton />}
-          <p
-            className='para-md'
-            style={{ color: 'var(--text-strong)', margin: 0 }}
-          >
-            {mode === 'qr' && step === 'design'
-              ? 'Design your QR code'
-              : isEditing
-                ? 'Edit link'
-                : // A question, because the toggle right below it is the
-                  // answer. "Create a short link" named one of the two options
-                  // and contradicted the control under it; "Create" alone said
-                  // nothing at all.
-                  'What would you like to create?'}
-          </p>
-        </div>
+            {mode === 'qr' && step === 'design' ? null : <BackButton />}
+            <p
+              className='para-md'
+              style={{ color: 'var(--text-strong)', margin: 0 }}
+            >
+              {mode === 'qr' && step === 'design'
+                ? 'Design your QR code'
+                : isEditing
+                  ? 'Edit link'
+                  : // A question, because the toggle right below it is the
+                    // answer. "Create a short link" named one of the two options
+                    // and contradicted the control under it; "Create" alone said
+                    // nothing at all.
+                    'What would you like to create?'}
+            </p>
+          </div>
 
-        {/* The app's own SegmentedTabs, not a hand-rolled pair of buttons —
+          {/* The app's own SegmentedTabs, not a hand-rolled pair of buttons —
               it carries the sliding pill and the measured transitions that
               every other segmented control here uses.
 
@@ -702,212 +731,212 @@ export default function CreatePage() {
 
               Hidden while editing and while designing — neither is a moment to
               start a different kind of thing. */}
-        {!isEditing && !(mode === 'qr' && step === 'design') ? (
-          <SegmentedTabs
-            items={[
-              { id: 'link', label: 'Short link' },
-              { id: 'qr', label: 'QR code' },
-            ]}
-            activeId={intent}
-            onChange={setIntent}
-            padX='16px'
-          />
-        ) : null}
+          {!isEditing && !(mode === 'qr' && step === 'design') ? (
+            <SegmentedTabs
+              items={[
+                { id: 'link', label: 'Short link' },
+                { id: 'qr', label: 'QR code' },
+              ]}
+              activeId={intent}
+              onChange={setIntent}
+              padX='16px'
+            />
+          ) : null}
 
-        {mode === 'qr' && step === 'design' ? (
-          <QrDesigner
-            color={qr.color}
-            markerColor={qr.markerColor}
-            pattern={qr.pattern}
-            branding={qr.branding}
-            // For an existing link, the link's own URL. The QR gets its own
-            // slug, but the server generates that on save, so there's nothing
-            // truthful to show for it yet — and the link's URL is what the code
-            // will ultimately resolve to either way.
-            //
-            // For a new link, only once there's a slug: a blank one would read
-            // "luot.link/" and the copy button would hand over a dead link.
-            shortUrl={
-              qrSource === 'existing'
-                ? selectedLink?.shortUrl || null
-                : slug.trim()
-                  ? `${domain}/${slug.trim()}`
-                  : null
-            }
-            onChange={setQr}
-          />
-        ) : (
-          <div
-            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
-          >
-            {intent === 'qr' && hasLinks && qrSource === 'existing' ? (
-              <FieldLabel label='Link'>
-                <Dropdown
-                  fullWidth
-                  align='left'
-                  trigger={
-                    // Inputfield as the trigger, matching the domain picker
-                    // below — a second control that only looked similar would
-                    // read as a different kind of field.
-                    <Inputfield
-                      lefticon={<LinkIcon />}
-                      righticon={<ChevronIcon />}
-                      placeholder={
-                        existingLinks === null
-                          ? 'Loading your links…'
-                          : existingLinks.length === 0
-                            ? 'No links yet — create one first'
-                            : 'Choose a link'
-                      }
-                      value={
-                        qrSource === 'new'
-                          ? 'A new link'
-                          : selectedLink
-                            ? selectedLink.shortUrl
-                            : ''
-                      }
-                      onChange={() => {}}
-                      error={Boolean(errors.destination)}
-                      shaking={Boolean(shaking.destination)}
-                    />
-                  }
-                >
-                  <DropdownMenu width='440px'>
-                    {existingLinks === null ? (
-                      // Plain text, not a DropdownOption — it has no disabled
-                      // state, and a clickable-looking row that does nothing is
-                      // worse than one that clearly isn't a choice.
-                      <p
-                        className='para-xs'
-                        style={{
-                          color: 'var(--text-soft)',
-                          margin: 0,
-                          padding: '8px 10px',
-                        }}
-                      >
-                        Loading your links…
-                      </p>
-                    ) : existingLinks.length === 0 ? (
-                      <p
-                        className='para-xs'
-                        style={{
-                          color: 'var(--text-soft)',
-                          margin: 0,
-                          padding: '8px 10px',
-                        }}
-                      >
-                        No links yet — create one below
-                      </p>
-                    ) : (
-                      existingLinks.map((l) => (
-                        <DropdownOption
-                          key={l.id}
-                          selected={l.id === selectedLinkId}
-                          onClick={() => {
-                            setSelectedLinkId(l.id)
-                            // Back out of new-link mode, which hides the
-                            // destination and slug fields again.
-                            setQrSource('existing')
-                            clearError('destination')
+          {mode === 'qr' && step === 'design' ? (
+            <QrDesigner
+              color={qr.color}
+              markerColor={qr.markerColor}
+              pattern={qr.pattern}
+              branding={qr.branding}
+              // For an existing link, the link's own URL. The QR gets its own
+              // slug, but the server generates that on save, so there's nothing
+              // truthful to show for it yet — and the link's URL is what the code
+              // will ultimately resolve to either way.
+              //
+              // For a new link, only once there's a slug: a blank one would read
+              // "luot.link/" and the copy button would hand over a dead link.
+              shortUrl={
+                qrSource === 'existing'
+                  ? selectedLink?.shortUrl || null
+                  : slug.trim()
+                    ? `${domain}/${slug.trim()}`
+                    : null
+              }
+              onChange={setQr}
+            />
+          ) : (
+            <div
+              style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+            >
+              {intent === 'qr' && hasLinks && qrSource === 'existing' ? (
+                <FieldLabel label='Link'>
+                  <Dropdown
+                    fullWidth
+                    align='left'
+                    trigger={
+                      // Inputfield as the trigger, matching the domain picker
+                      // below — a second control that only looked similar would
+                      // read as a different kind of field.
+                      <Inputfield
+                        lefticon={<LinkIcon />}
+                        righticon={<ChevronIcon />}
+                        placeholder={
+                          existingLinks === null
+                            ? 'Loading your links…'
+                            : existingLinks.length === 0
+                              ? 'No links yet — create one first'
+                              : 'Choose a link'
+                        }
+                        value={
+                          qrSource === 'new'
+                            ? 'A new link'
+                            : selectedLink
+                              ? selectedLink.shortUrl
+                              : ''
+                        }
+                        onChange={() => {}}
+                        error={Boolean(errors.destination)}
+                        shaking={Boolean(shaking.destination)}
+                      />
+                    }
+                  >
+                    <DropdownMenu width='440px'>
+                      {existingLinks === null ? (
+                        // Plain text, not a DropdownOption — it has no disabled
+                        // state, and a clickable-looking row that does nothing is
+                        // worse than one that clearly isn't a choice.
+                        <p
+                          className='para-xs'
+                          style={{
+                            color: 'var(--text-soft)',
+                            margin: 0,
+                            padding: '8px 10px',
                           }}
                         >
-                          {l.shortUrl}
-                        </DropdownOption>
-                      ))
-                    )}
-                  </DropdownMenu>
-                </Dropdown>
-              </FieldLabel>
-            ) : null}
+                          Loading your links…
+                        </p>
+                      ) : existingLinks.length === 0 ? (
+                        <p
+                          className='para-xs'
+                          style={{
+                            color: 'var(--text-soft)',
+                            margin: 0,
+                            padding: '8px 10px',
+                          }}
+                        >
+                          No links yet — create one below
+                        </p>
+                      ) : (
+                        existingLinks.map((l) => (
+                          <DropdownOption
+                            key={l.id}
+                            selected={l.id === selectedLinkId}
+                            onClick={() => {
+                              setSelectedLinkId(l.id)
+                              // Back out of new-link mode, which hides the
+                              // destination and slug fields again.
+                              setQrSource('existing')
+                              clearError('destination')
+                            }}
+                          >
+                            {l.shortUrl}
+                          </DropdownOption>
+                        ))
+                      )}
+                    </DropdownMenu>
+                  </Dropdown>
+                </FieldLabel>
+              ) : null}
 
-            {/* Shown for a plain link, and for a QR pointed at a new one — those
+              {/* Shown for a plain link, and for a QR pointed at a new one — those
                 aren't alternatives, since a new link needs a destination either
                 way. It used to be an either/or with the picker above, which meant
                 choosing "new link" left nowhere to type the URL. */}
-            {/* Secondary, under the picker. A separate button rather than a row
+              {/* Secondary, under the picker. A separate button rather than a row
                 inside the dropdown: making a new link isn't one of the links,
                 and listing it among them makes it findable only by people who
                 open a menu looking for something else. */}
-            {intent === 'qr' && hasLinks && qrSource === 'existing' ? (
-              <button
-                type='button'
-                onClick={() => {
-                  setQrSource('new')
-                  setSelectedLinkId(null)
-                  clearError('destination')
-                }}
-                className='create-alt-action'
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '8px 18px',
-                  borderRadius: 'var(--radius-full)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  alignSelf: 'flex-start',
-                  background: 'var(--bg-surface)',
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '12px',
-                  lineHeight: '16px',
-                  letterSpacing: '0.24px',
-                  color: 'var(--text-sub)',
-                }}
-              >
-                New link
-              </button>
-            ) : null}
-
-            {/* Back to the picker. Only when there were links to go back TO —
-                with none, the form is the only thing there is and a back button
-                would lead nowhere. */}
-            {intent === 'qr' && hasLinks && qrSource === 'new' ? (
-              <button
-                type='button'
-                onClick={() => {
-                  setQrSource('existing')
-                  setDestination('')
-                  clearError('destination')
-                }}
-                className='create-alt-action'
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  alignSelf: 'flex-start',
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '12px',
-                  lineHeight: '16px',
-                  letterSpacing: '0.24px',
-                  color: 'var(--text-sub)',
-                }}
-              >
-                <BackArrowIcon />
-                Pick an existing link
-              </button>
-            ) : null}
-
-            {intent !== 'qr' || qrSource === 'new' || !hasLinks ? (
-              <FieldLabel label='Destination'>
-                <Inputfield
-                  lefticon={<LinkIcon />}
-                  placeholder='https://example.com/your-page'
-                  value={destination}
-                  onChange={(e) => {
-                    setDestination(e.target.value)
+              {intent === 'qr' && hasLinks && qrSource === 'existing' ? (
+                <button
+                  type='button'
+                  onClick={() => {
+                    setQrSource('new')
+                    setSelectedLinkId(null)
                     clearError('destination')
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreate()
+                  className='create-alt-action'
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '8px 18px',
+                    borderRadius: 'var(--radius-full)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    alignSelf: 'flex-start',
+                    background: 'var(--bg-surface)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '12px',
+                    lineHeight: '16px',
+                    letterSpacing: '0.24px',
+                    color: 'var(--text-sub)',
                   }}
-                  error={Boolean(errors.destination)}
-                  shaking={Boolean(shaking.destination)}
-                />
-                {/* Only on the QR path. A code is usually FOR something that
+                >
+                  New link
+                </button>
+              ) : null}
+
+              {/* Back to the picker. Only when there were links to go back TO —
+                with none, the form is the only thing there is and a back button
+                would lead nowhere. */}
+              {intent === 'qr' && hasLinks && qrSource === 'new' ? (
+                <button
+                  type='button'
+                  onClick={() => {
+                    setQrSource('existing')
+                    setDestination('')
+                    clearError('destination')
+                  }}
+                  className='create-alt-action'
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    alignSelf: 'flex-start',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '12px',
+                    lineHeight: '16px',
+                    letterSpacing: '0.24px',
+                    color: 'var(--text-sub)',
+                  }}
+                >
+                  <BackArrowIcon />
+                  Pick an existing link
+                </button>
+              ) : null}
+
+              {intent !== 'qr' || qrSource === 'new' || !hasLinks ? (
+                <FieldLabel label='Destination'>
+                  <Inputfield
+                    lefticon={<LinkIcon />}
+                    placeholder='https://example.com/your-page'
+                    value={destination}
+                    onChange={(e) => {
+                      setDestination(e.target.value)
+                      clearError('destination')
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreate()
+                    }}
+                    error={Boolean(errors.destination)}
+                    shaking={Boolean(shaking.destination)}
+                  />
+                  {/* Only on the QR path. A code is usually FOR something that
                     already exists — the sticker goes on a menu whose link you
                     made last week — so the list is the common case there and
                     noise on the shorten screen, where you're by definition
@@ -915,263 +944,356 @@ export default function CreatePage() {
 
                     It fills the field above rather than replacing it, so a
                     destination can still be typed by hand. */}
-                {intent === 'qr' && existingLinks?.length > 0 ? (
-                  <Dropdown
-                    align='left'
-                    trigger={
-                      <button
-                        type='button'
-                        className='create-pick-link'
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          background: 'none',
-                          border: 'none',
-                          padding: 0,
-                          marginTop: '8px',
-                          cursor: 'pointer',
-                          fontFamily: 'var(--font-sans)',
-                          fontSize: '12px',
-                          lineHeight: '16px',
-                          letterSpacing: '0.24px',
-                          color: 'var(--text-sub)',
-                        }}
-                      >
-                        Or pick one of your links
-                        <ChevronIcon />
-                      </button>
-                    }
-                  >
-                    <DropdownMenu width='260px'>
-                      {existingLinks.map((l) => (
-                        <DropdownOption
-                          key={l.id}
-                          onClick={() => {
-                            // The link's DESTINATION, not its short URL. A code
-                            // pointing at a short link that points somewhere
-                            // else is two redirects for one scan, and the
-                            // click would be counted against the wrong link.
-                            setDestination(
-                              l.destination || l.destinationUrl || ''
-                            )
-                            clearError('destination')
+                  {intent === 'qr' && existingLinks?.length > 0 ? (
+                    <Dropdown
+                      align='left'
+                      trigger={
+                        <button
+                          type='button'
+                          className='create-pick-link'
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            marginTop: '8px',
+                            cursor: 'pointer',
+                            fontFamily: 'var(--font-sans)',
+                            fontSize: '12px',
+                            lineHeight: '16px',
+                            letterSpacing: '0.24px',
+                            color: 'var(--text-sub)',
                           }}
                         >
-                          {l.shortUrl}
+                          Or pick one of your links
+                          <ChevronIcon />
+                        </button>
+                      }
+                    >
+                      <DropdownMenu width='260px'>
+                        {existingLinks.map((l) => (
+                          <DropdownOption
+                            key={l.id}
+                            onClick={() => {
+                              // The link's DESTINATION, not its short URL. A code
+                              // pointing at a short link that points somewhere
+                              // else is two redirects for one scan, and the
+                              // click would be counted against the wrong link.
+                              setDestination(
+                                l.destination || l.destinationUrl || ''
+                              )
+                              clearError('destination')
+                            }}
+                          >
+                            {l.shortUrl}
+                          </DropdownOption>
+                        ))}
+                      </DropdownMenu>
+                    </Dropdown>
+                  ) : null}
+                </FieldLabel>
+              ) : null}
+
+              {/* Hidden when pointing at an existing link: it already has a
+                domain and a slug, and offering to set them again would imply
+                the code could change them. It can't — the QR gets its own slug
+                from the server. */}
+              <div
+                style={{
+                  display:
+                    intent === 'qr' && qrSource === 'existing' && hasLinks
+                      ? 'none'
+                      : 'flex',
+                  gap: '8px',
+                  alignItems: 'flex-start',
+                }}
+              >
+                <FieldLabel label='Domain' width='170px'>
+                  <Dropdown
+                    fullWidth
+                    align='left'
+                    trigger={
+                      // Inputfield as the trigger so the domain matches the
+                      // other two exactly rather than a second control that
+                      // only looks similar. onChange is a no-op: it's a
+                      // picker, and a controlled input whose value never
+                      // changes is read-only in practice.
+                      <Inputfield
+                        value={domain}
+                        onChange={() => {}}
+                        righticon={<ChevronIcon />}
+                      />
+                    }
+                  >
+                    <DropdownMenu width='220px'>
+                      {domains.map((d) => (
+                        <DropdownOption
+                          key={d.hostname}
+                          selected={domain === d.hostname}
+                          onClick={() => setDomain(d.hostname)}
+                        >
+                          {d.hostname}
                         </DropdownOption>
                       ))}
                     </DropdownMenu>
                   </Dropdown>
-                ) : null}
-              </FieldLabel>
-            ) : null}
+                </FieldLabel>
 
-            {/* Hidden when pointing at an existing link: it already has a
-                domain and a slug, and offering to set them again would imply
-                the code could change them. It can't — the QR gets its own slug
-                from the server. */}
-            <div
-              style={{
-                display:
-                  intent === 'qr' && qrSource === 'existing' && hasLinks
-                    ? 'none'
-                    : 'flex',
-                gap: '8px',
-                alignItems: 'flex-start',
-              }}
-            >
-              <FieldLabel label='Domain' width='170px'>
-                <Dropdown
-                  fullWidth
-                  align='left'
-                  trigger={
-                    // Inputfield as the trigger so the domain matches the
-                    // other two exactly rather than a second control that
-                    // only looks similar. onChange is a no-op: it's a
-                    // picker, and a controlled input whose value never
-                    // changes is read-only in practice.
-                    <Inputfield
-                      value={domain}
-                      onChange={() => {}}
-                      righticon={<ChevronIcon />}
-                    />
+                <FieldLabel
+                  label='Slug'
+                  hint='(Optional)'
+                  action={
+                    <Tooltip label='Generate slug'>
+                      <button
+                        type='button'
+                        onClick={regenerateSlug}
+                        aria-label='Generate slug'
+                        className='slug-regen'
+                        style={{
+                          display: 'flex',
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <SparkleIcon />
+                      </button>
+                    </Tooltip>
                   }
                 >
-                  <DropdownMenu width='220px'>
-                    {domains.map((d) => (
-                      <DropdownOption
-                        key={d.hostname}
-                        selected={domain === d.hostname}
-                        onClick={() => setDomain(d.hostname)}
-                      >
-                        {d.hostname}
-                      </DropdownOption>
-                    ))}
-                  </DropdownMenu>
-                </Dropdown>
-              </FieldLabel>
+                  <Inputfield
+                    placeholder='swift-otter'
+                    value={slug}
+                    onChange={(e) => {
+                      setSlug(e.target.value)
+                      clearError('slug')
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreate()
+                    }}
+                    error={Boolean(errors.slug)}
+                    shaking={Boolean(shaking.slug)}
+                    swapping={swappingSlug}
+                  />
+                </FieldLabel>
+              </div>
 
-              <FieldLabel
-                label='Slug'
-                hint='(Optional)'
-                action={
-                  <Tooltip label='Generate slug'>
-                    <button
-                      type='button'
-                      onClick={regenerateSlug}
-                      aria-label='Generate slug'
-                      className='slug-regen'
-                      style={{
-                        display: 'flex',
-                        background: 'none',
-                        border: 'none',
-                        padding: 0,
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <SparkleIcon />
-                    </button>
-                  </Tooltip>
-                }
-              >
-                <Inputfield
-                  placeholder='swift-otter'
-                  value={slug}
-                  onChange={(e) => {
-                    setSlug(e.target.value)
-                    clearError('slug')
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreate()
-                  }}
-                  error={Boolean(errors.slug)}
-                  shaking={Boolean(shaking.slug)}
-                  swapping={swappingSlug}
-                />
-              </FieldLabel>
-            </div>
-
-            {/* Describes the domain and slug fields, so it's hidden with them.
+              {/* Describes the domain and slug fields, so it's hidden with them.
                 It sat outside that row before, which meant it appeared under the
                 link picker and offered slug advice for a link that already has
                 one. */}
-            <p
-              className='para-xs'
-              style={{
-                color: 'var(--text-soft)',
-                margin: 0,
-                display:
-                  intent === 'qr' && qrSource === 'existing' && hasLinks
-                    ? 'none'
-                    : 'block',
-              }}
-            >
-              Leave the slug blank and we&rsquo;ll generate one. Only verified
-              domains show up here,{' '}
-              <button
-                type='button'
-                onClick={() => {
-                  // TODO: no domains screen exists yet.
-                  toast('Domain management is not built yet')
-                }}
-                className='label-xs'
+              <p
+                className='para-xs'
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  color: 'var(--text-strong)',
-                  fontFamily: 'var(--font-sans)',
+                  color: 'var(--text-soft)',
+                  margin: 0,
+                  display:
+                    intent === 'qr' && qrSource === 'existing' && hasLinks
+                      ? 'none'
+                      : 'block',
                 }}
               >
-                manage domains
-              </button>
-              .
-            </p>
-          </div>
-        )}
+                Leave the slug blank and we&rsquo;ll generate one. Only verified
+                domains show up here,{' '}
+                <button
+                  type='button'
+                  onClick={() => {
+                    // TODO: no domains screen exists yet.
+                    toast('Domain management is not built yet')
+                  }}
+                  className='label-xs'
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    color: 'var(--text-strong)',
+                    fontFamily: 'var(--font-sans)',
+                  }}
+                >
+                  manage domains
+                </button>
+                .
+              </p>
+            </div>
+          )}
 
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            // space-between once there are two controls, so Back sits
-            // left and the primary action stays right.
-            justifyContent:
-              mode === 'qr' && step === 'design' ? 'space-between' : 'flex-end',
-            width: '100%',
-          }}
-        >
-          {mode === 'qr' && step === 'design' ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              // space-between once there are two controls, so Back sits
+              // left and the primary action stays right.
+              justifyContent:
+                mode === 'qr' && step === 'design'
+                  ? 'space-between'
+                  : 'flex-end',
+              width: '100%',
+            }}
+          >
+            {mode === 'qr' && step === 'design' ? (
+              <button
+                type='button'
+                onClick={() => setStep('details')}
+                className='create-secondary'
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px 20px',
+                  borderRadius: 'var(--radius-full)',
+                  // bg-surface grey, no border, no shadow — node 149:977.
+                  background: 'var(--bg-surface)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '14px',
+                  lineHeight: '20px',
+                  letterSpacing: '0.28px',
+                  color: 'var(--bg-weak)',
+                }}
+              >
+                Back
+              </button>
+            ) : null}
+
             <button
               type='button'
-              onClick={() => setStep('details')}
-              className='create-secondary'
+              // No argument — it defaults to the toggle. This passed 'link'
+              // outright, left over from when a second button passed 'qr', so
+              // the QR branch could never fire and picking an existing link fell
+              // through to the create call, which then failed for want of a
+              // destination.
+              onClick={() => handleCreate()}
+              disabled={submitting}
+              className='create-submit'
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '8px 20px',
                 borderRadius: 'var(--radius-full)',
-                // bg-surface grey, no border, no shadow — node 149:977.
-                background: 'var(--bg-surface)',
+                background: 'var(--text-strong)',
                 border: 'none',
-                cursor: 'pointer',
+                cursor: submitting ? 'default' : 'pointer',
                 fontFamily: 'var(--font-sans)',
                 fontSize: '14px',
                 lineHeight: '20px',
                 letterSpacing: '0.28px',
-                color: 'var(--bg-weak)',
+                color: 'var(--bg-default)',
               }}
             >
-              Back
+              {submitting
+                ? isEditing
+                  ? 'Saving…'
+                  : 'Creating…'
+                : mode === 'qr' && step === 'design'
+                  ? editingCode || isEditing
+                    ? 'Save changes'
+                    : 'Create code'
+                  : isEditing
+                    ? 'Save changes'
+                    : intent === 'qr'
+                      ? 'Continue to design'
+                      : 'Create link'}
             </button>
-          ) : null}
-
-          <button
-            type='button'
-            // No argument — it defaults to the toggle. This passed 'link'
-            // outright, left over from when a second button passed 'qr', so
-            // the QR branch could never fire and picking an existing link fell
-            // through to the create call, which then failed for want of a
-            // destination.
-            onClick={() => handleCreate()}
-            disabled={submitting}
-            className='create-submit'
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '8px 20px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--text-strong)',
-              border: 'none',
-              cursor: submitting ? 'default' : 'pointer',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '14px',
-              lineHeight: '20px',
-              letterSpacing: '0.28px',
-              color: 'var(--bg-default)',
-            }}
-          >
-            {submitting
-              ? isEditing
-                ? 'Saving…'
-                : 'Creating…'
-              : mode === 'qr' && step === 'design'
-                ? editingCode || isEditing
-                  ? 'Save changes'
-                  : 'Create code'
-                : isEditing
-                  ? 'Save changes'
-                  : intent === 'qr'
-                    ? 'Continue to design'
-                    : 'Create link'}
-          </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Only mounted once someone has actually tried to leave. The guard
+          intercepts the click before navigation happens, so nothing has moved
+          yet and Leave can still go where they were heading. */}
+      <Modal
+        open={Boolean(leavingTo)}
+        onClose={() => setLeavingTo(null)}
+        labelledBy='leave-title'
+        describedBy='leave-body'
+      >
+        {/* data-unsaved-safe so the guard ignores clicks in here. Without it
+            the Leave button would trip the same interceptor that opened this. */}
+        <div
+          data-unsaved-safe
+          style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <p
+              id='leave-title'
+              className='para-md'
+              style={{ margin: 0, color: 'var(--text-strong)' }}
+            >
+              Leave without creating this?
+            </p>
+            <p
+              id='leave-body'
+              className='para-sm'
+              style={{ margin: 0, color: 'var(--text-sub)' }}
+            >
+              You&rsquo;ve started a link but haven&rsquo;t created it yet.
+              Leaving now discards it.
+            </p>
+          </div>
+
+          <div
+            style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}
+          >
+            {/* Staying is the safe option, so it's the one that looks like the
+                default. Leaving is the one that loses work. */}
+            <button
+              type='button'
+              onClick={() => setLeavingTo(null)}
+              className='create-secondary'
+              style={{
+                padding: '8px 18px',
+                borderRadius: 'var(--radius-full)',
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--bg-surface)',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '14px',
+                lineHeight: '20px',
+                letterSpacing: '0.28px',
+                color: 'var(--text-sub)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Keep editing
+            </button>
+            <button
+              type='button'
+              onClick={() => {
+                const to = leavingTo
+                setLeavingTo(null)
+                // Cleared first, so the guard is no longer dirty by the time
+                // the push happens and can't re-intercept its own exit.
+                setDestination('')
+                setSlug('')
+                router.push(to)
+              }}
+              className='plan-cta'
+              style={{
+                padding: '8px 18px',
+                borderRadius: 'var(--radius-full)',
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--error-base)',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '14px',
+                lineHeight: '20px',
+                letterSpacing: '0.28px',
+                color: 'var(--bg-default)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Discard and leave
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </>
   )
 }
