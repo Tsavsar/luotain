@@ -158,6 +158,12 @@ function DashboardShell({ children }) {
   const compactHeader = pathname?.startsWith('/dashboard/create')
   const [checking, setChecking] = useState(true)
   const [orgName, setOrgName] = useState('')
+  // The workspace picture and its gradient seed. /api/dashboard-info has
+  // returned both all along, but the layout only read orgName — so the header
+  // avatar had nothing to render and fell back to a gradient off the name.
+  // Uploading a workspace picture appeared to do nothing.
+  const [orgImage, setOrgImage] = useState(null)
+  const [orgAvatarSeed, setOrgAvatarSeed] = useState(null)
   const [allOrgs, setAllOrgs] = useState([])
   const [activeOrgId, setActiveOrgId] = useState(null)
   const [userImage, setUserImage] = useState(null)
@@ -238,9 +244,30 @@ function DashboardShell({ children }) {
     // An event keeps them decoupled: settings announces, anything that
     // renders an avatar listens.
     window.addEventListener('luotain:profile-updated', onUpdated)
+
+    // The workspace fires its OWN event, which the layout wasn't listening for
+    // — so renaming or re-picturing a workspace updated the settings page and
+    // left the header showing the old one until a reload.
+    //
+    // The new values arrive on the event, so the header applies them directly
+    // rather than refetching. That's what makes the change land immediately.
+    const onOrgUpdated = (e) => {
+      const d = e?.detail
+      if (!d) {
+        loadProfile(true)
+        return
+      }
+      if (typeof d.name === 'string') setOrgName(d.name)
+      // Applied even when null: removing a picture has to clear it here too,
+      // and skipping the falsy case would leave the old one on screen.
+      setOrgImage(d.image || null)
+      setOrgAvatarSeed(d.avatarSeed || null)
+    }
+    window.addEventListener('luotain:org-updated', onOrgUpdated)
     return () => {
       cancelled = true
       window.removeEventListener('luotain:profile-updated', onUpdated)
+      window.removeEventListener('luotain:org-updated', onOrgUpdated)
     }
   }, [checking])
 
@@ -258,6 +285,8 @@ function DashboardShell({ children }) {
         // removing a photo in settings left the old one in the header and
         // the gradient never got a chance to render.
         setOrgName(data.orgName)
+        setOrgImage(data.orgImage || null)
+        setOrgAvatarSeed(data.orgAvatarSeed || null)
       } catch (err) {
         setOrgName('Your Organization')
       }
@@ -297,6 +326,8 @@ function DashboardShell({ children }) {
         >
           <DashboardMenu
             orgName={orgName}
+            orgImage={orgImage}
+            orgAvatarSeed={orgAvatarSeed}
             allOrgs={allOrgs}
             activeOrgId={activeOrgId}
             userImage={userImage}
