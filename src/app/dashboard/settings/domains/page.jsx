@@ -820,6 +820,35 @@ export default function DomainsPage() {
                   {checking === d.id ? 'Saving' : 'Save'}
                 </button>
               ) : null}
+
+              {/* A draft domain had a Save button and no way out, so adding
+                    one by mistake left it stuck in the list with nothing to do
+                    about it. The other states have Remove in their overflow
+                    menu; this one had no menu at all.
+
+                    Plain text rather than a menu, because a draft has exactly
+                    two things you might want: save it, or get rid of it. */}
+              {canManage ? (
+                <button
+                  type='button'
+                  onClick={() => handleRemove(d)}
+                  className='create-secondary'
+                  style={{
+                    flexShrink: 0,
+                    padding: 0,
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '12px',
+                    lineHeight: '16px',
+                    letterSpacing: '0.24px',
+                    color: 'var(--text-sub)',
+                  }}
+                >
+                  Remove
+                </button>
+              ) : null}
             </div>
           ) : (
             /* Committed. The hostname is settled; what changes now is whether
