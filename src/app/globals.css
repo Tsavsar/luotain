@@ -3603,7 +3603,7 @@ html {
   }
 }
 
-/* --- Create page: the alternate action ---
+/* --- Create action ---
    "New link" under the picker, and "Pick an existing link" under the form. */
 .create-alt-action {
   transition:
