@@ -1,47 +1,3 @@
-// Chart slots, in the shape ChartContainer actually reads. My first pass
-// returned { date, clicks, scans }, which shares no keys with what the
-// component wants — so the chart drew nothing at all.
-//
-// Zero-filled across the range. A chart that only plots days with traffic
-// draws a straight line between two points a fortnight apart and implies
-// steady activity in between.
-const pad = (n) => String(n).padStart(2, '0')
-const slots = []
-for (let i = days - 1; i >= 0; i--) {
-  const d = new Date(now.getTime() - i * 86400000)
-  const key = d.toISOString().slice(0, 10)
-  const dayRows = rows.filter(
-    (r) => r.createdAt.toISOString().slice(0, 10) === key
-  )
-
-  // The two busiest links in the slot, with the rest collapsed. The
-  // tooltip shows a breakdown rather than only a total, and listing every
-  // link would make it unreadable on a busy day.
-  const counts = new Map()
-  for (const r of dayRows) {
-    const u = r.link?.shortCode || 'Unknown'
-    counts.set(u, (counts.get(u) || 0) + 1)
-  }
-  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1])
-  const topLinks = sorted.slice(0, 2).map(([url, clicks]) => ({ url, clicks }))
-  const topTotal = topLinks.reduce((sum, l) => sum + l.clicks, 0)
-
-  slots.push({
-    key: `d-${key}`,
-    label: `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`,
-    timeLabel: `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`,
-    date: key,
-    totalClicks: dayRows.length,
-    topLinks,
-    othersClicks: Math.max(0, dayRows.length - topTotal),
-    // No comparison selected server-side, so an empty object rather than
-    // undefined — the component indexes into this.
-    seriesClicks: {},
-    isNow: i === 0,
-    isFuture: false,
-  })
-}
-
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { countryName } from '@/lib/countries'
@@ -49,11 +5,10 @@ import { countryName } from '@/lib/countries'
 // GET /api/analytics?days=30
 //
 // The whole workspace, not one link. The dashboard read from mockAnalytics and
-// fell to null with mock off, same as the link detail page did, so every card
-// there was empty too.
+// fell to null with mock off, so every card there was empty.
 //
 // Shapes match what the page already passes down:
-//   stats, cardData.{sources,geography,devices,clicks}, chartData
+//   stats, chartData, cardData.{clicks,sources,geography,devices}, filterOptions
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +18,9 @@ function ranked(rows, key, extra) {
   const counts = new Map()
   const extras = new Map()
   for (const r of rows) {
+    // Nulls are real data: a click we couldn't geolocate still happened.
+    // Labelled rather than dropped, or the card totals wouldn't add up to the
+    // headline number.
     const label = r[key] || 'Unknown'
     counts.set(label, (counts.get(label) || 0) + 1)
     if (extra && !extras.has(label)) extras.set(label, extra(r))
@@ -73,12 +31,66 @@ function ranked(rows, key, extra) {
 }
 
 function trend(current, previous) {
+  // null, not 0%, when there's nothing to compare against. "No change" and
+  // "no prior data" are different statements.
   if (!previous) return null
   const pct = Math.round(((current - previous) / previous) * 100)
   return {
     label: `${pct > 0 ? '+' : ''}${pct}%`,
     color: pct >= 0 ? 'var(--success-base)' : 'var(--error-base)',
   }
+}
+
+const pad = (n) => String(n).padStart(2, '0')
+
+// One slot per day, in the shape ChartContainer actually reads. An earlier
+// version returned { date, clicks, scans }, which shares no keys with what the
+// component wants, so the chart drew nothing.
+//
+// A module-scope helper taking `days` as an argument, NOT inlined in the
+// handler: the loop reads `days`, and when this lived at module scope without
+// the parameter the build failed on `days is not defined`.
+function buildSlots(rows, days, now) {
+  const slots = []
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 86400000)
+    const key = d.toISOString().slice(0, 10)
+    const dayRows = rows.filter(
+      (r) => r.createdAt.toISOString().slice(0, 10) === key
+    )
+
+    // The two busiest links, rest collapsed. The tooltip shows a breakdown
+    // rather than only a total, and listing every link would be unreadable on
+    // a busy day.
+    const counts = new Map()
+    for (const r of dayRows) {
+      const u = r.link?.shortCode || 'Unknown'
+      counts.set(u, (counts.get(u) || 0) + 1)
+    }
+    const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1])
+    const topLinks = sorted
+      .slice(0, 2)
+      .map(([url, clicks]) => ({ url, clicks }))
+    const topTotal = topLinks.reduce((sum, l) => sum + l.clicks, 0)
+
+    slots.push({
+      key: `d-${key}`,
+      label: `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`,
+      timeLabel: `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`,
+      date: key,
+      totalClicks: dayRows.length,
+      topLinks,
+      othersClicks: Math.max(0, dayRows.length - topTotal),
+      // Empty rather than undefined: the component indexes into this.
+      seriesClicks: {},
+      isNow: i === 0,
+      isFuture: false,
+    })
+  }
+  // Zero-filled across the range on purpose. A chart that only plots days with
+  // traffic draws a straight line between two points a fortnight apart and
+  // implies steady activity in between.
+  return slots
 }
 
 export async function GET(request) {
@@ -172,7 +184,7 @@ export async function GET(request) {
         visitorsTrend: null,
         topCountry,
       },
-      chartData: slots,
+      chartData: buildSlots(rows, days, now),
       cardData: {
         clicks: {
           // Which link earned them, which is the comparison the product is

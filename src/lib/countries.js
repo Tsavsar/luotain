@@ -198,10 +198,22 @@ const COUNTRY_NAMES = {
   ZW: 'Zimbabwe',
 }
 
-// A code in, a display name out. An unmapped code returns as-is rather than
-// null: a row reading "XK" is worse than "Kosovo" but far better than a click
-// vanishing from the totals because we didn't recognise the territory.
-export function countryName(code) {
-  if (!code) return null
-  return COUNTRY_NAMES[code.toUpperCase()] || code.toUpperCase()
+// A code in, a display name out.
+//
+// Idempotent, which matters because the analytics endpoints run this over rows
+// that may already hold names from before the redirect started converting.
+// The earlier version uppercased anything it didn't recognise, so "Norway"
+// came back "NORWAY" and then failed the flag lookup — worse than leaving it
+// alone.
+//
+// Only a two-letter input is treated as a code. Anything longer is already a
+// name and passes through untouched.
+export function countryName(value) {
+  if (!value) return null
+  const v = String(value).trim()
+  if (v.length !== 2) return v
+  // An unmapped code returns uppercased rather than null: a row reading "XK"
+  // is worse than "Kosovo" but far better than a click vanishing from the
+  // totals because we didn't recognise the territory.
+  return COUNTRY_NAMES[v.toUpperCase()] || v.toUpperCase()
 }
