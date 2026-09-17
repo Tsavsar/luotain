@@ -22,7 +22,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 // back means "previous step", not "previous page". The QR designer uses
 // it so backing out of the design step returns to the details rather than
 // abandoning the whole thing.
-export default function BackButton({ onBack }) {
+// Where back goes when there's nowhere sensible to return to. Analytics rather
+// than '/dashboard', which has no page of its own.
+const FALLBACK = '/dashboard/analytics'
+
+export default function BackButton({ onBack, requireFrom = false }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const from = searchParams.get('from')
@@ -33,15 +37,30 @@ export default function BackButton({ onBack }) {
       return
     }
     if (from) {
-      router.push(from.startsWith('/') ? from : `/${from}`)
+      const target = from.startsWith('/') ? from : `/${from}`
+      // `from` comes off the query string, so it gets checked before use.
+      // Same-origin paths only, and '/dashboard' is rejected by name: it's a
+      // layout with no page of its own, so it 404s. The workspace switcher
+      // was passing exactly that, which is the bug this fixes.
+      const safe =
+        /^\/[^/]/.test(target) &&
+        !target.startsWith('//') &&
+        target !== '/dashboard'
+      router.push(safe ? target : FALLBACK)
       return
     }
     if (window.history.length > 1) {
       router.back()
     } else {
-      router.push('/dashboard/analytics')
+      router.push(FALLBACK)
     }
   }
+
+  // Nothing to go back to, so nothing to render. new-org uses this: someone
+  // who arrived from the workspace switcher has a `from` and a place to
+  // return to, but a first-time user with no workspace yet was being offered
+  // a button to an analytics page they can't use.
+  if (requireFrom && !from && !onBack) return null
 
   return (
     <button

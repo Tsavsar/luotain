@@ -90,7 +90,9 @@ function NewOrgContent() {
           className='topspace'
           style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
         >
-          <BackButton />
+          {/* Only when there's somewhere to return to. A first-time user with
+              no workspace lands here without a `from`. */}
+          <BackButton requireFrom />
 
           <div className='luotain-logo'>
             <svg

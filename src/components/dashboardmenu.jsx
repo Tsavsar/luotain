@@ -190,7 +190,10 @@ function OrgDropdown({
         ))}
 
         <button
-          onClick={() => router.push('/new-org?from=dashboard')}
+          // `from` has to be a real route. It was 'dashboard', and /dashboard
+          // is a layout with no page of its own, so backing out of new-org
+          // landed on a 404.
+          onClick={() => router.push('/new-org?from=/dashboard/analytics')}
           className='dropdown-item'
           style={{
             width: '100%',
