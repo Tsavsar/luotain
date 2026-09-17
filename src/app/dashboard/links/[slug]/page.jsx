@@ -249,6 +249,45 @@ export default function LinkDetailPage() {
   // needing its own data shape. With mock off, everything below stays
   // null and each component renders its own empty state — which is
   // exactly what the Figma frame shows.
+  // Real analytics, fetched when mock mode is off.
+  //
+  // The useMemo below returns null unless useMockData is true, so with mock
+  // off there was no data source at all and every card rendered empty. There
+  // was no analytics endpoint either — this calls the one added alongside it.
+  const [live, setLive] = useState(null)
+
+  // 'Last 7 days' -> 7. The endpoint takes a day count; the picker speaks in
+  // labels, and this is the only place that has to know both.
+  const rangeDays =
+    {
+      'Last 7 days': 7,
+      'Last 30 days': 30,
+      'Last 60 days': 60,
+      'Last 90 days': 90,
+      'Last year': 365,
+    }[selectedRange] || 30
+
+  useEffect(() => {
+    if (useMockData || !link?.id) {
+      setLive(null)
+      return
+    }
+    let cancelled = false
+    fetch(`/api/links/${link.id}/analytics?days=${rangeDays}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (!cancelled) setLive(d)
+      })
+      .catch(() => {
+        // Left as null, so the cards show their empty state rather than stale
+        // numbers from the previous range.
+        if (!cancelled) setLive(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [useMockData, link?.id, rangeDays])
+
   const analytics = useMemo(() => {
     if (!useMockData || !link) return null
     // The link filter scopes everything to this one link; the card
@@ -266,8 +305,10 @@ export default function LinkDetailPage() {
     )
   }, [useMockData, link, selectedRange, activeFilters, deletedUrls])
 
-  const stats = analytics?.stats
-  const cardData = analytics?.cardData
+  // Mock when it's on, the endpoint when it isn't. Both produce the same
+  // shape, so everything below this line is unchanged.
+  const stats = useMockData ? analytics?.stats : live?.stats
+  const cardData = useMockData ? analytics?.cardData : live?.cardData
 
   // Same four as the analytics dashboard. Figma's four cards are all
   // placeholder copy ("Links created", value 6, hidden trend tag),

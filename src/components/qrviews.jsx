@@ -339,7 +339,7 @@ function QrRow({ code, zIndex, onOpen, onEdit, onDelete, register }) {
             textOverflow: 'ellipsis',
           }}
         >
-          {deleted ? 'Link deleted' : code.link?.shortUrl}
+          {deleted ? 'Link deleted' : code.scanUrl}
         </p>
         {/* Beside the URL it copies, matching the links table. It was on the
             Code column, which put a copy affordance next to a label that isn't
@@ -349,7 +349,7 @@ function QrRow({ code, zIndex, onOpen, onEdit, onDelete, register }) {
             cell reads "Link deleted" rather than a URL. */}
         {!deleted ? (
           <CopyButton
-            value={code.link?.shortUrl}
+            value={code.scanUrl}
             icon={<CopyIcon />}
             label='Copy link'
             toastMessage='Link copied to clipboard'
@@ -578,7 +578,7 @@ export function QrCards({ codes, onOpen, register, bindMenu }) {
                     textOverflow: 'ellipsis',
                   }}
                 >
-                  {deleted ? 'Link deleted' : code.link?.shortUrl}
+                  {deleted ? 'Link deleted' : code.scanUrl}
                 </span>
               </span>
               <ScanCount scans={code.scans} dim={deleted} />
