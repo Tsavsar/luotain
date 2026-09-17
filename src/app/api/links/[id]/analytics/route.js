@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { countryName } from '@/lib/countries'
+import { buildSlots } from '@/lib/chartslots'
 
 // GET /api/links/[id]/analytics?days=30
 //
@@ -95,6 +96,7 @@ export async function GET(request, { params }) {
           qrCodeId: true,
           visitorHash: true,
           createdAt: true,
+          link: { select: { shortCode: true } },
         },
         // Capped. A link with a million clicks would otherwise pull all of
         // them into memory to count them. At 50k the aggregate is
@@ -153,6 +155,9 @@ export async function GET(request, { params }) {
         visitorsTrend: null,
         topCountry,
       },
+      // The chart was missing entirely, which is why it drew nothing on this
+      // page while the dashboard's worked.
+      chartData: buildSlots(rows, days, now),
       cardData: {
         sources: {
           // referrer is null for direct traffic, which is a meaningful label

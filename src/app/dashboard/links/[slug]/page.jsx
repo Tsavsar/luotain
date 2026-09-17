@@ -307,8 +307,11 @@ export default function LinkDetailPage() {
 
   // Mock when it's on, the endpoint when it isn't. Both produce the same
   // shape, so everything below this line is unchanged.
-  const stats = useMockData ? analytics?.stats : live?.stats
-  const cardData = useMockData ? analytics?.cardData : live?.cardData
+  // One source below this line, whichever it came from. Reading `analytics`
+  // directly anywhere past here is how the chart stayed empty.
+  const view = useMockData ? analytics : live
+  const stats = view?.stats
+  const cardData = view?.cardData
 
   // Same four as the analytics dashboard. Figma's four cards are all
   // placeholder copy ("Links created", value 6, hidden trend tag),
@@ -925,7 +928,7 @@ export default function LinkDetailPage() {
           className={`chart-full-bleed${isDeleted ? ' is-archived' : ''}`}
           style={{ width: '100%' }}
         >
-          <ChartContainer data={analytics?.chartData} />
+          <ChartContainer data={view?.chartData} />
         </div>
       </div>
 
