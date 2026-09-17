@@ -2,9 +2,45 @@ import { Analytics } from '@vercel/analytics/next'
 import AuthProvider from '@/components/authprovider'
 import './globals.css'
 
+// metadataBase is what makes the relative image path below resolve to an
+// absolute URL. Without it Next emits a relative og:image, and every scraper
+// ignores it — which is the usual reason an OG image "doesn't work".
+const SITE = process.env.NEXT_PUBLIC_APP_URL || 'https://luotain.app'
+
+const TITLE = 'Luotain'
+const DESCRIPTION =
+  'Short links and QR codes that carry their own analytics. Change where a printed code points, any time.'
+
 export const metadata = {
-  title: 'Luotain',
-  description: 'Shortlink and QR code generator',
+  metadataBase: new URL(SITE),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE,
+    siteName: TITLE,
+    type: 'website',
+    images: [
+      {
+        url: '/assets/og-image.png',
+        // Declared explicitly. Several scrapers reserve the space before the
+        // image downloads, and without dimensions they guess, so the card
+        // reflows or crops.
+        width: 1200,
+        height: 630,
+        alt: 'Luotain, short links and QR codes with analytics',
+      },
+    ],
+  },
+  twitter: {
+    // summary_large_image, not summary: the small card crops to a square and
+    // a 1200x630 image loses most of itself.
+    card: 'summary_large_image',
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ['/assets/og-image.png'],
+  },
 }
 
 export const viewport = {
