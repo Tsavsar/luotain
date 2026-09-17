@@ -1,3 +1,5 @@
+import crypto from 'crypto'
+import { countryName } from '@/lib/countries'
 import { prisma } from '@/lib/prisma'
 
 // ─── The redirect ───
@@ -64,6 +66,39 @@ function referrerFrom(header) {
   } catch {
     return null
   }
+}
+
+// A salted, truncated hash of IP + user agent. This is the only way to count
+// unique visitors, since there's no cookie to read and the product's pitch is
+// that it doesn't need one.
+//
+// The salt includes today's date, so a hash can't be matched across days. That
+// deliberately costs accuracy on a 90-day range — a visitor returning tomorrow
+// counts twice — and buys the property that the stored value can't be used to
+// follow anyone. For a click counter that's the right way round.
+function visitorHash(headers) {
+  const ip =
+    headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    headers.get('x-real-ip') ||
+    ''
+  const ua = headers.get('user-agent') || ''
+
+  // No IP means nothing to distinguish visitors by, and hashing the user agent
+  // alone would group everyone on the same phone model together. Null is more
+  // honest than a hash that means nothing.
+  if (!ip) return null
+
+  const day = new Date().toISOString().slice(0, 10)
+  const salt = process.env.VISITOR_SALT || 'luotain'
+  return (
+    crypto
+      .createHash('sha256')
+      .update(`${salt}:${day}:${ip}:${ua}`)
+      .digest('hex')
+      // 16 chars is 64 bits. Collisions at that width are far below the noise
+      // floor of a click counter, and a shorter column indexes faster.
+      .slice(0, 16)
+  )
 }
 
 export async function GET(request, { params }) {
@@ -147,11 +182,15 @@ export async function GET(request, { params }) {
         data: {
           linkId: link.id,
           qrCodeId: qr?.id || null,
+          visitorHash: visitorHash(headers),
           organizationId: link.organizationId,
           // Geo comes from the platform's edge headers — deriving it from an IP
           // would mean shipping a geo database and storing the address, and the
           // address is the part worth not keeping.
-          country: headers.get('x-vercel-ip-country') || null,
+          // Stored as a display name, not the ISO code the header gives.
+          // CountryFlag slugifies the name to find its SVG, so "NO" matched
+          // no file and every flag was blank while the card read "NO".
+          country: countryName(headers.get('x-vercel-ip-country')),
           region: headers.get('x-vercel-ip-country-region') || null,
           city: headers.get('x-vercel-ip-city')
             ? decodeURIComponent(headers.get('x-vercel-ip-city'))

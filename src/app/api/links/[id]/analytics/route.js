@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
+import { countryName } from '@/lib/countries'
 
 // GET /api/links/[id]/analytics?days=30
 //
@@ -92,6 +93,7 @@ export async function GET(request, { params }) {
           browser: true,
           referrer: true,
           qrCodeId: true,
+          visitorHash: true,
           createdAt: true,
         },
         // Capped. A link with a million clicks would otherwise pull all of
@@ -105,7 +107,19 @@ export async function GET(request, { params }) {
       }),
     ])
 
+    // Existing rows still hold ISO codes from before the redirect stored
+    // names, so they're normalised here too. countryName is idempotent, a
+    // name maps to itself, so this is safe on new rows as well.
+    for (const r of rows) r.country = countryName(r.country)
+
     const totalClicks = rows.length
+
+    // Distinct hashes. Rows with none are clicks from before the column
+    // existed, or ones where no IP reached us — excluded rather than counted
+    // as a shared visitor, which would undercount badly on old data.
+    const uniqueVisitors = new Set(
+      rows.filter((r) => r.visitorHash).map((r) => r.visitorHash)
+    ).size
     // A scan is a click that arrived through a QR code. It's a subset of
     // clicks, not a separate event, which is why totalClicks includes them.
     const totalScans = rows.filter((r) => r.qrCodeId).length
@@ -129,11 +143,13 @@ export async function GET(request, { params }) {
         // No prior scan count queried separately, so no trend for it rather
         // than a trend borrowed from clicks.
         scansTrend: null,
-        // Not computable. The Click table stores no visitor identifier — no
-        // IP hash, no cookie — so there is nothing to count distinctly.
-        // Returning null rather than reusing totalClicks, which would read as
-        // every click being a different person.
-        uniqueVisitors: null,
+        // Only counts clicks recorded since visitorHash was added, so this
+        // reads low until the table turns over. Better than null, which
+        // rendered as an empty card.
+        uniqueVisitors,
+        // No trend: the previous window is a count query, and counting
+        // DISTINCT hashes there would need a second groupBy for a number
+        // nobody reads closely.
         visitorsTrend: null,
         topCountry,
       },

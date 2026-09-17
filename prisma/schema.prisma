@@ -445,9 +445,28 @@ model Click {
   browser  String?
   referrer String? // source domain, or null for direct
 
+  // A salted hash of IP + user agent, truncated. Not the IP itself.
+  //
+  // This is what makes "unique visitors" countable — there was no visitor
+  // identifier of any kind, so the metric had nothing to count and rendered
+  // blank.
+  //
+  // Hashed rather than raw because an IP is personal data under GDPR, and the
+  // product's pitch is that it needs no consent banner. A salted one-way hash
+  // isn't reversible to an address, and with the salt rotating daily it can't
+  // follow someone across days either. That costs accuracy over a long range
+  // and is the right trade.
+  //
+  // Nullable: every existing click predates this, and treating those as one
+  // visitor would be worse than excluding them.
+  visitorHash String?
+
   createdAt DateTime @default(now())
 
   @@index([linkId, createdAt])
   @@index([organizationId, createdAt])
   @@index([qrCodeId])
+  // Counting distinct visitors in a window scans by link and date, then
+  // dedupes on the hash. Without this it's a full scan of the link's clicks.
+  @@index([linkId, visitorHash])
 }

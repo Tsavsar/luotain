@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMockDataState } from '@/components/mockdatacontext'
 import StatsSegment from '@/components/statssegment'
 import ChartContainer from '@/components/chartcontainer'
@@ -21,6 +21,43 @@ export default function AnalyticsPage() {
   const mock = useMockData
     ? getMockAnalytics(selectedRange, activeFilters, deletedUrls)
     : null
+
+  // Real numbers when mock is off. The page only read from `mock`, so with it
+  // off every card on the dashboard was empty — the same gap the link detail
+  // page had.
+  const [live, setLive] = useState(null)
+
+  const rangeDays =
+    {
+      'Last 7 days': 7,
+      'Last 30 days': 30,
+      'Last 60 days': 60,
+      'Last 90 days': 90,
+      'Last year': 365,
+    }[selectedRange] || 30
+
+  useEffect(() => {
+    if (useMockData) {
+      setLive(null)
+      return
+    }
+    let cancelled = false
+    fetch(`/api/analytics?days=${rangeDays}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (!cancelled) setLive(d)
+      })
+      .catch(() => {
+        if (!cancelled) setLive(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [useMockData, rangeDays])
+
+  // One source of truth below this line, whichever it came from. Both produce
+  // the same shape, so nothing downstream changes.
+  const view = useMockData ? mock : live
 
   function toggleFilter(filter) {
     setActiveFilters((prev) => {
@@ -59,7 +96,7 @@ export default function AnalyticsPage() {
         }}
       >
         <StatsSegment
-          stats={mock?.stats}
+          stats={view?.stats}
           selectedRange={selectedRange}
           onRangeChange={setSelectedRange}
           filters={
@@ -86,7 +123,11 @@ export default function AnalyticsPage() {
       >
         <div className='chart-full-bleed' style={{ width: '100%' }}>
           <ChartContainer
-            data={mock?.chartData}
+            data={view?.chartData}
+            // Still mock-only. The endpoint returns a single series; building
+            // compare series server-side means grouping by link as well as by
+            // day, which is a bigger query for a feature the dashboard chart
+            // doesn't use yet.
             compareSeries={mock?.chartCompareSeries}
           />
         </div>
@@ -104,8 +145,8 @@ export default function AnalyticsPage() {
         }}
       >
         <DashboardCards
-          data={mock?.cardData}
-          filterOptions={mock?.filterOptions}
+          data={view?.cardData}
+          filterOptions={view?.filterOptions}
           activeFilters={activeFilters}
           onToggleFilter={toggleFilter}
         />
