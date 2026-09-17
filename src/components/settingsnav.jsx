@@ -45,7 +45,6 @@ export const SETTINGS_GROUPS = [
       { label: 'Team', href: '/dashboard/settings/team' },
       { label: 'Billing', href: '/dashboard/settings/billing' },
       { label: 'Domains', href: '/dashboard/settings/domains' },
-      { label: 'API & webhooks', href: '/dashboard/settings/api' },
       {
         label: 'Delete workspace',
         href: '/dashboard/settings/delete-workspace',

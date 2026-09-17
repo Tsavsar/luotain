@@ -251,17 +251,29 @@ export async function POST(request) {
         where: { hostname: SHORT_DOMAIN },
         select: { id: true },
       })
-      const taken = domainRow
-        ? await prisma.link.findUnique({
-            where: {
-              domainId_shortCode: {
-                domainId: domainRow.id,
-                shortCode: requestedSlug,
+      const [reqLink, reqQr] = domainRow
+        ? await Promise.all([
+            prisma.link.findUnique({
+              where: {
+                domainId_shortCode: {
+                  domainId: domainRow.id,
+                  shortCode: requestedSlug,
+                },
               },
-            },
-            select: { id: true },
-          })
-        : null
+              select: { id: true },
+            }),
+            prisma.qrCode.findUnique({
+              where: {
+                domainId_shortCode: {
+                  domainId: domainRow.id,
+                  shortCode: requestedSlug,
+                },
+              },
+              select: { id: true },
+            }),
+          ])
+        : [null, null]
+      const taken = reqLink || reqQr
       if (taken) {
         return Response.json(
           { error: 'That link is already taken', field: 'slug' },
@@ -281,11 +293,21 @@ export async function POST(request) {
       const shortCode = requestedSlug
         ? requestedSlug
         : candidate(attempt < 3 ? 5 : 6)
-      const taken = await prisma.link.findUnique({
-        where: { domainId_shortCode: { domainId: domain.id, shortCode } },
-        select: { id: true },
-      })
-      if (taken) continue
+      // Links AND QR codes share one slug namespace per domain, and the
+      // redirect checks QR codes FIRST. A link minted on a slug a code
+      // already owns would resolve to the code's destination, not its own.
+      // The dashboard's create path checked both; this one didn't.
+      const [linkTaken, qrTaken] = await Promise.all([
+        prisma.link.findUnique({
+          where: { domainId_shortCode: { domainId: domain.id, shortCode } },
+          select: { id: true },
+        }),
+        prisma.qrCode.findUnique({
+          where: { domainId_shortCode: { domainId: domain.id, shortCode } },
+          select: { id: true },
+        }),
+      ])
+      if (linkTaken || qrTaken) continue
       link = await prisma.link.create({
         data: {
           shortCode,
