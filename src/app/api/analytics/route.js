@@ -53,6 +53,47 @@ export async function GET(request) {
   const requested = Number(url.searchParams.get('days'))
   const days = RANGES.includes(requested) ? requested : 30
 
+  // Filters arrive as repeated params: ?f=country:Norway&f=device:Mobile
+  //
+  // The endpoint ignored them entirely, so clicking a filter pill changed the
+  // URL state in the page and nothing else — the numbers never moved.
+  //
+  // Applied AFTER fetching rather than in the where clause, on purpose: the
+  // cards have to keep showing every option so you can still see what you're
+  // filtering away, and a filtered query would hide the rest.
+  const filters = url.searchParams
+    .getAll('f')
+    .map((f) => {
+      const i = f.indexOf(':')
+      return i < 0 ? null : { type: f.slice(0, i), label: f.slice(i + 1) }
+    })
+    .filter(Boolean)
+
+  // Same type ORs together, different types AND. Picking Norway and Ghana
+  // means "either", picking Norway and Mobile means "both" — which is what
+  // someone expects from two different questions.
+  function matches(r) {
+    const byType = new Map()
+    for (const f of filters) {
+      if (!byType.has(f.type)) byType.set(f.type, [])
+      byType.get(f.type).push(f.label)
+    }
+    for (const [type, labels] of byType) {
+      const value =
+        type === 'country'
+          ? r.country
+          : type === 'device'
+            ? r.device
+            : type === 'source'
+              ? r.referrer || 'Direct'
+              : type === 'link'
+                ? r.link?.shortCode
+                : null
+      if (!labels.includes(value)) return false
+    }
+    return true
+  }
+
   try {
     const now = new Date()
     const from = new Date(now.getTime() - days * 86400000)
@@ -88,13 +129,17 @@ export async function GET(request) {
     // name maps to itself, so this is safe on new rows as well.
     for (const r of rows) r.country = countryName(r.country)
 
-    const totalClicks = rows.length
-    const totalScans = rows.filter((r) => r.qrCodeId).length
+    // Normalised first, so a country filter compares names to names.
+    const all = rows
+    const shown = filters.length ? all.filter(matches) : all
+
+    const totalClicks = shown.length
+    const totalScans = shown.filter((r) => r.qrCodeId).length
     const uniqueVisitors = new Set(
-      rows.filter((r) => r.visitorHash).map((r) => r.visitorHash)
+      shown.filter((r) => r.visitorHash).map((r) => r.visitorHash)
     ).size
 
-    const countries = ranked(rows, 'country')
+    const countries = ranked(shown, 'country')
     const topCountry = countries[0]
       ? {
           name: countries[0].label,
@@ -133,38 +178,56 @@ export async function GET(request) {
         visitorsTrend: null,
         topCountry,
       },
-      chartData: buildSlots(rows, days, now),
+      chartData: buildSlots(shown, days, now),
       cardData: {
         clicks: {
-          // Which link earned them, which is the comparison the product is
-          // built around.
-          Links: ranked(
-            rows.map((r) => ({ code: r.link?.shortCode || 'Unknown' })),
+          // The column names have to match the Card's columnOptions exactly —
+          // 'Short links' and 'QR codes'. I'd returned one column called
+          // 'Links', which matched neither, so the card rendered empty.
+          //
+          // Split by whether the click arrived through a code: the same link
+          // appears in both columns with different numbers, which is the
+          // comparison the product is built around.
+          'Short links': ranked(
+            shown
+              .filter((r) => !r.qrCodeId)
+              .map((r) => ({ code: r.link?.shortCode || 'Unknown' })),
+            'code'
+          ),
+          'QR codes': ranked(
+            shown
+              .filter((r) => r.qrCodeId)
+              .map((r) => ({ code: r.link?.shortCode || 'Unknown' })),
             'code'
           ),
         },
         sources: {
           Visitors: ranked(
-            rows.map((r) => ({ ...r, referrer: r.referrer || 'Direct' })),
+            shown.map((r) => ({ ...r, referrer: r.referrer || 'Direct' })),
             'referrer'
           ),
         },
         geography: {
           Countries: countries,
-          Regions: ranked(rows, 'region', (r) => ({ country: r.country })),
-          Cities: ranked(rows, 'city', (r) => ({ country: r.country })),
+          Regions: ranked(shown, 'region', (r) => ({ country: r.country })),
+          Cities: ranked(shown, 'city', (r) => ({ country: r.country })),
         },
         devices: {
-          Type: ranked(rows, 'device'),
-          Browser: ranked(rows, 'browser'),
+          Type: ranked(shown, 'device'),
+          Browser: ranked(shown, 'browser'),
         },
       },
-      // The filter pills are built from what's actually present, so filtering
-      // can't offer a value with no rows behind it.
+      // Built from the UNFILTERED rows on purpose. Narrowing the options to
+      // what survives the current filter would mean selecting Norway removes
+      // every other country from the list, and you could never add a second
+      // one or see what you'd excluded.
       filterOptions: {
-        country: countries.map((c) => c.label),
-        device: ranked(rows, 'device').map((d) => d.label),
-        source: ranked(rows, 'referrer').map((s) => s.label),
+        country: ranked(all, 'country').map((c) => c.label),
+        device: ranked(all, 'device').map((d) => d.label),
+        source: ranked(
+          all.map((r) => ({ ...r, referrer: r.referrer || 'Direct' })),
+          'referrer'
+        ).map((s) => s.label),
       },
     })
   } catch (err) {

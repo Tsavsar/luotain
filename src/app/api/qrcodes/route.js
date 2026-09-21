@@ -184,6 +184,62 @@ export async function POST(request) {
   // can't see each other, which is why both tables are checked here rather than
   // leaving it to the database.
   let shortCode = null
+
+  // If this link already HAS a code, update it rather than minting another.
+  //
+  // Without this, every save from the designer created a fresh QrCode with a
+  // fresh slug. So the code's scan url changed each time you touched the
+  // design, which means any code already printed or shared stopped being the
+  // one in the dashboard — and its scan history was orphaned on the old row.
+  //
+  // A link has one code by design; the designer is editing it, not adding to
+  // a collection.
+  const existing = await prisma.qrCode.findFirst({
+    where: { linkId: link.id, deletedAt: null },
+    select: { id: true },
+  })
+  if (existing) {
+    const updated = await prisma.qrCode.update({
+      where: { id: existing.id },
+      // shortCode is deliberately absent: the slug is the code's identity
+      // once it exists, and re-rolling it is the bug this fixes.
+      data: { label, color, markerColor, pattern, branding },
+      select: {
+        id: true,
+        label: true,
+        shortCode: true,
+        color: true,
+        markerColor: true,
+        pattern: true,
+        branding: true,
+        createdAt: true,
+        domain: { select: { hostname: true } },
+        link: { select: { id: true, shortCode: true, destinationUrl: true } },
+      },
+    })
+    return Response.json({
+      qrCode: {
+        id: updated.id,
+        label: updated.label,
+        shortCode: updated.shortCode,
+        scanUrl: shortUrlFor(updated.shortCode, updated.domain.hostname),
+        color: updated.color,
+        markerColor: updated.markerColor,
+        pattern: updated.pattern,
+        branding: updated.branding,
+        createdAt: updated.createdAt,
+        link: {
+          id: updated.link.id,
+          shortCode: updated.link.shortCode,
+          shortUrl: shortUrlFor(
+            updated.link.shortCode,
+            updated.domain.hostname
+          ),
+          destination: updated.link.destinationUrl,
+        },
+      },
+    })
+  }
   for (let attempt = 0; attempt < 8; attempt++) {
     const candidate =
       attempt < 4

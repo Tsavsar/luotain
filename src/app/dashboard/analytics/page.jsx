@@ -42,7 +42,13 @@ export default function AnalyticsPage() {
       return
     }
     let cancelled = false
-    fetch(`/api/analytics?days=${rangeDays}`)
+    // Filters go up as repeated params. Refetching on change rather than
+    // filtering client-side, because the 50k row cap means the browser may not
+    // have every row the filter would match.
+    const qs = new URLSearchParams({ days: String(rangeDays) })
+    for (const f of activeFilters) qs.append('f', `${f.type}:${f.label}`)
+
+    fetch(`/api/analytics?${qs}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((d) => {
         if (!cancelled) setLive(d)
@@ -53,7 +59,7 @@ export default function AnalyticsPage() {
     return () => {
       cancelled = true
     }
-  }, [useMockData, rangeDays])
+  }, [useMockData, rangeDays, activeFilters])
 
   // One source of truth below this line, whichever it came from. Both produce
   // the same shape, so nothing downstream changes.
