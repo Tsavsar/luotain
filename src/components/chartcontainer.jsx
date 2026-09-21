@@ -92,6 +92,114 @@ function withEdgePoints(pts, N) {
 // map so each line has a value at every slot (0 where that link had
 // no clicks that slot). Fewer than 2 entries falls back to today's
 // single aggregate-total line, unchanged.
+// ─── Morphing values ───
+// Tweens the chart's numbers between renders, so changing the range or a
+// filter reshapes the curve instead of snapping to the new one.
+//
+// Values rather than paths. The path is a function of the numbers, so tweening
+// the numbers means the stroke, the fill and the scale all move together for
+// free — and it works in Safari, which can't transition an SVG `d` attribute.
+//
+// Two things make this non-trivial:
+//   - The array length changes. 7 days to 30 is 7 points to 30, and you can't
+//     lerp between arrays of different lengths. The old array is resampled to
+//     the new length first, so the curve keeps its shape while gaining points.
+//   - The max changes too. It's tweened alongside the values, so switching to a
+//     busier range rescales the whole chart smoothly rather than jumping.
+
+const MORPH_MS = 520
+
+function resample(arr, n) {
+  if (!arr || arr.length === 0) return new Array(n).fill(0)
+  if (arr.length === n) return arr.slice()
+  if (arr.length === 1) return new Array(n).fill(arr[0])
+  const out = new Array(n)
+  for (let j = 0; j < n; j++) {
+    // Map the new index onto the old array's range and lerp between the two
+    // nearest samples.
+    const t = n === 1 ? 0 : (j * (arr.length - 1)) / (n - 1)
+    const lo = Math.floor(t)
+    const hi = Math.min(arr.length - 1, lo + 1)
+    out[j] = arr[lo] + (arr[hi] - arr[lo]) * (t - lo)
+  }
+  return out
+}
+
+// Ease out: fast at the start, settling at the end. A chart that starts slow
+// reads as lag; one that decelerates reads as arriving.
+const easeOut = (t) => 1 - Math.pow(1 - t, 3)
+
+function useMorph(target) {
+  const [frame, setFrame] = useState(target)
+  const fromRef = useRef(target)
+  // The latest rendered frame. Declared before the effect that reads it in its
+  // cleanup, so an interrupted morph can resume from the visible curve.
+  const frameRef = useRef(frame)
+  frameRef.current = frame
+  const rafRef = useRef(0)
+  // A key describing the shape of the target, so the effect only restarts when
+  // the data actually changes rather than on every parent render.
+  const key = JSON.stringify(target)
+
+  useEffect(() => {
+    const reduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    // Reduced motion gets the new values at once. The data still updates; it
+    // just doesn't travel there.
+    if (reduced) {
+      fromRef.current = target
+      setFrame(target)
+      return
+    }
+
+    const from = fromRef.current
+    const n = target.totals.length
+    const startTotals = resample(from.totals, n)
+    // Each series lerps from its previous self where one exists; a newly
+    // selected link grows up from the baseline.
+    const startSeries = target.series.map((s, i) =>
+      resample(from.series[i] || new Array(n).fill(0), n)
+    )
+    const startMax = from.max || target.max
+
+    cancelAnimationFrame(rafRef.current)
+    const t0 = performance.now()
+
+    const tick = (now) => {
+      const p = Math.min(1, (now - t0) / MORPH_MS)
+      const e = easeOut(p)
+      const lerp = (a, b) => a + (b - a) * e
+      const next = {
+        totals: target.totals.map((v, i) => lerp(startTotals[i], v)),
+        series: target.series.map((arr, si) =>
+          arr.map((v, i) => lerp(startSeries[si][i], v))
+        ),
+        max: lerp(startMax, target.max),
+      }
+      setFrame(next)
+      if (p < 1) {
+        rafRef.current = requestAnimationFrame(tick)
+      } else {
+        // Recorded at the end, so an interrupted morph starts the next one from
+        // where the curve actually is rather than jumping back.
+        fromRef.current = target
+      }
+    }
+    rafRef.current = requestAnimationFrame(tick)
+
+    return () => {
+      // Interrupted mid-flight: keep the partial state as the new origin so a
+      // quick second change continues from the visible curve.
+      cancelAnimationFrame(rafRef.current)
+      fromRef.current = frameRef.current
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+
+  return frame
+}
+
 export default function ChartContainer({ data, compareSeries }) {
   const [hoveredIdx, setHoveredIdx] = useState(null)
   const [lastHovered, setLastHovered] = useState(null)
@@ -126,17 +234,27 @@ export default function ChartContainer({ data, compareSeries }) {
   // (points/strokePath/fillPath) behaves exactly as it always has.
   const isComparing = Array.isArray(compareSeries) && compareSeries.length >= 2
 
-  const seriesValues = isComparing
+  const targetSeries = isComparing
     ? compareSeries
         .slice(0, 3)
         .map((s) => realSlots.map((slot) => slot.seriesClicks?.[s.id] ?? 0))
     : []
 
-  const maxClicks = isComparing
-    ? Math.max(...seriesValues.flat(), 1)
+  const targetMax = isComparing
+    ? Math.max(...targetSeries.flat(), 1)
     : realSlots.length
       ? Math.max(...realSlots.map((s) => s.totalClicks), 1)
       : 1
+
+  // The morphed frame. Everything below reads these three names, so the curve,
+  // the fill and the scale all move together.
+  const morph = useMorph({
+    totals: realSlots.map((s) => s.totalClicks),
+    series: targetSeries,
+    max: targetMax,
+  })
+  const seriesValues = morph.series
+  const maxClicks = morph.max
 
   const series = isComparing
     ? compareSeries.slice(0, 3).map((s, i) => {
@@ -159,7 +277,9 @@ export default function ChartContainer({ data, compareSeries }) {
     : []
   const points = realSlots.map((s, i) => ({
     x: i + 0.5,
-    y: 100 - (s.totalClicks / maxClicks) * 100,
+    // Morphed value, not s.totalClicks. The tooltip still reads the real
+    // number off the slot; only the drawn curve travels.
+    y: 100 - ((morph.totals[i] ?? s.totalClicks) / maxClicks) * 100,
   }))
   const renderPoints = withEdgePoints(points, N)
   const strokePath = smoothPath(renderPoints)

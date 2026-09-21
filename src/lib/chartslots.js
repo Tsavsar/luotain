@@ -7,6 +7,22 @@
 // which shares none of them, so the chart drew nothing. One copy means that
 // can only be wrong in one place.
 
+// Per-link counts for one slot. Every selected link gets a key even at zero,
+// so a quiet day draws the line down to the axis rather than breaking it.
+//
+// undefined when nothing's being compared, matching the mock: the chart reads
+// that as "single series" and draws the total instead.
+function seriesFor(slotRows, compareLinks) {
+  if (!compareLinks.length) return undefined
+  const counts = {}
+  for (const code of compareLinks) counts[code] = 0
+  for (const r of slotRows) {
+    const code = r.link?.shortCode
+    if (code in counts) counts[code] += 1
+  }
+  return counts
+}
+
 const pad = (n) => String(n).padStart(2, '0')
 
 // One slot per day, in the shape ChartContainer actually reads. An earlier
@@ -16,7 +32,13 @@ const pad = (n) => String(n).padStart(2, '0')
 // A module-scope helper taking `days` as an argument, NOT inlined in the
 // handler: the loop reads `days`, and when this lived at module scope without
 // the parameter the build failed on `days is not defined`.
-export function buildSlots(rows, days, now) {
+// compareLinks: the shortCodes currently selected as link filters. They
+// double as the chart's comparison lines — one curve per link — so each slot
+// needs a count per link, not just a total.
+//
+// It was always {} before, which is why picking several links didn't split the
+// chart: there was no per-link data to draw.
+export function buildSlots(rows, days, now, compareLinks = []) {
   const slots = []
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now.getTime() - i * 86400000)
@@ -47,8 +69,7 @@ export function buildSlots(rows, days, now) {
       totalClicks: dayRows.length,
       topLinks,
       othersClicks: Math.max(0, dayRows.length - topTotal),
-      // Empty rather than undefined: the component indexes into this.
-      seriesClicks: {},
+      seriesClicks: seriesFor(dayRows, compareLinks),
       isNow: i === 0,
       isFuture: false,
     })

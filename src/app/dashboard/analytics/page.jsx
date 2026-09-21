@@ -130,11 +130,9 @@ export default function AnalyticsPage() {
         <div className='chart-full-bleed' style={{ width: '100%' }}>
           <ChartContainer
             data={view?.chartData}
-            // Still mock-only. The endpoint returns a single series; building
-            // compare series server-side means grouping by link as well as by
-            // day, which is a bigger query for a feature the dashboard chart
-            // doesn't use yet.
-            compareSeries={mock?.chartCompareSeries}
+            // From whichever source is active. It was pinned to mock, so with
+            // mock off, picking several links never split the chart.
+            compareSeries={view?.chartCompareSeries}
           />
         </div>
       </div>

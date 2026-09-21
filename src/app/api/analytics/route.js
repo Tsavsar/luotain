@@ -133,6 +133,12 @@ export async function GET(request) {
     const all = rows
     const shown = filters.length ? all.filter(matches) : all
 
+    // Selected link filters double as the chart's comparison lines, one curve
+    // per link. Same list, read as "which curves" rather than "which rows".
+    const compareLinks = filters
+      .filter((f) => f.type === 'link')
+      .map((f) => f.label)
+
     const totalClicks = shown.length
     const totalScans = shown.filter((r) => r.qrCodeId).length
     const uniqueVisitors = new Set(
@@ -178,7 +184,13 @@ export async function GET(request) {
         visitorsTrend: null,
         topCountry,
       },
-      chartData: buildSlots(shown, days, now),
+      chartData: buildSlots(shown, days, now, compareLinks),
+      // The chart only switches to multi-line mode at 2+, and that threshold
+      // lives in the component rather than here.
+      chartCompareSeries: compareLinks.map((code) => ({
+        id: code,
+        label: code,
+      })),
       cardData: {
         clicks: {
           // The column names have to match the Card's columnOptions exactly —
