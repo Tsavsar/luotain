@@ -47,8 +47,8 @@ export function buildSlots(rows, days, now, compareLinks = []) {
       (r) => r.createdAt.toISOString().slice(0, 10) === key
     )
 
-    // The two busiest links, rest collapsed. The tooltip shows a breakdown
-    // rather than only a total, and listing every link would be unreadable on
+    // The tw
+    // rather than  unreadable on
     // a busy day.
     const counts = new Map()
     for (const r of dayRows) {
