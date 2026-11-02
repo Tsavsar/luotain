@@ -194,7 +194,7 @@ export default function LegalHeader() {
               borderRadius: 'var(--radius-full)',
               color: isPrivacy ? 'var(--text-sub)' : 'var(--text-strong)',
               textDecoration: 'none',
-              transition: 'color 0.3s ease',
+              transition: 'color 0.3s var(--ease-out)',
             }}
           >
             <TabIcon active={!isPrivacy}>
@@ -216,7 +216,7 @@ export default function LegalHeader() {
               borderRadius: 'var(--radius-full)',
               color: isPrivacy ? 'var(--text-strong)' : 'var(--text-sub)',
               textDecoration: 'none',
-              transition: 'color 0.3s ease',
+              transition: 'color 0.3s var(--ease-out)',
             }}
           >
             <TabIcon active={isPrivacy}>

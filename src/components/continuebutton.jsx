@@ -53,7 +53,9 @@ export default function Continuebutton({ active, label, shaking, onClick }) {
   return (
     <button
       onClick={handleClick}
-      className={`focus-ring${shaking ? ' is-shaking' : ''}`}
+      // continue-btn gives it the shared press feedback (globals.css). The
+      // transition lives there too: an inline one would override it.
+      className={`continue-btn focus-ring${shaking ? ' is-shaking' : ''}`}
       style={{
         width: '100%',
         display: 'flex',
@@ -74,7 +76,6 @@ export default function Continuebutton({ active, label, shaking, onClick }) {
         border: 'none',
         borderRadius: 'var(--radius-full)',
         cursor: loading ? 'default' : 'pointer',
-        transition: 'background 0.15s ease, color 0.15s ease',
       }}
     >
       {loading ? (

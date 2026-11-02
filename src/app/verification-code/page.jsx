@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Map from '@/components/Map'
 import BackButton from '@/components/backbutton'
@@ -241,7 +242,10 @@ function VerifyContent() {
               maxHeight: resendToastState !== 'hidden' ? '100px' : '0',
               overflow: 'hidden',
               opacity: resendToastState !== 'hidden' ? 1 : 0,
-              transition: 'max-height 0.35s ease, opacity 0.35s ease',
+              // Under 300ms and front-loaded: a confirmation that takes a
+              // third of a second to arrive reads as the resend being slow.
+              transition:
+                'max-height 250ms var(--ease-out), opacity 200ms var(--ease-out)',
             }}
           >
             <Alert
@@ -259,7 +263,7 @@ function VerifyContent() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'row', gap: '4px' }}>
               <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-                Didn't get it?
+                Didn’t get it?
               </p>
               {resendCooldown > 0 ? (
                 <p className='para-sm' style={{ color: 'var(--text-soft)' }}>
@@ -303,21 +307,21 @@ function VerifyContent() {
         }}
       >
         By continuing, you agree to our{' '}
-        <a
+        <Link
           href='/terms?from=get-started'
           className='focus-ring-grey'
           style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
         >
           Terms
-        </a>{' '}
+        </Link>{' '}
         and{' '}
-        <a
+        <Link
           href='/privacy?from=get-started'
           className='focus-ring-grey'
           style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
         >
           Privacy Policy
-        </a>
+        </Link>
         .
       </div>
 

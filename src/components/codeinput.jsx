@@ -128,7 +128,7 @@ export default function CodeInput({
                   ? 'var(--focus-active)'
                   : 'var(--shadow-xs)',
               outline: 'none',
-              transition: 'border 0.15s ease, box-shadow 0.15s ease',
+              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
             }}
           />
         )

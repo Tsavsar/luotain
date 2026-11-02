@@ -109,7 +109,7 @@ export default function TermsPage() {
             id='liability'
             title='Disclaimer and Limitation of Liability'
           >
-            Luotain is provided "as is" without warranties of any kind. To the
+            Luotain is provided “as is” without warranties of any kind. To the
             maximum extent permitted by law, we are not liable for any indirect,
             incidental, or consequential damages arising from your use of the
             service.

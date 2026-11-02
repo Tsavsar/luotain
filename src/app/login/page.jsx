@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import AuthButton from '@/components/secondarybutton'
@@ -157,7 +158,7 @@ export default function LoginPage() {
               Welcome back!
             </p>
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-              Choose how you'd like to continue.
+              Choose how you’d like to continue.
             </p>
           </div>
         </div>
@@ -306,13 +307,13 @@ export default function LoginPage() {
               <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
                 No account found for this email —
               </p>
-              <a
+              <Link
                 href='/get-started'
                 className='label-sm text-touch-area'
                 style={{ color: 'var(--primary-base)' }}
               >
                 sign up instead
-              </a>
+              </Link>
             </div>
           )}
 
@@ -368,15 +369,15 @@ export default function LoginPage() {
 
           <div style={{ display: 'flex', flexDirection: 'row', gap: '4px' }}>
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
-              Don't have an account?
+              Don’t have an account?
             </p>
-            <a
+            <Link
               href='/get-started'
               className='label-sm text-touch-area'
               style={{ color: 'var(--primary-base)' }}
             >
               Create a free account!
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -398,21 +399,21 @@ export default function LoginPage() {
         }}
       >
         By continuing, you agree to our{' '}
-        <a
+        <Link
           href='/terms?from=login'
           className='focus-ring-grey'
           style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
         >
           Terms
-        </a>{' '}
+        </Link>{' '}
         and{' '}
-        <a
+        <Link
           href='/privacy?from=login'
           className='focus-ring-grey'
           style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
         >
           Privacy Policy
-        </a>
+        </Link>
         .
       </div>
 

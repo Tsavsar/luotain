@@ -67,7 +67,9 @@ export default function TermsSidebar({ sections }) {
                 activeId === s.id ? 'var(--text-strong)' : 'var(--text-soft)',
               fontWeight: activeId === s.id ? 500 : 400,
               textDecoration: 'none',
-              transition: 'color 0.2s ease, font-weight 0.2s ease',
+              // Colour only. Inter is variable, so a font-weight transition
+              // re-lays the text out on every frame of the change.
+              transition: 'color 0.2s ease',
             }}
           > 
             {s.title}

@@ -22,7 +22,6 @@ import {
   Pill,
   Heading,
   Body,
-  Caption,
   Card,
 } from '@/components/landingparts'
 

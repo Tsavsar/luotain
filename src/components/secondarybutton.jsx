@@ -43,8 +43,10 @@ export default function AuthButton({ icon, label, onClick }) {
   return (
     <button
       className='auth-btn focus-ring-grey'
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      // A mouse only. On touch, pointerenter fires on the tap and the hover
+      // colour then stuck to the button until something else was tapped.
+      onPointerEnter={(e) => e.pointerType === 'mouse' && setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
       onClick={handleClick}
       style={{
         flex: 1,
@@ -66,7 +68,6 @@ export default function AuthButton({ icon, label, onClick }) {
         border: 'none',
         borderRadius: 'var(--radius-full)',
         cursor: loading ? 'default' : 'pointer',
-        transition: 'background 0.15s ease, color 0.15s ease',
       }}
     >
       {loading ? (

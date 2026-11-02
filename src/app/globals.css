@@ -454,8 +454,12 @@ a {
   text-decoration: none;
 }
 
-a:hover {
-  text-decoration: underline;
+/* Behind a real pointer: on touch, a tap fires :hover and the underline then
+   sticks to the link until something else is tapped. */
+@media (hover: hover) and (pointer: fine) {
+  a:hover {
+    text-decoration: underline;
+  }
 }
 
 code,
@@ -1777,18 +1781,15 @@ input:focus-visible {
   color: var(--bg-muted);
   transition: color 0.15s ease;
 }
-.slug-regen:hover,
+/* Colour only. It used to pulse for as long as the pointer rested on it — an
+   infinite loop on a hover state is decoration with nothing to say, and the
+   orange already says "this does something". */
 .slug-regen:focus-visible {
   color: var(--primary-base);
-  animation: sparklePulse 1.1s ease-in-out infinite;
 }
-@keyframes sparklePulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.14);
+@media (hover: hover) and (pointer: fine) {
+  .slug-regen:hover {
+    color: var(--primary-base);
   }
 }
 
@@ -1809,23 +1810,29 @@ input:focus-visible {
 
 /* Secondary footer action — press feedback matched to .create-submit so
    the two buttons in a footer respond identically. */
-.create-secondary:hover {
-  background: var(--bg-subtle) !important;
+@media (hover: hover) and (pointer: fine) {
+  .create-secondary:hover {
+    background: var(--bg-subtle) !important;
+  }
 }
 
 /* --- QR lightbox --- */
 .qr-preview-holder {
   transition: background 0.2s ease;
 }
-.qr-preview-holder:hover {
-  background: var(--bg-subtle) !important;
+@media (hover: hover) and (pointer: fine) {
+  .qr-preview-holder:hover {
+    background: var(--bg-subtle) !important;
+  }
 }
 /* Steps toward grey, not toward white — the scrim behind these is white now,
    so a lighter hover was moving them TOWARD the background rather than away
    from it, which reads as the control disappearing on hover. */
-.qr-lightbox-action:hover,
-.qr-lightbox-download:hover {
-  background: var(--bg-surface) !important;
+@media (hover: hover) and (pointer: fine) {
+  .qr-lightbox-action:hover,
+  .qr-lightbox-download:hover {
+    background: var(--bg-surface) !important;
+  }
 }
 
 /* QR field action on the link detail page. */
@@ -2246,7 +2253,9 @@ input:focus-visible {
 .qr-card,
 .qr-tile,
 .qr-swatch,
-.qr-pattern {
+.qr-pattern,
+.continue-btn,
+.auth-btn {
   transition:
     transform var(--duration-press) ease-out,
     background var(--duration-fast) ease,
@@ -2266,7 +2275,9 @@ input:focus-visible {
 .qr-card:active,
 .qr-tile:active,
 .qr-swatch:active,
-.qr-pattern:active {
+.qr-pattern:active,
+.continue-btn:active,
+.auth-btn:active {
   transform: scale(0.97);
 }
 
@@ -2758,15 +2769,6 @@ input:focus-visible {
   align-items: stretch;
 }
 
-/* Cards cascade rather than arriving together. 60ms: past 80 the last one
-   feels late, below 30 it stops reading as a stagger at all. */
-.landing-grid > *:nth-child(2) {
-  transition-delay: 60ms;
-}
-.landing-grid > *:nth-child(3) {
-  transition-delay: 120ms;
-}
-
 /* --- Breakpoints ---
 
    The design is a fixed 800px column, so everything below is mine rather than
@@ -2889,9 +2891,6 @@ input:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .landing-reveal {
     transform: none !important;
-  }
-  .landing-grid > * {
-    transition-delay: 0ms !important;
   }
   .landing-pill:active {
     transform: none;
@@ -3099,82 +3098,6 @@ input:focus-visible {
     padding-right: 16px;
     padding-bottom: 24px;
     padding-left: 16px;
-  }
-}
-
-/* --- Feature illustrations ---
-
-   These are flat <img> elements, so nothing can animate INSIDE them — only
-   the image as a whole. That turns out to be the right constraint: one
-   orchestrated reveal per card beats eight illustrations each doing something.
-
-   Transform and opacity only, so it composites rather than repainting a
-   300KB SVG on every frame. */
-.illo-art {
-  opacity: 0;
-  /* 0.96, not 0. Nothing in the real world disappears and reappears — even a
-     barely-visible initial scale reads as the thing arriving rather than
-     materialising. Paired with a 6px rise so it settles downward into place. */
-  transform: scale(0.96) translateY(6px);
-  transition:
-    opacity 520ms var(--ease-out),
-    transform 620ms var(--ease-spring);
-  /* Only while it has somewhere to go. Left on permanently this forces a
-     compositing layer for every illustration on the page. */
-  will-change: opacity, transform;
-}
-
-.illo-art[data-shown='true'] {
-  opacity: 1;
-  transform: scale(1) translateY(0);
-  will-change: auto;
-}
-
-/* Staggered across a row, so three cards arriving together read as a cascade
-   rather than one block. 70ms: past about 90 the last card feels late, below
-   40 the stagger stops registering as one movement.
-
-   Keyed off position in the grid, not per-card classes — the grid reflows from
-   three columns to two to one, and nth-child follows it. */
-.landing-grid > *:nth-child(3n + 2) .illo-art {
-  transition-delay: 70ms;
-}
-.landing-grid > *:nth-child(3n) .illo-art {
-  transition-delay: 140ms;
-}
-
-/* Hover lifts the artwork slightly out of its well. Small — 3px on an image
-   that already fills its frame is enough to register, and the card's own
-   title moving with it would be the thing that felt loose. */
-.illo-art img {
-  transition: transform 420ms var(--ease-out);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .landing-card:hover .illo-art img {
-    transform: scale(1.03);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* The fade stays because it still signals arrival; only movement goes. */
-  .illo-art {
-    transform: none;
-    transition: opacity 300ms ease;
-  }
-  .illo-art[data-shown='true'] {
-    transform: none;
-  }
-  .illo-art img {
-    transition: none;
-  }
-  .landing-card:hover .illo-art img {
-    transform: none;
-  }
-  /* No stagger either — with movement gone, a delayed fade is just an uneven
-     one. */
-  .landing-grid > * .illo-art {
-    transition-delay: 0ms;
   }
 }
 

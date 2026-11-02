@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import AuthButton from '@/components/secondarybutton'
 import Continuebutton from '@/components/continuebutton'
@@ -299,13 +300,13 @@ export default function Getstarted() {
               <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
                 Looks like you already have an account —
               </p>
-              <a
+              <Link
                 href='/login'
                 className='label-sm text-touch-area'
                 style={{ color: 'var(--primary-base)' }}
               >
                 log in instead
-              </a>
+              </Link>
             </div>
           )}
 
@@ -363,13 +364,13 @@ export default function Getstarted() {
             <p className='para-sm' style={{ color: 'var(--text-sub)' }}>
               Already have an account?
             </p>
-            <a
+            <Link
               href='/login'
               className='label-sm text-touch-area'
               style={{ color: 'var(--primary-base)' }}
             >
               Login
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -391,21 +392,21 @@ export default function Getstarted() {
           }}
         >
           By continuing, you agree to our{' '}
-          <a
+          <Link
             href='/terms?from=get-started'
             className='focus-ring-grey'
             style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
           >
             Terms
-          </a>{' '}
+          </Link>{' '}
           and{' '}
-          <a
+          <Link
             href='/privacy?from=get-started'
             className='focus-ring-grey'
             style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
           >
             Privacy Policy
-          </a>
+          </Link>
           .
         </div>
       </div>

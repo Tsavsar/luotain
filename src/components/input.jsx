@@ -82,7 +82,7 @@ export default function Inputfield({
         fontSize: '14px',
         color: 'var(--text-strong)',
         fontFamily: 'var(--font-sans)',
-        transition: 'border 0.15s ease, box-shadow 0.15s ease',
+        transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
       }}
     >
       {/* Rendered only when there IS an icon. Unconditionally, the empty
