@@ -164,6 +164,15 @@ function OrgDropdown({
           <div
             key={org.id}
             onClick={() => handleSwitch(org.id)}
+            // A real tab stop — the focus style is on .org-row in
+            // globals.css, the same highlight hover paints.
+            role='button'
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return
+              e.preventDefault()
+              handleSwitch(org.id)
+            }}
             className={`org-row${org.id === activeOrgId ? ' is-active' : ''}`}
             style={{
               display: 'flex',
@@ -194,7 +203,7 @@ function OrgDropdown({
           // is a layout with no page of its own, so backing out of new-org
           // landed on a 404.
           onClick={() => router.push('/new-org?from=/dashboard/analytics')}
-          className='dropdown-item'
+          className='dropdown-item focus-ring-grey'
           style={{
             width: '100%',
             display: 'flex',
@@ -234,6 +243,8 @@ function ProfileDropdown({ userImage, userName, avatarSeed }) {
     <>
       <Dropdown
         align='right'
+        // The trigger is a circular avatar, so the ring follows it.
+        triggerRadius='var(--radius-full)'
         trigger={
           <div
             style={{
@@ -344,7 +355,12 @@ export default function DashboardMenu({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <Link href='/dashboard/analytics'>
+        <Link
+          href='/dashboard/analytics'
+          aria-label='Dashboard home'
+          className='focus-ring-grey'
+          style={{ display: 'flex', borderRadius: 'var(--radius-md)' }}
+        >
           <LogoMark size={32} />
         </Link>
 
@@ -417,7 +433,7 @@ export default function DashboardMenu({
         >
           <button
             onClick={() => router.push('/dashboard/create')}
-            className='create-new-mobile'
+            className='create-new-mobile focus-ring'
             tabIndex={compact ? -1 : 0}
             style={{
               alignItems: 'center',

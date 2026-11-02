@@ -67,7 +67,7 @@ export default function CopyButton({
         handleCopy()
       }}
       aria-label={copied ? copiedLabel : label}
-      className={className}
+      className={`focus-ring-grey${className ? ` ${className}` : ''}`}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -76,6 +76,8 @@ export default function CopyButton({
         border: 'none',
         padding: 0,
         cursor: 'pointer',
+        // Shapes the focus ring only — the button has no visible box.
+        borderRadius: 'var(--radius-xs)',
         ...style,
       }}
     >

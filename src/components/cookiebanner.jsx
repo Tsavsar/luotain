@@ -137,8 +137,9 @@ export default function CookieBanner({ active = COOKIES_ACTIVE, onDecision }) {
             type='button'
             onClick={() => setOpen(false)}
             aria-label='Close, ask me again later'
-            className='cookie-close'
+            className='cookie-close focus-ring-grey'
             style={{
+              borderRadius: 'var(--radius-xs)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -182,7 +183,7 @@ export default function CookieBanner({ active = COOKIES_ACTIVE, onDecision }) {
         <button
           type='button'
           onClick={() => decide('essential')}
-          className='cookie-btn'
+          className='cookie-btn focus-ring-grey'
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -207,7 +208,7 @@ export default function CookieBanner({ active = COOKIES_ACTIVE, onDecision }) {
         <button
           type='button'
           onClick={() => decide('all')}
-          className='cookie-btn'
+          className='cookie-btn focus-ring'
           style={{
             display: 'flex',
             alignItems: 'center',

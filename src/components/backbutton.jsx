@@ -66,6 +66,7 @@ export default function BackButton({ onBack, requireFrom = false }) {
     <button
       type='button'
       onClick={handleBack}
+      className='focus-ring-grey'
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -75,6 +76,8 @@ export default function BackButton({ onBack, requireFrom = false }) {
         border: 'none',
         padding: 0,
         cursor: 'pointer',
+        // Shapes the focus ring only — the button has no visible box.
+        borderRadius: 'var(--radius-sm)',
       }}
     >
       <svg

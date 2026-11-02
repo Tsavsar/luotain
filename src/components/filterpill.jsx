@@ -188,6 +188,8 @@ export default function FilterPill({ filters, onRemove, onClearAll }) {
               </span>
               <button
                 onClick={() => onRemove(filter)}
+                aria-label={`Remove ${filter.label} filter`}
+                className='focus-ring-grey'
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -196,6 +198,7 @@ export default function FilterPill({ filters, onRemove, onClearAll }) {
                   border: 'none',
                   cursor: 'pointer',
                   padding: 0,
+                  borderRadius: 'var(--radius-full)',
                 }}
               >
                 <CloseIcon />
@@ -209,12 +212,13 @@ export default function FilterPill({ filters, onRemove, onClearAll }) {
         <button
           onClick={onClearAll}
           data-flip-key='clear-all'
-          className='filter-pill-enter'
+          className='filter-pill-enter focus-ring-grey'
           style={{
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
             padding: '4px 4px',
+            borderRadius: 'var(--radius-sm)',
           }}
         >
           <span className='para-xs' style={{ color: 'var(--text-soft)' }}>

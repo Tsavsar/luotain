@@ -346,12 +346,14 @@ function DataRow({
                 onToggleFilter?.()
               }}
               title={isFiltered ? 'Remove filter' : 'Filter by this'}
+              className='focus-ring-grey'
               style={{
                 display: 'flex',
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 padding: 0,
+                borderRadius: 'var(--radius-xs)',
               }}
             >
               {isFiltered ? <CloseIcon /> : <FilterIcon />}
@@ -584,12 +586,15 @@ export function Card({
               </span>
               <button
                 onClick={() => onToggleFilter?.(f)}
+                aria-label={`Remove ${f.label} filter`}
+                className='focus-ring-grey'
                 style={{
                   display: 'flex',
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
                   padding: 0,
+                  borderRadius: 'var(--radius-full)',
                 }}
               >
                 <CloseIcon />

@@ -82,6 +82,7 @@ export default function Switch({
       aria-checked={checked}
       aria-label={label}
       disabled={disabled}
+      className='focus-ring'
       onClick={() => {
         setInteracted(true)
         onChange?.(!checked)
@@ -93,6 +94,10 @@ export default function Switch({
         background: 'none',
         border: 'none',
         padding: 0,
+        // Only visible as the focus ring's shape — the button itself has
+        // no background. Pill, to follow the track (and the label when
+        // one is shown).
+        borderRadius: 'var(--radius-full)',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
         fontFamily: 'var(--font-sans)',

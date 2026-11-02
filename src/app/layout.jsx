@@ -91,8 +91,11 @@ const THEME_SCRIPT = `
 export default function RootLayout({ children }) {
   return (
     // data-theme is set by the script below rather than here — hardcoding it
-    // would mean the script has to fight the server-rendered value.
-    <html lang='en'>
+    // would mean the script has to fight the server-rendered value. Because
+    // the script runs before hydration, React sees an attribute the server
+    // never sent; suppressHydrationWarning covers exactly this (it only
+    // applies one level deep, so mismatches inside the tree still warn).
+    <html lang='en' suppressHydrationWarning>
       <head>
         <meta
           name='viewport'

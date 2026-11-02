@@ -393,14 +393,16 @@ export default function Getstarted() {
           By continuing, you agree to our{' '}
           <a
             href='/terms?from=get-started'
-            style={{ color: 'var(--text-sub)' }}
+            className='focus-ring-grey'
+            style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
           >
             Terms
           </a>{' '}
           and{' '}
           <a
             href='/privacy?from=get-started'
-            style={{ color: 'var(--text-sub)' }}
+            className='focus-ring-grey'
+            style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
           >
             Privacy Policy
           </a>

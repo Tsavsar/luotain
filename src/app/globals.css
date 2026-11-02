@@ -146,6 +146,23 @@
   --duration-panel: 200ms; /* dropdowns, page sections, selects */
   --duration-modal: 250ms; /* modals, drawers, sliding indicators */
 
+  /* --- Toast motion (toastIn/toastOut keyframes in ANIMATIONS) --- */
+  --toast-open-dur: 0.35s;
+  --toast-close-dur: 0.2s; /* matches the existing 200ms setTimeout in each page's JS — mismatch was causing the stutter */
+  --toast-distance: 10px;
+  --toast-blur: 3px;
+  --toast-scale: 0.97;
+
+  /* --- AnimatedNumber digits (t-digit-pop-in keyframes) --- */
+  --digit-dur: 500ms;
+  --digit-distance: 8px;
+  --digit-stagger: 70ms;
+  --digit-blur: 2px;
+  /* Aliased to the shared spring rather than a fourth overshoot curve. */
+  --digit-ease: var(--ease-spring);
+  --digit-dir-x: 0;
+  --digit-dir-y: 1;
+
   /* --- Typography --- */
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -393,6 +410,9 @@
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  /* Anchor/legal-section jumps glide instead of snapping; the
+     reduced-motion block resets this to auto. */
+  scroll-behavior: smooth;
   /* The custom ::-webkit-scrollbar styling below forces classic
      (space-taking) scrollbars even on macOS overlay mode — so when
      navigating from a tall page (analytics) to a short one (links),
@@ -482,6 +502,29 @@ input:focus-visible {
 .focus-ring-grey:focus-visible {
   outline: none;
   box-shadow: var(--focus-grey);
+}
+
+/* Keyboard focus on menu rows. They sit inside the menu's scroll
+   container, whose overflow would clip an outer ring — so the hover
+   highlight doubles as the focus indicator, same as mousing over. */
+.dropdown-item:focus-visible {
+  outline: none;
+  background: var(--bg-surface);
+}
+.dropdown-item.is-danger:focus-visible {
+  background: var(--error-mute);
+}
+.org-row:focus-visible {
+  outline: none;
+  background: var(--bg-layer);
+}
+
+/* Auth-page text links. The touch-area's 12px padding already stands
+   the ring off the text, so the ring just follows that box. */
+.text-touch-area:focus-visible {
+  outline: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--focus-active);
 }
 
 /* ─── Scrollbar ───────────────────────────────────── */
@@ -859,15 +902,8 @@ input:focus-visible {
    opacity transition/style — otherwise you'll recreate that same
    conflict. Exit uses a sharper ease-in curve than enter, since
    leaving content should get out of the way quickly rather than
-   easing out gently. */
-:root {
-  --toast-open-dur: 0.35s;
-  --toast-close-dur: 0.2s; /* matches the existing 200ms setTimeout in each page's JS — mismatch was causing the stutter */
-  --toast-distance: 10px;
-  --toast-blur: 3px;
-  --toast-scale: 0.97;
-}
-
+   easing out gently.
+   Tunables (--toast-*) live in the main :root token block. */
 @keyframes toastIn {
   from {
     opacity: 0;
@@ -923,28 +959,6 @@ input:focus-visible {
   }
 }
 
-/* --- Legal page content fade: replaces the hard instant swap when
-       navigating between /terms and /privacy. Paired with key='terms'
-       / key='privacy' on the page wrapper in each page.jsx, so React
-       treats it as a fresh element and replays this on every nav. --- */
-@keyframes contentFadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.legal-content-reveal {
-  /* Was 0.4s on Material's standard curve — the only place either appeared.
-     Brought onto the shared ease-out at panel duration: 400ms is past the
-     point where an entrance reads as waiting, and one project shouldn't
-     carry two easing vocabularies. */
-  animation: contentFadeUp var(--duration-panel) var(--ease-out) both;
-}
-
 /* ═══════════════════════════════════════════════════
    COMPONENT-SPECIFIC RULES
 ═══════════════════════════════════════════════════ */
@@ -981,16 +995,6 @@ input:focus-visible {
   .topspace {
     margin-top: 72px;
   }
-}
-
-:root {
-  /* Add these inside your existing :root { } block */
-  --legal-side-padding: 24px;
-  --legal-tab-padding-x: 16px;
-}
-
-html {
-  scroll-behavior: smooth;
 }
 
 /* ─── Contact email hover tooltip ───
@@ -1368,27 +1372,6 @@ html {
   animation-delay: -0.6s;
 }
 
-/* --- Dashboard nav: Create New drops below tabs on narrow screens --- */
-.dashboard-nav-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-}
-@media (max-width: 768px) {
-  .dashboard-nav-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-.create-new-button {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
 /* --- Org dropdown trigger: hover + active(open) state ---
    Matches Figma node 72:1373. Opt-in via the Dropdown component's
    triggerHover prop — only the org trigger uses this; other
@@ -1529,17 +1512,8 @@ html {
    AnimatedNumber component remounts on value change (key=value) and
    sets each digit's delay inline, so any digit count works — the
    data-stagger selectors from the original pattern are kept for
-   plain-HTML usage but the component doesn't rely on them. */
-:root {
-  --digit-dur: 500ms;
-  --digit-distance: 8px;
-  --digit-stagger: 70ms;
-  --digit-blur: 2px;
-  /* Aliased to the shared spring rather than a fourth overshoot curve. */
-  --digit-ease: var(--ease-spring);
-  --digit-dir-x: 0;
-  --digit-dir-y: 1;
-}
+   plain-HTML usage but the component doesn't rely on them.
+   Tunables (--digit-*) live in the main :root token block. */
 @keyframes t-digit-pop-in {
   0% {
     transform: translate(
@@ -2786,11 +2760,9 @@ html {
 
 /* Cards cascade rather than arriving together. 60ms: past 80 the last one
    feels late, below 30 it stops reading as a stagger at all. */
-.landing-cards > *:nth-child(2),
 .landing-grid > *:nth-child(2) {
   transition-delay: 60ms;
 }
-.landing-cards > *:nth-child(3),
 .landing-grid > *:nth-child(3) {
   transition-delay: 120ms;
 }
@@ -2818,13 +2790,6 @@ html {
      card below it for no reason. */
   #top .landing-herotext {
     padding-bottom: 0;
-  }
-  .landing-cards {
-    flex-wrap: wrap;
-  }
-  .landing-cards > * {
-    width: auto;
-    flex: 1 1 256px;
   }
   /* 2-up. Three columns in under 900px puts card copy at ~28 characters a
      line, which is too narrow to read even at 13px. */
@@ -2885,9 +2850,6 @@ html {
 
 /* 700: two columns of card copy no longer hold a readable measure. */
 @media (max-width: 700px) {
-  .landing-cards > * {
-    flex: 1 1 100% !important;
-  }
   /* Single column. Two columns below 620 is two narrow strips. */
   .landing-grid {
     grid-template-columns: 1fr;
@@ -2928,7 +2890,6 @@ html {
   .landing-reveal {
     transform: none !important;
   }
-  .landing-cards > *,
   .landing-grid > * {
     transition-delay: 0ms !important;
   }
@@ -3257,6 +3218,13 @@ html {
   .logo-menu button:hover {
     background: var(--bg-surface);
   }
+}
+
+/* Keyboard focus mirrors hover — the menu rows sit in their own panel,
+   where a background highlight reads better than an outer ring. */
+.logo-menu button:focus-visible {
+  outline: none;
+  background: var(--bg-surface);
 }
 
 @keyframes logoMenuIn {

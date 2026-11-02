@@ -50,7 +50,7 @@ export default function PlanBadge() {
       type='button'
       onClick={() => router.push('/dashboard/settings/billing')}
       aria-label={`${plan.name} — manage billing`}
-      className='plan-badge'
+      className='plan-badge focus-ring-grey'
       style={{
         display: 'flex',
         alignItems: 'center',

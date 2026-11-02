@@ -42,7 +42,7 @@ export default function AuthButton({ icon, label, onClick }) {
 
   return (
     <button
-      className='auth-btn'
+      className='auth-btn focus-ring-grey'
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={handleClick}

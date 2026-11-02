@@ -53,7 +53,7 @@ export default function Continuebutton({ active, label, shaking, onClick }) {
   return (
     <button
       onClick={handleClick}
-      className={shaking ? 'is-shaking' : ''}
+      className={`focus-ring${shaking ? ' is-shaking' : ''}`}
       style={{
         width: '100%',
         display: 'flex',

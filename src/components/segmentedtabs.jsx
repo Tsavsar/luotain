@@ -156,7 +156,7 @@ export default function SegmentedTabs({
             if (el) itemRefs.current.set(item.id, el)
             else itemRefs.current.delete(item.id)
           },
-          className: 'label-sm',
+          className: 'label-sm focus-ring-grey',
           role: 'tab',
           'aria-selected': active,
           style: {

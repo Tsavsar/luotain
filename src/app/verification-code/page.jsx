@@ -268,6 +268,13 @@ function VerifyContent() {
               ) : (
                 <a
                   onClick={handleResend}
+                  role='button'
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' && e.key !== ' ') return
+                    e.preventDefault()
+                    handleResend()
+                  }}
                   className='label-sm text-touch-area'
                   style={{ color: 'var(--primary-base)', cursor: 'pointer' }}
                 >
@@ -296,13 +303,18 @@ function VerifyContent() {
         }}
       >
         By continuing, you agree to our{' '}
-        <a href='/terms?from=get-started' style={{ color: 'var(--text-sub)' }}>
+        <a
+          href='/terms?from=get-started'
+          className='focus-ring-grey'
+          style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
+        >
           Terms
         </a>{' '}
         and{' '}
         <a
           href='/privacy?from=get-started'
-          style={{ color: 'var(--text-sub)' }}
+          className='focus-ring-grey'
+          style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
         >
           Privacy Policy
         </a>

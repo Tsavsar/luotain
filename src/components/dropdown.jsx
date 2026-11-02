@@ -40,6 +40,16 @@ export function Dropdown({
   // stops filling its field. Opt-in rather than default so no existing
   // dropdown changes shape.
   fullWidth = false,
+  // The trigger wrapper is a tab stop (with a focus ring) by default, so
+  // keyboard users can reach and open the menu at all — most triggers are
+  // plain divs. Turned OFF where the trigger already contains something
+  // focusable (an Inputfield, a real button), or wrapper + inner element
+  // would be two tab stops for one control. Enter still opens the menu
+  // there, since the keydown bubbles up from the inner element.
+  triggerFocusable = true,
+  // Shapes the trigger's focus ring. Unset, the ring follows whatever
+  // radius the trigger box already has (e.g. .dropdown-trigger's 12px).
+  triggerRadius,
 }) {
   const [open, setOpen] = useState(false)
   // Kept mounted through the exit animation. Previously the panel unmounted
@@ -227,6 +237,16 @@ export function Dropdown({
   const panel = (
     <div
       ref={panelRef}
+      // The panel is portaled, so a keydown inside it never reaches the
+      // trigger's handler — Escape has to be caught here too. Focus goes
+      // back to the trigger so the keyboard user isn't dropped at the
+      // end of the document, where the portal lives.
+      onKeyDown={(e) => {
+        if (e.key !== 'Escape') return
+        e.stopPropagation()
+        beginClose()
+        ref.current?.firstElementChild?.focus?.()
+      }}
       className={`dropdown-panel${closing ? ' is-closing' : ''}`}
       style={{
         position: 'fixed',
@@ -241,7 +261,13 @@ export function Dropdown({
         transformOrigin: align === 'right' ? 'top right' : 'top left',
       }}
     >
-      {isValidElement(children) ? cloneElement(children, { close }) : children}
+      {/* Only a COMPONENT child can accept `close` as a prop. A plain DOM
+          child (the org switcher passes a styled <div>) would get it written
+          onto the element itself, which React flags in dev — such a child is
+          rendered as-is. */}
+      {isValidElement(children) && typeof children.type === 'function'
+        ? cloneElement(children, { close })
+        : children}
     </div>
   )
 
@@ -253,10 +279,50 @@ export function Dropdown({
       {/* --- Trigger --- */}
       <div
         onClick={() => (open ? beginClose() : setOpen(true))}
-        className={
+        role={triggerFocusable ? 'button' : undefined}
+        tabIndex={triggerFocusable ? 0 : undefined}
+        aria-haspopup='menu'
+        aria-expanded={open}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && open) {
+            beginClose()
+            return
+          }
+          // Space only when the wrapper itself is focused — inside an
+          // Inputfield trigger it's a character being typed.
+          const toggles =
+            e.key === 'Enter' ||
+            (e.key === ' ' && e.target === e.currentTarget)
+          if (!toggles) return
+          e.preventDefault()
+          if (open) {
+            beginClose()
+          } else {
+            setOpen(true)
+            // Opened from the keyboard, so move focus into the menu —
+            // it's portaled to the end of <body>, where tabbing would
+            // never naturally reach it.
+            requestAnimationFrame(() => {
+              panelRef.current
+                ?.querySelector(
+                  '[data-dropdown-item], [tabindex], button, a, input'
+                )
+                ?.focus()
+            })
+          }
+        }}
+        className={`${
           triggerHover ? `dropdown-trigger${open ? ' is-open' : ''}` : ''
-        }
-        style={{ cursor: 'pointer', width: fullWidth ? '100%' : undefined }}
+        }${triggerFocusable ? ' focus-ring-grey' : ''}`.trim()}
+        style={{
+          cursor: 'pointer',
+          width: fullWidth ? '100%' : undefined,
+          // Shapes the focus ring. The org trigger's class already sets
+          // 12px, which an inline default would override — so only the
+          // classless triggers get the fallback.
+          borderRadius:
+            triggerRadius ?? (triggerHover ? undefined : 'var(--radius-md)'),
+        }}
       >
         {trigger}
       </div>
@@ -452,13 +518,16 @@ export function DropdownMenu({ children, width = '100%', close }) {
           }}
         />
 
+        {/* Same component-only guard as the panel: `close`/`menuHovering`
+            are props for DropdownOption and friends, not attributes for a
+            plain DOM child. */}
         {Array.isArray(children)
           ? children.map((child) =>
-              isValidElement(child)
+              isValidElement(child) && typeof child.type === 'function'
                 ? cloneElement(child, { close, menuHovering: hovering })
                 : child
             )
-          : isValidElement(children)
+          : isValidElement(children) && typeof children.type === 'function'
             ? cloneElement(children, { close, menuHovering: hovering })
             : children}
       </div>
@@ -494,6 +563,18 @@ export function DropdownOption({
       // the panel doesn't know how many options there are or which component
       // rendered them.
       data-dropdown-selected={selected ? 'true' : undefined}
+      // A real tab stop, so a keyboard user who opened the menu can walk the
+      // options. The focus style lives on .dropdown-item in globals.css —
+      // the hover highlight, since an outer ring would be clipped by the
+      // scroll container.
+      role='menuitem'
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return
+        e.preventDefault()
+        onClick?.(e)
+        close?.()
+      }}
       className={`dropdown-item${showSelected ? ' is-selected' : ''}${danger ? ' is-danger' : ''}`}
       onClick={(e) => {
         onClick?.(e)

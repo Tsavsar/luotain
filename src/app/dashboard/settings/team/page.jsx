@@ -663,6 +663,7 @@ export default function TeamPage() {
                 <Dropdown
                   fullWidth
                   align='right'
+                  triggerFocusable={false}
                   trigger={
                     <Inputfield
                       righticon={<ChevronIcon />}

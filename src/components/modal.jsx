@@ -284,7 +284,10 @@ export function ModalButton({
       // focus lands correctly even though the element didn't exist
       // on the previous render.
       data-autofocus={autoFocus ? '' : undefined}
-      className='modal-btn'
+      // The ring matches the action: red on the destructive variant, so a
+      // keyboard user about to press Enter can see which kind of button
+      // they're on; grey on the quiet one.
+      className={`modal-btn ${variant === 'danger' ? 'focus-ring-error' : 'focus-ring-grey'}`}
       style={{
         flex: '1 0 0',
         padding: '10px',

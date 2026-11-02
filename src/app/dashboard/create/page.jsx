@@ -774,6 +774,7 @@ export default function CreatePage() {
                   <Dropdown
                     fullWidth
                     align='left'
+                    triggerFocusable={false}
                     trigger={
                       // Inputfield as the trigger, matching the domain picker
                       // below — a second control that only looked similar would
@@ -947,10 +948,11 @@ export default function CreatePage() {
                   {intent === 'qr' && existingLinks?.length > 0 ? (
                     <Dropdown
                       align='left'
+                      triggerFocusable={false}
                       trigger={
                         <button
                           type='button'
-                          className='create-pick-link'
+                          className='create-pick-link focus-ring-grey'
                           style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -959,6 +961,7 @@ export default function CreatePage() {
                             border: 'none',
                             padding: 0,
                             marginTop: '8px',
+                            borderRadius: 'var(--radius-sm)',
                             cursor: 'pointer',
                             fontFamily: 'var(--font-sans)',
                             fontSize: '12px',
@@ -1014,6 +1017,7 @@ export default function CreatePage() {
                   <Dropdown
                     fullWidth
                     align='left'
+                    triggerFocusable={false}
                     trigger={
                       // Inputfield as the trigger so the domain matches the
                       // other two exactly rather than a second control that

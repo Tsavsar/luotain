@@ -198,6 +198,7 @@ export default function DashboardNav() {
               key={tab.id}
               href={tab.href}
               ref={(el) => (tabRefs.current[tab.id] = el)}
+              className='focus-ring-grey'
               style={{
                 position: 'relative',
                 zIndex: 1,
@@ -235,7 +236,7 @@ export default function DashboardNav() {
           changes the page. */}
       <Link
         href='/dashboard/create'
-        className='create-new-desktop'
+        className='create-new-desktop focus-ring'
         style={{
           alignItems: 'center',
           justifyContent: 'center',

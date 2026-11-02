@@ -398,11 +398,19 @@ export default function LoginPage() {
         }}
       >
         By continuing, you agree to our{' '}
-        <a href='/terms?from=login' style={{ color: 'var(--text-sub)' }}>
+        <a
+          href='/terms?from=login'
+          className='focus-ring-grey'
+          style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
+        >
           Terms
         </a>{' '}
         and{' '}
-        <a href='/privacy?from=login' style={{ color: 'var(--text-sub)' }}>
+        <a
+          href='/privacy?from=login'
+          className='focus-ring-grey'
+          style={{ color: 'var(--text-sub)', borderRadius: 'var(--radius-xs)' }}
+        >
           Privacy Policy
         </a>
         .

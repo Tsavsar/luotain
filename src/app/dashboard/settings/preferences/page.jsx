@@ -331,6 +331,7 @@ export default function PreferencesPage() {
             <Dropdown
               fullWidth
               align='right'
+              triggerFocusable={false}
               trigger={
                 <Inputfield
                   righticon={<ChevronIcon />}
