@@ -59,9 +59,9 @@ export default function PrivacyPage() {
           </Section>
 
           <Section id='third-party' title='Third-Party Services'>
-            We use third-party providers to operate Luotain, including Lemon
-            Squeezy for payment processing and cloud infrastructure providers
-            for hosting. These providers process data on our behalf under their
+            We use third-party providers to operate Luotain, including Polar
+            for payment processing and cloud infrastructure providers for
+            hosting. These providers process data on our behalf under their
             own privacy policies.
           </Section>
 

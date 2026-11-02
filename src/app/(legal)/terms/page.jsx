@@ -80,7 +80,7 @@ export default function TermsPage() {
 
           <Section id='subscriptions' title='Subscriptions and Payments'>
             Luotain offers Free, Starter, and Pro plans. Paid subscriptions are
-            billed through our payment processor, Lemon Squeezy, and are subject
+            billed through our payment processor, Polar, and are subject
             to their terms in addition to ours. Subscriptions renew
             automatically unless cancelled prior to the renewal date. Fees are
             non-refundable except where required by law.
