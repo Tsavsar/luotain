@@ -2,7 +2,11 @@ import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { SHORT_DOMAIN, shortUrlFor } from '@/lib/shortlink'
 import { isRecoverable } from '@/lib/linkrecovery'
-import { linkLimitReason, customSlugReason } from '@/lib/plans'
+import {
+  linkLimitReason,
+  customSlugReason,
+  customDomainReason,
+} from '@/lib/plans'
 
 // Both methods for /api/links live here — Next.js resolves every verb
 // for a path from one route.js, so the list and the create can't be
@@ -280,6 +284,24 @@ export async function POST(request) {
       // upgrade card.
       { status: 402 }
     )
+  }
+
+  // The org check above says the domain is theirs; this says their plan still
+  // includes it. Without it, a workspace that downgraded kept making links on
+  // its custom domain for free.
+  if (domainRecord.organizationId) {
+    const domainReason = customDomainReason(org?.plan)
+    if (domainReason) {
+      return Response.json(
+        {
+          error: domainReason,
+          code: 'CUSTOM_DOMAIN',
+          plan: org?.plan,
+          field: 'domain',
+        },
+        { status: 402 }
+      )
+    }
   }
 
   const requestedSlug = String(body?.slug || '').trim()

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUserEmail } from '@/lib/session'
+import { planFor } from '@/lib/plans'
 
 // POST /api/public/claim
 //
@@ -55,27 +56,52 @@ export async function POST() {
       return Response.json({ claimed: 0, pending: true })
     }
 
-    // The `organizationId` in the where clause is the security boundary: only
-    // links still sitting in the public workspace can move. A link already
-    // claimed, or one belonging to a real workspace, won't match however its
-    // id got into the cookie.
-    const result = await prisma.link.updateMany({
-      where: {
-        id: { in: ids },
-        organizationId: PUBLIC_ORG,
-        deletedAt: null,
-      },
-      data: {
-        organizationId: orgId,
-        createdById: user.id,
-      },
+    // Only links still sitting in the public workspace can move. A link
+    // already claimed, or one belonging to a real workspace, won't match
+    // however its id got into the cookie.
+    const pending = await prisma.link.findMany({
+      where: { id: { in: ids }, organizationId: PUBLIC_ORG, deletedAt: null },
+      select: { id: true },
     })
+
+    // The plan's link limit applies here too: from the workspace's side,
+    // claiming is creating. Without this a Free workspace could pass its five
+    // links by making more on the homepage and claiming them, as often as it
+    // liked. What doesn't fit stays public — it still redirects, it just isn't
+    // theirs to manage.
+    const [org, linkCount] = await Promise.all([
+      prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { plan: true },
+      }),
+      prisma.link.count({ where: { organizationId: orgId } }),
+    ])
+    const { maxLinks } = planFor(org?.plan)
+    const room =
+      maxLinks === null ? pending.length : Math.max(0, maxLinks - linkCount)
+    const claimIds = pending.slice(0, room).map((l) => l.id)
+
+    // The `organizationId` in the where clause stays as the security
+    // boundary, in case a link moved between the read and this write.
+    const result = claimIds.length
+      ? await prisma.link.updateMany({
+          where: {
+            id: { in: claimIds },
+            organizationId: PUBLIC_ORG,
+            deletedAt: null,
+          },
+          data: {
+            organizationId: orgId,
+            createdById: user.id,
+          },
+        })
+      : { count: 0 }
 
     // Clicks already logged against the public org move too, or the link
     // arrives in its new home showing zero despite having been scanned.
     if (result.count > 0) {
       await prisma.click.updateMany({
-        where: { linkId: { in: ids }, organizationId: PUBLIC_ORG },
+        where: { linkId: { in: claimIds }, organizationId: PUBLIC_ORG },
         data: { organizationId: orgId },
       })
     }

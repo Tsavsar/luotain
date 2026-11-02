@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { shortUrlFor } from '@/lib/shortlink'
 import { QR_COLORS, QR_PATTERNS } from '@/lib/qrdesign'
+import { customDomainReason } from '@/lib/plans'
 
 // Reused from the link create path. A QR's slug resolves at the same domain as
 // a link's, so it can't be a reserved route either.
@@ -144,7 +145,13 @@ export async function POST(request) {
     where: { id: linkId, organizationId },
     // shortCode too — it's the default label. A page of codes all called
     // "QR code" is a list you can't read.
-    select: { id: true, domainId: true, deletedAt: true, shortCode: true },
+    select: {
+      id: true,
+      domainId: true,
+      deletedAt: true,
+      shortCode: true,
+      domain: { select: { organizationId: true } },
+    },
   })
   if (!link) {
     return Response.json({ error: 'Link not found' }, { status: 404 })
@@ -154,6 +161,23 @@ export async function POST(request) {
       { error: 'That link is in the trash. Recover it first.' },
       { status: 400 }
     )
+  }
+
+  // A QR mints its own slug on its link's domain, so on a custom domain it's a
+  // new short URL there — the same paid feature as a link. Existing codes keep
+  // scanning after a downgrade; new ones wait for the plan to include it.
+  if (link.domain?.organizationId) {
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { plan: true },
+    })
+    const domainReason = customDomainReason(org?.plan)
+    if (domainReason) {
+      return Response.json(
+        { error: domainReason, code: 'CUSTOM_DOMAIN', plan: org?.plan },
+        { status: 402 }
+      )
+    }
   }
 
   // Validated against the design's own options rather than accepting any
@@ -194,8 +218,11 @@ export async function POST(request) {
   //
   // A link has one code by design; the designer is editing it, not adding to
   // a collection.
+  // No deletedAt here: QR codes have no soft delete — they go with their
+  // link. Filtering on it was a Prisma validation error, so every save from
+  // the designer failed with a 500.
   const existing = await prisma.qrCode.findFirst({
-    where: { linkId: link.id, deletedAt: null },
+    where: { linkId: link.id },
     select: { id: true },
   })
   if (existing) {

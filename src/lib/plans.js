@@ -101,6 +101,16 @@ export function linkLimitReason(planId, currentCount) {
   return `${plan.name} includes ${plan.maxLinks} links. Upgrade for more.`
 }
 
+// Custom domains are paid. Checked wherever a new short URL can land on one —
+// a link, and a QR code, which mints its own slug on its link's domain — so a
+// workspace that downgrades keeps every link it already has there working, but
+// can't add new ones until the plan includes custom domains again.
+export function customDomainReason(planId) {
+  const plan = planFor(planId)
+  if (plan.customDomain) return null
+  return `Custom domains are part of Starter and Pro. ${plan.name} uses the shared domain.`
+}
+
 export function customSlugReason(planId) {
   const plan = planFor(planId)
   // Always true now — kept so callers don't need changing.

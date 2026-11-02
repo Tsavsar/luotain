@@ -340,8 +340,12 @@ export default function CreatePage() {
       .then((d) => {
         if (cancelled || !d) return
         // Verified only. An unverified domain can be picked but the create
-        // route refuses it, so offering one is a guaranteed error.
-        const list = (d.domains || []).filter((x) => x.verified)
+        // route refuses it, so offering one is a guaranteed error. Same for a
+        // custom domain on a plan without them — a workspace that downgraded
+        // still has its domain, but new links can't go on it.
+        const list = (d.domains || []).filter(
+          (x) => x.verified && (x.shared || d.allowed)
+        )
         setDomains(list)
 
         // Pick the default from what actually EXISTS rather than from
