@@ -5,16 +5,12 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import LogoWordmark from '@/components/logowordmark'
 import NavAccount from '@/components/landingaccount'
+import LandingFeatures from '@/components/landingfeatures'
 import {
-  GeographyIllustration,
-  QrIllustration,
-  ShortenIllustration,
-  DomainIllustration,
-  NoScriptIllustration,
-  PrintIllustration,
-  CampaignsIllustration,
-  ClientWorkIllustration,
-} from '@/components/landingillustrations'
+  PrintPicture,
+  CampaignsPicture,
+  ClientPicture,
+} from '@/components/landingusecases'
 import CookieBanner from '@/components/cookiebanner'
 import LogoMenu from '@/components/logomenu'
 import Reveal from '@/components/reveal'
@@ -295,76 +291,6 @@ function Hero() {
   )
 }
 
-// ─── Features (613:1252) ───
-function Features() {
-  return (
-    <section
-      id='features'
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '32px',
-        width: '100%',
-      }}
-    >
-      {/* One 3-column grid, not two rows that happen to look similar. The
-          heading takes the first cell and five cards fill the rest, so every
-          column lines up by construction rather than by arithmetic.
-
-          The heading column widens 210 -> 256 as a result, which is what makes
-          the two rows share edges. */}
-      <div className='landing-grid'>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            // Bottom-aligned in its cell, so the heading sits on the same
-            // baseline as the card titles beside it rather than floating at
-            // the top of a 230px-tall row.
-            justifyContent: 'flex-end',
-            paddingBottom: '4px',
-            minWidth: 0,
-          }}
-        >
-          <Heading size={24} lead='The whole link,'>
-            not just the redirect.
-          </Heading>
-          <Body>
-            Shortening is the easy part. What happens after is the rest.
-          </Body>
-        </div>
-
-        <Card
-          title='Clicks with context'
-          body='Country, device, browser and referrer on every click. Not a running total.'
-          illustration={<GeographyIllustration />}
-        />
-        <Card
-          title='A QR code with every link'
-          body='Design the pattern and colours, add your logo, download at any size.'
-          illustration={<QrIllustration />}
-        />
-        <Card
-          title='No more long links'
-          body='Paste any link and get a short one back. Name it yourself or let us generate it.'
-          illustration={<ShortenIllustration />}
-        />
-        <Card
-          title='Your own domain'
-          body='Point go.yourbrand.com at Luotain and links carry your name, not ours.'
-          illustration={<DomainIllustration />}
-        />
-        <Card
-          title='Nothing to install'
-          body='No script, no tag manager, no consent banner. The link is the measurement.'
-          illustration={<NoScriptIllustration />}
-        />
-      </div>
-    </section>
-  )
-}
-
 // ─── Use cases (613:1253) ───
 function UseCases() {
   return (
@@ -398,19 +324,19 @@ function UseCases() {
             title='Print and packaging'
             lead='You put a code on something physical'
             body='Give each placement its own code and you learn which one people actually scan.'
-            illustration={<PrintIllustration />}
+            illustration={<PrintPicture />}
           />
           <Card
             title='Campaigns and social'
             lead='You share the same link in five places'
             body='One short link each, and the referrer tells you which earned the traffic.'
-            illustration={<CampaignsIllustration />}
+            illustration={<CampaignsPicture />}
           />
           <Card
             title='Client work'
             lead='You need to show someone the numbers'
             body='Country, device and source on every link, so an update is a screenshot.'
-            illustration={<ClientWorkIllustration />}
+            illustration={<ClientPicture />}
           />
         </div>
       </div>
@@ -626,8 +552,10 @@ export default function LandingPage() {
       >
         <Hero />
 
+        {/* Features are a bento of live product pictures now — see
+            components/landingfeatures.jsx for the tile plan. */}
         <Reveal>
-          <Features />
+          <LandingFeatures />
         </Reveal>
 
         <Reveal>

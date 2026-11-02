@@ -1,0 +1,341 @@
+/* ─── Landing use cases ───
+   The three use-case wells. Same tokens and stage look as the bento above
+   (.lu-stage shares .lf-stage's mapping in landingfeatures.css), so the two
+   sections read as one page. */
+
+/* Fills the card's well. The well is white like the page, so these 16px
+   corners are the shape you see. */
+.lu-well {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--bg-surface);
+}
+
+/* Pinned, bottom bleed: a gutter in on three sides, off the foot. */
+.lu-card {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  bottom: -24px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-default);
+  box-shadow:
+    0 0 0 1px var(--stroke-soft),
+    0 12px 28px -14px rgba(0, 0, 0, 0.14);
+}
+
+.lu-card-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.24px;
+  color: var(--text-sub);
+}
+
+/* The sum of the rows: a hover's scan lands in it a beat after its row. */
+.lu-card-total {
+  font-weight: 500;
+  color: var(--text-strong);
+}
+
+/* ─── Rows ───
+   Inset fills: the highlight lines up with the card's text, not its edge. */
+
+.lu-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  height: 52px;
+  margin: 0 -6px;
+  padding: 0 6px;
+  border-radius: var(--radius-md);
+  transition: background-color 900ms var(--ease-out);
+}
+
+.lu-row[data-hit] {
+  background-color: var(--primary-mute);
+  transition-duration: 150ms;
+}
+
+.lu-glyph,
+.lu-favicon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--bg-surface);
+  color: var(--text-sub);
+  transition:
+    color 200ms var(--ease-out),
+    background-color 200ms var(--ease-out);
+}
+
+.lu-favicon img,
+.lu-favicon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* A scan landing: the glyph takes the accent and a ring goes out from it,
+   once, from the glyph's own edge. */
+.lu-row[data-hit] .lu-glyph {
+  color: var(--primary-base);
+  background: var(--bg-default);
+}
+
+.lu-row[data-hit] .lu-glyph::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 1.5px var(--primary-base);
+  animation: luPing 700ms var(--ease-out) both;
+}
+
+@keyframes luPing {
+  from {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+.lu-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.lu-row-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.lu-row-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 17px;
+  letter-spacing: 0.13px;
+  color: var(--text-strong);
+}
+
+.lu-row-value {
+  font-size: 13px;
+  line-height: 17px;
+  letter-spacing: 0.13px;
+  color: var(--text-sub);
+}
+
+.lu-track {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Width, not a scale: a scaled bar squashes its own rounded ends. Draws in
+   from nothing the first time, then eases between values. The leader takes
+   the accent; everyone else is grey, so the eye goes to the answer. */
+.lu-fill {
+  display: block;
+  width: calc(var(--w, 0) * 100%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--bg-muted);
+  transition:
+    width 900ms cubic-bezier(0.25, 0.8, 0.25, 1) calc(var(--i, 0) * 80ms),
+    background-color 200ms var(--ease-out);
+}
+
+.lu-fill[data-lead] {
+  background: var(--primary-base);
+}
+
+.lu-row--filler .lu-track {
+  width: 40%;
+}
+
+/* ─── Campaigns ─── */
+
+.lu-race {
+  position: relative;
+}
+
+/* Every row sits at the top and travels to its rank, so a change of order is
+   a move you can follow rather than a list redrawn. */
+.lu-row--race {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  transition:
+    transform 680ms cubic-bezier(0.45, 0, 0.1, 1),
+    background-color 900ms var(--ease-out);
+}
+
+.lu-row--race[data-hit] {
+  transition:
+    transform 680ms cubic-bezier(0.45, 0, 0.1, 1),
+    background-color 150ms var(--ease-out);
+}
+
+/* Again after the travel, so later bars don't wait on a stagger meant for
+   the first draw. */
+.lu-card--race .lu-fill {
+  transition-delay: calc(var(--i, 0) * 80ms);
+}
+
+/* ─── Client work ─── */
+
+.lu-card--client {
+  padding: 16px;
+}
+
+.lu-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lu-readout-label {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.24px;
+  color: var(--text-sub);
+}
+
+.lu-readout-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 26px;
+  font-weight: 440;
+  line-height: 32px;
+  letter-spacing: 0.26px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+
+/* The change over the range, which only means something beside the total:
+   it steps back while the readout is on a single day. */
+.lu-delta {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--success-mute);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.24px;
+  color: var(--success-dark);
+  transition: opacity 200ms var(--ease-out);
+}
+
+.lu-delta[data-hidden] {
+  opacity: 0;
+}
+
+.lu-plot {
+  position: relative;
+  margin-top: 14px;
+}
+
+/* The day under the pointer: a hairline at the pointer and a dot riding the
+   line beneath it. Nothing else on the card changes emphasis. */
+.lu-hair {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--stroke-medium);
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.lu-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border: 2px solid var(--bg-default);
+  border-radius: var(--radius-full);
+  background: var(--primary-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.lu-hair[data-on],
+.lu-dot[data-on] {
+  opacity: 1;
+}
+
+.lu-facts {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.lu-fact {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.24px;
+  color: var(--text-sub);
+}
+
+.lu-fact img,
+.lu-fact svg {
+  width: 14px;
+  height: 14px;
+}
+
+.lu-fact-flag {
+  display: flex;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lu-row,
+  .lu-row--race,
+  .lu-fill,
+  .lu-delta,
+  .lu-hair,
+  .lu-dot {
+    transition: none;
+  }
+  .lu-row[data-hit] .lu-glyph::after {
+    animation: none;
+  }
+}
