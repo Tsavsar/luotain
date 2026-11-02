@@ -250,7 +250,11 @@ export default function PlanPicker({
                       $
                       {
                         <AnimatedNumber
-                          value={annual ? Math.round(price / 12) : price}
+                          // To the cent on yearly. Rounding to whole dollars
+                          // read $114.99 a year as "$10/month" when it's
+                          // $9.58 — over-quoting the plan we're trying to
+                          // sell.
+                          value={annual && price ? (price / 12).toFixed(2) : price}
                         />
                       }
                     </p>
