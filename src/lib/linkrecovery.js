@@ -23,6 +23,20 @@ export function recoveryCutoff(now = new Date()) {
   return new Date(now.getTime() - RECOVERY_WINDOW_DAYS * 24 * 3600 * 1000)
 }
 
+// The links a plan's link limit counts: live ones, and trashed ones still in
+// the trash. Trashed links count so nobody can sit above their limit by
+// cycling links through the trash. Expired ones don't: nothing physically
+// removes them yet, so counting every row kept a workspace at its limit for
+// good — five links trashed on Free and it could never make another, long
+// after the trash had emptied. The number shown and the number enforced both
+// come from here, so they can't drift apart.
+export function countedLinksWhere(organizationId, now = new Date()) {
+  return {
+    organizationId,
+    OR: [{ deletedAt: null }, { deletedAt: { gte: recoveryCutoff(now) } }],
+  }
+}
+
 export function daysSinceDeleted(deletedAt, now = new Date()) {
   const ms = now.getTime() - new Date(deletedAt).getTime()
   return Math.max(0, Math.floor(ms / (24 * 3600 * 1000)))

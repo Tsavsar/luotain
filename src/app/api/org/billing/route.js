@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { PLANS } from '@/lib/plans'
+import { countedLinksWhere } from '@/lib/linkrecovery'
 import { listInvoices } from '@/lib/billing'
 
 // GET /api/org/billing
@@ -27,7 +28,7 @@ export async function GET() {
     }),
     // Trashed links count, matching what the create endpoint enforces — the
     // usage line here has to agree with the limit that actually blocks you.
-    prisma.link.count({ where: { organizationId } }),
+    prisma.link.count({ where: countedLinksWhere(organizationId) }),
   ])
 
   if (!org) {

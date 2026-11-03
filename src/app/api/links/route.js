@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { SHORT_DOMAIN, shortUrlFor } from '@/lib/shortlink'
-import { isRecoverable } from '@/lib/linkrecovery'
+import { isRecoverable, countedLinksWhere } from '@/lib/linkrecovery'
 import {
   linkLimitReason,
   customSlugReason,
@@ -269,10 +269,10 @@ export async function POST(request) {
   })
 
   const linkCount = await prisma.link.count({
-    // Trashed links still count. They're recoverable for 30 days, so the slug
-    // and the record both still exist — not counting them would let someone
-    // sit permanently above their limit by cycling links through the trash.
-    where: { organizationId },
+    // Trashed links still count while they're recoverable — the slug and the
+    // record both still exist, and not counting them would let someone sit
+    // permanently above their limit by cycling links through the trash.
+    where: countedLinksWhere(organizationId),
   })
 
   const limitReason = linkLimitReason(org?.plan, linkCount)

@@ -2,6 +2,7 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUserEmail } from '@/lib/session'
 import { planFor } from '@/lib/plans'
+import { countedLinksWhere } from '@/lib/linkrecovery'
 
 // POST /api/public/claim
 //
@@ -74,7 +75,7 @@ export async function POST() {
         where: { id: orgId },
         select: { plan: true },
       }),
-      prisma.link.count({ where: { organizationId: orgId } }),
+      prisma.link.count({ where: countedLinksWhere(orgId) }),
     ])
     const { maxLinks } = planFor(org?.plan)
     const room =

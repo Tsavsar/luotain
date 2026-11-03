@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { PLANS, planFor } from '@/lib/plans'
+import { countedLinksWhere } from '@/lib/linkrecovery'
 
 // GET /api/plan
 // The active org's plan plus its current usage, so the UI can show limits and
@@ -16,7 +17,7 @@ export async function GET() {
     }),
     // Trashed links included, matching what the create endpoint counts
     // against the limit — the number shown has to be the number enforced.
-    prisma.link.count({ where: { organizationId } }),
+    prisma.link.count({ where: countedLinksWhere(organizationId) }),
   ])
 
   const plan = planFor(org?.plan)

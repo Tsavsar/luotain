@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { PLANS } from '@/lib/plans'
+import { countedLinksWhere } from '@/lib/linkrecovery'
 
 // GET /api/org/usage
 //
@@ -29,7 +30,7 @@ export async function GET() {
     // Trashed links still count against the limit — the plan check on create
     // does the same, so the number here has to agree with the one that blocks
     // you.
-    prisma.link.count({ where: { organizationId } }),
+    prisma.link.count({ where: countedLinksWhere(organizationId) }),
     prisma.qrCode.count({ where: { link: { organizationId } } }),
     prisma.click.count({ where: { organizationId } }),
     // Grouped in SQL rather than pulling every row and counting in JS. A busy
