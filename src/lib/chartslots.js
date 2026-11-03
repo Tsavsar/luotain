@@ -1,5 +1,8 @@
+import { windowSlots } from './analyticswindow'
+
 // ─── Chart slots ───
-// One slot per day in the shape ChartContainer reads.
+// One slot per hour, day or week of the window, in the shape ChartContainer
+// reads.
 //
 // Shared by /api/analytics and /api/links/[id]/analytics rather than copied.
 // The component reads specific keys — totalClicks, topLinks, othersClicks,
@@ -23,59 +26,63 @@ function seriesFor(slotRows, compareLinks) {
   return counts
 }
 
-const pad = (n) => String(n).padStart(2, '0')
+// The slot an instant falls in, or -1 outside the window. A binary search over
+// the starts: rows come in the tens of thousands and a year has 53 weeks or a
+// quarter 92 days, so comparing every row to every slot adds up.
+function slotIndex(slots, t) {
+  if (!slots.length || t < slots[0].start || t >= slots.at(-1).end) return -1
+  let lo = 0
+  let hi = slots.length - 1
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1
+    if (slots[mid].start <= t) lo = mid
+    else hi = mid - 1
+  }
+  return lo
+}
 
-// One slot per day, in the shape ChartContainer actually reads. An earlier
-// version returned { date, clicks, scans }, which shares no keys with what the
-// component wants, so the chart drew nothing.
-//
-// A module-scope helper taking `days` as an argument, NOT inlined in the
-// handler: the loop reads `days`, and when this lived at module scope without
-// the parameter the build failed on `days is not defined`.
 // compareLinks: the shortCodes currently selected as link filters. They
 // double as the chart's comparison lines — one curve per link — so each slot
 // needs a count per link, not just a total.
 //
-// It was always {} before, which is why picking several links didn't split the
-// chart: there was no per-link data to draw.
-export function buildSlots(rows, days, now, compareLinks = []) {
-  const slots = []
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 86400000)
-    const key = d.toISOString().slice(0, 10)
-    const dayRows = rows.filter(
-      (r) => r.createdAt.toISOString().slice(0, 10) === key
-    )
+// Zero-filled across the window on purpose. A chart that only plots days with
+// traffic draws a straight line between two points a fortnight apart and
+// implies steady activity in between.
+export function buildSlots(rows, win, compareLinks = []) {
+  const slots = windowSlots(win)
+  const buckets = slots.map(() => [])
+  for (const r of rows) {
+    const i = slotIndex(slots, r.createdAt.getTime())
+    if (i !== -1) buckets[i].push(r)
+  }
 
-    // The tw
-    // rather than  unreadable on
-    // a busy day.
+  return slots.map((slot, i) => {
+    const slotRows = buckets[i]
+
+    // The two busiest links are named and the rest fold into "others", so the
+    // tooltip stays a few lines long rather than unreadable on a busy day.
     const counts = new Map()
-    for (const r of dayRows) {
+    for (const r of slotRows) {
       const u = r.link?.shortCode || 'Unknown'
       counts.set(u, (counts.get(u) || 0) + 1)
     }
-    const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1])
-    const topLinks = sorted
+    const topLinks = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
       .slice(0, 2)
       .map(([url, clicks]) => ({ url, clicks }))
     const topTotal = topLinks.reduce((sum, l) => sum + l.clicks, 0)
 
-    slots.push({
-      key: `d-${key}`,
-      label: `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`,
-      timeLabel: `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`,
-      date: key,
-      totalClicks: dayRows.length,
+    return {
+      key: slot.key,
+      label: slot.label,
+      timeLabel: slot.timeLabel,
+      date: slot.date,
+      totalClicks: slotRows.length,
       topLinks,
-      othersClicks: Math.max(0, dayRows.length - topTotal),
-      seriesClicks: seriesFor(dayRows, compareLinks),
-      isNow: i === 0,
-      isFuture: false,
-    })
-  }
-  // Zero-filled across the range on purpose. A chart that only plots days with
-  // traffic draws a straight line between two points a fortnight apart and
-  // implies steady activity in between.
-  return slots
+      othersClicks: Math.max(0, slotRows.length - topTotal),
+      seriesClicks: seriesFor(slotRows, compareLinks),
+      isNow: slot.isNow,
+      isFuture: slot.isFuture,
+    }
+  })
 }

@@ -25,6 +25,7 @@ import {
   getMockLinksTable,
   getMockTrash,
 } from '@/lib/mockAnalytics'
+import { mockRangeLabel, rangeQuery } from '@/lib/daterange'
 import { shortUrlFor } from '@/lib/shortlink'
 import LogoMark from '@/components/logomark'
 import Alert, { AlertAction, AlertInfoIcon } from '@/components/alert'
@@ -205,7 +206,7 @@ export default function LinkDetailPage() {
       // ordering shouldn't be what's holding that together.
       const found =
         getMockTrash(deletedUrls).find((r) => slugOf(r.shortUrl) === slug) ||
-        getMockLinksTable(selectedRange, [], deletedUrls).find(
+        getMockLinksTable(mockRangeLabel(selectedRange), [], deletedUrls).find(
           (r) => slugOf(r.shortUrl) === slug
         ) ||
         null
@@ -256,16 +257,12 @@ export default function LinkDetailPage() {
   // was no analytics endpoint either — this calls the one added alongside it.
   const [live, setLive] = useState(null)
 
-  // 'Last 7 days' -> 7. The endpoint takes a day count; the picker speaks in
-  // labels, and this is the only place that has to know both.
-  const rangeDays =
-    {
-      'Last 7 days': 7,
-      'Last 30 days': 30,
-      'Last 60 days': 60,
-      'Last 90 days': 90,
-      'Last year': 365,
-    }[selectedRange] || 30
+  // The range as the endpoints take it: the viewer's own midnights and zone.
+  // It was a day count looked up from the label, which only knew the "Last N
+  // days" presets, so Today, Yesterday and Custom all quietly showed 30 days.
+  // The export below sends the same string, so the file holds what the cards
+  // counted.
+  const rangeQs = rangeQuery(selectedRange).toString()
 
   useEffect(() => {
     if (useMockData || !link?.id) {
@@ -273,7 +270,7 @@ export default function LinkDetailPage() {
       return
     }
     let cancelled = false
-    fetch(`/api/links/${link.id}/analytics?days=${rangeDays}`)
+    fetch(`/api/links/${link.id}/analytics?${rangeQs}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((d) => {
         if (!cancelled) setLive(d)
@@ -286,7 +283,7 @@ export default function LinkDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [useMockData, link?.id, rangeDays])
+  }, [useMockData, link?.id, rangeQs])
 
   const analytics = useMemo(() => {
     if (!useMockData || !link) return null
@@ -299,7 +296,7 @@ export default function LinkDetailPage() {
     // drops trashed links from aggregates but makes an exception when
     // one is asked for directly, which is exactly this case.
     return getMockAnalytics(
-      selectedRange,
+      mockRangeLabel(selectedRange),
       [{ type: 'link', label: link.shortUrl }, ...activeFilters],
       deletedUrls
     )
@@ -547,7 +544,7 @@ export default function LinkDetailPage() {
     }
     if (!link) return
     try {
-      const res = await fetch(`/api/links/${link.id}/export?days=${rangeDays}`)
+      const res = await fetch(`/api/links/${link.id}/export?${rangeQs}`)
       if (!res.ok) {
         const d = await res.json().catch(() => null)
         toast.error(d?.error || "Couldn't export the clicks")

@@ -7,6 +7,7 @@ import ChartContainer from '@/components/chartcontainer'
 import DashboardCards from '@/components/cardcontainer'
 import FilterPill from '@/components/filterpill'
 import { getMockAnalytics } from '@/lib/mockAnalytics'
+import { mockRangeLabel, rangeQuery } from '@/lib/daterange'
 
 export default function AnalyticsPage() {
   // Shared across every page and persisted, so switching it on once
@@ -19,7 +20,7 @@ export default function AnalyticsPage() {
   const [activeFilters, setActiveFilters] = useState([])
 
   const mock = useMockData
-    ? getMockAnalytics(selectedRange, activeFilters, deletedUrls)
+    ? getMockAnalytics(mockRangeLabel(selectedRange), activeFilters, deletedUrls)
     : null
 
   // Real numbers when mock is off. The page only read from `mock`, so with it
@@ -27,14 +28,13 @@ export default function AnalyticsPage() {
   // page had.
   const [live, setLive] = useState(null)
 
-  const rangeDays =
-    {
-      'Last 7 days': 7,
-      'Last 30 days': 30,
-      'Last 60 days': 60,
-      'Last 90 days': 90,
-      'Last year': 365,
-    }[selectedRange] || 30
+  // The range as the endpoint takes it: the viewer's own midnights and zone.
+  // It was a day count looked up from the label, which only knew the "Last N
+  // days" presets, so Today, Yesterday and Custom all quietly showed 30 days.
+  //
+  // A string, so the effect refetches when the window changes rather than
+  // whenever a custom range's object is rebuilt.
+  const rangeQs = rangeQuery(selectedRange).toString()
 
   useEffect(() => {
     if (useMockData) {
@@ -45,7 +45,7 @@ export default function AnalyticsPage() {
     // Filters go up as repeated params. Refetching on change rather than
     // filtering client-side, because the 50k row cap means the browser may not
     // have every row the filter would match.
-    const qs = new URLSearchParams({ days: String(rangeDays) })
+    const qs = new URLSearchParams(rangeQs)
     for (const f of activeFilters) qs.append('f', `${f.type}:${f.label}`)
 
     fetch(`/api/analytics?${qs}`)
@@ -59,7 +59,7 @@ export default function AnalyticsPage() {
     return () => {
       cancelled = true
     }
-  }, [useMockData, rangeDays, activeFilters])
+  }, [useMockData, rangeQs, activeFilters])
 
   // One source of truth below this line, whichever it came from. Both produce
   // the same shape, so nothing downstream changes.

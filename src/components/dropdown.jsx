@@ -71,6 +71,12 @@ export function Dropdown({
   // Every close path goes through here — outside click, Escape, and an
   // option being picked — so none of them can skip the exit.
   const beginClose = useCallback(() => {
+    // Focus inside the panel goes back to the trigger. Otherwise it falls to
+    // <body> as the panel unmounts, and a keyboard user who just picked
+    // something starts again from the top of the page.
+    if (panelRef.current?.contains(document.activeElement)) {
+      ref.current?.firstElementChild?.focus?.()
+    }
     setOpen((isOpen) => {
       if (!isOpen) return false
       setClosing(true)
@@ -226,9 +232,15 @@ export function Dropdown({
     // capture: true so scrolling inside ANY scrollable ancestor
     // repositions the panel, not just scrolling the window itself.
     window.addEventListener('scroll', onScroll, true)
+    // The content can change size while open — the date picker swaps its list
+    // for a calendar twice as wide — and a right-aligned panel has to move left
+    // as it widens or it runs past its trigger.
+    const resize = new ResizeObserver(position)
+    resize.observe(panel)
     return () => {
       window.removeEventListener('resize', position)
       window.removeEventListener('scroll', onScroll, true)
+      resize.disconnect()
     }
   }, [open, align, sideOffset, offsetX, offsetY])
 
@@ -546,6 +558,9 @@ export function DropdownOption({
   children,
   selected,
   danger,
+  // For an option that opens more of the menu rather than finishing with it,
+  // like the date picker's Custom, which swaps the list for a calendar.
+  keepOpen,
   onClick,
   close,
   menuHovering,
@@ -580,12 +595,12 @@ export function DropdownOption({
         if (e.key !== 'Enter' && e.key !== ' ') return
         e.preventDefault()
         onClick?.(e)
-        close?.()
+        if (!keepOpen) close?.()
       }}
       className={`dropdown-item${showSelected ? ' is-selected' : ''}${danger ? ' is-danger' : ''}`}
       onClick={(e) => {
         onClick?.(e)
-        close?.()
+        if (!keepOpen) close?.()
       }}
       style={{
         position: 'relative',

@@ -2,8 +2,9 @@ import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { countryName } from '@/lib/countries'
 import { buildSlots } from '@/lib/chartslots'
+import { parseWindow } from '@/lib/analyticswindow'
 
-// GET /api/analytics?days=30
+// GET /api/analytics?from=<ISO>&to=<ISO>&tz=<zone>   (or the legacy ?days=30)
 //
 // The whole workspace, not one link. The dashboard read from mockAnalytics and
 // fell to null with mock off, so every card there was empty.
@@ -12,8 +13,6 @@ import { buildSlots } from '@/lib/chartslots'
 //   stats, chartData, cardData.{clicks,sources,geography,devices}, filterOptions
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-const RANGES = [7, 30, 60, 90, 365]
 
 function ranked(rows, key, extra) {
   const counts = new Map()
@@ -50,8 +49,8 @@ export async function GET(request) {
   }
 
   const url = new URL(request.url)
-  const requested = Number(url.searchParams.get('days'))
-  const days = RANGES.includes(requested) ? requested : 30
+  const win = parseWindow(url.searchParams)
+  if (win.error) return win.error
 
   // Filters arrive as repeated params: ?f=country:Norway&f=device:Mobile
   //
@@ -95,15 +94,16 @@ export async function GET(request) {
   }
 
   try {
-    const now = new Date()
-    const from = new Date(now.getTime() - days * 86400000)
-    const prevFrom = new Date(from.getTime() - days * 86400000)
+    const prevWhere = {
+      organizationId,
+      createdAt: { gte: win.prevFrom, lt: win.prevTo },
+    }
 
-    const [rows, prevCount] = await Promise.all([
+    const [rows, prev] = await Promise.all([
       prisma.click.findMany({
         // organizationId, not a list of link ids. Clicks carry the org, so
         // this is one indexed range scan rather than a query per link.
-        where: { organizationId, createdAt: { gte: from } },
+        where: { organizationId, createdAt: { gte: win.from, lt: win.to } },
         select: {
           country: true,
           region: true,
@@ -119,15 +119,34 @@ export async function GET(request) {
         take: 50000,
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.click.count({
-        where: { organizationId, createdAt: { gte: prevFrom, lt: from } },
-      }),
+      // With a filter on, the comparison has to be filtered the same way. It
+      // was always the whole workspace's count, so narrowing to one country
+      // measured that country against everything and read as a steep drop.
+      // Filters run in JS (see `matches`), so that takes rows, not a count.
+      filters.length
+        ? prisma.click.findMany({
+            where: prevWhere,
+            select: {
+              country: true,
+              device: true,
+              referrer: true,
+              link: { select: { shortCode: true } },
+            },
+            take: 50000,
+          })
+        : prisma.click.count({ where: prevWhere }),
     ])
 
     // Existing rows still hold ISO codes from before the redirect stored
     // names, so they're normalised here too. countryName is idempotent, a
     // name maps to itself, so this is safe on new rows as well.
     for (const r of rows) r.country = countryName(r.country)
+
+    let prevCount = prev
+    if (Array.isArray(prev)) {
+      for (const r of prev) r.country = countryName(r.country)
+      prevCount = prev.filter(matches).length
+    }
 
     // Normalised first, so a country filter compares names to names.
     const all = rows
@@ -155,26 +174,15 @@ export async function GET(request) {
         }
       : null
 
-    // One bucket per day across the range, zero-filled. Filling matters: a
-    // chart that only plots days with traffic draws a line between two points
-    // a fortnight apart and implies steady activity in between.
-    const buckets = new Map()
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 86400000)
-        .toISOString()
-        .slice(0, 10)
-      buckets.set(d, { date: d, clicks: 0, scans: 0 })
-    }
-    for (const r of rows) {
-      const d = r.createdAt.toISOString().slice(0, 10)
-      const b = buckets.get(d)
-      if (!b) continue
-      b.clicks += 1
-      if (r.qrCodeId) b.scans += 1
-    }
-
     return Response.json({
-      days,
+      // The window as the server read it, so a client can check it got the
+      // range it asked for.
+      range: {
+        from: win.from,
+        to: win.to,
+        tz: win.tz,
+        granularity: win.granularity,
+      },
       stats: {
         totalClicks,
         clicksTrend: trend(totalClicks, prevCount),
@@ -184,7 +192,7 @@ export async function GET(request) {
         visitorsTrend: null,
         topCountry,
       },
-      chartData: buildSlots(shown, days, now, compareLinks),
+      chartData: buildSlots(shown, win, compareLinks),
       // The chart only switches to multi-line mode at 2+, and that threshold
       // lives in the component rather than here.
       chartCompareSeries: compareLinks.map((code) => ({
