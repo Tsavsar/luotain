@@ -472,12 +472,15 @@
   align-items: center;
   gap: 12px;
   padding: 16px 16px 14px;
-  border-radius: var(--radius-lg);
+  /* Printed cards: a small radius and a soft, low shadow. A card's shadow
+     falls on the card under it, so anything heavier stacks into a dark band
+     where they overlap. */
+  border-radius: var(--radius-md);
   background: #ffffff;
   box-shadow:
     0 0 0 1px var(--stroke-soft),
-    0 12px 24px -10px rgba(0, 0, 0, 0.18),
-    0 2px 4px rgba(0, 0, 0, 0.04);
+    0 8px 20px -10px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.03);
   /* Squared up into one pile until the grid is seen, then dealt out to their
      angles. Each card settles a beat after the one under it. */
   transform: translate(0, 0) rotate(0deg);
@@ -503,8 +506,8 @@
   transform: translate(0, -6px) rotate(0deg);
   box-shadow:
     0 0 0 1px var(--stroke-soft),
-    0 22px 36px -14px rgba(0, 0, 0, 0.26),
-    0 2px 4px rgba(0, 0, 0, 0.04);
+    0 16px 32px -14px rgba(0, 0, 0, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .lf-qr-face {
