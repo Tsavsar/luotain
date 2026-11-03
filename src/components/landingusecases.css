@@ -1,640 +1,706 @@
 /* ─── Landing use cases ───
-   The three use-case wells. Same tokens and stage look as the bento above
-   (.lu-stage shares .lf-stage's mapping in landingfeatures.css), so the two
-   sections read as one page. */
+   One grey panel, the feature tiles' ground, split into three columns with
+   no seam between them: a phone rises out of the panel's foot in each, and
+   the column's copy sits under the panel. On phones the panel breaks into
+   three tiles in the swipe row (.landing-scroller), one phone each.
 
-/* Fills the card's well. The well is white like the page, so these 16px
-   corners are the shape you see. */
-.lu-well {
-  position: absolute;
-  inset: 0;
+   Everything inside a phone is in iOS points (phone.jsx scales the screen
+   as a whole); everything outside it is in page pixels. */
+
+.lu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+}
+
+.lu-case {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lu-shot {
+  position: relative;
   overflow: hidden;
-  border-radius: var(--radius-xl);
   background: var(--bg-surface);
 }
 
-/* A count that drops back to nothing on a rewind does it out of sight: it
-   fades first, so the jump to zero is never seen, and comes back rolling. */
-.lu-tally {
-  transition: opacity 160ms ease;
+.lu-case:first-child .lu-shot {
+  border-radius: var(--radius-xl) 0 0 var(--radius-xl);
 }
 
-.lu-tally:not([data-on]) {
-  opacity: 0;
+.lu-case:last-child .lu-shot {
+  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
 }
 
-/* ─── Print and packaging ─── */
+.lu-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 24px 0 0;
+}
 
-.lu-print {
+.lu-title,
+.lu-text {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.32px;
+}
+
+.lu-title {
+  font-weight: 500;
+  color: var(--text-strong);
+}
+
+.lu-text {
+  font-weight: 440;
+  color: var(--text-sub);
+  text-wrap: pretty;
+}
+
+.lu-picture {
+  width: 100%;
+}
+
+/* The kit centres a stage narrower than its box with a layered margin,
+   which the page's unlayered reset beats. */
+.lu-stage {
+  margin-inline: auto;
+}
+
+/* Pinned a gutter from the top, centred, off the panel's foot */
+.lu-phone {
+  position: absolute;
+  top: 36px;
+  left: 36px;
+}
+
+/* ─── The chip ───
+   Luotain's side of the moment, over the phone's right edge just under the
+   island: on the camera that's the controls' band, on the story the bar's
+   corner where its buttons go, so it covers chrome, not content. */
+
+.lu-chip {
+  position: absolute;
+  top: 78px;
+  right: 16px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 14px;
+  background: var(--bg-default);
+  box-shadow: var(--ss-shadow-satellite);
+}
+
+.lu-chip-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--bg-layer);
+  color: var(--text-strong);
+}
+
+.lu-chip-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.lu-chip-label {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-sub);
+}
+
+.lu-chip-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.lu-chip-unit {
+  font-weight: 440;
+  color: var(--text-sub);
+}
+
+/* ─── Print: the camera ───
+   A black screen, the viewfinder at 4:3 under the controls' band, and in it
+   a table: a cup at the edge, out of focus, and the card with the code. */
+
+.lu-cam {
   position: absolute;
   inset: 0;
+  background: #000;
 }
 
-/* Every piece stands on one shelf and its label sits on one line under it,
-   whatever its height: pinned by the foot, so the tops make a skyline. */
-.lu-piece {
+.lu-cam-view {
   position: absolute;
-  bottom: 28px;
+  top: 106px;
+  left: 0;
+  width: 402px;
+  height: 536px;
+  overflow: hidden;
+  background: #5a4130;
+}
+
+/* Soft and a touch wide until it pulls focus */
+.lu-cam-scene {
+  position: absolute;
+  inset: -24px;
+  background:
+    radial-gradient(120% 90% at 50% 38%, transparent 52%, rgba(0, 0, 0, 0.42)),
+    repeating-linear-gradient(
+      97deg,
+      rgba(255, 255, 255, 0.035) 0 2px,
+      transparent 2px 9px,
+      rgba(0, 0, 0, 0.045) 9px 12px,
+      transparent 12px 21px
+    ),
+    linear-gradient(172deg, #8a6446, #6b4a34 55%, #553a28);
+  filter: blur(1.6px);
+  transform: scale(1.05);
+  transition:
+    filter 520ms ease-out,
+    transform 900ms var(--ease-out);
+}
+
+.lu-cam[data-focus] .lu-cam-scene {
+  filter: none;
+  transform: none;
+}
+
+/* A cup seen from above, on its saucer, at the edge of the frame and out of
+   the focal plane */
+.lu-cam-cup {
+  position: absolute;
+  top: 318px;
+  left: -88px;
+  width: 268px;
+  height: 268px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #3a2215 0 31%,
+    #8a5a3a 32% 34.5%,
+    #f6f2ec 35.5% 44%,
+    #ddd5ca 45% 47%,
+    #f1ece5 48% 100%
+  );
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.55);
+  filter: blur(2.4px);
+}
+
+/* The table card, lying on the table, seen from above at an angle */
+.lu-tent {
+  position: absolute;
+  top: 92px;
+  left: 111px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
-  margin: 0;
-}
-
-.lu-piece--window {
-  left: 16px;
-  width: 92px;
-}
-
-.lu-piece--flyer {
-  left: 116px;
-  width: 84px;
-}
-
-.lu-piece--menu {
-  left: 212px;
-  width: 80px;
-}
-
-/* Put up: each piece rises into place a beat after the one before it, and on
-   a replay drops away quickly first, so the putting-up is what you watch. */
-.lu-stand {
-  opacity: 0;
-  transform: translateY(12px);
-  transition:
-    opacity 180ms ease,
-    transform 240ms var(--ease-out);
-}
-
-.lu-print[data-up] .lu-stand {
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity 260ms var(--ease-out) calc(var(--i) * 90ms),
-    transform 620ms cubic-bezier(0.25, 0.8, 0.25, 1) calc(var(--i) * 90ms);
-}
-
-/* Paper is paper in either theme: white, inked in near-black, a shade dimmer
-   on a dark page so it doesn't glare. */
-.lu-paper {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 8px;
-  border-radius: 3px;
-  background: color-mix(in srgb, #fff 92%, var(--bg-default));
-  color: #171717;
+  width: 228px;
+  padding: 22px 0;
+  border-radius: 7px;
+  background: #fbf9f5;
+  color: #3b2a20;
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.08),
-    0 1px 1px rgba(0, 0, 0, 0.04),
-    0 12px 22px -12px rgba(0, 0, 0, 0.32);
+    0 1px 1px rgba(0, 0, 0, 0.18),
+    0 30px 36px -14px rgba(0, 0, 0, 0.6);
+  transform: perspective(900px) rotateX(14deg) rotateZ(-4deg);
 }
 
-/* The poster, taped up inside the glass. The tape is what says window. */
-.lu-piece--window .lu-paper {
-  width: 92px;
-  height: 152px;
-  transform: rotate(-2deg);
-}
-
-.lu-tape {
-  position: absolute;
-  top: -4px;
-  width: 26px;
-  height: 10px;
-  border-radius: 1px;
-  background: rgba(247, 233, 196, 0.82);
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.05);
-}
-
-.lu-tape--l {
-  left: -7px;
-  transform: rotate(-34deg);
-}
-
-.lu-tape--r {
-  right: -7px;
-  transform: rotate(31deg);
-}
-
-/* The one real word on the paper, in the page's accent: the poster leads, so
-   the eye lands on the piece that earns the most. */
-.lu-poster-art {
-  align-self: stretch;
-  display: flex;
-  align-items: flex-end;
-  height: 60px;
-  padding: 7px 8px;
-  border-radius: 2px;
-  background: var(--primary-base);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
+.lu-tent-name {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
   line-height: 15px;
-  letter-spacing: -0.1px;
-}
-
-/* Folded in half to fit a letterbox, and still creased. */
-.lu-piece--flyer .lu-paper {
-  width: 84px;
-  height: 128px;
-  transform: rotate(2.5deg);
-  background-image: linear-gradient(
-    to bottom,
-    transparent 49%,
-    rgba(0, 0, 0, 0.07) 50%,
-    rgba(255, 255, 255, 0.6) 51%,
-    transparent 53%
-  );
-}
-
-.lu-flyer-art {
-  align-self: stretch;
-  height: 34px;
-  margin-bottom: 2px;
-  border-radius: 2px;
-  background: #e3e8ef;
-}
-
-/* A tent card on the table: the front face, with the back panel showing
-   above its fold. */
-.lu-piece--menu .lu-paper {
-  width: 80px;
-  height: 96px;
-  padding-top: 10px;
-}
-
-.lu-piece--menu .lu-paper::before {
-  content: '';
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: 100%;
-  height: 10px;
-  border-radius: 2px 2px 0 0;
-  background: color-mix(in srgb, #dcdcdc 92%, var(--bg-default));
-  clip-path: polygon(5% 0, 95% 0, 100% 100%, 0 100%);
-}
-
-.lu-menu-word {
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 12px;
-  letter-spacing: 1.4px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
-.lu-code {
+.lu-tent-code {
   position: relative;
   display: block;
-  margin-top: auto;
-  line-height: 0;
+  width: 148px;
+  height: 148px;
 }
 
-/* The camera finding the code: four corners closing in on it, held while the
-   count ticks, then gone. */
-.lu-finder {
-  position: absolute;
-  inset: -7px;
-  opacity: 0;
-  transform: scale(1.3);
-  transition:
-    opacity 200ms ease,
-    transform 360ms var(--ease-out);
-  pointer-events: none;
-}
-
-.lu-piece[data-hit] .lu-finder {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.lu-finder i {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--primary-base);
-}
-
-.lu-finder i:nth-child(1) {
-  top: 0;
-  left: 0;
-  border-right: 0;
-  border-bottom: 0;
-  border-top-left-radius: 5px;
-}
-
-.lu-finder i:nth-child(2) {
-  top: 0;
-  right: 0;
-  border-left: 0;
-  border-bottom: 0;
-  border-top-right-radius: 5px;
-}
-
-.lu-finder i:nth-child(3) {
-  bottom: 0;
-  left: 0;
-  border-right: 0;
-  border-top: 0;
-  border-bottom-left-radius: 5px;
-}
-
-.lu-finder i:nth-child(4) {
-  right: 0;
-  bottom: 0;
-  border-left: 0;
-  border-top: 0;
-  border-bottom-right-radius: 5px;
-}
-
-.lu-label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  text-align: center;
-}
-
-.lu-label-name {
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.24px;
-  color: var(--text-sub);
-  white-space: nowrap;
-}
-
-.lu-label-count {
-  position: relative;
-  font-size: 16px;
+.lu-tent-line {
+  font-family: var(--font-sans);
+  font-size: 15px;
   font-weight: 500;
-  line-height: 20px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-strong);
-  transition: color 300ms var(--ease-out);
+  line-height: 19px;
 }
 
-.lu-label-count[data-lead] {
-  color: var(--primary-base);
-}
-
-/* The scan, said once beside the count it lands in, then gone. */
-.lu-plus {
+/* The camera's detection corners, closing in on the code as it locks on.
+   They sit on the card, so they take its angle as the real ones do. */
+.lu-corner {
   position: absolute;
-  top: 1px;
-  left: 100%;
-  margin-left: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 14px;
-  color: var(--primary-base);
-  opacity: 0;
-}
-
-.lu-piece[data-hit] .lu-plus {
-  animation: luPlus 1000ms var(--ease-out) both;
-}
-
-@keyframes luPlus {
-  0% {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  20% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  70% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-}
-
-/* ─── Campaigns and social ─── */
-
-.lu-flow {
-  position: absolute;
-  inset: 0;
-}
-
-.lu-routes {
-  position: absolute;
-  top: 0;
-  left: 0;
-  overflow: visible;
-}
-
-/* Drawn from the channel to the link. pathLength is 1, so a dash of 1 offset
-   by 1 is nothing and offset by 0 is the whole route. Undrawn quickly on a
-   replay, drawn slowly, one after another. */
-.lu-route {
-  fill: none;
-  stroke: var(--bg-muted);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  transition:
-    stroke-dashoffset 220ms ease,
-    stroke 320ms var(--ease-out),
-    stroke-width 320ms var(--ease-out);
-}
-
-.lu-flow[data-drawn] .lu-route {
-  stroke-dashoffset: 0;
-  transition:
-    stroke-dashoffset 760ms cubic-bezier(0.45, 0, 0.2, 1)
-      calc(var(--i) * 90ms),
-    stroke 320ms var(--ease-out),
-    stroke-width 320ms var(--ease-out);
-}
-
-/* The route that earned the most. When a surge overtakes, this is what
-   moves. */
-.lu-route[data-lead] {
-  stroke: var(--primary-base);
-  stroke-width: 2;
-}
-
-.lu-sparks {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-/* A click on its way in, riding the route itself. */
-.lu-spark {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 5px;
-  height: 5px;
-  border-radius: var(--radius-full);
-  background: var(--text-soft);
-  offset-anchor: center;
-  offset-rotate: 0deg;
-  offset-distance: 0%;
-  opacity: 0;
-  animation: luSpark 1100ms cubic-bezier(0.45, 0, 0.55, 1) both;
-}
-
-.lu-spark[data-lead] {
-  background: var(--primary-base);
-}
-
-@keyframes luSpark {
-  0% {
-    offset-distance: 0%;
-    opacity: 0;
-  }
-  12% {
-    opacity: 1;
-  }
-  86% {
-    opacity: 1;
-  }
-  100% {
-    offset-distance: 100%;
-    opacity: 0;
-  }
-}
-
-.lu-channel {
-  position: absolute;
-  left: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 32px;
-}
-
-.lu-channel-mark {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: var(--bg-default);
-  box-shadow:
-    0 0 0 1px var(--stroke-soft),
-    0 4px 10px -6px rgba(0, 0, 0, 0.22);
-}
-
-.lu-channel-mark img,
-.lu-channel-mark svg {
-  width: 16px;
-  height: 16px;
-}
-
-.lu-channel-count {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 16px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-sub);
-  transition:
-    opacity 160ms ease,
-    color 320ms var(--ease-out);
-}
-
-.lu-channel[data-lead] .lu-channel-count {
-  color: var(--text-strong);
-}
-
-.lu-hub {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  width: 34px;
   height: 34px;
-  padding: 0 11px 0 9px;
-  border-radius: var(--radius-full);
-  background: var(--bg-default);
-  box-shadow:
-    0 0 0 1px var(--stroke-soft),
-    0 10px 22px -12px rgba(0, 0, 0, 0.3);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 16px;
-  color: var(--text-strong);
-  white-space: nowrap;
+  border: 0 solid #ffd60a;
+  opacity: 0;
+  transition:
+    opacity 180ms ease,
+    transform 440ms var(--ease-spring);
 }
 
-.lu-hub svg {
-  width: 14px;
-  height: 14px;
-  color: var(--primary-base);
+.lu-corner[data-at='tl'] {
+  top: -14px;
+  left: -14px;
+  border-width: 5px 0 0 5px;
+  border-top-left-radius: 12px;
+  transform: translate(-16px, -16px);
 }
 
-.lu-hub-total {
+.lu-corner[data-at='tr'] {
+  top: -14px;
+  right: -14px;
+  border-width: 5px 5px 0 0;
+  border-top-right-radius: 12px;
+  transform: translate(16px, -16px);
+}
+
+.lu-corner[data-at='bl'] {
+  bottom: -14px;
+  left: -14px;
+  border-width: 0 0 5px 5px;
+  border-bottom-left-radius: 12px;
+  transform: translate(-16px, 16px);
+}
+
+.lu-corner[data-at='br'] {
+  right: -14px;
+  bottom: -14px;
+  border-width: 0 5px 5px 0;
+  border-bottom-right-radius: 12px;
+  transform: translate(16px, 16px);
+}
+
+.lu-cam[data-locked] .lu-corner {
+  opacity: 1;
+  transform: none;
+}
+
+/* The link the camera found, in the camera's yellow, under the card */
+.lu-cam-pill {
   position: absolute;
+  top: 344px;
+  left: 50%;
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 20px;
+  background: #ffd60a;
+  color: #1c1c1e;
+  font-size: 19px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, 6px) scale(0.92);
+  transition:
+    opacity 180ms ease,
+    transform 360ms var(--ease-out);
+}
+
+.lu-cam[data-locked] .lu-cam-pill {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 160ms;
+}
+
+/* ─── Campaigns: the story ───
+   The café's story over the landing's painting, its link sticker under the
+   headline. */
+
+.lu-story {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #2a1b12;
+}
+
+.lu-story-photo {
+  object-fit: cover;
+  object-position: 74% 50%;
+}
+
+.lu-story-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0) 24%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 30%);
+}
+
+.lu-story-bars {
+  position: absolute;
+  top: 64px;
+  right: 10px;
+  left: 10px;
+  display: flex;
   gap: 4px;
 }
 
-.lu-hub-figure {
-  font-size: 20px;
-  font-weight: 500;
-  line-height: 24px;
-  letter-spacing: -0.2px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-strong);
+.lu-story-bars i {
+  position: relative;
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 1.5px;
+  background: rgba(255, 255, 255, 0.4);
 }
 
-.lu-hub-unit {
+.lu-story-bars i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+.lu-story-bars i[data-done]::after {
+  transform: none;
+}
+
+/* The current story runs while the scene plays, and is simply back at its
+   start when it rewinds: a progress bar never runs backwards */
+.lu-story-bars i[data-now]::after {
+  transform: scaleX(0.28);
+}
+
+.lu-story[data-playing] .lu-story-bars i[data-now]::after {
+  transform: scaleX(0.64);
+  transition: transform 3200ms linear;
+}
+
+.lu-story-head {
+  position: absolute;
+  top: 80px;
+  right: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+
+.lu-story-avatar {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85);
+}
+
+.lu-story-face {
+  object-fit: cover;
+  object-position: 30% 40%;
+  transform: scale(2.4);
+}
+
+.lu-story-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.lu-story-time {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.lu-story-title {
+  position: absolute;
+  top: 226px;
+  right: 28px;
+  left: 28px;
+  color: #fff;
+  font-size: 31px;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-align: center;
+  text-wrap: balance;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.28);
+}
+
+.lu-sticker {
+  position: absolute;
+  top: 326px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 18px 0 14px;
+  border-radius: 12px;
+  background: #fff;
+  color: #171717;
+  font-family: var(--font-sans);
+  font-size: 19px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  transform: translateX(-50%);
+  transition: transform 160ms ease-out;
+}
+
+.lu-sticker svg {
+  color: var(--primary-base);
+}
+
+.lu-sticker[data-pressed] {
+  transform: translateX(-50%) scale(0.94);
+}
+
+/* ─── Client: the thread ───
+   Messages as iOS draws it: the contact in the bar, a stamp, grey for her
+   and the screenshot on your side. */
+
+.lu-chat {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+}
+
+.lu-chat-head {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 66px 0 12px;
+  background: #f7f7f8;
+  border-bottom: 0.5px solid #d8d8dc;
+}
+
+.lu-chat-back {
+  position: absolute;
+  top: 78px;
+  left: 8px;
+  display: grid;
+  color: #0a84ff;
+}
+
+.lu-chat-avatar {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #a6abb7, #868a95);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.lu-chat-name {
   font-size: 12px;
-  line-height: 16px;
-  color: var(--text-sub);
+  line-height: 15px;
+  color: #1c1c1e;
 }
 
-/* ─── Client work ─── */
+.lu-chat-stamp {
+  position: absolute;
+  top: 164px;
+  right: 0;
+  left: 0;
+  font-size: 13px;
+  line-height: 16px;
+  color: #8e8e93;
+  text-align: center;
+}
 
-/* Read top down, not pinned to the foot the way a phone pins a thread: it
-   starts with the question, so the question is what sits at the top. The
-   bubbles take the page's own greys, so the thread follows the theme. */
+.lu-chat-stamp b {
+  font-weight: 600;
+}
+
+/* Pinned under the stamp rather than to a composer (the panel crops the
+   phone above where it would be), so an arrival adds to the end and
+   nothing above it moves. The kit's bubble padding and run gaps are layered
+   and lose to the page's reset, so they're set again here. */
 .lu-thread {
   position: absolute;
-  top: 18px;
-  left: 16px;
-  right: 16px;
+  top: 190px;
+  right: 14px;
+  left: 14px;
   justify-content: flex-start;
-  gap: 6px;
-  --ss-thread-size: 14px;
-  --ss-them: var(--bg-subtle);
-  --ss-them-text: var(--text-strong);
+  --ss-thread-size: 19px;
 }
 
-.lu-thread .ss-receipt {
-  font-size: 11px;
-  color: var(--text-soft);
+.lu-thread .ss-bubble {
+  max-width: 84%;
+  padding: 0.42em 0.76em;
 }
 
-/* The screenshot arrives the way a photo does in a thread: up from below,
-   settling to size. */
-.lu-shot-row {
+.lu-thread .ss-bubble[data-typing] {
+  padding: 0.84em 0.8em;
+}
+
+.lu-thread .ss-bubble-row + .ss-bubble-row {
+  margin-top: 10px;
+}
+
+.lu-sent {
+  justify-content: flex-end;
   opacity: 0;
-  transform: translateY(12px) scale(0.94);
+  transform: translateY(14px) scale(0.96);
   transform-origin: 100% 100%;
   transition:
     opacity 200ms ease,
-    transform 240ms var(--ease-out);
+    transform 420ms var(--ease-out);
 }
 
-.lu-shot-row[data-on] {
+.lu-sent[data-on] {
   opacity: 1;
   transform: none;
-  transition:
-    opacity 260ms var(--ease-out),
-    transform 560ms cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.lu-shot {
-  width: 170px;
-  padding: 11px 12px 12px;
-  border-radius: 16px;
+/* The screenshot: a crop of the dashboard, its grey ground round the card,
+   with an image's corners rather than a bubble's */
+.lu-screenshot {
+  width: 236px;
+  padding: 8px;
+  border-radius: 18px;
+  background: var(--bg-layer);
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.12);
+}
+
+.lu-report {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
   background: var(--bg-default);
-  box-shadow:
-    0 0 0 1px var(--stroke-soft),
-    0 12px 26px -14px rgba(0, 0, 0, 0.3);
-}
-
-.lu-shot-head {
-  display: flex;
-  align-items: center;
-  height: 10px;
-}
-
-.lu-shot-figure {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 4px 0 6px;
-  font-size: 20px;
-  font-weight: 500;
-  line-height: 24px;
-  letter-spacing: -0.2px;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-sans);
   color: var(--text-strong);
 }
 
-.lu-shot-delta {
-  padding: 1px 5px;
-  border-radius: 5px;
-  background: var(--success-mute);
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 14px;
-  letter-spacing: 0.1px;
-  color: var(--success-dark);
-}
-
-.lu-shot-facts {
+.lu-report-link {
   display: flex;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.lu-shot-fact {
-  display: inline-flex;
   align-items: center;
   gap: 5px;
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-sub);
+}
+
+.lu-report-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.lu-report-figure b {
+  font-size: 34px;
+  line-height: 38px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.lu-report-figure span {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.lu-report-figure em {
+  align-self: center;
+  padding: 2px 7px;
+  border-radius: 7px;
+  background: var(--success-mute);
+  color: var(--success-dark);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.lu-report-spark {
+  display: block;
+  width: 100%;
+  height: 44px;
+  overflow: visible;
+}
+
+.lu-report-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-sub);
+}
+
+.lu-report-rows > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   height: 18px;
-  padding: 0 6px;
-  border-radius: 5px;
-  background: var(--bg-surface);
 }
 
-.lu-shot-fact img,
-.lu-shot-fact svg {
-  width: 12px;
-  height: 12px;
+.lu-report-rows i {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-subtle);
 }
 
-/* The reply is there from the start, out of sight: it shows as the dots,
-   then grows into the words. The kit's width and height easing is restated
-   here, since this rule replaces its transition. */
-.lu-reply > .ss-bubble {
-  opacity: 0;
-  transform: translateY(8px) scale(0.9);
-  transition:
-    width 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    height 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 180ms ease,
-    transform 240ms var(--ease-out);
-}
+/* ─── Narrow screens ─── */
 
-.lu-reply > .ss-bubble[data-on] {
-  opacity: 1;
-  transform: none;
-  transition:
-    width 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    height 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 240ms var(--ease-out),
-    transform 480ms cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-/* Reduced motion: the stages already show their finished frames. This only
-   stops what would still glide into them. */
-@media (prefers-reduced-motion: reduce) {
-  .lu-tally,
-  .lu-stand,
-  .lu-finder,
-  .lu-route,
-  .lu-channel-count,
-  .lu-shot-row,
-  .lu-reply > .ss-bubble {
-    transition: none;
+/* Three columns hold down to the swipe row, the phones scaled with them;
+   the copy gets the gutter back to keep a readable measure. */
+@media (max-width: 900px) {
+  .lu-copy {
+    padding-right: 16px;
   }
-  .lu-plus,
-  .lu-spark {
-    animation: none;
+}
+
+/* The swipe row: each column is its own tile, rounded all round. Auto
+   width so the row's negative margins reach both screen edges (at 100% the
+   right one stopped a gutter short), and tiles wider than the row's default
+   so a phone keeps most of its size: 0.93 of it at 390. */
+@media (max-width: 700px) {
+  .lu-grid {
+    width: auto;
+  }
+
+  .lu-grid.landing-scroller > * {
+    flex: 0 0 84% !important;
+    max-width: 320px;
+  }
+
+  .lu-case .lu-shot {
+    border-radius: var(--radius-xl);
+  }
+
+  .lu-copy {
+    padding-right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lu-cam-scene,
+  .lu-corner,
+  .lu-cam-pill,
+  .lu-story-bars i::after,
+  .lu-sticker,
+  .lu-sent {
+    transition: none !important;
   }
 }

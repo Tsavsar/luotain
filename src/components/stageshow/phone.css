@@ -1,0 +1,145 @@
+/* The phone (phone.jsx): the pro frame, its status bar, island and home
+   indicator.
+
+   Unlayered, unlike the rest of the kit. The page's reset zeroes padding on
+   everything and is unlayered itself, so it beats any layered rule: the
+   content's 62pt status-bar inset would be lost to it. */
+
+:where(.ss-phone) {
+  position: relative;
+}
+
+.ss-phone {
+  --ss-phone-glass: #0b0b0c;
+  --ss-phone-rim: #2c2c2d;
+  /* Brushed titanium */
+  --ss-phone-band-1: #e3e3e6;
+  --ss-phone-band-2: #9a9ba0;
+  --ss-phone-band-3: #cfd0d4;
+  --ss-phone-band-4: #85868b;
+  --ss-phone-band-5: #c9cacd;
+  flex-shrink: 0;
+  background: none;
+  box-shadow:
+    0 calc(var(--ps) * 40) calc(var(--ps) * 80) calc(var(--ps) * -16)
+      rgba(50, 50, 93, 0.25),
+    0 calc(var(--ps) * 24) calc(var(--ps) * 48) calc(var(--ps) * -24)
+      rgba(0, 0, 0, 0.3);
+}
+
+.ss-phone__bands {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ss-phone__glass {
+  position: relative;
+  height: 100%;
+}
+
+.ss-phone__window {
+  position: relative;
+  overflow: hidden;
+  /* Keeps the scaled screen clipped to its corners in Safari */
+  isolation: isolate;
+}
+
+.ss-phone__screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+  font-family: -apple-system, system-ui, sans-serif;
+  font-size: 15px;
+  letter-spacing: -0.015em;
+  transform-origin: 0 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ss-phone[data-dark] .ss-phone__screen {
+  background: #000;
+  color: #fff;
+}
+
+/* The status bar as Apple's iOS 27 UI kit lays it out, in points: the time
+   centred in the first 138.5, its 22pt line from y 21.5; signal, wifi and
+   battery from x 285.25, 8 apart */
+.ss-phone__status {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  height: 62px;
+}
+
+.ss-phone__time {
+  position: absolute;
+  top: 21.5px;
+  left: 0;
+  width: 138.5px;
+  font-family: 'SF Pro Text', -apple-system, system-ui, sans-serif;
+  font-variation-settings: 'opsz' 17;
+  font-size: 17.67px;
+  font-weight: 590;
+  line-height: 22px;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.ss-phone__glyphs {
+  position: absolute;
+  top: 25.33px;
+  left: 285.25px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ss-phone__glyph {
+  display: block;
+}
+
+.ss-phone__signal {
+  margin-top: 1px;
+}
+
+.ss-phone__battery {
+  margin-top: 0.33px;
+}
+
+.ss-phone__island {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 3;
+  width: 95px;
+  height: 37px;
+  border-radius: 18.5px;
+  background: #000;
+  transform: translateX(-50%);
+}
+
+.ss-phone__content {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.ss-phone__home {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  z-index: 2;
+  width: 144px;
+  height: 5px;
+  border-radius: 2.5px;
+  background: currentColor;
+  transform: translateX(-50%);
+}

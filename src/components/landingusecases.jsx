@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import Image from 'next/image'
+import { useId, useRef } from 'react'
 import { Stage } from '@/components/stageshow/stage'
-import { Bar } from '@/components/stageshow/window'
+import { Phone } from '@/components/stageshow/phone'
+import { Thread, Bubble } from '@/components/stageshow/messages'
 import { Count } from '@/components/stageshow/motion/Count'
-import { Chart } from '@/components/stageshow/chart'
-import { Thread, Bubble, Receipt } from '@/components/stageshow/messages'
 import { QrCode } from '@/components/qrdesigner'
 import SourceIcon from '@/components/sourceicon'
 import CountryFlag from '@/components/countryflag'
@@ -17,498 +17,495 @@ import {
 } from '@/components/landingmotion'
 import './landingusecases.css'
 
-// ─── Use-case pictures ───
-// The three wells under "Here's how you can use Luotain", as live Stageshow
-// stages. Each is a different kind of picture, so the row doesn't read as the
-// same widget three times:
+// ─── Use cases ───
+// The three jobs under "Here's how you can use Luotain", as one grey panel
+// with three phones rising out of its foot. Each phone is the moment someone
+// meets one of the same café's links, and where Luotain counts that moment a
+// chip on the phone's corner says what it counted:
 //
-//   Card        Kind      The one thing                      On scroll in                  When the pointer settles
-//   Print       Objects   three printed pieces, one link     put up, their scans counted   put up again, and one is scanned
-//   Campaigns   Diagram   four channels into one short link  the routes draw, clicks run   drawn again, and one channel surges
-//   Client      Thread    the update is a screenshot         sent, read, answered          the exchange plays again
+//   Job         The moment                                   Luotain's side
+//   Print       a camera locking onto the code on a table    the table card's scans, +1
+//   Campaigns   a tap on the link in the café's story        Instagram's clicks, +1
+//   Client      the numbers sent to the owner, and the reply  the screenshot is the report
 //
-// They sit in the page's own Card well, the same 16px corners as the bento
-// above, one figure language for the whole page. Unlike the bento they scale
-// with their well (Stage `fill`): the well is a fixed aspect ratio that runs
-// from a 290px card in the phone scroller to a 460px one in two columns, and a
-// 1:1 picture would leave half of the bigger one empty. Designed at the
-// three-column size, where they show 1:1.
-//
-// The pointer rules are the bento's (landingmotion.js): a card answers once
-// the pointer has settled on it, by playing its scene again, and a replay
-// that has started plays to its end.
+// Each plays once as it scrolls in, in reading order, and again once the
+// pointer settles on its column (landingmotion.js: a replay that has started
+// plays to its end).
 
-// The well's aspect is 256 / 230. A couple of pixels taller than that, so
-// anything bleeding off the foot is always cut by the well and never stops a
-// hairline short of it.
-const DESIGN = { width: 309, height: 280 }
+// Each column is drawn 1:1 at the desktop width of a third of the panel and
+// scaled down, never up, where it's narrower.
+const DESIGN = { width: 320, height: 400 }
+// About two thirds of the stage wide, so the iOS type inside reads, and
+// cropped by the panel's foot a third of the way down.
+const PHONE = 248
 
-const LEAD = 450
-const STEP = 110
+// The scroll-in plays the three left to right, a beat apart.
+const LEAD = 500
+const STEP = 650
+// Long enough for a scene's last transition to land, so the run holds its
+// lock until then and a replay can't start on top of the one before it.
+const SETTLE = 1200
+// On a replay, how long the rewind shows before the scene plays again.
+const REWIND = 380
 
-// The card is the hover target, not the well — the rule the page's cards
-// already follow — so a picture listens on the card it sits in.
-const cardOf = (node) => node.closest('.landing-card')
+const PAINTING = '/assets/websiteimage.png'
 
-function useCardEngage(ref, onEngage) {
-  const engage = useEngage(onEngage)
-  useHoverTarget(ref, engage, cardOf)
+// The column is the hover target, not the picture, so hovering the copy
+// under a phone plays that phone too.
+const caseOf = (node) => node.closest('.lu-case')
+
+function usePicture(first, again) {
+  const ref = useRef(null)
+  const { script, replay } = useReplay(first, again)
+  const engage = useEngage(replay)
+  useHoverTarget(ref, engage, caseOf)
+  return { ref, script }
 }
 
-// The well's shape and ground, shared by all three.
-function Well({ picture, children }) {
+export function UseCase({ title, picture, children }) {
   return (
-    <div ref={picture} className='lu-well' aria-hidden='true'>
-      {children}
+    <article className='lu-case'>
+      <div className='lu-shot' aria-hidden='true'>
+        {picture}
+      </div>
+      <div className='lu-copy'>
+        <h3 className='lu-title'>{title}</h3>
+        <p className='lu-text'>{children}</p>
+      </div>
+    </article>
+  )
+}
+
+// What Luotain counted, on the phone's corner. The count rolls on when the
+// moment lands and drops back without rolling when the scene rewinds: the
+// drop is a reset, not news.
+function Chip({ icon, label, from, to, on, unit }) {
+  return (
+    <div className='lu-chip'>
+      <span className='lu-chip-icon'>{icon}</span>
+      <span className='lu-chip-text'>
+        <span className='lu-chip-label'>{label}</span>
+        <span className='lu-chip-value'>
+          <Count value={on ? to : from} duration={on ? 700 : 0} />
+          <span className='lu-chip-unit'>{unit}</span>
+        </span>
+      </span>
     </div>
   )
 }
 
-// A count that rolls up from nothing when its scene plays, and drops back to
-// nothing without rolling when the scene rewinds: the drop is a reset, not
-// news, so nobody should have to watch 1,204 count down to zero.
-function Tally({ value, on, className }) {
+// The dashboard's own QR glyph (dashboardnav.jsx).
+function QrGlyph() {
   return (
-    <span
-      className={`lu-tally${className ? ` ${className}` : ''}`}
-      data-on={on || undefined}
-    >
-      <Count value={on ? value : 0} duration={on ? 900 : 0} />
-    </span>
+    <svg width='20' height='20' viewBox='0 0 20 20' fill='none'>
+      <path d='M16.5 16H18V18H16.5V16Z' fill='currentColor' />
+      <path d='M15 14H16.5V16H15V14Z' fill='currentColor' />
+      <path d='M16.5 12.5H18V14H16.5V12.5Z' fill='currentColor' />
+      <path d='M13 16H15V18H13V16Z' fill='currentColor' />
+      <path d='M11 12.5H13V16H11V12.5Z' fill='currentColor' />
+      <path d='M13 11H16.5V12.5H13V11Z' fill='currentColor' />
+      {[
+        'M6.5 3H4.5C3.67157 3 3 3.67157 3 4.5V6.5C3 7.32843 3.67157 8 4.5 8H6.5C7.32843 8 8 7.32843 8 6.5V4.5C8 3.67157 7.32843 3 6.5 3Z',
+        'M15.5 3H13.5C12.6716 3 12 3.67157 12 4.5V6.5C12 7.32843 12.6716 8 13.5 8H15.5C16.3284 8 17 7.32843 17 6.5V4.5C17 3.67157 16.3284 3 15.5 3Z',
+        'M6.5 12H4.5C3.67157 12 3 12.6716 3 13.5V15.5C3 16.3284 3.67157 17 4.5 17H6.5C7.32843 17 8 16.3284 8 15.5V13.5C8 12.6716 7.32843 12 6.5 12Z',
+      ].map((d) => (
+        <path
+          key={d}
+          d={d}
+          stroke='currentColor'
+          strokeWidth='1.5'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+        />
+      ))}
+    </svg>
   )
 }
 
 // ─── Print and packaging ───
-// Three printed pieces for one link, each with a code of its own: a poster
-// taped up in the shop window, a folded flyer, a menu card on the table. Under
-// each, the scans it has earned, so the picture is the answer to "which one
-// do people actually scan". When the pointer settles they're put up again and
-// somebody scans one: a camera's corners find its code and its count ticks.
+// The camera, pointed at the code on a table card. It pulls focus, the
+// yellow corners lock onto the code, the link comes up under it, and the
+// table card's count goes up by one: the scan was counted against the card
+// it came from, not against the café's link in general.
 
-const PIECES = [
-  { id: 'window', label: 'Shop window', scans: 1204 },
-  { id: 'flyer', label: 'Flyer', scans: 312 },
-  { id: 'menu', label: 'Menu card', scans: 96 },
-]
-// Which piece each replay scans: round the quieter ones first.
-const PRINT_ORDER = [1, 2, 0]
+const UNSCANNED = { focus: false, locked: false, counted: false }
+const SCANNED = { focus: true, locked: true, counted: true }
 
-const DOWN = { up: false }
-const UP = { up: true }
+async function scan(a) {
+  await a.set({ focus: true })
+  await a.wait(460)
+  await a.set({ locked: true })
+  await a.wait(560)
+  await a.set({ counted: true })
+  await a.wait(SETTLE)
+}
 
-async function printScript(a) {
+async function scanFirst(a) {
   await a.wait(LEAD)
-  await a.set({ up: true })
+  await scan(a)
 }
 
-// Printed codes are black. The colour and the logo are the bento's QR tile's
-// story; here the code is just the thing on the paper that gets scanned.
-function PrintedCode({ id, size }) {
-  return (
-    <span className='lu-code'>
-      <QrCode
-        value={`https://www.luotain.app/?qr=${id}`}
-        color='#171717'
-        markerColor='#171717'
-        pattern='square'
-        branding={false}
-        card={size}
-        margin={0}
-        radius={0}
-      />
-      {/* The camera's corners. Drawn on every code, shown on the one being
-          scanned. */}
-      <span className='lu-finder'>
-        <i />
-        <i />
-        <i />
-        <i />
-      </span>
-    </span>
-  )
+async function scanAgain(a) {
+  await a.wait(REWIND)
+  await scan(a)
 }
 
-function Piece({ id }) {
-  if (id === 'window') {
-    return (
-      <div className='lu-paper'>
-        <i className='lu-tape lu-tape--l' />
-        <i className='lu-tape lu-tape--r' />
-        <div className='lu-poster-art'>Open late</div>
-        <PrintedCode id={id} size={52} />
-      </div>
-    )
-  }
-  if (id === 'flyer') {
-    return (
-      <div className='lu-paper'>
-        <div className='lu-flyer-art' />
-        <Bar w={44} h={5} tone={3} />
-        <Bar w={58} h={5} tone={2} />
-        <PrintedCode id={id} size={44} />
-      </div>
-    )
-  }
-  return (
-    <div className='lu-paper'>
-      <span className='lu-menu-word'>Menu</span>
-      <PrintedCode id={id} size={44} />
-    </div>
-  )
-}
+const CORNERS = ['tl', 'tr', 'bl', 'br']
 
-export function PrintPicture() {
-  const picture = useRef(null)
-  const [scans, setScans] = useState({
-    n: PIECES.map((p) => p.scans),
-    hit: null,
-    turn: 0,
-  })
-  const printAgain = useMemo(
-    () => async (a) => {
-      await a.wait(380)
-      await a.set({ up: true })
-      // Once the counts have landed, somebody scans one.
-      await a.wait(1200)
-      setScans((s) => {
-        const i = PRINT_ORDER[s.turn % PRINT_ORDER.length]
-        return {
-          n: s.n.map((v, j) => (j === i ? v + 1 : v)),
-          hit: i,
-          turn: s.turn + 1,
-        }
-      })
-      // The run holds until the scan has played, so another can't land on it.
-      await a.wait(900)
-    },
-    []
-  )
-  const { script, replay } = useReplay(printScript, printAgain)
-  useCardEngage(picture, replay)
-  // The corners and the +1 are a beat, not a state.
-  useEffect(() => {
-    if (scans.hit === null) return
-    const id = setTimeout(() => setScans((s) => ({ ...s, hit: null })), 1100)
-    return () => clearTimeout(id)
-  }, [scans.turn]) // eslint-disable-line react-hooks/exhaustive-deps
-  const top = Math.max(...scans.n)
+export function ScanPicture() {
+  const { ref, script } = usePicture(scanFirst, scanAgain)
   return (
-    <Well picture={picture}>
+    <div ref={ref} className='lu-picture'>
       <Stage
         width={DESIGN.width}
         height={DESIGN.height}
-        fill
-        initial={DOWN}
-        poster={UP}
+        initial={UNSCANNED}
+        poster={SCANNED}
         play='once'
         script={script}
         className='lu-stage'
       >
         {(s) => (
-          <div className='lu-print' data-up={s.up || undefined}>
-            {PIECES.map((p, i) => (
-              <figure
-                key={p.id}
-                className={`lu-piece lu-piece--${p.id}`}
-                data-hit={scans.hit === i || undefined}
-                style={{ '--i': i }}
+          <>
+            <Phone width={PHONE} dark className='lu-phone'>
+              <div
+                className='lu-cam'
+                data-focus={s.focus || undefined}
+                data-locked={s.locked || undefined}
               >
-                {/* The stand carries the putting-up; the paper inside keeps
-                    its own tilt, so the two transforms never fight. */}
-                <div className='lu-stand'>
-                  <Piece id={p.id} />
+                <div className='lu-cam-view'>
+                  <div className='lu-cam-scene'>
+                    <span className='lu-cam-cup' />
+                    <div className='lu-tent'>
+                      <span className='lu-tent-name'>Harbor Coffee</span>
+                      <span className='lu-tent-code'>
+                        <QrCode
+                          value='https://www.luotain.app/?qr=table'
+                          color='#2b1d14'
+                          markerColor='#2b1d14'
+                          pattern='square'
+                          branding={false}
+                          card={148}
+                          margin={0}
+                          radius={0}
+                        />
+                        {CORNERS.map((c) => (
+                          <i key={c} className='lu-corner' data-at={c} />
+                        ))}
+                      </span>
+                      <span className='lu-tent-line'>Scan for the menu</span>
+                    </div>
+                  </div>
+                  <span className='lu-cam-pill'>luot.link/table</span>
                 </div>
-                <figcaption className='lu-label'>
-                  <span className='lu-label-name'>{p.label}</span>
-                  <span
-                    className='lu-label-count'
-                    data-lead={scans.n[i] === top || undefined}
-                  >
-                    <Tally value={scans.n[i]} on={s.up} />
-                    <span className='lu-plus'>+1</span>
-                  </span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+              </div>
+            </Phone>
+            <Chip
+              icon={<QrGlyph />}
+              label='Table card'
+              from={96}
+              to={97}
+              on={s.counted}
+              unit='scans'
+            />
+          </>
         )}
       </Stage>
-    </Well>
+    </div>
   )
 }
 
 // ─── Campaigns and social ───
-// The same link shared in four places, drawn as where its clicks come from:
-// each channel a route into the one short link, clicks running down them. The
-// busiest route is the accent, so "which earned the traffic" is the first
-// thing you see. When the pointer settles the routes draw again and one
-// channel surges, and if it overtakes, the accent moves to it.
+// The café's story with its link sticker. The story plays, a finger taps the
+// sticker, and Instagram's count goes up by one: the same link in the bio,
+// the story and a post would all be one line in Luotain, so each place gets
+// a link of its own and the referrer says which one earned the click.
 
-const CHANNELS = ['instagram.com', 'tiktok.com', 'linkedin.com', 'youtube.com']
-const CHANNEL_CLICKS = [2140, 1620, 880, 410]
-// Who surges on each replay, and by how much they end up ahead. The gain is
-// worked out from whoever leads at the time, so every surge takes the lead
-// and the accent always moves, round after round: the change of leader is
-// what a referrer list is for.
-const SURGE_ORDER = [1, 3, 0, 2]
-const MARGINS = [240, 180, 320, 210]
-// Clicks per route on a draw, by the routes' usual share. Fixed rather than
-// read off the live counts, so a surge doesn't remount the draw's own clicks.
-const DRAW_SPARKS = [3, 3, 1, 1]
+const UNTAPPED = { playing: false, tapped: false }
+const TAPPED = { playing: true, tapped: true }
 
-const ROUTE_Y = [56, 114, 172, 230]
-// The link sits whole inside the well, a gutter short of its right edge: it's
-// what the picture is about, so the crop never takes any of it.
-const HUB = { x: 170, y: 143 }
-// From just past the channel's count to the link's left edge, leaving flat
-// and arriving flat so the curves read as routes, not as a fan.
-const routeFor = (y) =>
-  `M 100 ${y} C 140 ${y} 130 ${HUB.y} ${HUB.x} ${HUB.y}`
-const ROUTES = ROUTE_Y.map(routeFor)
+async function tap(a) {
+  await a.set({ playing: true })
+  await a.wait(700)
+  await a.click('sticker')
+  await a.set({ tapped: true })
+  await a.wait(SETTLE)
+}
 
-const UNDRAWN = { drawn: false }
-const DRAWN = { drawn: true }
-
-async function campaignsScript(a) {
+async function tapFirst(a) {
   await a.wait(LEAD + STEP)
-  await a.set({ drawn: true })
+  await tap(a)
 }
 
-// Clicks travelling one route: a few dots, set off a beat apart. Keyed by the
-// caller, so a new burst is a new set rather than the old one restarted.
-function Sparks({ route, count, gap, delay = 0, lead }) {
-  return Array.from({ length: count }, (_, k) => (
-    <span
-      key={k}
-      className='lu-spark'
-      data-lead={lead || undefined}
-      style={{
-        offsetPath: `path('${route}')`,
-        animationDelay: `${delay + k * gap}ms`,
-      }}
-    />
-  ))
+async function tapAgain(a) {
+  await a.wait(REWIND)
+  await tap(a)
 }
 
-export function CampaignsPicture() {
-  const picture = useRef(null)
-  const [race, setRace] = useState({ n: CHANNEL_CLICKS, turn: 0, surge: null })
-  const campaignsAgain = useMemo(
-    () => async (a) => {
-      await a.wait(360)
-      await a.set({ drawn: true })
-      await a.wait(1300)
-      setRace((r) => {
-        const i = SURGE_ORDER[r.turn % SURGE_ORDER.length]
-        const gain =
-          Math.max(...r.n) - r.n[i] + MARGINS[r.turn % MARGINS.length]
-        return {
-          n: r.n.map((v, j) => (j === i ? v + gain : v)),
-          turn: r.turn + 1,
-          surge: i,
-        }
-      })
-      await a.wait(1100)
-    },
-    []
-  )
-  const { script, replay } = useReplay(campaignsScript, campaignsAgain)
-  useCardEngage(picture, replay)
-  const total = race.n.reduce((t, v) => t + v, 0)
-  const lead = race.n.indexOf(Math.max(...race.n))
+export function StoryPicture() {
+  const { ref, script } = usePicture(tapFirst, tapAgain)
   return (
-    <Well picture={picture}>
+    <div ref={ref} className='lu-picture'>
       <Stage
         width={DESIGN.width}
         height={DESIGN.height}
-        fill
-        initial={UNDRAWN}
-        poster={DRAWN}
+        initial={UNTAPPED}
+        poster={TAPPED}
         play='once'
         script={script}
+        cursor={{ at: { x: 168, y: 300 }, style: 'touch' }}
         className='lu-stage'
       >
         {(s) => (
-          <div className='lu-flow' data-drawn={s.drawn || undefined}>
-            <svg
-              className='lu-routes'
-              width={DESIGN.width}
-              height={DESIGN.height}
-              viewBox={`0 0 ${DESIGN.width} ${DESIGN.height}`}
-              aria-hidden='true'
-            >
-              {ROUTES.map((d, i) => (
-                <path
-                  key={i}
-                  d={d}
-                  pathLength={1}
-                  className='lu-route'
-                  data-lead={lead === i || undefined}
-                  style={{ '--i': i }}
-                />
-              ))}
-            </svg>
-
-            {/* Mounted with the routes, so every draw sends its own clicks:
-                more down the busier routes. The surge is its own burst. */}
-            <div className='lu-sparks'>
-              {s.drawn
-                ? ROUTES.map((d, i) => (
-                    <Sparks
-                      key={`draw-${i}`}
-                      route={d}
-                      count={DRAW_SPARKS[i]}
-                      gap={260}
-                      delay={200 + i * 90}
-                      lead={lead === i}
-                    />
-                  ))
-                : null}
-              {race.surge !== null ? (
-                <Sparks
-                  key={`surge-${race.turn}`}
-                  route={ROUTES[race.surge]}
-                  count={6}
-                  gap={90}
-                  lead={lead === race.surge}
-                />
-              ) : null}
-            </div>
-
-            {CHANNELS.map((domain, i) => (
+          <>
+            <Phone width={PHONE} dark className='lu-phone'>
               <div
-                key={domain}
-                className='lu-channel'
-                data-lead={lead === i || undefined}
-                style={{ top: ROUTE_Y[i] - 16 }}
+                className='lu-story'
+                data-playing={s.playing || undefined}
               >
-                <span className='lu-channel-mark'>
-                  <SourceIcon domain={domain} />
+                <Image
+                  src={PAINTING}
+                  alt=''
+                  fill
+                  sizes='402px'
+                  className='lu-story-photo'
+                />
+                <span className='lu-story-shade' />
+                <span className='lu-story-bars'>
+                  <i data-done='' />
+                  <i data-now='' />
+                  <i />
                 </span>
-                <Tally className='lu-channel-count' value={race.n[i]} on={s.drawn} />
+                <span className='lu-story-head'>
+                  <span className='lu-story-avatar'>
+                    <Image
+                      src={PAINTING}
+                      alt=''
+                      fill
+                      sizes='40px'
+                      className='lu-story-face'
+                    />
+                  </span>
+                  <span className='lu-story-name'>harborcoffee</span>
+                  <span className='lu-story-time'>2h</span>
+                </span>
+                <span className='lu-story-title'>The autumn menu is here</span>
+                <span className='lu-sticker' data-target='sticker'>
+                  <LinkIcon size={22} />
+                  luot.link/autumn
+                </span>
               </div>
-            ))}
-
-            <div
-              className='lu-hub'
-              style={{ left: HUB.x, top: HUB.y - 17 }}
-            >
-              <LinkIcon size={16} />
-              <span>luot.link/drop</span>
-            </div>
-            <div className='lu-hub-total' style={{ left: HUB.x + 2, top: HUB.y + 26 }}>
-              <Tally className='lu-hub-figure' value={total} on={s.drawn} />
-              <span className='lu-hub-unit'>clicks</span>
-            </div>
-          </div>
+            </Phone>
+            <Chip
+              icon={<SourceIcon domain='instagram.com' />}
+              label='Instagram'
+              from={2140}
+              to={2141}
+              on={s.tapped}
+              unit='clicks'
+            />
+          </>
         )}
       </Stage>
-    </Well>
+    </div>
   )
 }
 
 // ─── Client work ───
-// "So an update is a screenshot", taken literally: the client asks, you send
-// the numbers as a picture, they're read, and that's the end of it. The
-// screenshot is the analytics page's own card, which is the claim — what
-// Luotain shows is already the thing you'd send. When the pointer settles the
-// exchange plays again.
+// Messages with the café's owner. The question is how the menu did, the
+// answer goes over as a screenshot of the link's report, and that's the
+// whole update: the owner types, and the reply says it was enough. The
+// screenshot is Luotain's side here, so this phone has no chip.
 
-const DAYS = [312, 356, 341, 402, 388, 451, 430, 498, 476, 541, 520, 590, 566, 634]
+const ASKED = { sent: false, typing: false, replied: false }
+const ANSWERED = { sent: true, typing: false, replied: true }
 
-const QUIET = { sent: false, read: false, typing: false, replied: false }
-const ANSWERED = { sent: true, read: true, typing: false, replied: true }
-
-async function exchange(a) {
+async function send(a) {
   await a.set({ sent: true })
-  await a.wait(900)
-  await a.set({ read: true })
-  await a.wait(450)
+  await a.wait(1000)
   await a.set({ typing: true })
   await a.wait(1300)
   await a.set({ typing: false, replied: true })
+  await a.wait(SETTLE)
 }
 
-async function clientScript(a) {
+async function sendFirst(a) {
   await a.wait(LEAD + STEP * 2)
-  await exchange(a)
+  await send(a)
 }
 
-async function clientAgain(a) {
-  await a.wait(380)
-  await exchange(a)
+async function sendAgain(a) {
+  await a.wait(REWIND)
+  await send(a)
 }
 
-// The analytics card, as a picture of itself: the figure, its change and the
-// fortnight's line are real, everything around them is filler.
-function Screenshot() {
+const TREND = [18, 22, 20, 27, 25, 31, 29, 36, 34, 41, 39, 47]
+const SPARK = { w: 196, h: 44 }
+
+function trendPath(w, h) {
+  const lo = Math.min(...TREND)
+  const hi = Math.max(...TREND)
+  const pts = TREND.map((v, i) => [
+    (i / (TREND.length - 1)) * w,
+    h - 3 - ((v - lo) / (hi - lo)) * (h - 8),
+  ])
+  const line = pts
+    .map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`)
+    .join('')
+  return { line, area: `${line}L${w} ${h}L0 ${h}Z` }
+}
+
+const SPARK_PATH = trendPath(SPARK.w, SPARK.h)
+
+function PhoneGlyph() {
   return (
-    <div className='lu-shot'>
-      <div className='lu-shot-head'>
-        <Bar w={64} h={5} tone={3} />
-      </div>
-      <div className='lu-shot-figure'>
-        <span>6,505</span>
-        <span className='lu-shot-delta'>+18%</span>
-      </div>
-      <Chart data={DAYS} width={142} height={36} dot={false} />
-      <div className='lu-shot-facts'>
-        <span className='lu-shot-fact'>
-          <CountryFlag country='Nigeria' size={12} />
-          <Bar w={26} h={4} tone={2} />
+    <svg width='16' height='16' viewBox='0 0 14 14' fill='none'>
+      <rect
+        x='3.6'
+        y='1.6'
+        width='6.8'
+        height='10.8'
+        rx='1.6'
+        stroke='currentColor'
+        strokeWidth='1.2'
+      />
+      <path
+        d='M6.2 10.3h1.6'
+        stroke='currentColor'
+        strokeWidth='1.2'
+        strokeLinecap='round'
+      />
+    </svg>
+  )
+}
+
+// The report as it looks in Luotain, cropped to the card: the link, its
+// clicks and the change, the week's line, and the three things a client
+// asks about (where, on what, from where) as rows. At a screenshot's size
+// only the figure has to read; the rows are their icons.
+function Screenshot() {
+  const id = useId().replace(/:/g, '')
+  return (
+    <div className='lu-screenshot'>
+      <div className='lu-report'>
+        <span className='lu-report-link'>
+          <LinkIcon size={14} />
+          luot.link/autumn
         </span>
-        <span className='lu-shot-fact'>
-          <SourceIcon domain='google.com' />
-          <Bar w={30} h={4} tone={2} />
+        <span className='lu-report-figure'>
+          <b>6,505</b>
+          <span>clicks</span>
+          <em>+18%</em>
+        </span>
+        <svg
+          className='lu-report-spark'
+          viewBox={`0 0 ${SPARK.w} ${SPARK.h}`}
+          preserveAspectRatio='none'
+        >
+          <defs>
+            <linearGradient id={`${id}-fill`} x1='0' y1='0' x2='0' y2='1'>
+              <stop
+                offset='0'
+                stopColor='var(--primary-base)'
+                stopOpacity='0.18'
+              />
+              <stop
+                offset='1'
+                stopColor='var(--primary-base)'
+                stopOpacity='0'
+              />
+            </linearGradient>
+          </defs>
+          <path d={SPARK_PATH.area} fill={`url(#${id}-fill)`} />
+          <path
+            d={SPARK_PATH.line}
+            fill='none'
+            stroke='var(--primary-base)'
+            strokeWidth='2'
+            strokeLinejoin='round'
+            strokeLinecap='round'
+          />
+        </svg>
+        <span className='lu-report-rows'>
+          <span>
+            <CountryFlag country='Nigeria' size={16} />
+            <i style={{ width: 92 }} />
+          </span>
+          <span>
+            <PhoneGlyph />
+            <i style={{ width: 128 }} />
+          </span>
+          <span>
+            <SourceIcon domain='instagram.com' />
+            <i style={{ width: 68 }} />
+          </span>
         </span>
       </div>
     </div>
   )
 }
 
-export function ClientPicture() {
-  const picture = useRef(null)
-  const { script, replay } = useReplay(clientScript, clientAgain)
-  useCardEngage(picture, replay)
+function Chevron() {
   return (
-    <Well picture={picture}>
+    <svg width='30' height='30' viewBox='0 0 30 30' fill='none'>
+      <path
+        d='M18.5 7 10.5 15l8 8'
+        stroke='currentColor'
+        strokeWidth='2.6'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+      />
+    </svg>
+  )
+}
+
+export function ThreadPicture() {
+  const { ref, script } = usePicture(sendFirst, sendAgain)
+  return (
+    <div ref={ref} className='lu-picture'>
       <Stage
         width={DESIGN.width}
         height={DESIGN.height}
-        fill
-        initial={QUIET}
+        initial={ASKED}
         poster={ANSWERED}
         play='once'
         script={script}
         className='lu-stage'
       >
         {(s) => (
-          // Everything is mounted from the start and shown as it happens, so
-          // a replay can fade the exchange back out instead of cutting it.
-          <Thread className='lu-thread'>
-            <Bubble from='them' tail>
-              How did the launch go?
-            </Bubble>
-            <div
-              className='ss-bubble-row lu-shot-row'
-              data-from='me'
-              data-on={s.sent || undefined}
-            >
-              <Screenshot />
+          <Phone width={PHONE} className='lu-phone'>
+            <div className='lu-chat'>
+              <div className='lu-chat-head'>
+                <span className='lu-chat-back'>
+                  <Chevron />
+                </span>
+                <span className='lu-chat-avatar'>M</span>
+                <span className='lu-chat-name'>Maya</span>
+              </div>
+              <div className='lu-chat-stamp'>
+                <b>Today</b> 9:41
+              </div>
+              <Thread className='lu-thread'>
+                <Bubble from='them' tail>
+                  How did the autumn menu do?
+                </Bubble>
+                <div
+                  className='ss-bubble-row lu-sent'
+                  data-from='me'
+                  data-on={s.sent || undefined}
+                >
+                  <Screenshot />
+                </div>
+                {(s.typing || s.replied) && (
+                  <Bubble from='them' typing={s.typing} tail>
+                    Perfect, that&rsquo;s all I need.
+                  </Bubble>
+                )}
+              </Thread>
             </div>
-            <Receipt show={s.sent}>{s.read ? 'Read' : 'Delivered'}</Receipt>
-            <Bubble
-              from='them'
-              tail
-              typing={!s.replied}
-              className='lu-reply'
-              data-on={s.typing || s.replied || undefined}
-            >
-              Perfect, that&rsquo;s all I need.
-            </Bubble>
-          </Thread>
+          </Phone>
         )}
       </Stage>
-    </Well>
+    </div>
   )
 }
