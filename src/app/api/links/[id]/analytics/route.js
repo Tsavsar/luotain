@@ -2,8 +2,9 @@ import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { countryName } from '@/lib/countries'
 import { buildSlots } from '@/lib/chartslots'
+import { parseWindow } from '@/lib/analyticswindow'
 
-// GET /api/links/[id]/analytics?days=30
+// GET /api/links/[id]/analytics?from=<ISO>&to=<ISO>&tz=<zone>   (or ?days=30)
 //
 // Real numbers for one link. The page was reading from mockAnalytics and
 // returning null whenever mock mode was off, so with it off every card was
@@ -18,8 +19,6 @@ import { buildSlots } from '@/lib/chartslots'
 //   cardData.devices.{Type,Browser}
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-const RANGES = [7, 30, 60, 90, 365]
 
 // Rows as { label, value }, highest first. Same shape as the mock's
 // rankedRows, so the Card component needs no changes.
@@ -39,7 +38,7 @@ function ranked(rows, key, extra) {
     .map(([label, value]) => ({ label, value, ...(extras.get(label) || {}) }))
 }
 
-// Percentage change against the preceding window of equal length. Returns null
+// Percentage change against the window before, of equal length. Returns null
 // rather than 0 when there's no prior data: "no change" and "nothing to
 // compare against" are different statements and the card shouldn't imply the
 // first when it means the second.
@@ -63,9 +62,8 @@ export async function GET(request, { params }) {
     return Response.json({ error: 'No workspace' }, { status: 403 })
   }
 
-  const url = new URL(request.url)
-  const requested = Number(url.searchParams.get('days'))
-  const days = RANGES.includes(requested) ? requested : 30
+  const win = parseWindow(new URL(request.url).searchParams)
+  if (win.error) return win.error
 
   try {
     // Scoped by organizationId as well as id. Without it, anyone signed in
@@ -78,14 +76,9 @@ export async function GET(request, { params }) {
       return Response.json({ error: 'Link not found' }, { status: 404 })
     }
 
-    const now = new Date()
-    const from = new Date(now.getTime() - days * 86400000)
-    // The window immediately before this one, same length, for the trend.
-    const prevFrom = new Date(from.getTime() - days * 86400000)
-
     const [rows, prevCount] = await Promise.all([
       prisma.click.findMany({
-        where: { linkId: id, createdAt: { gte: from } },
+        where: { linkId: id, createdAt: { gte: win.from, lt: win.to } },
         select: {
           country: true,
           region: true,
@@ -104,8 +97,9 @@ export async function GET(request, { params }) {
         take: 50000,
         orderBy: { createdAt: 'desc' },
       }),
+      // The same stretch one window earlier, for the trend.
       prisma.click.count({
-        where: { linkId: id, createdAt: { gte: prevFrom, lt: from } },
+        where: { linkId: id, createdAt: { gte: win.prevFrom, lt: win.prevTo } },
       }),
     ])
 
@@ -137,7 +131,12 @@ export async function GET(request, { params }) {
       : null
 
     return Response.json({
-      days,
+      range: {
+        from: win.from,
+        to: win.to,
+        tz: win.tz,
+        granularity: win.granularity,
+      },
       stats: {
         totalClicks,
         clicksTrend: trend(totalClicks, prevCount),
@@ -157,7 +156,7 @@ export async function GET(request, { params }) {
       },
       // The chart was missing entirely, which is why it drew nothing on this
       // page while the dashboard's worked.
-      chartData: buildSlots(rows, days, now),
+      chartData: buildSlots(rows, win),
       cardData: {
         sources: {
           // referrer is null for direct traffic, which is a meaningful label

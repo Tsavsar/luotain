@@ -3,15 +3,8 @@
 import { useState } from 'react'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import AnimatedNumber from './animatednumber'
-
-const DATE_OPTIONS = [
-  'Today',
-  'Yesterday',
-  'Last 7 days',
-  'Last 30 days',
-  'Last 90 days',
-  'Custom',
-]
+import DateRangeCalendar from './daterangecalendar'
+import { DATE_PRESETS, isCustomRange, rangeLabel } from '@/lib/daterange'
 
 // Same chevron already established elsewhere (StatsSegment,
 // LinksStats, dashboardmenu's org switcher) — reused again rather
@@ -41,6 +34,46 @@ function ChevronIcon() {
         strokeLinejoin='round'
       />
     </svg>
+  )
+}
+
+// The picker's panel: the presets, and Custom, which turns the same panel into
+// a calendar rather than opening a second one on top. `close` comes from the
+// Dropdown, so picking either way closes it.
+function RangeMenu({ range, onChange, close }) {
+  const [calendar, setCalendar] = useState(false)
+
+  if (calendar) {
+    return (
+      <DateRangeCalendar
+        value={isCustomRange(range) ? range : null}
+        onSelect={(picked) => {
+          onChange(picked)
+          close?.()
+        }}
+      />
+    )
+  }
+
+  return (
+    <DropdownMenu width='160px' close={close}>
+      {DATE_PRESETS.map((option) => (
+        <DropdownOption
+          key={option}
+          selected={option === range}
+          onClick={() => onChange(option)}
+        >
+          {option}
+        </DropdownOption>
+      ))}
+      <DropdownOption
+        selected={isCustomRange(range)}
+        keepOpen
+        onClick={() => setCalendar(true)}
+      >
+        Custom
+      </DropdownOption>
+    </DropdownMenu>
   )
 }
 
@@ -149,6 +182,9 @@ function MetricCard({ label, value, icon, trend }) {
 // component itself doesn't need to know the difference between
 // "Total clicks" and "Top country" — that mapping lives in whichever
 // page is using it.
+//
+// `selectedRange` is a preset label or a custom { start, end } — see
+// src/lib/daterange.js, which is also where a page turns it into a window.
 export default function StatsCards({
   title,
   metrics,
@@ -200,23 +236,13 @@ export default function StatsCards({
                 className='para-sm'
                 style={{ color: 'var(--text-strong)', margin: 0 }}
               >
-                {range}
+                {rangeLabel(range)}
               </p>
               <ChevronIcon />
             </div>
           }
         >
-          <DropdownMenu width='160px'>
-            {DATE_OPTIONS.map((option) => (
-              <DropdownOption
-                key={option}
-                selected={option === range}
-                onClick={() => setRange(option)}
-              >
-                {option}
-              </DropdownOption>
-            ))}
-          </DropdownMenu>
+          <RangeMenu range={range} onChange={setRange} />
         </Dropdown>
       </div>
 

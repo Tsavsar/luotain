@@ -1354,6 +1354,98 @@ input:focus-visible {
   }
 }
 
+/* --- Date range calendar: the date picker's Custom ---
+   The tint is a share of the text colour rather than a grey token. The greys
+   that read on white all but vanish on near-black, and this one lands at the
+   same weight in both themes. */
+.range-calendar {
+  --range-tint: color-mix(in srgb, var(--text-strong) 7%, transparent);
+}
+.range-cell {
+  position: relative;
+  height: 36px;
+}
+.range-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--range-tint);
+  pointer-events: none;
+}
+/* No transitions on the days. The preview redraws on every pointer move, and
+   easing each change made the range trail behind the cursor. */
+.range-day {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.range-day.is-edge {
+  background: var(--text-strong);
+  color: var(--text-inverse);
+  font-weight: 500;
+}
+.range-day:disabled {
+  color: var(--text-disabled);
+  cursor: default;
+}
+.range-day:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1.5px var(--text-strong);
+}
+/* An end is already filled with the ring's colour, so its ring sits inside a
+   gap of the background instead. */
+.range-day.is-edge:focus-visible {
+  box-shadow:
+    inset 0 0 0 2px var(--text-strong),
+    inset 0 0 0 3.5px var(--bg-default);
+}
+.range-today {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: var(--radius-full);
+  background: var(--primary-base);
+}
+.range-nav {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.range-nav:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.range-nav:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-grey);
+}
+/* Hover only where there's a pointer to hover with; on touch it sticks to
+   whatever was tapped last. */
+@media (hover: hover) {
+  .range-day:hover:not(:disabled):not(.is-edge),
+  .range-nav:hover:not(:disabled) {
+    background: var(--range-tint);
+  }
+}
+
 /* --- Page loader: logo cycling through three grays --- */
 @keyframes logoLoaderPulse {
   0% {
