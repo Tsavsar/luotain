@@ -241,7 +241,12 @@ function FieldLabel({ label, hint, action, width, children }) {
 
 export default function CreatePage() {
   const router = useRouter()
-  const { useMockData, ready: mockReady, deletedUrls } = useMockDataState()
+  const {
+    useMockData,
+    ready: mockReady,
+    deletedUrls,
+    mockNote,
+  } = useMockDataState()
 
   // Not chosen from a toggle any more. You get here by PICKING AN EXISTING
   // LINK — selecting one is the whole gesture, and it puts you in the designer.
@@ -568,7 +573,7 @@ export default function CreatePage() {
 
       if (useMockData) {
         setSubmitting(false)
-        toast(`QR code created for ${selectedLink?.shortUrl} (mock, not saved)`)
+        toast(`QR code created for ${selectedLink?.shortUrl} (${mockNote})`)
         return
       }
 
@@ -607,7 +612,7 @@ export default function CreatePage() {
       // link pool is a fixed list, so a created link has nowhere to
       // live. Says so rather than pretending.
       const generated = slug.trim() || randomSlug()
-      toast(`${domain}/${generated} created (mock, not saved)`)
+      toast(`${domain}/${generated} created (${mockNote})`)
       setSubmitting(false)
       router.replace('/dashboard/links')
       return

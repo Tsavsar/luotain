@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import { readDemoDeleted, writeDemoDeleted } from '@/lib/demo'
 
 const STORAGE_KEY = 'luotain:mock-data'
 const DELETED_KEY = 'luotain:mock-deleted'
@@ -42,10 +43,22 @@ const MockDataContext = createContext({
   setMockPlan: () => {},
   mockDomainState: 'mixed',
   setMockDomainState: () => {},
+  // The public demo (lib/demo.js): mock data on and fixed, for a visitor
+  // rather than a developer. mockNote is what a mock-only action's toast
+  // says it didn't do, in the words of whichever one this is.
+  demo: false,
+  mockNote: 'mock, not saved',
   ready: false,
 })
 
-export function MockDataProvider({ children }) {
+// demo: the public demo. Mock data is on and can't be turned off, on Pro (so
+// nothing is behind an upgrade) with its domain verified, and deletes last for
+// the tab. Derived during render rather than set in an effect: the pages mount
+// in the same render the demo starts, and their effects run before this one's,
+// so state set in an effect would reach them a render late, after they'd
+// already asked the API for real data. None of it touches the developer's
+// saved mock settings.
+export function MockDataProvider({ demo = false, children }) {
   const [useMockData, setUseMockData] = useState(false)
   // Whether the saved preference has been read yet. This exists to stop
   // pages firing a real API request on load and then immediately
@@ -62,6 +75,13 @@ export function MockDataProvider({ children }) {
   // per-page, a delete from the detail page changed nothing anywhere
   // else — which is exactly how it was behaving.
   const [deletedUrls, setDeletedUrls] = useState([])
+  // The demo's own deletes, read on first render for the same reason the
+  // demo is derived: an effect would be a render late. Nothing on screen
+  // depends on it before the demo starts, so the server's empty list can't
+  // disagree with anything.
+  const [demoDeleted, setDemoDeleted] = useState(() =>
+    typeof window === 'undefined' ? [] : readDemoDeleted()
+  )
   const [mockPlan, setMockPlanState] = useState('FREE')
   const [mockDomainState, setMockDomainStateInner] = useState('mixed')
 
@@ -85,16 +105,21 @@ export function MockDataProvider({ children }) {
     setReady(true)
   }, [])
 
-  const setMockData = useCallback((next) => {
-    setUseMockData(next)
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next ? 'true' : 'false')
-    } catch {
-      // Not persisting is survivable — it just won't outlive the tab.
-    }
-  }, [])
+  const setMockData = useCallback(
+    (next) => {
+      if (demo) return
+      setUseMockData(next)
+      try {
+        window.localStorage.setItem(STORAGE_KEY, next ? 'true' : 'false')
+      } catch {
+        // Not persisting is survivable — it just won't outlive the tab.
+      }
+    },
+    [demo]
+  )
 
   const toggleMockData = useCallback(() => {
+    if (demo) return
     setUseMockData((prev) => {
       const next = !prev
       try {
@@ -102,7 +127,7 @@ export function MockDataProvider({ children }) {
       } catch {}
       return next
     })
-  }, [])
+  }, [demo])
 
   const persistDeleted = useCallback((next) => {
     try {
@@ -113,52 +138,77 @@ export function MockDataProvider({ children }) {
 
   const deleteMockLink = useCallback(
     (url) => {
+      if (demo) {
+        setDemoDeleted((prev) => {
+          if (prev.includes(url)) return prev
+          const next = [...prev, url]
+          writeDemoDeleted(next)
+          return next
+        })
+        return
+      }
       setDeletedUrls((prev) =>
         prev.includes(url) ? prev : persistDeleted([...prev, url])
       )
     },
-    [persistDeleted]
+    [demo, persistDeleted]
   )
 
   const recoverMockLink = useCallback(
     (url) => {
+      if (demo) {
+        setDemoDeleted((prev) => {
+          const next = prev.filter((u) => u !== url)
+          writeDemoDeleted(next)
+          return next
+        })
+        return
+      }
       setDeletedUrls((prev) => persistDeleted(prev.filter((u) => u !== url)))
     },
-    [persistDeleted]
+    [demo, persistDeleted]
   )
 
-  const setMockPlan = useCallback((next) => {
-    if (!VALID_PLANS.includes(next)) return
-    setMockPlanState(next)
-    try {
-      window.localStorage.setItem(PLAN_KEY, next)
-    } catch {
-      // Same reasoning as above — private browsing throws rather than
-      // returning null, and losing the preference is better than crashing.
-    }
-  }, [])
+  const setMockPlan = useCallback(
+    (next) => {
+      if (demo || !VALID_PLANS.includes(next)) return
+      setMockPlanState(next)
+      try {
+        window.localStorage.setItem(PLAN_KEY, next)
+      } catch {
+        // Same reasoning as above — private browsing throws rather than
+        // returning null, and losing the preference is better than crashing.
+      }
+    },
+    [demo]
+  )
 
-  const setMockDomainState = useCallback((next) => {
-    if (!VALID_DOMAIN_STATES.includes(next)) return
-    setMockDomainStateInner(next)
-    try {
-      window.localStorage.setItem(DOMAIN_KEY, next)
-    } catch {}
-  }, [])
+  const setMockDomainState = useCallback(
+    (next) => {
+      if (demo || !VALID_DOMAIN_STATES.includes(next)) return
+      setMockDomainStateInner(next)
+      try {
+        window.localStorage.setItem(DOMAIN_KEY, next)
+      } catch {}
+    },
+    [demo]
+  )
 
   const value = useMemo(
     () => ({
-      useMockData,
+      useMockData: demo || useMockData,
       setMockData,
       toggleMockData,
-      deletedUrls,
+      deletedUrls: demo ? demoDeleted : deletedUrls,
       deleteMockLink,
       recoverMockLink,
-      mockPlan,
+      mockPlan: demo ? 'PRO' : mockPlan,
       setMockPlan,
-      mockDomainState,
+      mockDomainState: demo ? 'verified' : mockDomainState,
       setMockDomainState,
-      ready,
+      demo,
+      mockNote: demo ? 'demo, not saved' : 'mock, not saved',
+      ready: demo || ready,
     }),
     // mockPlan MUST be here. It was in the object but not the deps, so the memo
     // never recomputed when the plan changed — every consumer kept the first
@@ -169,6 +219,7 @@ export function MockDataProvider({ children }) {
       setMockData,
       toggleMockData,
       deletedUrls,
+      demoDeleted,
       deleteMockLink,
       recoverMockLink,
       mockPlan,
@@ -177,6 +228,7 @@ export function MockDataProvider({ children }) {
       // the picker looked frozen — the state updated, nothing downstream heard.
       mockDomainState,
       setMockDomainState,
+      demo,
       ready,
     ]
   )

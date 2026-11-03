@@ -126,6 +126,7 @@ const SLUG_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,48}[a-zA-Z0-9])?$/
 const RESERVED = new Set([
   'api',
   'dashboard',
+  'demo',
   'login',
   'logout',
   'signup',

@@ -334,11 +334,13 @@ export default function UsagePage() {
       )
       setUsage({
         // Reads the mock plan rather than hardcoding Free, so the "of 5 on
-        // Free" line changes with the tier like the real one does.
+        // Free" line changes with the tier like the real one does. The plan
+        // object as a whole falls back, not its maxLinks: Pro's null means
+        // unlimited, and `?? 5` turned it into "138 of 5 on Pro".
         plan: {
           id: mockPlan,
-          name: PLANS[mockPlan]?.name || 'Free plan',
-          maxLinks: PLANS[mockPlan]?.maxLinks ?? 5,
+          name: (PLANS[mockPlan] || PLANS.FREE).name,
+          maxLinks: (PLANS[mockPlan] || PLANS.FREE).maxLinks,
         },
         links: mockPlan === 'PRO' ? 138 : mockPlan === 'STARTER' ? 42 : 3,
         qrCodes: 4,

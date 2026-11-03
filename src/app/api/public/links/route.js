@@ -65,6 +65,7 @@ const SLUG = /^[a-zA-Z0-9._-]+$/
 const RESERVED = new Set([
   'api',
   'dashboard',
+  'demo',
   'login',
   'logout',
   'get-started',

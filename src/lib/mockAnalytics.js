@@ -753,7 +753,7 @@ function visibleEvents(events, filters = [], sessionDeleted = []) {
 const DOMAINS = [
   { hostname: 'luot.link', verified: true, isDefault: true },
   { hostname: 'go.acme.com', verified: true, isDefault: false },
-  { hostname: 'links.notionhq.com', verified: true, isDefault: false },
+  { hostname: 'links.acme.com', verified: true, isDefault: false },
   { hostname: 'l.shatermt.com', verified: true, isDefault: false },
   { hostname: 'pending.example.com', verified: false, isDefault: false },
 ]
