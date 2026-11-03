@@ -3,6 +3,7 @@ import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { countryName } from '@/lib/countries'
 import { buildSlots } from '@/lib/chartslots'
 import { parseWindow } from '@/lib/analyticswindow'
+import { matcher, parseFilters } from '@/lib/clickfilters'
 
 // GET /api/analytics?from=<ISO>&to=<ISO>&tz=<zone>   (or the legacy ?days=30)
 //
@@ -52,53 +53,60 @@ export async function GET(request) {
   const win = parseWindow(url.searchParams)
   if (win.error) return win.error
 
-  // Filters arrive as repeated params: ?f=country:Norway&f=device:Mobile
-  //
-  // The endpoint ignored them entirely, so clicking a filter pill changed the
-  // URL state in the page and nothing else — the numbers never moved.
-  //
-  // Applied AFTER fetching rather than in the where clause, on purpose: the
-  // cards have to keep showing every option so you can still see what you're
-  // filtering away, and a filtered query would hide the rest.
-  const filters = url.searchParams
-    .getAll('f')
-    .map((f) => {
-      const i = f.indexOf(':')
-      return i < 0 ? null : { type: f.slice(0, i), label: f.slice(i + 1) }
-    })
-    .filter(Boolean)
+  // The endpoint ignored filters entirely at first, so clicking a filter pill
+  // changed the URL state in the page and nothing else — the numbers never
+  // moved. The rules are in src/lib/clickfilters.js.
+  const filters = parseFilters(url.searchParams)
+  const matches = matcher(filters)
 
-  // Same type ORs together, different types AND. Picking Norway and Ghana
-  // means "either", picking Norway and Mobile means "both" — which is what
-  // someone expects from two different questions.
-  function matches(r) {
-    const byType = new Map()
-    for (const f of filters) {
-      if (!byType.has(f.type)) byType.set(f.type, [])
-      byType.get(f.type).push(f.label)
+  const prevWhere = {
+    organizationId,
+    createdAt: { gte: win.prevFrom, lt: win.prevTo },
+  }
+
+  // ?summary=1: the headline figures alone, counted in SQL. For the links
+  // page, which shows clicks and visitors for the range and has no use for
+  // 50,000 rows pulled into memory to count them. Filters don't apply: that
+  // page has none.
+  if (url.searchParams.get('summary')) {
+    try {
+      const [[current], prevCount] = await Promise.all([
+        prisma.$queryRaw`
+          SELECT COUNT(*)::int AS clicks,
+                 COUNT(DISTINCT "visitorHash")::int AS visitors
+          FROM "Click"
+          WHERE "organizationId" = ${organizationId}
+            AND "createdAt" >= ${win.from}
+            AND "createdAt" < ${win.to}
+        `,
+        prisma.click.count({ where: prevWhere }),
+      ])
+      return Response.json({
+        range: {
+          from: win.from,
+          to: win.to,
+          tz: win.tz,
+          granularity: win.granularity,
+        },
+        stats: {
+          totalClicks: current.clicks,
+          clicksTrend: trend(current.clicks, prevCount),
+          // COUNT(DISTINCT) skips nulls, the same rule as the full path:
+          // clicks from before the hash existed aren't one shared visitor.
+          uniqueVisitors: current.visitors,
+          visitorsTrend: null,
+        },
+      })
+    } catch (err) {
+      console.error('[GET /api/analytics?summary]', err)
+      return Response.json(
+        { error: 'Could not load analytics' },
+        { status: 500 }
+      )
     }
-    for (const [type, labels] of byType) {
-      const value =
-        type === 'country'
-          ? r.country
-          : type === 'device'
-            ? r.device
-            : type === 'source'
-              ? r.referrer || 'Direct'
-              : type === 'link'
-                ? r.link?.shortCode
-                : null
-      if (!labels.includes(value)) return false
-    }
-    return true
   }
 
   try {
-    const prevWhere = {
-      organizationId,
-      createdAt: { gte: win.prevFrom, lt: win.prevTo },
-    }
-
     const [rows, prev] = await Promise.all([
       prisma.click.findMany({
         // organizationId, not a list of link ids. Clicks carry the org, so
@@ -128,7 +136,10 @@ export async function GET(request) {
             where: prevWhere,
             select: {
               country: true,
+              region: true,
+              city: true,
               device: true,
+              browser: true,
               referrer: true,
               link: { select: { shortCode: true } },
             },

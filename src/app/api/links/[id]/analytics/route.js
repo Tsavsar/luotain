@@ -3,8 +3,10 @@ import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { countryName } from '@/lib/countries'
 import { buildSlots } from '@/lib/chartslots'
 import { parseWindow } from '@/lib/analyticswindow'
+import { matcher, parseFilters } from '@/lib/clickfilters'
 
 // GET /api/links/[id]/analytics?from=<ISO>&to=<ISO>&tz=<zone>   (or ?days=30)
+//                               &f=country:Nigeria&f=device:Mobile ...
 //
 // Real numbers for one link. The page was reading from mockAnalytics and
 // returning null whenever mock mode was off, so with it off every card was
@@ -62,8 +64,19 @@ export async function GET(request, { params }) {
     return Response.json({ error: 'No workspace' }, { status: 403 })
   }
 
-  const win = parseWindow(new URL(request.url).searchParams)
+  const search = new URL(request.url).searchParams
+  const win = parseWindow(search)
   if (win.error) return win.error
+
+  // The card filters. The page sent none at first, so with mock data off a
+  // click on a card row lit up a filter pill and moved nothing. Same rules
+  // as the workspace page's, from one place.
+  const filters = parseFilters(search)
+  const matches = matcher(filters)
+  const prevWhere = {
+    linkId: id,
+    createdAt: { gte: win.prevFrom, lt: win.prevTo },
+  }
 
   try {
     // Scoped by organizationId as well as id. Without it, anyone signed in
@@ -76,7 +89,7 @@ export async function GET(request, { params }) {
       return Response.json({ error: 'Link not found' }, { status: 404 })
     }
 
-    const [rows, prevCount] = await Promise.all([
+    const [all, prev] = await Promise.all([
       prisma.click.findMany({
         where: { linkId: id, createdAt: { gte: win.from, lt: win.to } },
         select: {
@@ -97,16 +110,39 @@ export async function GET(request, { params }) {
         take: 50000,
         orderBy: { createdAt: 'desc' },
       }),
-      // The same stretch one window earlier, for the trend.
-      prisma.click.count({
-        where: { linkId: id, createdAt: { gte: win.prevFrom, lt: win.prevTo } },
-      }),
+      // The same stretch one window earlier, for the trend — filtered the
+      // same way as this one when a filter is on, which takes rows.
+      filters.length
+        ? prisma.click.findMany({
+            where: prevWhere,
+            select: {
+              country: true,
+              region: true,
+              city: true,
+              device: true,
+              browser: true,
+              referrer: true,
+            },
+            take: 50000,
+          })
+        : prisma.click.count({ where: prevWhere }),
     ])
 
     // Existing rows still hold ISO codes from before the redirect stored
     // names, so they're normalised here too. countryName is idempotent, a
-    // name maps to itself, so this is safe on new rows as well.
-    for (const r of rows) r.country = countryName(r.country)
+    // name maps to itself, so this is safe on new rows as well. First, so a
+    // country filter compares names to names.
+    for (const r of all) r.country = countryName(r.country)
+    let prevCount = prev
+    if (Array.isArray(prev)) {
+      for (const r of prev) r.country = countryName(r.country)
+      prevCount = prev.filter(matches).length
+    }
+
+    // Everything below counts what the filters leave. The cards show the
+    // filtered breakdown, the same as the workspace page's, and a picked row
+    // stays highlighted there so it can be picked again to drop it.
+    const rows = filters.length ? all.filter(matches) : all
 
     const totalClicks = rows.length
 

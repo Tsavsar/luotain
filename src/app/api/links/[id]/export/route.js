@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { csvExportReason } from '@/lib/plans'
 import { countryName } from '@/lib/countries'
+import { matcher, parseFilters } from '@/lib/clickfilters'
 import {
   localTimestamp,
   parseWindow,
@@ -75,8 +76,12 @@ export async function GET(request, { params }) {
     return Response.json({ error: 'Link not found' }, { status: 404 })
   }
 
-  const win = parseWindow(new URL(request.url).searchParams)
+  const search = new URL(request.url).searchParams
+  const win = parseWindow(search)
   if (win.error) return win.error
+  // The card filters too, so a filtered page exports what it's showing: the
+  // file holds exactly the clicks the cards counted.
+  const matches = matcher(parseFilters(search))
   const header = [`Date (${win.tz})`, ...COLUMNS]
 
   const encoder = new TextEncoder()
@@ -114,26 +119,35 @@ export async function GET(request, { params }) {
           })
           if (rows.length === 0) break
 
-          const lines = rows.map((c) =>
-            [
-              localTimestamp(c.createdAt, win.tz),
-              c.qrCodeId ? 'Scan' : 'Click',
-              c.qrCode?.label || '',
-              // Older rows hold ISO codes; the cards show names, so this does
-              // too, or "US" and "United States" pivot as two countries.
-              countryName(c.country),
-              c.region,
-              c.city,
-              c.device,
-              c.browser,
-              // Null referrer is a direct visit — the cards call it Direct too.
-              c.referrer || 'Direct',
-            ]
-              .map(cell)
-              .join(',')
-          )
-          controller.enqueue(encoder.encode(`${lines.join('\r\n')}\r\n`))
+          const lines = rows
+            // Older rows hold ISO codes; the cards show names, so this does
+            // too, or "US" and "United States" pivot as two countries. Named
+            // before the filters run, so a country filter matches them.
+            .map((c) => ({ ...c, country: countryName(c.country) }))
+            .filter(matches)
+            .map((c) =>
+              [
+                localTimestamp(c.createdAt, win.tz),
+                c.qrCodeId ? 'Scan' : 'Click',
+                c.qrCode?.label || '',
+                c.country,
+                c.region,
+                c.city,
+                c.device,
+                c.browser,
+                // Null referrer is a direct visit — the cards call it Direct
+                // too.
+                c.referrer || 'Direct',
+              ]
+                .map(cell)
+                .join(',')
+            )
+          if (lines.length) {
+            controller.enqueue(encoder.encode(`${lines.join('\r\n')}\r\n`))
+          }
 
+          // Paged on the rows read, not the rows kept: a page the filters
+          // emptied still has more after it.
           if (rows.length < PAGE) break
           cursor = rows[rows.length - 1].id
         }

@@ -271,16 +271,22 @@ function filterByPriorRange(events, range, now) {
   )
 }
 
-// filters: array of { type: 'link'|'country'|'source'|'device', label }
+// filters: array of { type: 'link'|'country'|'region'|'city'|'source'|
+// 'device'|'browser', label }
 // Stackable with faceted semantics — the standard e-commerce-filter
 // pattern: OR *within* a type (selecting two links means "either
 // link" — a comparison), AND *across* types (a link filter plus a
 // country filter means "this link AND this country" together).
+// Region, city and browser came with the cards' own columns: a row under
+// Cities filters as a city now, not as a country.
 const DIMENSION_VALUE = {
   link: (e) => e.linkUrl,
   country: (e) => e.country,
+  region: (e) => e.region,
+  city: (e) => e.city,
   source: (e) => e.source,
   device: (e) => e.device,
+  browser: (e) => e.browser,
 }
 
 export function filterByDimension(events, filters) {

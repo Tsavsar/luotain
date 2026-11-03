@@ -6,7 +6,11 @@ import { useParams, useRouter } from 'next/navigation'
 import BackButton from '@/components/backbutton'
 import StatsCards from '@/components/statscards'
 import ChartContainer from '@/components/chartcontainer'
-import { Card } from '@/components/cardcontainer'
+import {
+  Card,
+  DEVICE_FILTERS,
+  GEOGRAPHY_FILTERS,
+} from '@/components/cardcontainer'
 import FilterPill from '@/components/filterpill'
 import CountryFlag from '@/components/countryflag'
 import DeleteConfirmModal from '@/components/deleteconfirmmodal'
@@ -260,9 +264,16 @@ export default function LinkDetailPage() {
   // The range as the endpoints take it: the viewer's own midnights and zone.
   // It was a day count looked up from the label, which only knew the "Last N
   // days" presets, so Today, Yesterday and Custom all quietly showed 30 days.
-  // The export below sends the same string, so the file holds what the cards
-  // counted.
-  const rangeQs = rangeQuery(selectedRange).toString()
+  //
+  // The card filters go along as repeated f= params. They weren't sent at
+  // all, so with mock off a click on a card row lit a pill and moved nothing.
+  // The export below sends the same string, so the file holds exactly what
+  // the cards counted.
+  const query = (() => {
+    const qs = rangeQuery(selectedRange)
+    for (const f of activeFilters) qs.append('f', `${f.type}:${f.label}`)
+    return qs.toString()
+  })()
 
   useEffect(() => {
     if (useMockData || !link?.id) {
@@ -270,7 +281,7 @@ export default function LinkDetailPage() {
       return
     }
     let cancelled = false
-    fetch(`/api/links/${link.id}/analytics?${rangeQs}`)
+    fetch(`/api/links/${link.id}/analytics?${query}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((d) => {
         if (!cancelled) setLive(d)
@@ -283,7 +294,7 @@ export default function LinkDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [useMockData, link?.id, rangeQs])
+  }, [useMockData, link?.id, query])
 
   const analytics = useMemo(() => {
     if (!useMockData || !link) return null
@@ -544,7 +555,7 @@ export default function LinkDetailPage() {
     }
     if (!link) return
     try {
-      const res = await fetch(`/api/links/${link.id}/export?${rangeQs}`)
+      const res = await fetch(`/api/links/${link.id}/export?${query}`)
       if (!res.ok) {
         const d = await res.json().catch(() => null)
         toast.error(d?.error || "Couldn't export the clicks")
@@ -1014,6 +1025,7 @@ export default function LinkDetailPage() {
               dataByColumn={cardData?.geography}
               iconType='flag'
               filterType='country'
+              filterTypes={GEOGRAPHY_FILTERS}
               activeFilters={activeFilters}
               onToggleFilter={toggleFilter}
             />
@@ -1022,6 +1034,7 @@ export default function LinkDetailPage() {
               columnOptions={['Type', 'Browser']}
               dataByColumn={cardData?.devices}
               filterType='device'
+              filterTypes={DEVICE_FILTERS}
               activeFilters={activeFilters}
               onToggleFilter={toggleFilter}
             />
