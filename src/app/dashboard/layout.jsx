@@ -11,6 +11,7 @@ import { MotionConfig } from 'motion/react'
 import Switch from '@/components/switch'
 import DemoBar from '@/components/demobar'
 import {
+  DEV_CONTROLS,
   MockDataProvider,
   useMockDataState,
 } from '@/components/mockdatacontext'
@@ -384,8 +385,9 @@ function DashboardShell({ demo, onDemo, children }) {
           the links, trash, detail and analytics pages, each with its
           own state, so switching it on and then navigating anywhere
           silently turned it back off. One toggle, shared state, and it
-          survives a reload. Not in the demo, where none of them apply. */}
-        {!demo && (
+          survives a reload. Development only, and not in the demo,
+          where none of them apply. */}
+        {DEV_CONTROLS && !demo && (
           <div
             style={{
               position: 'fixed',
