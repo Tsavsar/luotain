@@ -111,6 +111,12 @@ export function customDomainReason(planId) {
   return `Custom domains are part of Starter and Pro. ${plan.name} uses the shared domain.`
 }
 
+export function csvExportReason(planId) {
+  const plan = planFor(planId)
+  if (plan.csvExport) return null
+  return `CSV export is part of Pro. ${plan.name} shows every click in the dashboard.`
+}
+
 export function customSlugReason(planId) {
   const plan = planFor(planId)
   // Always true now — kept so callers don't need changing.

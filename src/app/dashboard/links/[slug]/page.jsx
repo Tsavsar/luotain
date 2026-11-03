@@ -537,6 +537,42 @@ export default function LinkDetailPage() {
     }
   }
 
+  // The clicks for the range on screen, as a CSV. Fetched rather than
+  // navigated to, so a plan without CSV export gets the upgrade message as a
+  // toast instead of a page of JSON.
+  async function handleExport() {
+    if (useMockData) {
+      toast('Mock data is on — there are no real clicks to export')
+      return
+    }
+    if (!link) return
+    try {
+      const res = await fetch(`/api/links/${link.id}/export?days=${rangeDays}`)
+      if (!res.ok) {
+        const d = await res.json().catch(() => null)
+        toast.error(d?.error || "Couldn't export the clicks")
+        return
+      }
+      const blob = await res.blob()
+      const name =
+        /filename="([^"]+)"/.exec(
+          res.headers.get('Content-Disposition') || ''
+        )?.[1] || `luotain-${link.shortCode}.csv`
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = name
+      a.click()
+      // Revoked, or every download leaks its blob for the life of the page —
+      // but not straight away: Safari can lose a download whose URL is
+      // revoked before it has started reading.
+      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    } catch (err) {
+      console.error('[Link export]', err)
+      toast.error("Couldn't export the clicks")
+    }
+  }
+
   async function handleDelete(target) {
     if (useMockData) {
       // This used to only fire a toast and navigate — the link stayed
@@ -637,7 +673,13 @@ export default function LinkDetailPage() {
                   and it's already deleted. Recover is the only real
                   action, matching the alert above. */}
               {isDeleted ? (
-                <DropdownOption onClick={handleRecover}>Recover</DropdownOption>
+                <>
+                  <DropdownOption onClick={handleRecover}>Recover</DropdownOption>
+                  {/* Its clicks are still its clicks, trashed or not. */}
+                  <DropdownOption onClick={handleExport}>
+                    Export CSV
+                  </DropdownOption>
+                </>
               ) : (
                 <>
                   <DropdownOption
@@ -649,6 +691,9 @@ export default function LinkDetailPage() {
                   </DropdownOption>
                   <DropdownOption onClick={handleDuplicate}>
                     Duplicate
+                  </DropdownOption>
+                  <DropdownOption onClick={handleExport}>
+                    Export CSV
                   </DropdownOption>
                   <DropdownOption
                     danger

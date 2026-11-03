@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { getCurrentUserEmail } from '@/lib/session'
+import { freeWorkspaceReason } from '@/lib/workspacelimit'
 
 export async function POST(request) {
   const email = await getCurrentUserEmail()
@@ -12,6 +13,23 @@ export async function POST(request) {
 
   if (!fullName || !orgName) {
     return Response.json({ error: 'Both fields are required' }, { status: 400 })
+  }
+
+  // Onboarding's first workspace never trips this — someone onboarding owns
+  // nothing yet. It's here because this route makes a Free workspace too, and
+  // a limit the other route enforces would otherwise be one request away.
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  })
+  if (existing) {
+    const limitReason = await freeWorkspaceReason(existing.id)
+    if (limitReason) {
+      return Response.json(
+        { error: limitReason, code: 'FREE_WORKSPACE_LIMIT' },
+        { status: 402 }
+      )
+    }
   }
 
   const user = await prisma.user.update({

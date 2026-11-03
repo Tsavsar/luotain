@@ -29,6 +29,10 @@ function NewOrgContent() {
   const [shakingOrgName, setShakingOrgName] = useState(false)
   const [errorOrgName, setErrorOrgName] = useState(false)
   const errorTimerOrgName = useRef(null)
+  // What the server said when it refused, shown under the field. The page used
+  // to swallow every failure, which once there's a plan limit means someone
+  // pressing Continue over and over with no idea why nothing happens.
+  const [submitError, setSubmitError] = useState('')
 
   const isValid = orgName.trim().length > 0
 
@@ -50,6 +54,7 @@ function NewOrgContent() {
     }
 
     setSubmitting(true)
+    setSubmitError('')
     try {
       const res = await fetch('/api/create-additional-org', {
         method: 'POST',
@@ -57,10 +62,14 @@ function NewOrgContent() {
         body: JSON.stringify({ orgName }),
       })
 
-      if (!res.ok) throw new Error('Failed to create organization')
+      if (!res.ok) {
+        const d = await res.json().catch(() => null)
+        throw new Error(d?.error || "Couldn't create the workspace")
+      }
 
       router.push('/dashboard/analytics')
     } catch (err) {
+      setSubmitError(err.message)
       setSubmitting(false)
     }
   }
@@ -164,6 +173,16 @@ function NewOrgContent() {
               </svg>
             }
           />
+
+          {submitError ? (
+            <p
+              className='para-sm'
+              role='alert'
+              style={{ margin: 0, color: 'var(--error-base)' }}
+            >
+              {submitError}
+            </p>
+          ) : null}
 
           <Continuebutton
             active={isValid && !submitting}
