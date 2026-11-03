@@ -386,11 +386,16 @@ export function Card({
   filterOptions,
   iconType = 'none',
   filterType,
+  // Per column, where a card's columns are different things: on Geography a
+  // row under Cities is a city, not a country. Every column used filterType,
+  // so picking a city filtered on country = "Lagos" and emptied every card.
+  filterTypes,
   activeFilters,
   onToggleFilter,
   enableCompare = false,
 }) {
   const [selected, setSelected] = useState(columnOptions[0])
+  const rowType = filterTypes?.[selected] ?? filterType
   const rowListRef = useRef(null)
   const prevRowRects = useRef(new Map())
   const rows = dataByColumn?.[selected]
@@ -673,7 +678,7 @@ export function Card({
         >
           {(isComparing ? compareRows : rows).map((row) => {
             const isFiltered = activeFilters?.some(
-              (f) => f.type === filterType && f.label === row.label
+              (f) => f.type === rowType && f.label === row.label
             )
             return (
               <DataRow
@@ -685,8 +690,15 @@ export function Card({
                 country={row.country}
                 isLink={filterType === 'link'}
                 isFiltered={isFiltered}
+                // A region or city brings its country along, so its pill
+                // can show the right flag. Display only: a filter is still
+                // its type and label.
                 onToggleFilter={() =>
-                  onToggleFilter?.({ type: filterType, label: row.label })
+                  onToggleFilter?.({
+                    type: rowType,
+                    label: row.label,
+                    ...(row.country ? { country: row.country } : null),
+                  })
                 }
               />
             )
@@ -716,6 +728,15 @@ export function Card({
     </div>
   )
 }
+
+// What a row is under each column of the two cards that mix kinds. Exported
+// for the link page, which lays its cards out itself.
+export const GEOGRAPHY_FILTERS = {
+  Countries: 'country',
+  Regions: 'region',
+  Cities: 'city',
+}
+export const DEVICE_FILTERS = { Type: 'device', Browser: 'browser' }
 
 // activeFilters is now an ARRAY (stackable). onToggleFilter adds a
 // filter if it's not already active, removes it if it is.
@@ -764,6 +785,7 @@ export default function DashboardCards({
           dataByColumn={data?.geography}
           iconType='flag'
           filterType='country'
+          filterTypes={GEOGRAPHY_FILTERS}
           activeFilters={activeFilters}
           onToggleFilter={onToggleFilter}
         />
@@ -772,6 +794,7 @@ export default function DashboardCards({
           columnOptions={['Type', 'Browser']}
           dataByColumn={data?.devices}
           filterType='device'
+          filterTypes={DEVICE_FILTERS}
           activeFilters={activeFilters}
           onToggleFilter={onToggleFilter}
         />

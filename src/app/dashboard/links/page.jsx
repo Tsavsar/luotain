@@ -15,7 +15,7 @@ import {
   getMockLinksTable,
   getMockTrash,
 } from '@/lib/mockAnalytics'
-import { mockRangeLabel, rangeWindow } from '@/lib/daterange'
+import { mockRangeLabel, rangeQuery, rangeWindow } from '@/lib/daterange'
 
 export default function LinksPage() {
   const router = useRouter()
@@ -29,6 +29,11 @@ export default function LinksPage() {
     recoverMockLink,
   } = useMockDataState()
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
+  // Only the mock list is drawn for a range; the real one is every link,
+  // whatever the picker says. Keyed on this rather than the range, so
+  // changing the range doesn't refetch the whole list and flash the stats
+  // back to a skeleton for numbers that didn't change.
+  const mockRange = useMockData ? mockRangeLabel(selectedRange) : null
 
   // Real state, re-seeded from the generator only when the inputs
   // that should reset it change (mock toggled, range changed), so a
@@ -41,9 +46,7 @@ export default function LinksPage() {
     let cancelled = false
 
     if (useMockData) {
-      setLinks(
-        getMockLinksTable(mockRangeLabel(selectedRange), [], deletedUrls)
-      )
+      setLinks(getMockLinksTable(mockRange, [], deletedUrls))
       return
     }
 
@@ -67,35 +70,57 @@ export default function LinksPage() {
     return () => {
       cancelled = true
     }
-  }, [mockReady, useMockData, selectedRange, deletedUrls])
+  }, [mockReady, useMockData, mockRange, deletedUrls])
+
+  // The range's clicks and visitors, counted by the server. They were added
+  // up from the list, which carries each link's all-time total, so "Total
+  // clicks" read the same whatever the picker said and Unique visitors had
+  // nothing to come from at all. The same window and the same rules as the
+  // analytics page, so the two agree on any range.
+  //
+  // The last answer stays on screen while the next loads, and the cards roll
+  // from it, rather than blanking on every change of range.
+  const rangeQs = rangeQuery(selectedRange).toString()
+  const [summary, setSummary] = useState(null)
+  useEffect(() => {
+    if (!mockReady || useMockData) return
+    let cancelled = false
+    fetch(`/api/analytics?${rangeQs}&summary=1`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (!cancelled) setSummary(d?.stats ?? null)
+      })
+      .catch(() => {
+        if (!cancelled) setSummary(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [mockReady, useMockData, rangeQs])
 
   // deletedUrls is passed through so the totals drop when something is
   // deleted — no link, nothing to report.
   // Real stats were literally null, so all three cards sat empty on every real
   // workspace — "Links created" never updated because nothing ever computed it.
   //
-  // Derived from the links already loaded rather than fetched: the list is
-  // right here and carries a click count per row, so a second request would ask
-  // the server to recount what the page can add up itself.
   // The same window the analytics pages use. This page had its own, and its
   // Yesterday had a start and no end, so it counted today's links as well.
   const { from, to } = rangeWindow(selectedRange)
   const stats = useMockData
-    ? getMockLinksStats(mockRangeLabel(selectedRange), [], deletedUrls)
+    ? getMockLinksStats(mockRange, [], deletedUrls)
     : links
       ? {
-          totalClicks: links.reduce((sum, l) => sum + (l.clicks || 0), 0),
+          totalClicks: summary?.totalClicks,
+          clicksTrend: summary?.clicksTrend,
+          uniqueVisitors: summary?.uniqueVisitors,
           // Counted WITHIN the selected range, matching what the mock stats do.
           // It was links.length, so the number never moved when the range
           // changed — which reads exactly like a stat that isn't updating.
+          // From the list, which has every link's creation date to hand.
           linksCreated: links.filter((l) => {
             const created = new Date(l.createdAt)
             return created >= from && created < to
           }).length,
-          // Not computable from this list — a unique visitor needs the click
-          // rows, not a per-link total. Left undefined so the card shows its
-          // empty state rather than a number that would be wrong.
-          uniqueVisitors: undefined,
         }
       : null
 

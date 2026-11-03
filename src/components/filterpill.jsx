@@ -27,8 +27,11 @@ function CloseIcon() {
 const TYPE_LABELS = {
   link: 'Short link',
   country: 'Country',
+  region: 'Region',
+  city: 'City',
   source: 'Source',
   device: 'Device',
+  browser: 'Browser',
 }
 
 // Same order as chartcontainer.jsx's SERIES_COLORS — a link filter's
@@ -45,12 +48,16 @@ function keyOf(f) {
 }
 
 // Country and source filters get the same flag/favicon the cards
-// already show for that row. Link filters get a dot colored to match
-// their chart line (device filters keep a plain primary dot — device
-// isn't a chart series, so there's no line color to match).
+// already show for that row; a region or city gets its country's flag,
+// as its row does. Link filters get a dot colored to match their chart
+// line (device and browser filters keep a plain primary dot — they
+// aren't chart series, so there's no line color to match).
 function FilterIcon({ filter, linkColor }) {
   if (filter.type === 'country') {
     return <CountryFlag country={filter.label} size={16} />
+  }
+  if ((filter.type === 'region' || filter.type === 'city') && filter.country) {
+    return <CountryFlag country={filter.country} size={16} />
   }
   if (filter.type === 'source') {
     return <SourceIcon domain={filter.label} />
