@@ -1,7 +1,12 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Stage } from '@/components/stageshow/stage'
+import {
+  useEngage,
+  useHoverTarget,
+  useReplay,
+} from '@/components/landingmotion'
 import { Window, Bar } from '@/components/stageshow/window'
 import { Count } from '@/components/stageshow/motion/Count'
 import { Collapse } from '@/components/stageshow/motion/Collapse'
@@ -20,12 +25,12 @@ import './landingfeatures.css'
 // A bento rather than five equal cards. Each tile is a different kind of
 // picture, so neighbours never repeat a signal:
 //
-//   Tile      Span   Kind        The one thing                  On scroll in             On mouse enter
+//   Tile      Span   Kind        The one thing                  On scroll in             When the pointer settles
 //   Live      2 × 1  Hero UI     a link's visits arriving       visits land (loops)      a traffic spike
-//   Install   1 × 1  Statement   the tags you no longer paste   two lines struck         they fold away
-//   QR        1 × 1  Object      printed codes, designed        the stack is dealt out   the next design
-//   Domain    1 × 1  Component   a domain going live            pending to verified      the slug rolls on
-//   Team      1 × 1  Collection  a workspace of people          a new member sits down   everyone lights up
+//   Install   1 × 1  Statement   the tags you no longer paste   two lines struck         struck again, then folded away
+//   QR        1 × 1  Object      printed codes, designed        the stack is dealt out   dealt again, in the next design
+//   Domain    1 × 1  Component   a domain going live            pending to verified      verified again, on a new slug
+//   Team      1 × 1  Collection  a workspace of people          a new member sits down   sits down again, everyone lights up
 //
 // Built on Stageshow (components/stageshow): every picture is its own Stage
 // at 1:1, pinned under its copy and cropped by the tile. The copy is page
@@ -36,8 +41,9 @@ import './landingfeatures.css'
 // pictures can't drift from the product they describe.
 //
 // Only the live tile loops. The rest play once as the grid scrolls in, in
-// reading order, then hold their last frame until the pointer arrives: one
-// thing leading, the others answering when asked.
+// reading order, then hold their last frame until the pointer settles on one,
+// which plays its scene again (landingmotion.js has the rules): one thing
+// leading, the others answering when asked.
 
 // When the first supporting beat lands after the grid is seen, and the step
 // between tiles after it.
@@ -48,13 +54,18 @@ const STEP = 110
 // One frame for all five: radius, padding and the copy at the top are shared,
 // and the variety lives in the pictures. The whole tile is the hover target,
 // copy included, so the picture answers wherever the pointer comes in.
-function Tile({ area, lead, children, picture, dark, onHover }) {
+//
+// The pictures answer data-engaged, set once the pointer has settled (see
+// useEngage), never :hover. :hover lit them up on every pass across the grid.
+function Tile({ area, lead, children, picture, dark, engage, engaged }) {
+  const ref = useRef(null)
+  useHoverTarget(ref, engage)
   return (
     <article
+      ref={ref}
       className={`lf-tile lf-tile--${area}`}
       data-dark={dark || undefined}
-      onMouseEnter={onHover ? () => onHover(true) : undefined}
-      onMouseLeave={onHover ? () => onHover(false) : undefined}
+      data-engaged={engaged || undefined}
     >
       {/* Run-in: the point in --text-strong, the rest in --text-sub, at one
           size and weight. The same two-tone the page's headings use, so the
@@ -145,10 +156,10 @@ const LIVE_START = { rows: [4, 3, 2, 1, 0], opened: 4, fresh: null, total: 2481 
 // A conveyor: it never rewinds in view. The stage resets it to the start only
 // while it's off screen, where nobody sees the numbers go back.
 //
-// Hovering the tile is a traffic spike. Read straight off the page rather
-// than through React state: the script runs outside render and only needs to
-// know at the moment it decides how long to wait.
-const isHot = () => !!document.querySelector('.lf-tile--live:hover')
+// The pointer settling on the tile is a traffic spike. Read straight off the
+// page rather than through React state: the script runs outside render and
+// only needs to know at the moment it decides how long to wait.
+const isHot = () => !!document.querySelector('.lf-tile--live[data-engaged]')
 
 // Waits run in short steps, so a pointer arriving mid-pause brings the next
 // visit at once rather than when the old pause runs out — a spike that starts
@@ -255,9 +266,12 @@ function Live() {
   // cut word reads as a mistake rather than a crop. The compact row keeps the
   // place and the scan-or-click, which is the part the story needs.
   const compact = width < 520
+  const engage = useEngage()
   return (
     <Tile
       area='live'
+      engage={engage}
+      engaged={engage.engaged}
       lead='Every click, with context.'
       picture={
         <div ref={picture} className='lf-picture' aria-hidden='true'>
@@ -283,22 +297,35 @@ function Live() {
 // ─── Install (statement) ───
 // What the page doesn't need any more, as the diff that removes it. The one
 // inverted tile in the grid, so it punctuates the row rather than matching it.
-// On hover the struck lines fold away and leave the link on its own.
+// When the pointer settles, the diff plays again and this time finishes the
+// job: the struck lines fold away and leave the link on its own.
 
 // Widths for the lines after the diff: varied, and indented every so often,
 // the way markup is.
 const FILLER_LINES = [92, 64, 118, 48, 86, 72, 104, 56]
 
-const INSTALL_START = { struck: 0, added: false }
-const INSTALL_END = { struck: 2, added: true }
+const INSTALL_START = { struck: 0, added: false, folded: false }
+const INSTALL_END = { struck: 2, added: true, folded: false }
 
-async function installScript(a) {
-  await a.wait(LEAD + STEP)
+async function strike(a) {
   await a.set({ struck: 1 })
   await a.wait(320)
   await a.set({ struck: 2 })
   await a.wait(520)
   await a.set({ added: true })
+}
+
+async function installScript(a) {
+  await a.wait(LEAD + STEP)
+  await strike(a)
+}
+
+// Long enough for the strikes to draw back before they're struck again.
+async function installAgain(a) {
+  await a.wait(420)
+  await strike(a)
+  await a.wait(560)
+  await a.set({ folded: true })
 }
 
 function CodeLine({ n, mark, struck, children }) {
@@ -318,9 +345,16 @@ function CodeLine({ n, mark, struck, children }) {
 
 function Install() {
   const [picture, { width, height }] = usePictureSize({ width: 309, height: 300 })
-  const [hovered, setHovered] = useState(false)
+  const { script, replay, cueing } = useReplay(installScript, installAgain)
+  const engage = useEngage(replay)
+  const engaged = engage.engaged && !cueing
   return (
-    <Tile area='install' dark lead='Nothing to install.' onHover={setHovered}
+    <Tile
+      area='install'
+      dark
+      lead='Nothing to install.'
+      engage={engage}
+      engaged={engaged}
       picture={
         <div ref={picture} className='lf-picture' aria-hidden='true'>
           <Stage
@@ -329,13 +363,15 @@ function Install() {
             initial={INSTALL_START}
             poster={INSTALL_END}
             play='once'
-            script={installScript}
+            script={script}
             className='lf-stage'
           >
             {(s) => {
-              // Only once they're struck: folding away lines that haven't
-              // been marked yet would delete them without saying why.
-              const clean = hovered && s.struck >= 2
+              // Folded only at the end of a replay, after they've been struck
+              // and the link is in: folding away lines that haven't been
+              // marked would delete them without saying why. Leaving unfolds
+              // them, back to the diff the tile rests on.
+              const clean = engaged && s.folded
               return (
                 <div className='lf-code'>
                   <div className='lf-code-tab'>index.html</div>
@@ -380,9 +416,10 @@ function Install() {
 
 // ─── QR (object) ───
 // Paper, so the one place a tilt earns its keep: three codes for one link, in
-// three designs. The top card names its design, and each time the pointer
-// comes in it turns to the next — the designer's patterns and colours, one at
-// a time, on something you'd actually print.
+// three designs. The top card names its design. When the pointer settles the
+// hand gathers up and is dealt again, the top card in the next design — the
+// designer's patterns and colours, one at a time, on something you'd actually
+// print.
 //
 // They encode the real site rather than slugs that don't exist, so anyone who
 // scans one off the page lands somewhere instead of a 404.
@@ -497,14 +534,24 @@ function Qr() {
     const id = setTimeout(() => setDesign((d) => ({ ...d, prev: null })), 520)
     return () => clearTimeout(id)
   }, [design])
+  // The next design turns up as the hand is dealt, not the moment the pointer
+  // lands, so the change and the deal are one gesture.
+  const qrAgain = useMemo(
+    () => async (a) => {
+      await a.wait(420)
+      setDesign((d) => ({ cur: (d.cur + 1) % DESIGNS.length, prev: d.cur }))
+      await a.set({ fanned: true })
+    },
+    []
+  )
+  const { script, replay, cueing } = useReplay(qrScript, qrAgain)
+  const engage = useEngage(replay)
   return (
     <Tile
       area='qr'
       lead='Codes worth printing.'
-      onHover={(on) => {
-        if (on)
-          setDesign((d) => ({ cur: (d.cur + 1) % DESIGNS.length, prev: d.cur }))
-      }}
+      engage={engage}
+      engaged={engage.engaged && !cueing}
       picture={
         // A centred composition on a canvas wider than any tile, so the tile's
         // sides only ever crop empty ground.
@@ -516,7 +563,7 @@ function Qr() {
               initial={QR_START}
               poster={QR_END}
               play='once'
-              script={qrScript}
+              script={script}
               className='lf-stage'
             >
               {(s) => <QrStack s={s} design={design} />}
@@ -532,22 +579,29 @@ function Qr() {
 
 // ─── Domain (component) ───
 // The domain row as the settings page has it, going from pending to verified,
-// with the link it unlocks arriving over the card's quiet lower half. Each
-// time the pointer comes in the slug rolls on — the domain holds still, which
-// is the point: every link after this one carries it too.
+// with the link it unlocks arriving over the card's quiet lower half. When the
+// pointer settles it verifies again and the link comes back on the next slug —
+// the domain holds still, which is the point: every link after this one
+// carries it too.
 
 const SLUGS = ['spring', 'menu', 'jobs', 'press']
 
 const DOMAIN_START = { phase: 'pending', link: false }
 const DOMAIN_END = { phase: 'verified', link: true }
 
-async function domainScript(a) {
-  await a.wait(LEAD + STEP * 3)
+// `beforeLink` runs as the link is about to show, while it's still hidden.
+async function verify(a, beforeLink) {
   await a.set({ phase: 'checking' })
   await a.wait(900)
   await a.set({ phase: 'verified' })
   await a.wait(480)
+  beforeLink?.()
   await a.set({ link: true })
+}
+
+async function domainScript(a) {
+  await a.wait(LEAD + STEP * 3)
+  await verify(a)
 }
 
 function GlobeIcon() {
@@ -567,13 +621,23 @@ function GlobeIcon() {
 function Domain() {
   const [picture, { width, height }] = usePictureSize({ width: 309, height: 260 })
   const [slug, setSlug] = useState(0)
+  // The slug moves on while the link is away, so it comes back as the next
+  // link rather than rolling over in front of you on its way out.
+  const domainAgain = useMemo(
+    () => async (a) => {
+      await a.wait(320)
+      await verify(a, () => setSlug((i) => (i + 1) % SLUGS.length))
+    },
+    []
+  )
+  const { script, replay, cueing } = useReplay(domainScript, domainAgain)
+  const engage = useEngage(replay)
   return (
     <Tile
       area='domain'
       lead='Your own domain.'
-      onHover={(on) => {
-        if (on) setSlug((i) => (i + 1) % SLUGS.length)
-      }}
+      engage={engage}
+      engaged={engage.engaged && !cueing}
       picture={
         <div ref={picture} className='lf-picture' aria-hidden='true'>
           <Stage
@@ -582,7 +646,7 @@ function Domain() {
             initial={DOMAIN_START}
             poster={DOMAIN_END}
             play='once'
-            script={domainScript}
+            script={script}
             className='lf-stage'
           >
             {(s) => (
@@ -644,8 +708,9 @@ function Domain() {
 // ─── Team (collection) ───
 // A workspace of people as a field of the app's own gradient avatars, off every
 // edge. One seat is open, and the new member takes it — the only one with
-// words, lifted on a card the way the team page lists them. On hover the
-// field lights up outward from them: the whole team, not just the newest.
+// words, lifted on a card the way the team page lists them. When the pointer
+// settles they take the seat again, and once they're down the field lights up
+// outward from them: the whole team, not just the newest.
 
 const SEATS = 7
 const ROWS = 4
@@ -662,12 +727,22 @@ async function teamScript(a) {
   await a.set({ joined: true })
 }
 
+// Long enough for the seat to be seen empty before it's taken again.
+async function teamAgain(a) {
+  await a.wait(560)
+  await a.set({ joined: true })
+}
+
 function Team() {
   const [picture, { height }] = usePictureSize({ width: 309, height: 250 })
+  const { script, replay, cueing } = useReplay(teamScript, teamAgain)
+  const engage = useEngage(replay)
   return (
     <Tile
       area='team'
       lead='Bring your team.'
+      engage={engage}
+      engaged={engage.engaged && !cueing}
       picture={
         <div ref={picture} className='lf-picture' aria-hidden='true'>
           <div className='lf-canvas lf-canvas--team'>
@@ -677,7 +752,7 @@ function Team() {
               initial={TEAM_START}
               poster={TEAM_END}
               play='once'
-              script={teamScript}
+              script={script}
               className='lf-stage'
             >
               {(s) => (
