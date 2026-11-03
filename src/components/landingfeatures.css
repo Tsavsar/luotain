@@ -301,22 +301,15 @@
   grid-template-columns: 18px minmax(0, 1fr) auto;
 }
 
+/* The flag on its own, the way the dashboard's cards show it. It was clipped
+   into a ringed disc, which cut the flag's own rounded corners off and boxed
+   a mark that already carries its edge: every file in /assets/flags draws a
+   faint outline round itself, so pale flags (Japan's, Canada's) hold on white
+   without help. */
 .lf-flag {
-  position: relative;
+  display: flex;
   width: 18px;
   height: 18px;
-  overflow: hidden;
-  border-radius: var(--radius-full);
-}
-
-/* A hairline over the flag, so pale flags (Japan's, Canada's) keep an edge on
-   white instead of dissolving into it. */
-.lf-flag::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .lf-place {
@@ -496,14 +489,17 @@
   transform: translate(var(--x), var(--y)) rotate(var(--angle));
 }
 
-/* The pointer spreads the hand a little wider, the top card lifting off it. */
-.lf-tile--qr:hover .lf-qr[data-fanned] .lf-qr-card {
+/* The pointer spreads the hand a little wider, the top card lifting off it.
+   [data-engaged] rather than :hover throughout this file: it's set once the
+   pointer has settled (landingmotion.js), so a pass over the grid on the way
+   somewhere else moves nothing. */
+.lf-tile--qr[data-engaged] .lf-qr[data-fanned] .lf-qr-card {
   transform: translate(calc(var(--x) * 1.35), calc(var(--y) * 1.2))
     rotate(calc(var(--angle) * 1.45));
   transition-delay: 0ms;
 }
 
-.lf-tile--qr:hover .lf-qr[data-fanned] .lf-qr-card[data-top] {
+.lf-tile--qr[data-engaged] .lf-qr[data-fanned] .lf-qr-card[data-top] {
   transform: translate(0, -6px) rotate(0deg);
   box-shadow:
     0 0 0 1px var(--stroke-soft),
@@ -681,7 +677,7 @@
   transform: translate(-50%, 0) scale(1);
 }
 
-.lf-tile--domain:hover .lf-domain-link[data-on] {
+.lf-tile--domain[data-engaged] .lf-domain-link[data-on] {
   transform: translate(-50%, -4px) scale(1.02);
   box-shadow:
     0 0 0 1px var(--stroke-soft),
@@ -735,11 +731,13 @@
 }
 
 /* The pointer brings everyone forward, ring by ring out from the newest
-   member, and lets them recede together when it leaves. */
-.lf-tile--team:hover .lf-seat {
+   member, and lets them recede together when it leaves. Only once they've
+   sat down: a ripple from an empty seat would have no one to start from, so
+   on a replay it waits for the face to land. */
+.lf-tile--team[data-engaged] .lf-team[data-joined] .lf-seat {
   opacity: 1;
   transform: scale(1);
-  transition-delay: calc(var(--ring, 0) * 60ms);
+  transition-delay: calc(280ms + var(--ring, 0) * 60ms);
 }
 
 .lf-seat--open {
