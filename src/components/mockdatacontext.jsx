@@ -10,6 +10,12 @@ import {
 } from 'react'
 import { readDemoDeleted, writeDemoDeleted } from '@/lib/demo'
 
+// The testing switches (mock data, plan, theme) are for development only. A
+// production build shows none of them and ignores whatever mock settings were
+// saved while they were on show, so nobody is left on mock data with no
+// switch to turn it off. The demo doesn't need them: it forces its own.
+export const DEV_CONTROLS = process.env.NODE_ENV === 'development'
+
 const STORAGE_KEY = 'luotain:mock-data'
 const DELETED_KEY = 'luotain:mock-deleted'
 const PLAN_KEY = 'luotain:mock-plan'
@@ -86,6 +92,10 @@ export function MockDataProvider({ demo = false, children }) {
   const [mockDomainState, setMockDomainStateInner] = useState('mixed')
 
   useEffect(() => {
+    if (!DEV_CONTROLS) {
+      setReady(true)
+      return
+    }
     try {
       setUseMockData(window.localStorage.getItem(STORAGE_KEY) === 'true')
       const saved = window.localStorage.getItem(DELETED_KEY)
