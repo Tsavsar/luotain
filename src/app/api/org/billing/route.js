@@ -19,7 +19,7 @@ export async function GET() {
         cancelAtPeriodEnd: true,
         cardBrand: true,
         cardLast4: true,
-        customerId: true,
+        subscriptionId: true,
       },
     }),
     prisma.membership.findFirst({
@@ -54,9 +54,12 @@ export async function GET() {
       org.cardBrand && org.cardLast4
         ? { brand: org.cardBrand, last4: org.cardLast4 }
         : null,
-    // Fetched live from Polar rather than stored. A mirrored invoice that
+    // Fetched live from Bachs rather than stored. A mirrored invoice that
     // disagrees with the provider's is worse than no invoice at all, and
     // there's nothing here worth caching.
-    invoices: await listInvoices({ customerId: org.customerId }),
+    invoices: await listInvoices({
+      organizationId,
+      subscriptionId: org.subscriptionId,
+    }),
   })
 }

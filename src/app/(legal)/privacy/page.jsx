@@ -59,7 +59,7 @@ export default function PrivacyPage() {
           </Section>
 
           <Section id='third-party' title='Third-Party Services'>
-            We use third-party providers to operate Luotain, including Polar
+            We use third-party providers to operate Luotain, including Bachs
             for payment processing and cloud infrastructure providers for
             hosting. These providers process data on our behalf under their
             own privacy policies.

@@ -136,8 +136,8 @@ export default function BillingPage() {
     }
   }, [mockReady, useMockData, mockPlan])
 
-  // The billing portal: card changes, invoices, cancellation. Polar hosts it,
-  // so this app never handles a card.
+  // The billing portal: card changes, plan changes, invoices, cancellation.
+  // Bachs hosts it, so this app never handles a card.
   async function openPortal() {
     if (useMockData) {
       toast('Mock data is on — nothing is charged')
@@ -150,20 +150,25 @@ export default function BillingPage() {
         toast.error(d?.error || "Couldn't open the billing portal")
         return
       }
-      window.location.href = d.url
+      window.location.assign(d.url)
     } catch (err) {
       console.error('[Billing]', err)
       toast.error("Couldn't open the billing portal")
     }
   }
 
-  // Real invoices open Polar's hosted PDF. Mock ones generate a plain-text
-  // receipt in the browser, so the download does something real while testing
-  // rather than toasting "not connected" — the point of mock mode is that the
-  // flow works end to end.
+  // A real invoice opens its hosted copy when the provider gives one, and the
+  // billing portal (which lists them all) when it doesn't — Bachs's API has no
+  // receipt link. Mock ones generate a plain-text receipt in the browser, so
+  // the download does something real while testing rather than toasting "not
+  // connected" — the point of mock mode is that the flow works end to end.
   function downloadInvoice(inv) {
     if (inv.url) {
       window.open(inv.url, '_blank', 'noopener,noreferrer')
+      return
+    }
+    if (!useMockData) {
+      openPortal()
       return
     }
 
@@ -217,9 +222,9 @@ export default function BillingPage() {
         return
       }
 
-      // Full navigation, not the router. Checkout is Polar's domain, so this
+      // Full navigation, not the router. Checkout is Bachs's domain, so this
       // leaves the app entirely.
-      window.location.href = d.url
+      window.location.assign(d.url)
     } catch (err) {
       console.error('[Billing]', err)
       toast.error("Couldn't start checkout")

@@ -30,9 +30,10 @@ export const PLANS = {
     id: 'STARTER',
     name: 'Starter',
     tagline: "Run campaigns, once you've outgrown testing.",
-    // .99 pricing, confirmed 2026-11-02, and the same figures the Polar
+    // .99 pricing, confirmed 2026-11-02, and the same figures the billing
     // products charge — a card showing one price while checkout takes another
     // is the fastest way to lose a sale. Yearly is 20% off twelve months.
+    // Dollars only: Bachs bills subscriptions in USD.
     priceMonthly: 4.99,
     priceAnnual: 47.99,
     priceNote: 'Billed monthly',

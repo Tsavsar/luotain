@@ -35,7 +35,7 @@ export async function POST(request) {
 
   const org = await prisma.organization.findUnique({
     where: { id: organizationId },
-    select: { plan: true, customerId: true },
+    select: { plan: true, customerId: true, subscriptionId: true },
   })
 
   if (planId === org?.plan) {
@@ -47,7 +47,7 @@ export async function POST(request) {
 
   // Downgrades don't go through checkout — there's nothing to pay for, and
   // sending someone to a payment form to spend less is nonsense. They go to the
-  // portal, where Polar handles the cancellation and the period end.
+  // portal, where Bachs handles the cancellation and the period end.
   const goingDown =
     PLAN_ORDER.indexOf(planId) < PLAN_ORDER.indexOf(org?.plan || 'FREE')
   if (planId === 'FREE' || goingDown) {
@@ -60,10 +60,22 @@ export async function POST(request) {
     )
   }
 
+  // A workspace that's already paying changes plan in the portal too. A second
+  // checkout would start a second subscription beside the first, and both
+  // would bill — the portal switches the existing one instead.
+  if (org?.subscriptionId && org.plan !== 'FREE') {
+    return Response.json(
+      { error: 'Plan changes are handled in the billing portal', usePortal: true },
+      { status: 400 }
+    )
+  }
+
   const result = await createCheckout({
     planId,
     annual: Boolean(body?.annual),
     email: membership?.user?.email,
+    // Reused when this workspace has paid before, so it stays one customer.
+    customerId: org?.customerId,
     organizationId,
     userId,
   })

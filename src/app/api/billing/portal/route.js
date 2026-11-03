@@ -4,8 +4,9 @@ import { openPortal } from '@/lib/billing'
 
 // POST /api/billing/portal
 //
-// Where someone updates a card, downloads an invoice or cancels. Polar hosts
-// it, which is why this app has never held a card number and never should.
+// Where someone updates a card, switches plan, downloads an invoice or
+// cancels. Bachs hosts it, which is why this app has never held a card number
+// and never should.
 export async function POST() {
   const { error, organizationId, userId } = await resolveActiveOrg()
   if (error) return error
