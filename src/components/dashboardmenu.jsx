@@ -9,6 +9,8 @@ import LogoMark from './logomark'
 import GradientAvatar, { seedFor } from './gradientavatar'
 import PlanBadge from './planbadge'
 import PlanCard from './plancard'
+import { useMockDataState } from './mockdatacontext'
+import { leaveDemo } from '@/lib/demo'
 
 function OrgChevronIcon() {
   return (
@@ -233,8 +235,15 @@ function ProfileDropdown({ userImage, userName, avatarSeed }) {
   const [plansOpen, setPlansOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+  // In the demo there's no one to log out: the same item leaves the demo,
+  // back to the site it was opened from.
+  const { demo } = useMockDataState()
 
   async function handleLogout() {
+    if (demo) {
+      leaveDemo('/')
+      return
+    }
     await fetch('/api/logout', { method: 'POST' })
     await signOut({ callbackUrl: '/login' })
   }
@@ -303,8 +312,8 @@ function ProfileDropdown({ userImage, userName, avatarSeed }) {
           <DropdownOption onClick={() => router.push('/')}>
             Go to website
           </DropdownOption>
-          <DropdownOption onClick={handleLogout} danger>
-            Log out
+          <DropdownOption onClick={handleLogout} danger={!demo}>
+            {demo ? 'Exit demo' : 'Log out'}
           </DropdownOption>
         </DropdownMenu>
       </Dropdown>

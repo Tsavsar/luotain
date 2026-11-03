@@ -20,6 +20,7 @@ export const runtime = 'nodejs'
 const RESERVED = new Set([
   'api',
   'dashboard',
+  'demo',
   'login',
   'logout',
   'get-started',

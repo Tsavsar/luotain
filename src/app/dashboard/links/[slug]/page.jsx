@@ -155,6 +155,7 @@ export default function LinkDetailPage() {
     deletedUrls,
     deleteMockLink,
     recoverMockLink,
+    mockNote,
   } = useMockDataState()
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
   const [pendingDelete, setPendingDelete] = useState({
@@ -505,7 +506,7 @@ export default function LinkDetailPage() {
       setQrCreatedLocally(true)
       setDesigningQr(false)
       setSavingQr(false)
-      toast(`QR code created for ${link.shortUrl} (mock, not saved)`)
+      toast(`QR code created for ${link.shortUrl} (${mockNote})`)
       return
     }
 

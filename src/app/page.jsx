@@ -159,7 +159,7 @@ function Nav() {
         className='landing-navactions'
         style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
       >
-        <Pill href='/login' tone='soft'>
+        <Pill href='/demo' tone='soft'>
           Demo
         </Pill>
         {/* Get started, or the signed-in person's avatar. Asking someone who
@@ -231,7 +231,7 @@ function Nav() {
                 alignItems: 'flex-start',
               }}
             >
-              <Pill href='/login' tone='soft'>
+              <Pill href='/demo' tone='soft'>
                 Demo
               </Pill>
               <NavAccount />
@@ -271,7 +271,7 @@ function Hero() {
         </div>
 
         <div className='landing-heropills'>
-          <Pill href='/login' tone='soft'>
+          <Pill href='/demo' tone='soft'>
             View a demo
           </Pill>
           <Pill href='/get-started' tone='dark'>
@@ -330,7 +330,7 @@ function UseCases() {
       </div>
 
       <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-        <Pill href='/login' tone='soft'>
+        <Pill href='/demo' tone='soft'>
           View a demo
         </Pill>
         <Pill href='/get-started' tone='dark'>

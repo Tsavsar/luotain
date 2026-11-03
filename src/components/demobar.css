@@ -1,0 +1,83 @@
+/* ─── Demo bar ───
+   A strip on the page's surface tone, its content on the dashboard's 720px
+   column so it lines up with the header under it. */
+
+.demobar {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--stroke-soft);
+}
+
+.demobar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  max-width: 720px;
+  padding: 10px 0;
+}
+
+.demobar-text {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 8px;
+  min-width: 0;
+  color: var(--text-sub);
+}
+
+.demobar-lead {
+  font-weight: 500;
+  color: var(--text-strong);
+}
+
+.demobar-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.demobar-exit,
+.demobar-start {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.demobar-exit {
+  color: var(--text-sub);
+}
+
+.demobar-start {
+  background: var(--text-strong);
+  color: var(--bg-default);
+}
+
+@media (hover: hover) {
+  .demobar-exit:hover {
+    background: var(--bg-subtle);
+    color: var(--text-strong);
+  }
+
+  .demobar-start:hover {
+    background: color-mix(in srgb, var(--text-strong) 86%, var(--bg-default));
+  }
+}
+
+/* Narrow: the label and the two actions; the note is the bar's own text
+   saying what the label already says. */
+@media (max-width: 560px) {
+  .demobar-note {
+    display: none;
+  }
+}

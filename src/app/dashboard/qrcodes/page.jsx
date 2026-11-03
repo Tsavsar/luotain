@@ -237,7 +237,12 @@ function GalleryIcon() {
 }
 
 export default function QrCodesPage() {
-  const { useMockData, ready: mockReady, deletedUrls } = useMockDataState()
+  const {
+    useMockData,
+    ready: mockReady,
+    deletedUrls,
+    mockNote,
+  } = useMockDataState()
   const [codes, setCodes] = useState(null)
   // Two pieces of state, not one. `viewing` is the code whose design the
   // lightbox renders; `viewerOpen` is whether it's showing.
@@ -370,7 +375,7 @@ export default function QrCodesPage() {
     // have before it ships.
     if (useMockData) {
       setCodes((prev) => prev.filter((c) => c.id !== code.id))
-      toast(`${code.label} deleted (mock, not saved)`)
+      toast(`${code.label} deleted (${mockNote})`)
       return
     }
 
@@ -401,7 +406,7 @@ export default function QrCodesPage() {
       )
       setEditing(null)
       setSavingEdit(false)
-      toast(`${editing.label} updated (mock, not saved)`)
+      toast(`${editing.label} updated (${mockNote})`)
       return
     }
 

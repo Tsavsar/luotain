@@ -9,10 +9,13 @@ import { ToastStack, toast } from '@/components/toast'
 import { getProfile } from '@/lib/profilecache'
 import { MotionConfig } from 'motion/react'
 import Switch from '@/components/switch'
+import DemoBar from '@/components/demobar'
 import {
   MockDataProvider,
   useMockDataState,
 } from '@/components/mockdatacontext'
+import { clearDemoCookie, hasDemoCookie } from '@/lib/demo'
+import { installDemoApi } from '@/lib/demoapi'
 
 // Split out because it needs to be INSIDE the provider to read it, and
 // DashboardLayout is the thing rendering the provider.
@@ -97,9 +100,10 @@ function PlanToggle() {
   )
 }
 
-function DashboardShell({ children }) {
+function DashboardShell({ demo, onDemo, children }) {
   const router = useRouter()
   const pathname = usePathname()
+  const [checking, setChecking] = useState(true)
 
   // Claims any links made anonymously on the homepage hero.
   //
@@ -110,7 +114,11 @@ function DashboardShell({ children }) {
   // Safe on every mount: the endpoint only moves links still sitting in the
   // public workspace and clears the cookie on success, so a second call finds
   // nothing to do.
+  //
+  // Once the visit is known to be someone's own: a demo visitor has no links
+  // to claim, and the request would only reach the demo's stand-in API.
   useEffect(() => {
+    if (checking || demo) return
     let cancelled = false
     // The cookie is httpOnly, so this can't check whether one exists — the
     // endpoint answers that. One request that usually returns claimed: 0.
@@ -131,7 +139,7 @@ function DashboardShell({ children }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [checking, demo])
 
   // Pages nested UNDER /dashboard/links (trash, a single link's detail
   // page) are secondary pages one level down, not one of the three
@@ -156,7 +164,6 @@ function DashboardShell({ children }) {
   // instead of the usual 720px content width. Because this layout stays
   // mounted across navigation, that narrowing animates.
   const compactHeader = pathname?.startsWith('/dashboard/create')
-  const [checking, setChecking] = useState(true)
   const [orgName, setOrgName] = useState('')
   // The workspace picture and its gradient seed. /api/dashboard-info has
   // returned both all along, but the layout only read orgName — so the header
@@ -194,9 +201,22 @@ function DashboardShell({ children }) {
         const data = await res.json()
 
         if (!data.loggedIn) {
+          // Signed out and here through /demo: the dashboard on its mock data
+          // rather than the login page (lib/demo.js). The stand-in API goes in
+          // before the pages mount, so none of them can reach the real one.
+          if (hasDemoCookie()) {
+            installDemoApi()
+            onDemo(true)
+            setChecking(false)
+            return
+          }
           router.replace('/login')
           return
         }
+
+        // An account of their own beats the demo, every time: signing up or in
+        // from the demo lands here, and the demo shouldn't follow them in.
+        clearDemoCookie()
 
         if (!data.hasOrg) {
           router.replace('/onboarding')
@@ -209,7 +229,7 @@ function DashboardShell({ children }) {
       }
     }
     guard()
-  }, [router])
+  }, [router, onDemo])
 
   // The user's own profile. /api/dashboard-info answers "which org am I
   // in" and carries no name or avatar seed, so without this the header
@@ -314,6 +334,8 @@ function DashboardShell({ children }) {
           alignItems: 'center',
         }}
       >
+        {demo && <DemoBar />}
+
         <div
           className='dashboard-section dashboard-section-1 dashboard-page-padding'
           style={{
@@ -362,73 +384,80 @@ function DashboardShell({ children }) {
           the links, trash, detail and analytics pages, each with its
           own state, so switching it on and then navigating anywhere
           silently turned it back off. One toggle, shared state, and it
-          survives a reload. */}
-        <div
-          style={{
-            position: 'fixed',
-            left: '20px',
-            bottom: '20px',
-            zIndex: 99,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '8px 14px',
-            borderRadius: 'var(--radius-full)',
-            background: '#171717',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-          }}
-        >
-          <MockDataToggle />
-
-          <span
-            aria-hidden='true'
+          survives a reload. Not in the demo, where none of them apply. */}
+        {!demo && (
+          <div
             style={{
-              width: '1px',
-              height: '16px',
-              background: 'rgba(255, 255, 255, 0.15)',
-            }}
-          />
-
-          <PlanToggle />
-
-          <span
-            aria-hidden='true'
-            style={{
-              width: '1px',
-              height: '16px',
-              background: 'rgba(255, 255, 255, 0.15)',
-            }}
-          />
-
-          <button
-            onClick={toggleTheme}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-sans)',
+              position: 'fixed',
+              left: '20px',
+              bottom: '20px',
+              zIndex: 99,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '8px 14px',
+              borderRadius: 'var(--radius-full)',
+              background: '#171717',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
             }}
           >
+            <MockDataToggle />
+
             <span
-              className='para-xs'
-              style={{ color: 'rgba(255,255,255,0.7)' }}
+              aria-hidden='true'
+              style={{
+                width: '1px',
+                height: '16px',
+                background: 'rgba(255, 255, 255, 0.15)',
+              }}
+            />
+
+            <PlanToggle />
+
+            <span
+              aria-hidden='true'
+              style={{
+                width: '1px',
+                height: '16px',
+                background: 'rgba(255, 255, 255, 0.15)',
+              }}
+            />
+
+            <button
+              onClick={toggleTheme}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sans)',
+              }}
             >
-              {theme === 'dark' ? 'Light' : 'Dark'}
-            </span>
-          </button>
-        </div>
+              <span
+                className='para-xs'
+                style={{ color: 'rgba(255,255,255,0.7)' }}
+              >
+                {theme === 'dark' ? 'Light' : 'Dark'}
+              </span>
+            </button>
+          </div>
+        )}
       </main>
     </MotionConfig>
   )
 }
 
 // Provider sits outside the shell so the toggle and every page below it
-// share one source of truth.
+// share one source of truth. The demo is decided in the shell's membership
+// check and handed up, so the provider has it in the same render the pages
+// first mount in.
 export default function DashboardLayout({ children }) {
+  const [demo, setDemo] = useState(false)
   return (
-    <MockDataProvider>
-      <DashboardShell>{children}</DashboardShell>
+    <MockDataProvider demo={demo}>
+      <DashboardShell demo={demo} onDemo={setDemo}>
+        {children}
+      </DashboardShell>
     </MockDataProvider>
   )
 }

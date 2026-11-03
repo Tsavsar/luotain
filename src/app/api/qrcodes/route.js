@@ -9,6 +9,7 @@ import { customDomainReason } from '@/lib/plans'
 const RESERVED = new Set([
   'api',
   'dashboard',
+  'demo',
   'login',
   'logout',
   'signup',
