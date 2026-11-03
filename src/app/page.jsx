@@ -7,9 +7,10 @@ import LogoWordmark from '@/components/logowordmark'
 import NavAccount from '@/components/landingaccount'
 import LandingFeatures from '@/components/landingfeatures'
 import {
-  PrintPicture,
-  CampaignsPicture,
-  ClientPicture,
+  UseCase,
+  ScanPicture,
+  StoryPicture,
+  ThreadPicture,
 } from '@/components/landingusecases'
 import CookieBanner from '@/components/cookiebanner'
 import LogoMenu from '@/components/logomenu'
@@ -17,13 +18,7 @@ import Reveal from '@/components/reveal'
 import PlanPicker from '@/components/planpicker'
 import HeroCard from '@/components/landingherocard'
 import ClosingCard from '@/components/landingctacard'
-import {
-  COLUMN,
-  Pill,
-  Heading,
-  Body,
-  Card,
-} from '@/components/landingparts'
+import { COLUMN, Pill, Heading, Body } from '@/components/landingparts'
 
 // ─── Landing page ───
 // Node 554:2445, transcribed section by section.
@@ -318,25 +313,19 @@ function UseCases() {
           <Body width={300}>Same link, three very different jobs.</Body>
         </div>
 
-        <div className='landing-grid landing-scroller'>
-          <Card
-            title='Print and packaging'
-            lead='You put a code on something physical'
-            body='Give each placement its own code and you learn which one people actually scan.'
-            illustration={<PrintPicture />}
-          />
-          <Card
-            title='Campaigns and social'
-            lead='You share the same link in five places'
-            body='One short link each, and the referrer tells you which earned the traffic.'
-            illustration={<CampaignsPicture />}
-          />
-          <Card
-            title='Client work'
-            lead='You need to show someone the numbers'
-            body='Country, device and source on every link, so an update is a screenshot.'
-            illustration={<ClientPicture />}
-          />
+        <div className='landing-scroller lu-grid'>
+          <UseCase title='Print and packaging' picture={<ScanPicture />}>
+            You put a code on something physical. Give each placement its own
+            code and you learn which one people actually scan.
+          </UseCase>
+          <UseCase title='Campaigns and social' picture={<StoryPicture />}>
+            You share the same link in five places. One short link each, and
+            the referrer tells you which earned the traffic.
+          </UseCase>
+          <UseCase title='Client work' picture={<ThreadPicture />}>
+            You need to show someone the numbers. Country, device and source on
+            every link, so an update is a screenshot.
+          </UseCase>
         </div>
       </div>
 
