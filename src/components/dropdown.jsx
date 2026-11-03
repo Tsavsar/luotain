@@ -8,6 +8,8 @@ import {
   useEffect,
   cloneElement,
   isValidElement,
+  Children,
+  Fragment,
 } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -518,21 +520,26 @@ export function DropdownMenu({ children, width = '100%', close }) {
           }}
         />
 
-        {/* Same component-only guard as the panel: `close`/`menuHovering`
-            are props for DropdownOption and friends, not attributes for a
-            plain DOM child. */}
-        {Array.isArray(children)
-          ? children.map((child) =>
-              isValidElement(child) && typeof child.type === 'function'
-                ? cloneElement(child, { close, menuHovering: hovering })
-                : child
-            )
-          : isValidElement(children) && typeof children.type === 'function'
-            ? cloneElement(children, { close, menuHovering: hovering })
-            : children}
+        {withMenuProps(children, { close, menuHovering: hovering })}
       </div>
     </div>
   )
+}
+
+// `close`/`menuHovering` for every option in a menu. Same component-only
+// guard as the panel: they're props for DropdownOption and friends, not
+// attributes for a plain DOM child. Fragments are opened up rather than
+// skipped — `isDeleted ? <>…</> : <>…</>` is the natural way to swap one set
+// of options for another, and skipping it meant every option inside lost
+// `close` and left the menu open after being picked.
+function withMenuProps(children, props) {
+  return Children.map(children, (child) => {
+    if (!isValidElement(child)) return child
+    if (child.type === Fragment) {
+      return withMenuProps(child.props.children, props)
+    }
+    return typeof child.type === 'function' ? cloneElement(child, props) : child
+  })
 }
 
 export function DropdownOption({
