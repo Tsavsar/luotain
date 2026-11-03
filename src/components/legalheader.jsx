@@ -264,7 +264,7 @@ export default function LegalHeader() {
           </h1>
         </div>
         <p className='para-sm' style={{ color: 'var(--text-soft)' }}>
-          Last updated: November 2, 2026
+          Last updated: November 3, 2026
         </p>
       </div>
     </div>
