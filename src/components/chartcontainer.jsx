@@ -29,27 +29,50 @@ function buildPoints(values, maxValue) {
   }))
 }
 
-// Catmull-Rom -> cubic Bezier. Unlike the previous midpoint-quadratic
-// version, this passes THROUGH every data point rather than being
-// merely pulled toward it — so a value's marker dot always lands
-// exactly on the drawn curve, including at peaks, instead of floating
-// above an undershot line.
+// Monotone cubic -> cubic Bezier. It passes THROUGH every data point, so a
+// value's marker dot always lands exactly on the drawn curve, and between two
+// points it never swings past either of them.
+//
+// It was Catmull-Rom, which also hit every point but overshot around a sharp
+// change: a busy day between two quiet ones pulled the line below the axis on
+// either side, drawing negative clicks.
+//
+// Tangents by Steffen's method (the one d3's curveMonotoneX uses): each is
+// capped by the slopes either side, and is flat wherever the line turns, so
+// peaks and troughs sit exactly on their points.
 function smoothPath(points) {
-  if (points.length < 2) return ''
-  if (points.length === 2) {
+  const n = points.length
+  if (n < 2) return ''
+  if (n === 2) {
     return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`
   }
+
+  // Each segment's width and slope. Widths aren't all equal: the edge points
+  // withEdgePoints adds sit half a column out.
+  const h = []
+  const s = []
+  for (let i = 0; i < n - 1; i++) {
+    h[i] = points[i + 1].x - points[i].x
+    s[i] = h[i] ? (points[i + 1].y - points[i].y) / h[i] : 0
+  }
+
+  const m = new Array(n)
+  for (let i = 1; i < n - 1; i++) {
+    const p = (s[i - 1] * h[i] + s[i] * h[i - 1]) / (h[i - 1] + h[i] || 1)
+    m[i] =
+      (Math.sign(s[i - 1]) + Math.sign(s[i])) *
+        Math.min(Math.abs(s[i - 1]), Math.abs(s[i]), 0.5 * Math.abs(p)) || 0
+  }
+  // The ends lean on their one neighbour.
+  m[0] = (3 * s[0] - m[1]) / 2
+  m[n - 1] = (3 * s[n - 2] - m[n - 2]) / 2
+
   let d = `M ${points[0].x} ${points[0].y}`
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i - 1] || points[i]
-    const p1 = points[i]
-    const p2 = points[i + 1]
-    const p3 = points[i + 2] || p2
-    const cp1x = p1.x + (p2.x - p0.x) / 6
-    const cp1y = p1.y + (p2.y - p0.y) / 6
-    const cp2x = p2.x - (p3.x - p1.x) / 6
-    const cp2y = p2.y - (p3.y - p1.y) / 6
-    d += ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${p2.x} ${p2.y}`
+  for (let i = 0; i < n - 1; i++) {
+    const a = points[i]
+    const b = points[i + 1]
+    const third = h[i] / 3
+    d += ` C ${a.x + third} ${a.y + m[i] * third} ${b.x - third} ${b.y - m[i + 1] * third} ${b.x} ${b.y}`
   }
   return d
 }
