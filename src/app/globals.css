@@ -1782,6 +1782,21 @@ input:focus-visible {
   }
 }
 
+/* An app link's stores, a row under the details: two columns across the
+   page's width, one above the other once two would cut each URL to its
+   domain. */
+.link-detail-stores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+@media (max-width: 560px) {
+  .link-detail-stores {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* --- Archived page content (a deleted link's detail page) ---
    Figma achieves this with mix-blend-luminosity; grayscale() is the
    direct CSS equivalent and doesn't depend on what's painted behind

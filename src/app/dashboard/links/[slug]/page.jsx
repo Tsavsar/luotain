@@ -880,19 +880,8 @@ export default function LinkDetailPage() {
                     </div>
                   </DetailField>
 
-                  {/* An app link's stores, side by side like the row below,
-                    then the destination as where everyone else goes. */}
-                  {appLink ? (
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <DetailField label='App Store' width='calc(50% - 5px)'>
-                        <DestinationValue url={link.iosUrl} />
-                      </DetailField>
-                      <DetailField label='Google Play' width='calc(50% - 5px)'>
-                        <DestinationValue url={link.androidUrl} />
-                      </DetailField>
-                    </div>
-                  ) : null}
-
+                  {/* On an app link this is where everyone who isn't on a
+                    phone goes; its stores have a row of their own below. */}
                   <DetailField label={appLink ? 'Everyone else' : 'Destination'}>
                     <DestinationValue url={link?.destination} />
                   </DetailField>
@@ -956,6 +945,21 @@ export default function LinkDetailPage() {
               </>
             )}
           </div>
+
+          {/* An app link's stores, under the details rather than in their
+            column: full width, so a store URL shows more than its domain. */}
+          {appLink && !loadError ? (
+            <div
+              className={`link-detail-stores${isDeleted ? ' is-archived' : ''}`}
+            >
+              <DetailField label='App Store'>
+                <DestinationValue url={link.iosUrl} />
+              </DetailField>
+              <DetailField label='Google Play'>
+                <DestinationValue url={link.androidUrl} />
+              </DetailField>
+            </div>
+          ) : null}
         </div>
       </div>
 
