@@ -54,6 +54,8 @@ const MockDataContext = createContext({
   // says it didn't do, in the words of whichever one this is.
   demo: false,
   mockNote: 'mock, not saved',
+  // And the lead-in for a mock-only action that did nothing at all
+  mockLead: 'Mock data is on —',
   ready: false,
 })
 
@@ -218,6 +220,7 @@ export function MockDataProvider({ demo = false, children }) {
       setMockDomainState,
       demo,
       mockNote: demo ? 'demo, not saved' : 'mock, not saved',
+      mockLead: demo ? 'This is a demo, so' : 'Mock data is on —',
       ready: demo || ready,
     }),
     // mockPlan MUST be here. It was in the object but not the deps, so the memo

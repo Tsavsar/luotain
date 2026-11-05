@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { countryName } from '@/lib/countries'
 import { prisma } from '@/lib/prisma'
+import { destinationFor } from '@/lib/applink'
 
 // ─── The redirect ───
 // The thing every short link and QR code actually hits. Without it a link is a
@@ -142,6 +143,8 @@ export async function GET(request, { params }) {
             select: {
               id: true,
               destinationUrl: true,
+              iosUrl: true,
+              androidUrl: true,
               organizationId: true,
               deletedAt: true,
             },
@@ -161,6 +164,8 @@ export async function GET(request, { params }) {
         select: {
           id: true,
           destinationUrl: true,
+          iosUrl: true,
+          androidUrl: true,
           organizationId: true,
           deletedAt: true,
         },
@@ -212,7 +217,13 @@ export async function GET(request, { params }) {
     // which means editing a link's destination would never reach anyone who'd
     // already followed it — and every subsequent visit would skip this handler,
     // so the click would go uncounted too.
-    return Response.redirect(link.destinationUrl, 302)
+    //
+    // An app link sends a phone to its own store instead (lib/applink.js), by
+    // the same user agent the click was just recorded with.
+    return Response.redirect(
+      destinationFor(link, headers.get('user-agent') || ''),
+      302
+    )
   } catch (err) {
     // 500, not 404. Returning "Not found" for a thrown error made a broken
     // query indistinguishable from a missing link — which is exactly how a

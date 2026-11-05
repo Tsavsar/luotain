@@ -27,6 +27,7 @@ export default function LinksPage() {
     deletedUrls,
     deleteMockLink,
     recoverMockLink,
+    mockLead,
   } = useMockDataState()
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
   // Only the mock list is drawn for a range; the real one is every link,
@@ -146,7 +147,7 @@ export default function LinksPage() {
   // of the app doesn't use.
   async function handleDuplicate(link) {
     if (useMockData) {
-      toast('Mock data is on — nothing was created')
+      toast(`${mockLead} nothing was created`)
       return
     }
     try {
@@ -158,6 +159,9 @@ export default function LinksPage() {
           // key. PATCH /api/links/[id] reads destinationUrl, which is how this
           // slipped through: the two endpoints name the same field differently.
           destination: link.destinationUrl || link.destination,
+          // An app link's copy is an app link too
+          iosUrl: link.iosUrl || undefined,
+          androidUrl: link.androidUrl || undefined,
           title: link.title || null,
         }),
       })
@@ -304,7 +308,7 @@ export default function LinksPage() {
             }
             onEdit={(link) => {
               if (useMockData) {
-                toast('Mock data is on — nothing was changed')
+                toast(`${mockLead} nothing was changed`)
                 return
               }
               router.push(`/dashboard/create?edit=${link.id}`)
