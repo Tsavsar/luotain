@@ -934,7 +934,7 @@ export default function LinkDetailPage() {
                       ) : (
                         <button
                           onClick={() => setDesigningQr(true)}
-                          className='para-sm'
+                          className='para-sm qr-field-action'
                           style={{
                             background: 'none',
                             border: 'none',
@@ -944,6 +944,12 @@ export default function LinkDetailPage() {
                             color: 'var(--text-strong)',
                             textAlign: 'left',
                             fontFamily: 'var(--font-sans)',
+                            // The app's dotted underline (domains page, usage
+                            // banner): an action, without a hyperlink's solid line
+                            textDecoration: 'underline',
+                            textDecorationStyle: 'dotted',
+                            textDecorationColor: 'var(--text-soft)',
+                            textUnderlineOffset: '4px',
                           }}
                         >
                           Generate QR code
