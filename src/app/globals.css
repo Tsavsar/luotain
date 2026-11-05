@@ -1797,6 +1797,48 @@ input:focus-visible {
   }
 }
 
+/* A destination on the link page (DestinationValue): favicon, the URL cut
+   to a glance, then its copy button. The text doesn't grow, so the button
+   sits at the URL's own end rather than the column's. The button keeps its
+   room while hidden, so showing it moves nothing. */
+.link-detail-url {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.link-detail-url-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 260px;
+  margin: 0;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.link-detail-url-copy {
+  flex: none;
+  margin-left: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.link-detail-url:hover .link-detail-url-copy,
+.link-detail-url:focus-within .link-detail-url-copy,
+.link-detail-url.is-copied .link-detail-url-copy {
+  opacity: 1;
+}
+
+/* No hover on touch: always there */
+@media (hover: none) {
+  .link-detail-url-copy {
+    opacity: 1;
+  }
+}
+
 /* --- Archived page content (a deleted link's detail page) ---
    Figma achieves this with mix-blend-luminosity; grayscale() is the
    direct CSS equivalent and doesn't depend on what's painted behind
