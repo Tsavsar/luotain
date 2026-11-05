@@ -11,12 +11,15 @@ import './phone.css'
 // inside it renders at the size iOS uses (17pt, not 9px) and keeps the right
 // letter shapes and spacing. Inside the screen, 1pt is 1px.
 //
-// Ported from the stageshow kit, the pro frame only: titanium band, black
-// glass, island and status bar.
+// Ported from the stageshow kit, two of its frames: pro (titanium band, black
+// glass, island and status bar) and android (a Pixel: its own screen size,
+// tighter round corners, a punch-hole camera and an even dark frame).
 const SCREEN = { w: 402, h: 874, r: 64 }
 const CORNER = { a: 71, n: 2.31 }
 const BAND = 3
 const GLASS = 10
+// Pixel 8: 412 × 915dp, corners about 38, a 24dp punch-hole 14 from the top
+const PIXEL = { w: 412, h: 915, r: 38, band: 2, glass: 9 }
 // Each band is a stroke of the screen's own outline, centred on its edge,
 // widest first, so every band stays parallel to the screen round the corners
 const BANDS = [
@@ -50,15 +53,23 @@ function superellipsePath(w, h, a, n) {
   return `M${pts.join('L')}Z`
 }
 
+const geometry = (frame) =>
+  frame === 'android' ? PIXEL : { ...SCREEN, band: BAND, glass: GLASS }
+
 /** The phone's scale: page pixels per screen point at a given outer width. */
-export const phoneScale = (width) => width / (SCREEN.w + (BAND + GLASS) * 2)
+export const phoneScale = (width, frame) => {
+  const g = geometry(frame)
+  return width / (g.w + (g.band + g.glass) * 2)
+}
 
 /**
  * width: outer width in px; the height follows the real proportions.
+ * frame: 'pro', an iPhone (the default), or 'android', a Pixel.
  * dark: light status bar and home indicator, for dark screens.
  */
 export function Phone({
   width,
+  frame = 'pro',
   time = '9:41',
   dark,
   className,
@@ -66,80 +77,83 @@ export function Phone({
   children,
   ...rest
 }) {
-  const s = phoneScale(width)
+  const g = geometry(frame)
+  const ios = frame !== 'android'
+  const s = phoneScale(width, frame)
   const pt = (n) => n * s
-  const edge = BAND + GLASS
+  const edge = g.band + g.glass
   const id = useId().replace(/:/g, '')
-  const outline = superellipsePath(
-    pt(SCREEN.w),
-    pt(SCREEN.h),
-    pt(CORNER.a),
-    CORNER.n
-  )
+  const outline = ios
+    ? superellipsePath(pt(g.w), pt(g.h), pt(CORNER.a), CORNER.n)
+    : null
   return (
     <div
       {...rest}
       className={`ss-phone${className ? ` ${className}` : ''}`}
+      data-frame={frame}
       data-dark={dark || undefined}
       style={{
         width,
-        height: pt(SCREEN.h + edge * 2),
-        padding: pt(BAND),
-        borderRadius: pt(SCREEN.r + edge),
+        height: pt(g.h + edge * 2),
+        padding: pt(g.band),
+        borderRadius: pt(g.r + edge),
         '--ps': `${s}px`,
         ...style,
       }}
     >
-      <svg
-        className='ss-phone__bands'
-        width='100%'
-        height='100%'
-        aria-hidden='true'
-      >
-        <defs>
-          <linearGradient id={`${id}-band`} x1='0.2' y1='0' x2='0.8' y2='1'>
-            {[0, 0.22, 0.48, 0.74, 1].map((o, i) => (
-              <stop
-                key={o}
-                offset={o}
-                style={{ stopColor: `var(--ss-phone-band-${i + 1})` }}
+      {ios ? (
+        <svg
+          className='ss-phone__bands'
+          width='100%'
+          height='100%'
+          aria-hidden='true'
+        >
+          <defs>
+            <linearGradient id={`${id}-band`} x1='0.2' y1='0' x2='0.8' y2='1'>
+              {[0, 0.22, 0.48, 0.74, 1].map((o, i) => (
+                <stop
+                  key={o}
+                  offset={o}
+                  style={{ stopColor: `var(--ss-phone-band-${i + 1})` }}
+                />
+              ))}
+            </linearGradient>
+          </defs>
+          <g
+            transform={`translate(${pt(edge)} ${pt(edge)})`}
+            strokeLinejoin='round'
+          >
+            {BANDS.map(([d, paint]) => (
+              <path
+                key={d}
+                d={outline}
+                fill='none'
+                strokeWidth={pt(d * 2)}
+                stroke={paint === 'band' ? `url(#${id}-band)` : undefined}
+                style={paint === 'band' ? undefined : { stroke: paint }}
               />
             ))}
-          </linearGradient>
-        </defs>
-        <g
-          transform={`translate(${pt(edge)} ${pt(edge)})`}
-          strokeLinejoin='round'
-        >
-          {BANDS.map(([d, paint]) => (
-            <path
-              key={d}
-              d={outline}
-              fill='none'
-              strokeWidth={pt(d * 2)}
-              stroke={paint === 'band' ? `url(#${id}-band)` : undefined}
-              style={paint === 'band' ? undefined : { stroke: paint }}
-            />
-          ))}
-        </g>
-      </svg>
+          </g>
+        </svg>
+      ) : null}
       <div
         className='ss-phone__glass'
-        style={{ padding: pt(GLASS), borderRadius: pt(SCREEN.r + GLASS) }}
+        style={{ padding: pt(g.glass), borderRadius: pt(g.r + g.glass) }}
       >
         <div
           className='ss-phone__window'
           style={{
-            width: pt(SCREEN.w),
-            height: pt(SCREEN.h),
-            clipPath: `path('${outline}')`,
+            width: pt(g.w),
+            height: pt(g.h),
+            borderRadius: ios ? undefined : pt(g.r),
+            clipPath: ios ? `path('${outline}')` : undefined,
           }}
         >
           <div
             className='ss-phone__screen'
             style={{
-              width: SCREEN.w,
-              height: SCREEN.h,
+              width: g.w,
+              height: g.h,
               transform: `scale(${s})`,
             }}
           >

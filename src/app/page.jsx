@@ -11,6 +11,7 @@ import {
   ScanPicture,
   StoryPicture,
   ThreadPicture,
+  AppPicture,
 } from '@/components/landingusecases'
 import CookieBanner from '@/components/cookiebanner'
 import LogoMenu from '@/components/logomenu'
@@ -310,7 +311,7 @@ function UseCases() {
           <Heading size={24} width={430} lead='Here&rsquo;s how'>
             you can use Luotain.
           </Heading>
-          <Body width={300}>Same link, three very different jobs.</Body>
+          <Body width={300}>Same link, four very different jobs.</Body>
         </div>
 
         <div className='landing-scroller lu-grid'>
@@ -325,6 +326,11 @@ function UseCases() {
           <UseCase title='Client work' picture={<ThreadPicture />}>
             You need to show someone the numbers. Country, device and source on
             every link, so an update is a screenshot.
+          </UseCase>
+          <UseCase title='App downloads' picture={<AppPicture />}>
+            You have an app on both stores. One link opens the App Store on an
+            iPhone and Google Play on Android, whether it&rsquo;s tapped or
+            scanned.
           </UseCase>
         </div>
       </div>

@@ -18,28 +18,33 @@ import {
 import './landingusecases.css'
 
 // ─── Use cases ───
-// The three jobs under "Here's how you can use Luotain", as one grey panel
-// with three phones rising out of its foot. Each phone is the moment someone
-// meets one of the same café's links, and where Luotain counts that moment a
-// chip on the phone's corner says what it counted:
+// The four jobs under "Here's how you can use Luotain", two by two, each a
+// grey panel with a phone rising out of its foot and its copy underneath.
+// Each phone is the moment someone meets one of the same café's links, and
+// where Luotain counts that moment a chip on the phone's edge says what it
+// counted:
 //
 //   Job         The moment                                   Luotain's side
 //   Print       a camera locking onto the code on a table    the table card's scans, +1
 //   Campaigns   a tap on the link in the café's story        Instagram's clicks, +1
 //   Client      the numbers sent to the owner, and the reply  the screenshot is the report
+//   Apps        one link opened on an iPhone and on a Pixel   each lands on its own store
 //
-// Each plays once as it scrolls in, in reading order, and again once the
-// pointer settles on its column (landingmotion.js: a replay that has started
-// plays to its end).
+// Each plays once as it scrolls in, the right-hand one a beat after the left,
+// and again once the pointer settles on its panel (landingmotion.js: a
+// replay that has started plays to its end).
 
-// Each column is drawn 1:1 at the desktop width of a third of the panel and
-// scaled down, never up, where it's narrower.
-const DESIGN = { width: 320, height: 400 }
+// Two compositions. Wide fills a panel at the desktop width of half the
+// column: the phone centred, its chip straddling the phone's edge with room
+// to. Compact is the narrower one, for tablets and the phone swipe row: the
+// phone a gutter from the left and the chip inside the right edge.
+const DESIGN = { width: 472, height: 380 }
+const COMPACT = { below: 472, width: 320, height: 380 }
 // About two thirds of the stage wide, so the iOS type inside reads, and
 // cropped by the panel's foot a third of the way down.
 const PHONE = 248
 
-// The scroll-in plays the three left to right, a beat apart.
+// The scroll-in plays each row left to right, a beat apart.
 const LEAD = 500
 const STEP = 650
 // Long enough for a scene's last transition to land, so the run holds its
@@ -159,6 +164,7 @@ export function ScanPicture() {
       <Stage
         width={DESIGN.width}
         height={DESIGN.height}
+        compact={COMPACT}
         initial={UNSCANNED}
         poster={SCANNED}
         play='once'
@@ -249,6 +255,7 @@ export function StoryPicture() {
       <Stage
         width={DESIGN.width}
         height={DESIGN.height}
+        compact={COMPACT}
         initial={UNTAPPED}
         poster={TAPPED}
         play='once'
@@ -330,7 +337,7 @@ async function send(a) {
 }
 
 async function sendFirst(a) {
-  await a.wait(LEAD + STEP * 2)
+  await a.wait(LEAD)
   await send(a)
 }
 
@@ -466,6 +473,7 @@ export function ThreadPicture() {
       <Stage
         width={DESIGN.width}
         height={DESIGN.height}
+        compact={COMPACT}
         initial={ASKED}
         poster={ANSWERED}
         play='once'
@@ -504,6 +512,206 @@ export function ThreadPicture() {
               </Thread>
             </div>
           </Phone>
+        )}
+      </Stage>
+    </div>
+  )
+}
+
+// ─── Apps ───
+// The same link opened on two phones, and each lands on its own store: the
+// iPhone on the café app's App Store page, the Pixel on its Google Play page
+// (lib/applink.js). Each shows the link loading first, so the store arrives
+// as the redirect it is. Compact has room for one phone, the iPhone, and a
+// chip says where Android goes instead. No count here: what the job is about
+// is where the link sends people, not how many.
+
+const UNOPENED = { open: false }
+const OPENED = { open: true }
+
+// The pair is narrower than a lone phone, so two fit the wide panel with the
+// Pixel tucked behind the iPhone's edge
+const PAIR = 224
+
+async function openStores(a) {
+  await a.wait(400)
+  await a.set({ open: true })
+  await a.wait(SETTLE)
+}
+
+async function storesFirst(a) {
+  await a.wait(LEAD + STEP)
+  await openStores(a)
+}
+
+async function storesAgain(a) {
+  await a.wait(REWIND)
+  await openStores(a)
+}
+
+// Both stores show the same icon: it's the same app
+function AppIcon({ size }) {
+  return (
+    <span className='lu-app-icon' style={{ width: size, height: size }}>
+      <Image src={PAINTING} alt='' fill sizes='120px' className='lu-app-art' />
+    </span>
+  )
+}
+
+// A store's screenshots: crops of the painting the icon is cut from, so the
+// page reads as one app's listing rather than a row of empty frames
+function Shots({ crops }) {
+  return (
+    <div className='lu-store-shots'>
+      {crops.map((position) => (
+        <span key={position} className='lu-store-shot'>
+          <Image
+            src={PAINTING}
+            alt=''
+            fill
+            sizes='180px'
+            style={{ objectFit: 'cover', objectPosition: position }}
+          />
+        </span>
+      ))}
+    </div>
+  )
+}
+
+// What the phone shows while the link resolves, under the store page
+function Loading() {
+  return (
+    <div className='lu-store-loading'>
+      <span className='lu-store-url'>
+        <LinkIcon size={22} />
+        luot.link/app
+      </span>
+    </div>
+  )
+}
+
+function AppStorePage({ open }) {
+  return (
+    <div className='lu-store' data-store='ios' data-open={open || undefined}>
+      <Loading />
+      <div className='lu-store-page'>
+        <span className='lu-store-nav'>
+          <Chevron />
+          Search
+        </span>
+        <div className='lu-store-head'>
+          <AppIcon size={118} />
+          <div className='lu-store-title'>
+            <span className='lu-store-name'>Harbor Coffee</span>
+            <span className='lu-store-sub'>Order ahead, skip the line</span>
+            <span className='lu-store-get'>Get</span>
+          </div>
+        </div>
+        <div className='lu-store-facts'>
+          <span>
+            <small>12K ratings</small>
+            <b>4.8</b>
+            <i>★★★★★</i>
+          </span>
+          <span>
+            <small>Age</small>
+            <b>4+</b>
+            <i>Years</i>
+          </span>
+          <span>
+            <small>Chart</small>
+            <b>No. 3</b>
+            <i>Food &amp; Drink</i>
+          </span>
+        </div>
+        <Shots crops={['18% 50%', '56% 50%']} />
+      </div>
+    </div>
+  )
+}
+
+function PlayPage({ open }) {
+  return (
+    <div className='lu-store' data-store='play' data-open={open || undefined}>
+      <Loading />
+      <div className='lu-store-page'>
+        <div className='lu-store-head'>
+          <AppIcon size={88} />
+          <div className='lu-store-title'>
+            <span className='lu-store-name'>Harbor Coffee</span>
+            <span className='lu-store-dev'>Harbor Coffee Co.</span>
+          </div>
+        </div>
+        <div className='lu-store-facts'>
+          <span>
+            <b>4.7 ★</b>
+            <small>8K reviews</small>
+          </span>
+          <span>
+            <b>100K+</b>
+            <small>Downloads</small>
+          </span>
+          <span>
+            <b>E</b>
+            <small>Everyone</small>
+          </span>
+        </div>
+        <span className='lu-store-install'>Install</span>
+        <Shots crops={['12% 50%', '44% 50%', '88% 50%']} />
+      </div>
+    </div>
+  )
+}
+
+// Compact's stand-in for the Pixel: where Android goes, said on the iPhone's
+// edge, low enough to sit over the screenshots rather than the app's name
+function AndroidChip() {
+  return (
+    <div className='lu-chip lu-chip--low'>
+      <span className='lu-chip-icon'>
+        <SourceIcon domain='play.google.com' />
+      </span>
+      <span className='lu-chip-text'>
+        <span className='lu-chip-label'>On Android</span>
+        <span className='lu-chip-value'>Google Play</span>
+      </span>
+    </div>
+  )
+}
+
+export function AppPicture() {
+  const { ref, script } = usePicture(storesFirst, storesAgain)
+  return (
+    <div ref={ref} className='lu-picture'>
+      <Stage
+        width={DESIGN.width}
+        height={DESIGN.height}
+        compact={COMPACT}
+        initial={UNOPENED}
+        poster={OPENED}
+        play='once'
+        script={script}
+        className='lu-stage'
+      >
+        {(s, rect, layout) => (
+          <>
+            {layout === 'wide' ? (
+              <Phone
+                width={PAIR}
+                frame='android'
+                className='lu-phone lu-phone--pixel'
+              >
+                <PlayPage open={s.open} />
+              </Phone>
+            ) : null}
+            <Phone
+              width={layout === 'wide' ? PAIR : PHONE}
+              className='lu-phone lu-phone--iphone'
+            >
+              <AppStorePage open={s.open} />
+            </Phone>
+            {layout === 'wide' ? null : <AndroidChip />}
+          </>
         )}
       </Stage>
     </div>

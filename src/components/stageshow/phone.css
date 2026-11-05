@@ -143,3 +143,57 @@
   background: currentColor;
   transform: translateX(-50%);
 }
+
+/* ─── Android: a Pixel ───
+   An even dark frame instead of the titanium bands, a punch-hole camera
+   instead of the island, and Android's own status bar: the time at the left,
+   the glyphs at the right, 48dp tall. */
+
+.ss-phone[data-frame='android'] {
+  background: linear-gradient(
+    150deg,
+    #3a3b3f,
+    #1d1e21 40%,
+    #2f3034 70%,
+    #1a1b1e
+  );
+}
+
+.ss-phone[data-frame='android'] .ss-phone__glass {
+  background: #050505;
+}
+
+.ss-phone[data-frame='android'] .ss-phone__island {
+  top: 14px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.ss-phone[data-frame='android'] .ss-phone__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 26px;
+}
+
+.ss-phone[data-frame='android'] .ss-phone__time {
+  position: static;
+  width: auto;
+  font-family: system-ui, sans-serif;
+  font-variation-settings: normal;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.ss-phone[data-frame='android'] .ss-phone__glyphs {
+  position: static;
+  align-items: center;
+  gap: 6px;
+}
+
+.ss-phone[data-frame='android'] .ss-phone__home {
+  width: 108px;
+  height: 4px;
+}

@@ -25,8 +25,8 @@
   display: grid;
   gap: 16px;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 420px 400px 380px 360px 360px;
-  grid-template-areas: 'live' 'install' 'qr' 'domain' 'team';
+  grid-template-rows: 420px 400px 380px 360px 360px 400px;
+  grid-template-areas: 'live' 'install' 'qr' 'domain' 'team' 'apps';
 }
 
 /* Two columns once a tile can be ~290 wide: the hero across the top, then
@@ -34,8 +34,8 @@
 @container (min-width: 600px) {
   .lf-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: 440px 390px 370px;
-    grid-template-areas: 'live live' 'install qr' 'domain team';
+    grid-template-rows: 440px 390px 370px 300px;
+    grid-template-areas: 'live live' 'install qr' 'domain team' 'apps apps';
   }
 }
 
@@ -44,8 +44,8 @@
 @container (min-width: 900px) {
   .lf-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: 440px 380px;
-    grid-template-areas: 'live live install' 'qr domain team';
+    grid-template-rows: 440px 380px 300px;
+    grid-template-areas: 'live live install' 'qr domain team' 'apps apps apps';
   }
 }
 
@@ -82,6 +82,25 @@
 }
 .lf-tile--team {
   grid-area: team;
+}
+.lf-tile--apps {
+  grid-area: apps;
+}
+
+/* The apps tile spans the grid from two columns up, so its copy sits beside
+   the picture rather than over a strip of it */
+@container (min-width: 600px) {
+  .lf-tile--apps {
+    flex-direction: row;
+  }
+
+  .lf-tile--apps .lf-copy {
+    flex: 0 0 340px;
+  }
+
+  .lf-tile--apps .lf-picture {
+    margin-top: 0;
+  }
 }
 
 /* 16/24, the size of the card titles this replaces. Tile copy is page type,
@@ -843,5 +862,144 @@
   }
   .lf-qr-layer[data-new] {
     animation: none;
+  }
+}
+
+/* ─── Apps ───
+   The link's routes in the domain card's material, a gutter from the top
+   and off the tile's foot. Beside the copy from two columns up, so it starts
+   at the picture's edge; under it on one column, inset a gutter each side. */
+
+.lf-apps {
+  position: absolute;
+  inset: 0 24px auto;
+}
+
+@container (min-width: 600px) {
+  .lf-apps {
+    inset: 36px 36px auto 0;
+  }
+}
+
+.lf-apps-card {
+  max-width: 560px;
+  height: 400px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-default);
+  box-shadow:
+    0 0 0 1px var(--stroke-soft),
+    0 10px 24px -12px rgba(0, 0, 0, 0.12);
+}
+
+.lf-apps-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 12px 0 14px;
+  color: var(--text-sub);
+  box-shadow: inset 0 -1px 0 var(--stroke-soft);
+}
+
+.lf-apps-link {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+  letter-spacing: 0.14px;
+  color: var(--text-strong);
+}
+
+.lf-apps-code {
+  display: flex;
+  margin-left: auto;
+}
+
+.lf-apps-route {
+  display: grid;
+  grid-template-columns: 18px 104px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  margin: 4px 6px 0;
+  padding: 0 8px;
+  border-radius: var(--radius-md);
+  transition: background-color 360ms var(--ease-out);
+}
+
+/* The row a visit just landed on */
+.lf-apps-route[data-hot] {
+  background: var(--primary-mute);
+}
+
+.lf-apps-icon {
+  display: flex;
+  justify-content: center;
+  color: var(--text-sub);
+}
+
+.lf-apps-icon img {
+  width: 16px;
+  height: 16px;
+}
+
+.lf-apps-store {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--text-strong);
+}
+
+.lf-apps-url {
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-sub);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Which device was sent here, arriving with the visit */
+.lf-apps-device {
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-sub);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity 200ms ease,
+    transform 420ms var(--ease-out);
+}
+
+.lf-apps-device[data-on] {
+  opacity: 1;
+  transform: none;
+}
+
+.lf-apps-route[data-hot] .lf-apps-device {
+  background: var(--bg-default);
+  color: var(--text-strong);
+}
+
+.lf-apps-filler {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  margin-top: 8px;
+  padding: 0 14px;
+  box-shadow: inset 0 1px 0 var(--stroke-soft);
+}
+
+.lf-apps-filler + .lf-apps-filler {
+  margin-top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lf-apps-route,
+  .lf-apps-device {
+    transition: none !important;
   }
 }

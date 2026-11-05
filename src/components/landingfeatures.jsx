@@ -796,6 +796,141 @@ function Team() {
   )
 }
 
+// ─── Apps ───
+// One link with a store for each phone (lib/applink.js), shown as the link's
+// own routes, with three visits arriving in turn and each tagged on the row
+// it's sent to: an iPhone to the App Store, an Android phone to Google Play,
+// a desktop to the café's site. The code in the corner is the same link,
+// scanned, which is routed the same way.
+
+const ROUTES = [
+  {
+    id: 'ios',
+    icon: <SourceIcon domain='apps.apple.com' />,
+    store: 'App Store',
+    url: 'apps.apple.com/app/harbor-coffee',
+    device: 'iPhone',
+  },
+  {
+    id: 'android',
+    icon: <SourceIcon domain='play.google.com' />,
+    store: 'Google Play',
+    url: 'play.google.com/store/apps/details?id=harbor',
+    device: 'Android',
+  },
+  {
+    id: 'web',
+    icon: <GlobeIcon />,
+    store: 'Everyone else',
+    url: 'harbor.coffee',
+    device: 'Desktop',
+  },
+]
+
+const APPS_START = { visits: 0, hot: null }
+const APPS_END = { visits: ROUTES.length, hot: null }
+
+// Each visit lights the row it lands on, then the next one comes in
+async function route(a) {
+  for (let i = 0; i < ROUTES.length; i++) {
+    await a.set({ visits: i + 1, hot: i })
+    await a.wait(760)
+  }
+  await a.set({ hot: null })
+}
+
+// The last row of the grid, so it's on screen on its own: no queue to wait in
+async function appsScript(a) {
+  await a.wait(LEAD)
+  await route(a)
+}
+
+async function appsAgain(a) {
+  await a.wait(320)
+  await route(a)
+}
+
+function Apps() {
+  const [picture, { width, height }] = usePictureSize({
+    width: 620,
+    height: 300,
+  })
+  const { script, replay, cueing } = useReplay(appsScript, appsAgain)
+  const engage = useEngage(replay)
+  return (
+    <Tile
+      area='apps'
+      lead='One link, both stores.'
+      engage={engage}
+      engaged={engage.engaged && !cueing}
+      picture={
+        <div ref={picture} className='lf-picture' aria-hidden='true'>
+          <Stage
+            width={width}
+            height={height}
+            initial={APPS_START}
+            poster={APPS_END}
+            play='once'
+            script={script}
+            className='lf-stage'
+          >
+            {(s) => (
+              <div className='lf-apps'>
+                <div className='lf-apps-card'>
+                  <div className='lf-apps-head'>
+                    <LinkIcon size={16} />
+                    <span className='lf-apps-link'>luot.link/harbor-app</span>
+                    <span className='lf-apps-code'>
+                      <QrCode
+                        value='https://www.luotain.app/?qr=app'
+                        color='#171717'
+                        markerColor='#171717'
+                        pattern='square'
+                        branding={false}
+                        card={28}
+                        margin={0}
+                        radius={0}
+                      />
+                    </span>
+                  </div>
+                  {ROUTES.map((r, i) => (
+                    <div
+                      key={r.id}
+                      className='lf-apps-route'
+                      data-hot={s.hot === i || undefined}
+                    >
+                      <span className='lf-apps-icon'>{r.icon}</span>
+                      <span className='lf-apps-store'>{r.store}</span>
+                      <span className='lf-apps-url'>{r.url}</span>
+                      <span
+                        className='lf-apps-device'
+                        data-on={s.visits > i || undefined}
+                      >
+                        {r.device}
+                      </span>
+                    </div>
+                  ))}
+                  <div className='lf-apps-filler'>
+                    <Bar w={48} h={6} tone={2} />
+                    <Bar w={132} h={6} tone={2} />
+                  </div>
+                  <div className='lf-apps-filler'>
+                    <Bar w={40} h={6} tone={2} />
+                    <Bar w={96} h={6} tone={2} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </Stage>
+        </div>
+      }
+    >
+      iPhones open the App Store and Android phones open Google Play, whether
+      they tap the link or scan its code.
+    </Tile>
+  )
+}
+
 export default function LandingFeatures() {
   return (
     <section id='features' className='lf'>
@@ -814,6 +949,7 @@ export default function LandingFeatures() {
         <Qr />
         <Domain />
         <Team />
+        <Apps />
       </div>
     </section>
   )
