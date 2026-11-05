@@ -1,15 +1,15 @@
 /* ─── Landing use cases ───
-   One grey panel, the feature tiles' ground, split into three columns with
-   no seam between them: a phone rises out of the panel's foot in each, and
-   the column's copy sits under the panel. On phones the panel breaks into
-   three tiles in the swipe row (.landing-scroller), one phone each.
+   Four jobs, two by two: a grey panel each, the feature tiles' ground, with
+   a phone rising out of its foot and the job's copy underneath. On phones
+   they become the swipe row (.landing-scroller), one panel each.
 
-   Everything inside a phone is in iOS points (phone.jsx scales the screen
-   as a whole); everything outside it is in page pixels. */
+   Everything inside a phone is in its own points (phone.jsx scales the
+   screen as a whole); everything outside it is in page pixels. */
 
 .lu-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px 16px;
   width: 100%;
 }
 
@@ -22,15 +22,8 @@
 .lu-shot {
   position: relative;
   overflow: hidden;
+  border-radius: var(--radius-xl);
   background: var(--bg-surface);
-}
-
-.lu-case:first-child .lu-shot {
-  border-radius: var(--radius-xl) 0 0 var(--radius-xl);
-}
-
-.lu-case:last-child .lu-shot {
-  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
 }
 
 .lu-copy {
@@ -69,11 +62,27 @@
   margin-inline: auto;
 }
 
-/* Pinned a gutter from the top, centred, off the panel's foot */
+/* Pinned a gutter from the top and off the panel's foot: a gutter from the
+   left in compact, centred in wide */
 .lu-phone {
   position: absolute;
   top: 36px;
   left: 36px;
+}
+
+.lu-stage .ss-stage[data-layout='wide'] .lu-phone {
+  left: 112px;
+}
+
+/* The apps pair: the Pixel set back, behind the iPhone's edge and a little
+   lower, so they read as two phones rather than one twice */
+.lu-stage .ss-stage[data-layout='wide'] .lu-phone--pixel {
+  top: 60px;
+  left: 36px;
+}
+
+.lu-stage .ss-stage[data-layout='wide'] .lu-phone--iphone {
+  left: 212px;
 }
 
 /* ─── The chip ───
@@ -93,6 +102,17 @@
   border-radius: 14px;
   background: var(--bg-default);
   box-shadow: var(--ss-shadow-satellite);
+}
+
+/* Wide has room for the chip to straddle the phone's edge properly */
+.lu-stage .ss-stage[data-layout='wide'] .lu-chip {
+  right: auto;
+  left: 300px;
+}
+
+/* The apps chip sits over the screenshots, not the app's name */
+.lu-chip--low {
+  top: 250px;
 }
 
 .lu-chip-icon {
@@ -661,10 +681,272 @@
   background: var(--bg-subtle);
 }
 
+/* ─── Apps: the store pages ───
+   Each phone loads the link, then its store's page for the café's app slides
+   up over it. Simplified to what makes each store recognisable: the App
+   Store's icon, title and blue Get, Google Play's green Install. Both share
+   the app's icon, cut from the landing's painting. */
+
+.lu-store {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+}
+
+.lu-store-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.lu-store-url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 22px;
+  border-radius: 26px;
+  background: #f2f2f7;
+  color: #3a3a3c;
+  font-family: var(--font-sans);
+  font-size: 21px;
+  font-weight: 500;
+}
+
+.lu-store-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  transform: translateY(100%);
+  /* Away quickly on a replay's rewind, so the link shows loading again */
+  transition: transform 220ms ease-in;
+}
+
+.lu-store[data-open] .lu-store-page {
+  transform: none;
+  transition: transform 620ms var(--ease-out);
+}
+
+/* The Pixel's store arrives a beat after the iPhone's */
+.lu-store[data-store='play'][data-open] .lu-store-page {
+  transition-delay: 240ms;
+}
+
+.lu-app-icon {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.lu-app-art {
+  object-fit: cover;
+  object-position: 76% 40%;
+}
+
+.lu-store-head {
+  display: flex;
+  gap: 16px;
+}
+
+.lu-store-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lu-store-name {
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.lu-store-shots {
+  display: flex;
+  gap: 12px;
+}
+
+.lu-store-shot {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #ead9c6;
+}
+
+/* The App Store, in the iPhone's points */
+.lu-store[data-store='ios'] {
+  font-family: -apple-system, system-ui, sans-serif;
+}
+
+.lu-store[data-store='ios'] .lu-store-page {
+  padding-top: 62px;
+}
+
+.lu-store-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 44px;
+  padding-left: 6px;
+  color: #0a84ff;
+  font-size: 19px;
+}
+
+.lu-store[data-store='ios'] .lu-store-head {
+  padding: 10px 20px 0;
+}
+
+.lu-store[data-store='ios'] .lu-app-icon {
+  border-radius: 27px;
+}
+
+.lu-store-sub {
+  margin-top: 4px;
+  color: #8e8e93;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.lu-store-get {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 7px 24px;
+  border-radius: 18px;
+  background: #0a84ff;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.lu-store[data-store='ios'] .lu-store-facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 22px 20px 0;
+  padding-top: 14px;
+  border-top: 0.5px solid #d1d1d6;
+}
+
+.lu-store[data-store='ios'] .lu-store-facts span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #8e8e93;
+}
+
+.lu-store[data-store='ios'] .lu-store-facts small {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.lu-store[data-store='ios'] .lu-store-facts b {
+  color: #6e6e73;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.lu-store[data-store='ios'] .lu-store-facts i {
+  font-size: 12px;
+  font-style: normal;
+}
+
+.lu-store[data-store='ios'] .lu-store-shots {
+  margin: 22px 20px 0;
+}
+
+.lu-store[data-store='ios'] .lu-store-shot {
+  width: 172px;
+  height: 330px;
+}
+
+/* Google Play, in the Pixel's points */
+.lu-store[data-store='play'] {
+  font-family: system-ui, sans-serif;
+}
+
+.lu-store[data-store='play'] .lu-store-page {
+  padding-top: 104px;
+}
+
+.lu-store[data-store='play'] .lu-store-head {
+  align-items: center;
+  gap: 20px;
+  padding: 0 24px;
+}
+
+.lu-store[data-store='play'] .lu-app-icon {
+  border-radius: 20px;
+}
+
+.lu-store[data-store='play'] .lu-store-name {
+  font-weight: 500;
+  color: #1f1f1f;
+}
+
+.lu-store-dev {
+  margin-top: 4px;
+  color: #01875f;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.lu-store[data-store='play'] .lu-store-facts {
+  display: flex;
+  justify-content: space-between;
+  margin: 26px 24px 0;
+}
+
+.lu-store[data-store='play'] .lu-store-facts span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.lu-store[data-store='play'] .lu-store-facts b {
+  color: #1f1f1f;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.lu-store[data-store='play'] .lu-store-facts small {
+  color: #5f6368;
+  font-size: 14px;
+}
+
+.lu-store-install {
+  display: grid;
+  place-items: center;
+  height: 52px;
+  margin: 26px 24px 0;
+  border-radius: 26px;
+  background: #01875f;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.lu-store[data-store='play'] .lu-store-shots {
+  margin: 26px 24px 0;
+}
+
+.lu-store[data-store='play'] .lu-store-shot {
+  width: 112px;
+  height: 230px;
+  border-radius: 12px;
+}
+
 /* ─── Narrow screens ─── */
 
-/* Three columns hold down to the swipe row, the phones scaled with them;
-   the copy gets the gutter back to keep a readable measure. */
+/* Two columns hold down to the swipe row; the copy gets the gutter back to
+   keep a readable measure. */
 @media (max-width: 900px) {
   .lu-copy {
     padding-right: 16px;
@@ -685,10 +967,6 @@
     max-width: 320px;
   }
 
-  .lu-case .lu-shot {
-    border-radius: var(--radius-xl);
-  }
-
   .lu-copy {
     padding-right: 0;
   }
@@ -700,7 +978,8 @@
   .lu-cam-pill,
   .lu-story-bars i::after,
   .lu-sticker,
-  .lu-sent {
+  .lu-sent,
+  .lu-store-page {
     transition: none !important;
   }
 }
