@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMockDataState } from '@/components/mockdatacontext'
 import { useParams, useRouter } from 'next/navigation'
 import BackButton from '@/components/backbutton'
@@ -85,33 +85,43 @@ function DetailField({ label, width, children }) {
   )
 }
 
-// A destination as the page shows one: its favicon and the URL, cut to one
-// line. A store that isn't set reads as a dash, like any other empty field.
-function DestinationValue({ url }) {
+// A URL as a person reads it: no scheme, no www. The favicon beside it
+// already says it's a web address.
+function readableUrl(url) {
+  return url.replace(/^https?:\/\//i, '').replace(/^www\./i, '')
+}
+
+// A destination as the page shows one: its favicon and the URL, short
+// enough to take in at a glance (globals.css, .link-detail-url). The whole
+// URL is one click away: a copy button at the end of the row, shown on
+// hover. A store that isn't set reads as a dash, like any other empty field.
+function DestinationValue({ url, label = 'link' }) {
+  // Held open for a moment after a copy, so the check shows even when the
+  // pointer has already left the row
+  const [justCopied, setJustCopied] = useState(false)
+  const copiedTimer = useRef(null)
+  useEffect(() => () => clearTimeout(copiedTimer.current), [])
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '4px',
-        minWidth: 0,
-      }}
-    >
+    <div className={`link-detail-url${justCopied ? ' is-copied' : ''}`}>
       {url ? <DestinationIcon domain={hostnameOf(url)} /> : null}
-      <p
-        className='para-sm'
-        style={{
-          flex: 1,
-          minWidth: 0,
-          color: 'var(--text-strong)',
-          margin: 0,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-      >
-        {url || '-'}
+      <p className='para-sm link-detail-url-text'>
+        {url ? readableUrl(url) : '-'}
       </p>
+      {url ? (
+        <CopyButton
+          value={url}
+          icon={<CopyIcon />}
+          label={`Copy ${label}`}
+          toastMessage='Link copied to clipboard'
+          className='link-detail-url-copy'
+          onCopied={() => {
+            setJustCopied(true)
+            clearTimeout(copiedTimer.current)
+            copiedTimer.current = setTimeout(() => setJustCopied(false), 1800)
+          }}
+        />
+      ) : null}
     </div>
   )
 }
@@ -883,7 +893,7 @@ export default function LinkDetailPage() {
                   {/* On an app link this is where everyone who isn't on a
                     phone goes; its stores have a row of their own below. */}
                   <DetailField label={appLink ? 'Everyone else' : 'Destination'}>
-                    <DestinationValue url={link?.destination} />
+                    <DestinationValue url={link?.destination} label='destination' />
                   </DetailField>
 
                   <div style={{ display: 'flex', gap: '10px' }}>
@@ -953,10 +963,10 @@ export default function LinkDetailPage() {
               className={`link-detail-stores${isDeleted ? ' is-archived' : ''}`}
             >
               <DetailField label='App Store'>
-                <DestinationValue url={link.iosUrl} />
+                <DestinationValue url={link.iosUrl} label='App Store link' />
               </DetailField>
               <DetailField label='Google Play'>
-                <DestinationValue url={link.androidUrl} />
+                <DestinationValue url={link.androidUrl} label='Google Play link' />
               </DetailField>
             </div>
           ) : null}
