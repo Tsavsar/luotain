@@ -30,6 +30,7 @@ const LINKS = [
   { url: 'luot.link/swift-otter', weight: 15 },
   { url: 'luot.link/quick-fox', weight: 11 },
   { url: 'luot.link/summer-sale', weight: 8 },
+  { url: 'luot.link/get-the-app', weight: 7 },
   { url: 'luot.link/3xK9fL2', weight: 1 },
   { url: 'luot.link/clever-crow', weight: 6 },
   { url: 'luot.link/beta-launch', weight: 5 },
@@ -51,6 +52,14 @@ const LINK_METADATA = {
   'luot.link/summer-sale': {
     destination: 'https://luotain.app/campaigns/summer-sale',
     createdAt: '2026-06-01',
+  },
+  // An app link (lib/applink.js): phones open their store, everyone else
+  // the App Store page, since it was made without a fallback of its own.
+  'luot.link/get-the-app': {
+    destination: 'https://apps.apple.com/app/acme/id6450521032',
+    iosUrl: 'https://apps.apple.com/app/acme/id6450521032',
+    androidUrl: 'https://play.google.com/store/apps/details?id=com.acme.app',
+    createdAt: '2026-09-14',
   },
   'luot.link/3xK9fL2': {
     destination: 'https://example.com/private-promo',
@@ -628,6 +637,8 @@ export function getMockLinksTable(
       id: link.url,
       shortUrl: link.url,
       destination: meta.destination || '',
+      iosUrl: meta.iosUrl || null,
+      androidUrl: meta.androidUrl || null,
       clicks: clicksOnly.filter((e) => e.linkUrl === link.url).length,
       createdAt: meta.createdAt || now.toISOString(),
     }

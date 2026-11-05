@@ -59,6 +59,8 @@ export async function GET(request, { params }) {
       shortCode: link.shortCode,
       shortUrl: shortUrlFor(link.shortCode, link.domain.hostname),
       destination: link.destinationUrl,
+      iosUrl: link.iosUrl,
+      androidUrl: link.androidUrl,
       title: link.title,
       // The link preview box asks for this. It was in the schema and read
       // by the page, but never actually sent — so the preview could only

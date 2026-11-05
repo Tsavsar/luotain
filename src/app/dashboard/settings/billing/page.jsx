@@ -107,7 +107,12 @@ function formatDate(iso) {
 
 // ─── The plan picker ───
 export default function BillingPage() {
-  const { useMockData, mockPlan, ready: mockReady } = useMockDataState()
+  const {
+    useMockData,
+    mockPlan,
+    ready: mockReady,
+    mockLead,
+  } = useMockDataState()
   const [data, setData] = useState(null)
   const [picking, setPicking] = useState(false)
   const [busyPlan, setBusyPlan] = useState(null)
@@ -140,7 +145,7 @@ export default function BillingPage() {
   // Bachs hosts it, so this app never handles a card.
   async function openPortal() {
     if (useMockData) {
-      toast('Mock data is on — nothing is charged')
+      toast(`${mockLead} nothing is charged`)
       return
     }
     try {
@@ -197,7 +202,7 @@ export default function BillingPage() {
 
   async function handleChoose(planId, annual) {
     if (useMockData) {
-      toast('Mock data is on — nothing is charged')
+      toast(`${mockLead} nothing is charged`)
       return
     }
 

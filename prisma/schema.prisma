@@ -321,6 +321,13 @@ model Link {
   destinationUrl String
   title          String?
 
+  // App links: where phones go instead of destinationUrl. An iPhone opens
+  // iosUrl (an App Store page), an Android phone androidUrl (a Google Play
+  // page), and everyone else still gets destinationUrl. Either can be set
+  // alone. See src/lib/applink.js.
+  iosUrl         String?
+  androidUrl     String?
+
   // Scraped from the destination's Open Graph tags, for the preview on
   // the link detail page. Nullable because plenty of URLs have no OG
   // image, some hosts refuse server-side fetches, and some time out —

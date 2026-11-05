@@ -15,6 +15,7 @@ import { useMockDataState } from '@/components/mockdatacontext'
 import { getMockLinksTable } from '@/lib/mockAnalytics'
 import { SHORT_DOMAIN } from '@/lib/shortlink'
 import { getMockDomains } from '@/lib/mockAnalytics'
+import { STORES, normalizeStoreUrl } from '@/lib/applink'
 
 // Nodes 136:2038 (empty) and 147:749 (filled) are the same screen —
 // placeholder vs value, which a real input gives for free. So this is
@@ -196,6 +197,33 @@ function SparkleIcon() {
 
 // Label scaffolding only — Inputfield takes no label, so the auth pages
 // place theirs externally too. This is that, not a second input.
+// The store's own icon, at the size of the other fields' 20px glyphs, so an
+// App Store or Google Play field says which store it wants before anything is
+// typed. Favicons, as the links table shows destinations.
+function StoreIcon({ domain }) {
+  return (
+    <span
+      aria-hidden='true'
+      style={{
+        display: 'grid',
+        placeItems: 'center',
+        width: '20px',
+        height: '20px',
+        flexShrink: 0,
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+        alt=''
+        width={16}
+        height={16}
+        style={{ borderRadius: '4px' }}
+      />
+    </span>
+  )
+}
+
 function FieldLabel({ label, hint, action, width, children }) {
   return (
     <div
@@ -257,6 +285,9 @@ export default function CreatePage() {
   // decides whether the flow ends on the link page or continues into the QR
   // designer.
   const [intent, setIntent] = useState('link')
+  // An app link's stores (lib/applink.js), on the App tab
+  const [iosUrl, setIosUrl] = useState('')
+  const [androidUrl, setAndroidUrl] = useState('')
 
   // ?edit=<id> turns this page into an edit form. Reusing it rather than a
   // modal was the right call: the modal had to reimplement slug generation and
@@ -277,7 +308,7 @@ export default function CreatePage() {
   const hasLinks = (existingLinks?.length ?? 0) > 0
 
   // When editing, fill the form from the link. The fields are already here —
-  // destination, domain, slug, title — so editing needs no new UI at all.
+  // destination, domain, slug — so editing needs no new UI at all.
   useEffect(() => {
     if (!editId) return
     let cancelled = false
@@ -285,9 +316,20 @@ export default function CreatePage() {
       .then((res) => (res.ok ? res.json() : null))
       .then((d) => {
         if (cancelled || !d?.link) return
-        setDestination(d.link.destinationUrl || '')
+        const { destinationUrl, iosUrl: ios, androidUrl: android } = d.link
+        // An app link edits as one. Its destination shows empty when it was
+        // only ever the store fallback, so changing a store moves the
+        // fallback with it instead of leaving it on the old page.
+        if (ios || android) {
+          setIntent('app')
+          setIosUrl(ios || '')
+          setAndroidUrl(android || '')
+        }
+        const storeFallback =
+          Boolean(ios || android) &&
+          (destinationUrl === ios || destinationUrl === android)
+        setDestination(storeFallback ? '' : destinationUrl || '')
         setSlug(d.link.shortCode || '')
-        setTitle(d.link.title || '')
       })
       .catch((err) => console.error('[CreatePage] edit load', err))
     return () => {
@@ -400,7 +442,10 @@ export default function CreatePage() {
     !submitting &&
     !isEditing &&
     step === 'details' &&
-    (destination.trim().length > 0 || slug.trim().length > 0)
+    (destination.trim().length > 0 ||
+      slug.trim().length > 0 ||
+      iosUrl.trim().length > 0 ||
+      androidUrl.trim().length > 0)
 
   useUnsavedGuard({
     dirty: isDirty,
@@ -486,8 +531,24 @@ export default function CreatePage() {
       return true
     }
 
+    // An app link needs a store and nothing else: its destination is the
+    // fallback for everyone not on a phone, and an empty one means the store.
+    let storeError = null
+    if (intent === 'app') {
+      const ios = normalizeStoreUrl(iosUrl, 'ios')
+      const android = normalizeStoreUrl(androidUrl, 'android')
+      if (ios.error) bad.iosUrl = true
+      if (android.error) bad.androidUrl = true
+      storeError = ios.error || android.error || null
+      if (!storeError && !ios.url && !android.url) {
+        bad.iosUrl = true
+        bad.androidUrl = true
+        storeError = 'Add an App Store or Google Play link'
+      }
+    }
+
     if (!destination.trim()) {
-      bad.destination = true
+      if (intent !== 'app') bad.destination = true
     } else {
       const withScheme = /^https?:\/\//i.test(destination.trim())
         ? destination.trim()
@@ -507,9 +568,10 @@ export default function CreatePage() {
       // carries the "why", since Inputfield has nowhere to put a
       // message.
       toast.error(
-        bad.destination
-          ? 'Enter a valid destination URL'
-          : 'Slugs can use letters, numbers and hyphens only'
+        storeError ||
+          (bad.destination
+            ? 'Enter a valid destination URL'
+            : 'Slugs can use letters, numbers and hyphens only')
       )
       return false
     }
@@ -628,6 +690,11 @@ export default function CreatePage() {
             destination: destination.trim(),
             slug: slug.trim() || undefined,
             domain,
+            // Only from the App tab. Left out otherwise, so editing a plain
+            // link never touches stores it doesn't have.
+            ...(intent === 'app'
+              ? { iosUrl: iosUrl.trim(), androidUrl: androidUrl.trim() }
+              : {}),
           }),
         }
       )
@@ -745,6 +812,7 @@ export default function CreatePage() {
               items={[
                 { id: 'link', label: 'Short link' },
                 { id: 'qr', label: 'QR code' },
+                { id: 'app', label: 'App' },
               ]}
               activeId={intent}
               onChange={setIntent}
@@ -930,11 +998,54 @@ export default function CreatePage() {
                 </button>
               ) : null}
 
+              {/* The App tab: a store for each phone, then the destination
+                below as the fallback for everyone else (lib/applink.js). */}
+              {intent === 'app' ? (
+                <>
+                  {[
+                    ['ios', 'apps.apple.com', iosUrl, setIosUrl, 'iosUrl'],
+                    [
+                      'android',
+                      'play.google.com',
+                      androidUrl,
+                      setAndroidUrl,
+                      'androidUrl',
+                    ],
+                  ].map(([platform, host, value, setValue, field]) => (
+                    <FieldLabel key={platform} label={STORES[platform].label}>
+                      <Inputfield
+                        lefticon={<StoreIcon domain={host} />}
+                        placeholder={STORES[platform].placeholder}
+                        value={value}
+                        onChange={(e) => {
+                          setValue(e.target.value)
+                          // A store fixes the "add a store" error on both
+                          clearError('iosUrl')
+                          clearError('androidUrl')
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleCreate()
+                        }}
+                        error={Boolean(errors[field])}
+                        shaking={Boolean(shaking[field])}
+                      />
+                    </FieldLabel>
+                  ))}
+                </>
+              ) : null}
+
               {intent !== 'qr' || qrSource === 'new' || !hasLinks ? (
-                <FieldLabel label='Destination'>
+                <FieldLabel
+                  label={intent === 'app' ? 'Everyone else' : 'Destination'}
+                  hint={intent === 'app' ? '(Optional)' : undefined}
+                >
                   <Inputfield
                     lefticon={<LinkIcon />}
-                    placeholder='https://example.com/your-page'
+                    placeholder={
+                      intent === 'app'
+                        ? 'Your website, or leave it for the App Store'
+                        : 'https://example.com/your-page'
+                    }
                     value={destination}
                     onChange={(e) => {
                       setDestination(e.target.value)
@@ -946,6 +1057,19 @@ export default function CreatePage() {
                     error={Boolean(errors.destination)}
                     shaking={Boolean(shaking.destination)}
                   />
+                  {intent === 'app' ? (
+                    <p
+                      className='para-xs'
+                      style={{
+                        color: 'var(--text-soft)',
+                        margin: '8px 0 0',
+                      }}
+                    >
+                      iPhones open the App Store and Android phones open Google
+                      Play, from the link and from its QR code. Everyone else
+                      goes here, or to the App Store if this is empty.
+                    </p>
+                  ) : null}
                   {/* Only on the QR path. A code is usually FOR something that
                     already exists — the sticker goes on a menu whose link you
                     made last week — so the list is the common case there and

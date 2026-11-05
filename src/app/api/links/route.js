@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
 import { SHORT_DOMAIN, shortUrlFor } from '@/lib/shortlink'
+import { normalizeStoreUrl } from '@/lib/applink'
 import { isRecoverable, countedLinksWhere } from '@/lib/linkrecovery'
 import {
   linkLimitReason,
@@ -62,6 +63,8 @@ export async function GET() {
       shortCode: l.shortCode,
       shortUrl: shortUrlFor(l.shortCode, l.domain.hostname),
       destination: l.destinationUrl,
+      iosUrl: l.iosUrl,
+      androidUrl: l.androidUrl,
       title: l.title,
       clicks: l._count.clicks,
       qrCodeId: l.qrCodes?.[0]?.id ?? null,
@@ -182,7 +185,26 @@ export async function POST(request) {
     return Response.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const destination = normalizeDestination(body?.destination)
+  // An app link's stores (lib/applink.js). Checked first, because an app link
+  // can leave its destination blank: everyone who isn't on a phone then goes
+  // to the App Store page, or Google Play's when that's the only store.
+  const ios = normalizeStoreUrl(body?.iosUrl, 'ios')
+  if (ios.error) {
+    return Response.json({ error: ios.error, field: 'iosUrl' }, { status: 400 })
+  }
+  const android = normalizeStoreUrl(body?.androidUrl, 'android')
+  if (android.error) {
+    return Response.json(
+      { error: android.error, field: 'androidUrl' },
+      { status: 400 }
+    )
+  }
+  const storeFallback = ios.url || android.url
+
+  const destination =
+    storeFallback && !String(body?.destination || '').trim()
+      ? { url: storeFallback }
+      : normalizeDestination(body?.destination)
   if (destination.error) {
     return Response.json(
       { error: destination.error, field: 'destination' },
@@ -426,6 +448,8 @@ export async function POST(request) {
     data: {
       shortCode,
       destinationUrl: destination.url,
+      iosUrl: ios.url,
+      androidUrl: android.url,
       title: body?.title ? String(body.title).trim() : null,
       organizationId,
       createdById: userId,
@@ -439,6 +463,8 @@ export async function POST(request) {
       shortCode: link.shortCode,
       shortUrl: shortUrlFor(link.shortCode, domainRecord.hostname),
       destination: link.destinationUrl,
+      iosUrl: link.iosUrl,
+      androidUrl: link.androidUrl,
       title: link.title,
       clicks: 0,
       createdAt: link.createdAt,

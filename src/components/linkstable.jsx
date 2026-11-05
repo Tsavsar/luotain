@@ -5,6 +5,7 @@ import EmptyStateIcon from './emptystateicon'
 import { Dropdown, DropdownMenu, DropdownOption } from './dropdown'
 import DeleteConfirmModal from './deleteconfirmmodal'
 import CopyButton from './copybutton'
+import { isAppLink } from '@/lib/applink'
 import {
   formatRowDate,
   hostnameOf,
@@ -217,7 +218,18 @@ function LinkRow({ link, zIndex, onOpen, onEdit, onDuplicate, onDelete }) {
           gap: '4px',
         }}
       >
-        <DestinationIcon domain={hostnameOf(link.destination)} />
+        {/* An app link's destination is where phones DON'T go, so the cell
+          names its stores instead (lib/applink.js). */}
+        {isAppLink(link) ? (
+          <>
+            {link.iosUrl ? <DestinationIcon domain='apps.apple.com' /> : null}
+            {link.androidUrl ? (
+              <DestinationIcon domain='play.google.com' />
+            ) : null}
+          </>
+        ) : (
+          <DestinationIcon domain={hostnameOf(link.destination)} />
+        )}
         <p
           className='para-xs'
           style={{
@@ -230,7 +242,11 @@ function LinkRow({ link, zIndex, onOpen, onEdit, onDuplicate, onDelete }) {
             textOverflow: 'ellipsis',
           }}
         >
-          {link.destination}
+          {isAppLink(link)
+            ? [link.iosUrl && 'App Store', link.androidUrl && 'Google Play']
+                .filter(Boolean)
+                .join(' and ')
+            : link.destination}
         </p>
       </div>
 

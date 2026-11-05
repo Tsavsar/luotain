@@ -37,6 +37,7 @@ import Modal from '@/components/modal'
 import CopyButton from '@/components/copybutton'
 import QrDesigner, { QrLightbox } from '@/components/qrdesigner'
 import { RECOVERY_WINDOW_DAYS, daysSinceDeleted } from '@/lib/linkrecovery'
+import { isAppLink } from '@/lib/applink'
 
 function EyeIcon() {
   return (
@@ -80,6 +81,37 @@ function DetailField({ label, width, children }) {
         {label}
       </p>
       {children}
+    </div>
+  )
+}
+
+// A destination as the page shows one: its favicon and the URL, cut to one
+// line. A store that isn't set reads as a dash, like any other empty field.
+function DestinationValue({ url }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px',
+        minWidth: 0,
+      }}
+    >
+      {url ? <DestinationIcon domain={hostnameOf(url)} /> : null}
+      <p
+        className='para-sm'
+        style={{
+          flex: 1,
+          minWidth: 0,
+          color: 'var(--text-strong)',
+          margin: 0,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {url || '-'}
+      </p>
     </div>
   )
 }
@@ -156,6 +188,7 @@ export default function LinkDetailPage() {
     deleteMockLink,
     recoverMockLink,
     mockNote,
+    mockLead,
   } = useMockDataState()
   const [selectedRange, setSelectedRange] = useState('Last 7 days')
   const [pendingDelete, setPendingDelete] = useState({
@@ -356,6 +389,7 @@ export default function LinkDetailPage() {
   ]
 
   const shortUrl = link?.shortUrl || shortUrlFor(slug)
+  const appLink = isAppLink(link)
 
   function toggleFilter(filter) {
     setActiveFilters((prev) => {
@@ -430,6 +464,9 @@ export default function LinkDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           destination: link.destination || link.destinationUrl,
+          // An app link's copy is an app link too
+          iosUrl: link.iosUrl || undefined,
+          androidUrl: link.androidUrl || undefined,
           title: link.title || null,
         }),
       })
@@ -551,7 +588,7 @@ export default function LinkDetailPage() {
   // toast instead of a page of JSON.
   async function handleExport() {
     if (useMockData) {
-      toast('Mock data is on — there are no real clicks to export')
+      toast(`${mockLead} there are no real clicks to export`)
       return
     }
     if (!link) return
@@ -843,31 +880,21 @@ export default function LinkDetailPage() {
                     </div>
                   </DetailField>
 
-                  <DetailField label='Destination'>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        minWidth: 0,
-                      }}
-                    >
-                      <DestinationIcon domain={hostnameOf(link?.destination)} />
-                      <p
-                        className='para-sm'
-                        style={{
-                          flex: 1,
-                          minWidth: 0,
-                          color: 'var(--text-strong)',
-                          margin: 0,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {link?.destination || '-'}
-                      </p>
+                  {/* An app link's stores, side by side like the row below,
+                    then the destination as where everyone else goes. */}
+                  {appLink ? (
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <DetailField label='App Store' width='calc(50% - 5px)'>
+                        <DestinationValue url={link.iosUrl} />
+                      </DetailField>
+                      <DetailField label='Google Play' width='calc(50% - 5px)'>
+                        <DestinationValue url={link.androidUrl} />
+                      </DetailField>
                     </div>
+                  ) : null}
+
+                  <DetailField label={appLink ? 'Everyone else' : 'Destination'}>
+                    <DestinationValue url={link?.destination} />
                   </DetailField>
 
                   <div style={{ display: 'flex', gap: '10px' }}>

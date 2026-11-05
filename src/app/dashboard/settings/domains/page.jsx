@@ -303,6 +303,7 @@ export default function DomainsPage() {
     mockPlan,
     mockDomainState,
     ready: mockReady,
+    mockLead,
   } = useMockDataState()
   const [data, setData] = useState(null)
   const [hostname, setHostname] = useState('')
@@ -405,7 +406,7 @@ export default function DomainsPage() {
       return
     }
     if (useMockData) {
-      toast('Mock data is on — nothing was added')
+      toast(`${mockLead} nothing was added`)
       return
     }
 
@@ -437,7 +438,7 @@ export default function DomainsPage() {
   // different hostname is a different domain, so it's remove-and-re-add.
   async function handleCheck(domain) {
     if (useMockData) {
-      toast('Mock data is on — nothing was checked')
+      toast(`${mockLead} nothing was checked`)
       return
     }
     setChecking(domain.id)
@@ -481,7 +482,7 @@ export default function DomainsPage() {
 
   async function handleRemove(domain) {
     if (useMockData) {
-      toast('Mock data is on — nothing was removed')
+      toast(`${mockLead} nothing was removed`)
       return
     }
     try {

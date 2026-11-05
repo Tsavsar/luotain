@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { resolveActiveOrg } from '@/lib/resolveActiveOrg'
+import { normalizeStoreUrl } from '@/lib/applink'
 
 const SLUG = /^[a-zA-Z0-9._-]+$/
 
@@ -30,6 +31,8 @@ async function authorize(id) {
       id: true,
       shortCode: true,
       destinationUrl: true,
+      iosUrl: true,
+      androidUrl: true,
       title: true,
       domainId: true,
       deletedAt: true,
@@ -43,7 +46,7 @@ async function authorize(id) {
   return { link, organizationId, userId }
 }
 
-// PATCH /api/links/[id]  { destinationUrl?, title?, slug? }
+// PATCH /api/links/[id]  { destinationUrl?, title?, slug?, iosUrl?, androidUrl? }
 export async function PATCH(request, { params }) {
   const { id } = await params
   const { error, link, organizationId } = await authorize(id)
@@ -65,42 +68,63 @@ export async function PATCH(request, { params }) {
 
   const data = {}
 
+  // An app link's stores (lib/applink.js). Sent as strings, and an empty one
+  // removes that store. Read before the destination, which an app link may
+  // leave blank to fall back to one of them.
+  for (const [key, platform] of [
+    ['iosUrl', 'ios'],
+    ['androidUrl', 'android'],
+  ]) {
+    if (typeof body?.[key] !== 'string') continue
+    const store = normalizeStoreUrl(body[key], platform)
+    if (store.error) {
+      return Response.json({ error: store.error, field: key }, { status: 400 })
+    }
+    data[key] = store.url
+  }
+  const storeFallback =
+    (data.iosUrl !== undefined ? data.iosUrl : link.iosUrl) ||
+    (data.androidUrl !== undefined ? data.androidUrl : link.androidUrl)
+
   // Both keys accepted. POST /api/links reads `destination` and this read only
   // `destinationUrl` — the same field under two names across two endpoints,
   // which is exactly how the duplicate button ended up 400ing.
   const rawDestination = body?.destinationUrl ?? body?.destination
   if (typeof rawDestination === 'string') {
     const raw = rawDestination.trim()
-    if (!raw) {
+    if (!raw && storeFallback) {
+      data.destinationUrl = storeFallback
+    } else if (!raw) {
       return Response.json(
         { error: 'Enter a destination', field: 'destinationUrl' },
         { status: 400 }
       )
+    } else {
+      // A scheme is added rather than demanded — people paste "acme.com" and mean
+      // https, and rejecting that is a pointless hurdle.
+      const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+      let parsed
+      try {
+        parsed = new URL(withScheme)
+      } catch {
+        return Response.json(
+          { error: "That doesn't look like a URL", field: 'destinationUrl' },
+          { status: 400 }
+        )
+      }
+      // http and https only. A javascript: or data: destination would turn every
+      // short link into a way to run someone else's script on a click.
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        return Response.json(
+          {
+            error: 'Links must start with http or https',
+            field: 'destinationUrl',
+          },
+          { status: 400 }
+        )
+      }
+      data.destinationUrl = parsed.toString()
     }
-    // A scheme is added rather than demanded — people paste "acme.com" and mean
-    // https, and rejecting that is a pointless hurdle.
-    const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
-    let parsed
-    try {
-      parsed = new URL(withScheme)
-    } catch {
-      return Response.json(
-        { error: "That doesn't look like a URL", field: 'destinationUrl' },
-        { status: 400 }
-      )
-    }
-    // http and https only. A javascript: or data: destination would turn every
-    // short link into a way to run someone else's script on a click.
-    if (!['http:', 'https:'].includes(parsed.protocol)) {
-      return Response.json(
-        {
-          error: 'Links must start with http or https',
-          field: 'destinationUrl',
-        },
-        { status: 400 }
-      )
-    }
-    data.destinationUrl = parsed.toString()
   }
 
   if (typeof body?.title === 'string') {
@@ -158,6 +182,8 @@ export async function PATCH(request, { params }) {
         id: true,
         shortCode: true,
         destinationUrl: true,
+        iosUrl: true,
+        androidUrl: true,
         title: true,
         domain: { select: { hostname: true } },
       },
